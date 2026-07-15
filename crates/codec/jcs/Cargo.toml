@@ -1,0 +1,24 @@
+# SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "reallyme-codec-jcs"
+version = "0.1.20"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = true
+description = "JSON Canonicalization Scheme support for ReallyMe Codec."
+
+[lib]
+name = "codec_jcs"
+
+[dependencies]
+ryu-js = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

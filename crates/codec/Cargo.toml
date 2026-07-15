@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "reallyme-codec"
+version = "0.1.20"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = true
+description = "ReallyMe codec utilities for PEM, lowercase hex, multibase, multicodec, multikey, CBOR, JCS, and base encodings."
+readme = "README.md"
+include = ["/src/**/*.rs", "/Cargo.toml", "/README.md", "/LICENSE", "/NOTICE"]
+
+[dependencies]
+codec-base64 = { package = "reallyme-codec-base64", version = "0.1.20", path = "base64", optional = true }
+codec-base64url = { package = "reallyme-codec-base64url", version = "0.1.20", path = "base64url", optional = true }
+codec-cbor = { package = "reallyme-codec-cbor", version = "0.1.20", path = "cbor", optional = true }
+codec-hex = { package = "reallyme-codec-hex", version = "0.1.20", path = "hex", optional = true }
+codec-jcs = { package = "reallyme-codec-jcs", version = "0.1.20", path = "jcs", optional = true }
+codec-multibase = { package = "reallyme-codec-multibase", version = "0.1.20", path = "multibase", optional = true }
+codec-multicodec = { package = "reallyme-codec-multicodec", version = "0.1.20", path = "multicodec", optional = true }
+codec-multikey = { package = "reallyme-codec-multikey", version = "0.1.20", path = "multikey", optional = true }
+codec-pem = { package = "reallyme-codec-pem", version = "0.1.20", path = "pem", optional = true }
+
+[features]
+default = [
+    "base64",
+    "base64url",
+    "cbor",
+    "hex",
+    "jcs",
+    "multibase",
+    "multicodec",
+    "multikey",
+    "pem",
+]
+base64 = ["dep:codec-base64"]
+base64url = ["dep:codec-base64url"]
+cbor = ["dep:codec-cbor"]
+hex = ["dep:codec-hex"]
+jcs = ["dep:codec-jcs"]
+multibase = ["dep:codec-multibase", "base64url"]
+multicodec = ["dep:codec-multicodec"]
+multikey = ["dep:codec-multikey", "multibase", "multicodec"]
+pem = ["dep:codec-pem"]
+serde = ["base64url", "codec-base64url/serde"]
+
+[lints]
+workspace = true

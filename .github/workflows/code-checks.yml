@@ -1,0 +1,156 @@
+# SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Code Checks
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "LICENSE"
+      - "NOTICE"
+      - ".github/renovate.json"
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "LICENSE"
+      - "NOTICE"
+      - ".github/renovate.json"
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    name: fmt, lint, test, wasm, package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88 # master
+        with:
+          toolchain: 1.96.0
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+
+      - name: Install nextest
+        uses: taiki-e/install-action@c61310c7f42caf5b425e349b6742d93ca197327c # nextest
+
+      - name: Install cargo-deny
+        uses: taiki-e/install-action@c61310c7f42caf5b425e349b6742d93ca197327c # cargo-deny
+        with:
+          tool: cargo-deny@0.19.6
+
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@c61310c7f42caf5b425e349b6742d93ca197327c # wasm-pack
+        with:
+          tool: wasm-pack@0.15.0
+
+      - name: Install wasm-bindgen-cli
+        uses: taiki-e/install-action@c61310c7f42caf5b425e349b6742d93ca197327c # wasm-bindgen-cli
+        with:
+          tool: wasm-bindgen-cli@0.2.126
+
+      - name: Install Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: packages/codec/package-lock.json
+
+      - name: Format
+        run: cargo fmt --check
+
+      - name: Check all features
+        run: cargo check --workspace --all-features
+
+      - name: Check warnings as errors
+        run: RUSTFLAGS=-Dwarnings cargo check --workspace --all-features
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+      - name: Test
+        run: cargo nextest run --workspace --all-features
+
+      - name: Doc build
+        run: cargo doc --workspace --no-deps --all-features
+        env:
+          RUSTDOCFLAGS: -D warnings
+
+      - name: Doctests
+        run: cargo test --workspace --all-features --doc
+
+      - name: Check codec WASM crate
+        run: cargo check -p reallyme-codec-wasm --target wasm32-unknown-unknown
+
+      - name: Install TypeScript codec package dependencies
+        run: npm ci --prefix packages/codec
+
+      - name: Test TypeScript codec package
+        run: npm --prefix packages/codec test
+
+      - name: Release readiness
+        run: node scripts/check_release_readiness.mjs
+
+      - name: Dependency policy
+        run: cargo deny check
+
+  swift:
+    name: swift codec package
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      - name: Select Xcode 26.3
+        run: |
+          sudo xcode-select -s /Applications/Xcode_26.3.app
+          swift --version
+
+      - name: Build codec FFI dylib
+        run: cargo build -p reallyme-codec-ffi
+
+      - name: Test Swift package
+        run: swift test
+        env:
+          REALLYME_CODEC_FFI_LIBRARY_PATH: ${{ github.workspace }}/target/debug/libreallyme_codec_ffi.dylib
+          REALLYME_CODEC_SWIFTPM_RUNTIME_FFI: "1"
+
+  kotlin:
+    name: kotlin codec package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      - name: Install Java
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88 # master
+        with:
+          toolchain: 1.96.0
+
+      - name: Build codec FFI dylib
+        run: cargo build -p reallyme-codec-ffi
+
+      - name: Test Kotlin codec package
+        working-directory: packages/kotlin-codec
+        run: ./gradlew test
+        env:
+          REALLYME_CODEC_FFI_LIBRARY_PATH: ${{ github.workspace }}/target/debug/libreallyme_codec_ffi.so

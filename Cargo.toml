@@ -1,0 +1,76 @@
+# SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[workspace]
+resolver = "2"
+members = [
+    "crates/codec/base64",
+    "crates/codec/base64url",
+    "crates/codec/cbor",
+    "crates/codec/ffi",
+    "crates/codec/hex",
+    "crates/codec/jcs",
+    "crates/codec",
+    "crates/codec/multibase",
+    "crates/codec/multicodec",
+    "crates/codec/multikey",
+    "crates/codec/pem",
+    "crates/codec/wasm-package",
+    "crates/proto/codec",
+]
+exclude = ["fuzz"]
+
+[workspace.package]
+edition = "2021"
+rust-version = "1.96"
+license = "Apache-2.0"
+repository = "https://github.com/reallyme/codec"
+publish = false
+
+# Centralized external (crates.io) dependency versions for the codec workspace.
+#
+# Every member crate inherits these via `dep = { workspace = true }` so a single
+# audited version requirement governs the repo. Crate-specific features,
+# default-features, and optional flags remain declared at the use site.
+[workspace.dependencies]
+base64 = "0.22"
+bs58 = "0.5"
+buffa = { version = "0.8.1", features = ["json"] }
+cid = "0.11.3"
+hex = "0.4"
+hex-literal = "1.1"
+jni = "0.22.4"
+js-sys = "0.3"
+multihash = "0.19.5"
+multihash-codetable = "0.2.2"
+ryu-js = "1"
+serde = "1.0"
+serde_json = { version = "1.0", features = ["float_roundtrip"] }
+sha2 = "0.11"
+thiserror = "2.0"
+wasm-bindgen = "0.2"
+wasm-bindgen-test = "0.3"
+zeroize = "1.9"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+unreachable = "deny"
+dbg_macro = "deny"
+print_stdout = "deny"
+print_stderr = "deny"
+wildcard_imports = "deny"
+large_include_file = "deny"
