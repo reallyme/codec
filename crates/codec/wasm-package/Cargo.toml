@@ -1,0 +1,37 @@
+# SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "reallyme-codec-wasm"
+version = "0.1.21"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+license.workspace = true
+repository.workspace = true
+description = "WASM bindings for the ReallyMe TypeScript codec package."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+codec-base64 = { package = "reallyme-codec-base64", version = "0.1.21", path = "../base64" }
+codec-base64url = { package = "reallyme-codec-base64url", version = "0.1.21", path = "../base64url" }
+codec-cbor = { package = "reallyme-codec-cbor", version = "0.1.21", path = "../cbor" }
+codec-hex = { package = "reallyme-codec-hex", version = "0.1.21", path = "../hex" }
+codec-jcs = { package = "reallyme-codec-jcs", version = "0.1.21", path = "../jcs" }
+codec-multibase = { package = "reallyme-codec-multibase", version = "0.1.21", path = "../multibase" }
+codec-multicodec = { package = "reallyme-codec-multicodec", version = "0.1.21", path = "../multicodec" }
+codec-multikey = { package = "reallyme-codec-multikey", version = "0.1.21", path = "../multikey" }
+codec-pem = { package = "reallyme-codec-pem", version = "0.1.21", path = "../pem" }
+codec-proto = { package = "reallyme-codec-proto", version = "0.1.21", path = "../../proto/codec", features = ["generated"] }
+buffa = { workspace = true }
+js-sys = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+wasm-bindgen = { workspace = true }
+zeroize = { workspace = true }
+
+[lints]
+workspace = true

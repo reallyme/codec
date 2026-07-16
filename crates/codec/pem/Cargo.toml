@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "reallyme-codec-pem"
+version = "0.1.21"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = true
+description = "PEM text armor parsing and encoding for ReallyMe Codec."
+readme = "README.md"
+include = ["/src/**/*.rs", "/tests/**/*.rs", "/Cargo.toml", "/README.md"]
+
+[lib]
+name = "codec_pem"
+
+[dependencies]
+base64 = { workspace = true }
+thiserror = { workspace = true }
+zeroize = { workspace = true }
+
+[lints]
+workspace = true

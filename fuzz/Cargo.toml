@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Coverage-guided fuzzing harnesses for the untrusted-input parsers.
+#
+# This crate is deliberately OUTSIDE the main workspace (see the empty
+# `[workspace]` table below) so it does not inherit the workspace lint denies
+# (`unsafe_code = deny` etc.). libFuzzer targets require `#![no_main]` and the
+# unsafe libfuzzer-sys runtime, which the strict workspace lints would reject.
+#
+# Run with a nightly toolchain and cargo-fuzz:
+#   cargo +nightly fuzz run multibase
+# See README.md.
+
+[package]
+name = "codec-fuzz"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+codec-base64url = { package = "reallyme-codec-base64url", path = "../crates/codec/base64url" }
+codec-multibase = { package = "reallyme-codec-multibase", path = "../crates/codec/multibase" }
+codec-multicodec = { package = "reallyme-codec-multicodec", path = "../crates/codec/multicodec" }
+codec-multikey = { package = "reallyme-codec-multikey", path = "../crates/codec/multikey" }
+codec-cbor = { package = "reallyme-codec-cbor", path = "../crates/codec/cbor" }
+
+[[bin]]
+name = "multibase"
+path = "fuzz_targets/multibase.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "multicodec"
+path = "fuzz_targets/multicodec.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "multikey"
+path = "fuzz_targets/multikey.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "base64url"
+path = "fuzz_targets/base64url.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "dag_cbor"
+path = "fuzz_targets/dag_cbor.rs"
+test = false
+doc = false
+bench = false
+
+# Standalone workspace: keep this crate out of the parent workspace so the
+# parent's lint denies and toolchain pin do not apply to the fuzz targets.
+[workspace]
