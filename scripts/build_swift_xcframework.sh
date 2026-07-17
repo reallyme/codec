@@ -62,6 +62,79 @@ verify_xcframework_layout() {
   fi
 }
 
+normalize_xcframework_info_plist() {
+  # xcodebuild can emit AvailableLibraries in different orders for identical
+  # inputs. SwiftPM checksums cover the raw zip bytes, so keep this manifest in
+  # a canonical order before archiving.
+  cat >"${FRAMEWORK_DIR}/Info.plist" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>AvailableLibraries</key>
+	<array>
+		<dict>
+			<key>BinaryPath</key>
+			<string>libreallyme_codec_ffi_macos.a</string>
+			<key>HeadersPath</key>
+			<string>Headers</string>
+			<key>LibraryIdentifier</key>
+			<string>macos-arm64_x86_64</string>
+			<key>LibraryPath</key>
+			<string>libreallyme_codec_ffi_macos.a</string>
+			<key>SupportedArchitectures</key>
+			<array>
+				<string>arm64</string>
+				<string>x86_64</string>
+			</array>
+			<key>SupportedPlatform</key>
+			<string>macos</string>
+		</dict>
+		<dict>
+			<key>BinaryPath</key>
+			<string>libreallyme_codec_ffi_ios.a</string>
+			<key>HeadersPath</key>
+			<string>Headers</string>
+			<key>LibraryIdentifier</key>
+			<string>ios-arm64</string>
+			<key>LibraryPath</key>
+			<string>libreallyme_codec_ffi_ios.a</string>
+			<key>SupportedArchitectures</key>
+			<array>
+				<string>arm64</string>
+			</array>
+			<key>SupportedPlatform</key>
+			<string>ios</string>
+		</dict>
+		<dict>
+			<key>BinaryPath</key>
+			<string>libreallyme_codec_ffi_ios_simulator.a</string>
+			<key>HeadersPath</key>
+			<string>Headers</string>
+			<key>LibraryIdentifier</key>
+			<string>ios-arm64_x86_64-simulator</string>
+			<key>LibraryPath</key>
+			<string>libreallyme_codec_ffi_ios_simulator.a</string>
+			<key>SupportedArchitectures</key>
+			<array>
+				<string>arm64</string>
+				<string>x86_64</string>
+			</array>
+			<key>SupportedPlatform</key>
+			<string>ios</string>
+			<key>SupportedPlatformVariant</key>
+			<string>simulator</string>
+		</dict>
+	</array>
+	<key>CFBundlePackageType</key>
+	<string>XFWK</string>
+	<key>XCFrameworkFormatVersion</key>
+	<string>1.0</string>
+</dict>
+</plist>
+PLIST
+}
+
 require_tool cargo
 require_tool rustup
 require_tool xcodebuild
@@ -154,6 +227,7 @@ xcodebuild -create-xcframework \
   -library "${BUILD_DIR}/libs/libreallyme_codec_ffi_ios_simulator.a" -headers "${HEADERS_DIR}" \
   -output "${FRAMEWORK_DIR}"
 
+normalize_xcframework_info_plist
 install_modulemaps
 verify_xcframework_layout
 
