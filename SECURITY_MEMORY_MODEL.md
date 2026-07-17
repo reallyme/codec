@@ -14,8 +14,8 @@ This document defines the baseline memory-safety and boundary model for the
 - Codec crates under `crates/codec/`
 - Codec C ABI and JNI adapters under `crates/codec/ffi`
 - Codec WASM adapters under `crates/codec/wasm-package`
-- SDK packages under `packages/swift`, `packages/kotlin-codec`, and
-  `packages/codec`
+- SDK packages under `packages/swift`, `packages/kotlin`, and
+  `packages/ts`
 
 ## Data Classes
 
@@ -51,8 +51,8 @@ cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace --all-features
 cargo check -p reallyme-codec-wasm --target wasm32-unknown-unknown
 node scripts/check_release_readiness.mjs
-npm --prefix packages/codec test
+npm --prefix packages/ts test
 swift test
-packages/kotlin-codec/gradlew -p packages/kotlin-codec test
+packages/kotlin/gradlew -p packages/kotlin test
 cargo deny check
 ```

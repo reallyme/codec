@@ -67,7 +67,7 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-          cache-dependency-path: packages/codec/package-lock.json
+          cache-dependency-path: packages/ts/package-lock.json
 
       - name: Format
         run: cargo fmt --check
@@ -96,10 +96,10 @@ jobs:
         run: cargo check -p reallyme-codec-wasm --target wasm32-unknown-unknown
 
       - name: Install TypeScript codec package dependencies
-        run: npm ci --prefix packages/codec
+        run: npm ci --prefix packages/ts
 
       - name: Test TypeScript codec package
-        run: npm --prefix packages/codec test
+        run: npm --prefix packages/ts test
 
       - name: Test release-readiness CLI
         run: node --test scripts/release-readiness/cli.test.mjs
@@ -165,7 +165,7 @@ jobs:
         run: cargo build --locked -p reallyme-codec-ffi
 
       - name: Test Kotlin codec package
-        working-directory: packages/kotlin-codec
+        working-directory: packages/kotlin
         run: ./gradlew test
         env:
           REALLYME_CODEC_FFI_LIBRARY_PATH: ${{ github.workspace }}/target/debug/libreallyme_codec_ffi.so

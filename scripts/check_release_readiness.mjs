@@ -189,7 +189,7 @@ for (const staleWasmProtoExport of [
   );
 }
 assertNotContains(
-  "packages/kotlin-codec/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
   "PemDecodeOptionsJsonParser",
 );
 assertNotContains(
@@ -205,19 +205,19 @@ assertContains(
   "public func processProtoJson(_ requestJson: [UInt8])",
 );
 assertContains(
-  "packages/kotlin-codec/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
   "public fun processProto(request: ByteArray)",
 );
 assertContains(
-  "packages/kotlin-codec/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
   "public fun processProtoJson(requestJson: ByteArray)",
 );
 assertContains(
-  "packages/kotlin-codec/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
   "public fun decodePem(pem: ByteArray",
 );
 assertNotContains(
-  "packages/kotlin-codec/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
   "fun decodePemProto(",
 );
 assertContains(
@@ -300,7 +300,7 @@ assertReallyMeProtoBoundaryContract({
       ],
     },
     {
-      path: "packages/codec/src/protoProcess.ts",
+      path: "packages/ts/src/protoProcess.ts",
       processProtoNeedle: "export const processProto =",
       processProtoJsonNeedle: "export const processProtoJson =",
     },
@@ -333,7 +333,7 @@ assertReallyMeProtoBoundaryContract({
       ],
     },
     {
-      path: "packages/kotlin-codec/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
+      path: "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
       processProtoNeedle: "public fun processProto(request: ByteArray)",
       processProtoJsonNeedle:
         "public fun processProtoJson(requestJson: ByteArray)",
@@ -342,7 +342,7 @@ assertReallyMeProtoBoundaryContract({
 });
 
 assertContains("buf.gen.yaml", "out: crates/proto/codec/src/generated/buffa");
-assertContains("buf.gen.yaml", "out: packages/codec/src/proto/generated");
+assertContains("buf.gen.yaml", "out: packages/ts/src/proto/generated");
 assertContains("buf.gen.yaml", "buf.build/bufbuild/es:v2.12.1");
 assertContains("buf.gen.yaml", "buf.build/apple/swift:v1.38.1");
 assertContains("buf.gen.yaml", "buf.build/protocolbuffers/java:v35.1");
@@ -367,15 +367,15 @@ assertContains(
   "produced_len > MAX_CODEC_PROTO_RESULT_ENVELOPE_BYTES",
 );
 assertContains(
-  "packages/codec/src/protoProcess.ts",
+  "packages/ts/src/protoProcess.ts",
   "const MAX_CODEC_PROTO_RESULT_ENVELOPE_BYTES = 1_048_592;",
 );
 assertContains(
-  "packages/codec/src/readOutput.ts",
+  "packages/ts/src/readOutput.ts",
   "value.buffer === input.buffer",
 );
 assertContains(
-  "packages/codec/test/reallyme-codec.test.mjs",
+  "packages/ts/test/reallyme-codec.test.mjs",
   "protobuf envelope validation rejects shared and invalid provider storage",
 );
 assertContains(
@@ -408,48 +408,48 @@ if (readText("buf.gen.yaml").includes("reallyme.crypto.v1")) {
   fail("buf.gen.yaml still generates crypto protos");
 }
 
-const tsCodecPackage = readJson("packages/codec/package.json");
+const tsCodecPackage = readJson("packages/ts/package.json");
 if (tsCodecPackage.name !== "@reallyme/codec") {
-  fail("packages/codec/package.json must publish @reallyme/codec");
+  fail("packages/ts/package.json must publish @reallyme/codec");
 }
 if (tsCodecPackage.version !== codecPackageVersion) {
-  fail(`packages/codec/package.json is not versioned ${codecPackageVersion}`);
+  fail(`packages/ts/package.json is not versioned ${codecPackageVersion}`);
 }
 if (tsCodecPackage.private === true) {
-  fail("packages/codec/package.json is private and cannot be published to npm");
+  fail("packages/ts/package.json is private and cannot be published to npm");
 }
-assertContains("packages/codec/README.md", "@reallyme/codec/wasm/reallyme_codec_wasm.js");
-assertContains("packages/codec/package.json", '"@bufbuild/protobuf": "2.12.1"');
+assertContains("packages/ts/README.md", "@reallyme/codec/wasm/reallyme_codec_wasm.js");
+assertContains("packages/ts/package.json", '"@bufbuild/protobuf": "2.12.1"');
 
-const kotlinCodecBuild = readText("packages/kotlin-codec/build.gradle.kts");
+const kotlinCodecBuild = readText("packages/kotlin/build.gradle.kts");
 if (!kotlinCodecBuild.includes(`version = "${codecPackageVersion}"`)) {
-  fail(`packages/kotlin-codec/build.gradle.kts is not versioned ${codecPackageVersion}`);
+  fail(`packages/kotlin/build.gradle.kts is not versioned ${codecPackageVersion}`);
 }
-assertContains("packages/kotlin-codec/build.gradle.kts", 'artifactId = "codec"');
-assertContains("packages/kotlin-codec/build.gradle.kts", "Java, Kotlin, JVM, and Android");
-assertContains("packages/kotlin-codec/build.gradle.kts", "com.google.protobuf:protobuf-javalite:4.35.1");
-assertContains("packages/kotlin-codec/build.gradle.kts", "com.google.protobuf:protobuf-kotlin-lite:4.35.1");
-assertContains("packages/kotlin-codec/build.gradle.kts", "https://github.com/reallyme/codec");
-assertContains("packages/kotlin-codec/build.gradle.kts", "reallyme.codec.nativeResourcesDir");
-assertContains("packages/kotlin-codec/build.gradle.kts", "reallyme.codec.requireFullNativeResources");
-assertContains("packages/kotlin-codec/build.gradle.kts", "verifyBundledNativeResources");
-assertContains("packages/kotlin-codec/build.gradle.kts", "verifyHostBundledNativeResource");
-assertContains("packages/kotlin-codec/build.gradle.kts", "stageHostNativeResource");
-assertContains("packages/kotlin-codec/build.gradle.kts", "native-manifest.json");
-assertContains("packages/kotlin-codec/build.gradle.kts", "PublishToMavenRepository");
-assertContains("packages/kotlin-codec/build.gradle.kts", "dependencyLocking {");
-assertContains("packages/kotlin-codec/build.gradle.kts", "lockAllConfigurations()");
+assertContains("packages/kotlin/build.gradle.kts", 'artifactId = "codec"');
+assertContains("packages/kotlin/build.gradle.kts", "Java, Kotlin, JVM, and Android");
+assertContains("packages/kotlin/build.gradle.kts", "com.google.protobuf:protobuf-javalite:4.35.1");
+assertContains("packages/kotlin/build.gradle.kts", "com.google.protobuf:protobuf-kotlin-lite:4.35.1");
+assertContains("packages/kotlin/build.gradle.kts", "https://github.com/reallyme/codec");
+assertContains("packages/kotlin/build.gradle.kts", "reallyme.codec.nativeResourcesDir");
+assertContains("packages/kotlin/build.gradle.kts", "reallyme.codec.requireFullNativeResources");
+assertContains("packages/kotlin/build.gradle.kts", "verifyBundledNativeResources");
+assertContains("packages/kotlin/build.gradle.kts", "verifyHostBundledNativeResource");
+assertContains("packages/kotlin/build.gradle.kts", "stageHostNativeResource");
+assertContains("packages/kotlin/build.gradle.kts", "native-manifest.json");
+assertContains("packages/kotlin/build.gradle.kts", "PublishToMavenRepository");
+assertContains("packages/kotlin/build.gradle.kts", "dependencyLocking {");
+assertContains("packages/kotlin/build.gradle.kts", "lockAllConfigurations()");
 assertContains(
-  "packages/kotlin-codec/gradle/wrapper/gradle-wrapper.properties",
+  "packages/kotlin/gradle/wrapper/gradle-wrapper.properties",
   "distributionSha256Sum=9c0f7faeeb306cb14e4279a3e084ca6b596894089a0638e68a07c945a32c9e14",
 );
 assertContains(
-  "packages/kotlin-codec/gradle.properties",
+  "packages/kotlin/gradle.properties",
   "org.gradle.dependency.verification=strict",
 );
-assertContains("packages/kotlin-codec/gradle.lockfile", "com.google.protobuf:protobuf-javalite");
+assertContains("packages/kotlin/gradle.lockfile", "com.google.protobuf:protobuf-javalite");
 assertContains(
-  "packages/kotlin-codec/gradle/verification-metadata.xml",
+  "packages/kotlin/gradle/verification-metadata.xml",
   "<verify-metadata>true</verify-metadata>",
 );
 assertContains("docs/dependency-updates.md", "verifying every trusted full fingerprint");
@@ -490,9 +490,18 @@ assertWorkflowPermissionsPolicy({
 assertContains(".github/workflows/package-release.yml", "publish_swift:");
 assertContains(".github/workflows/package-release.yml", "publish_maven:");
 assertContains(".github/workflows/package-release.yml", "release_sha:");
+assertContains(".github/workflows/package-release.yml", "Leave blank to use the current origin/main SHA");
+assertContains(".github/workflows/package-release.yml", "Resolve release SHA");
+assertContains(".github/workflows/package-release.yml", "default: 0.1.22");
 assertContains(".github/workflows/package-release.yml", "Verify audited release SHA");
 assertContains(".github/workflows/crates-release.yml", "Verify audited release SHA");
-assertContains(".github/workflows/release-preflight.yml", "WORKFLOW_SHA: ${{ github.sha }}");
+assertContains(".github/workflows/crates-release.yml", "Resolve release SHA");
+assertContains(".github/workflows/release-preflight.yml", "Resolve release SHA");
+assertContains(".github/workflows/release-preflight.yml", "default: 0.1.22");
+assertContains(".github/workflows/release-preflight.yml", "needs: [verify-source-sha, jvm-native]");
+assertContains(".github/workflows/package-release.yml", "needs: [verify-release-sha, jvm-native]");
+assertContains(".github/workflows/package-release.yml", "needs: [verify-release-sha, swift-artifact]");
+assertContains(".github/workflows/crates-release.yml", "needs: [verify-release-sha, dry-run]");
 assertWorkflowRunStep(
   ".github/workflows/package-release.yml",
   "Require current main and successful checks for exact SHA",
@@ -513,7 +522,7 @@ assertWorkflowRunStep(
   ".github/workflows/package-release.yml",
   "Publish Android AAR",
   `node scripts/verify_release_attestation.mjs
-packages/kotlin-codec/gradlew -p packages/android-codec publish -Preallyme.codec.androidJniLibsDir=\${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=\${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true`,
+packages/kotlin/gradlew -p packages/kotlin-android publish -Preallyme.codec.androidJniLibsDir=\${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=\${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true`,
 );
 assertWorkflowRunStep(
   ".github/workflows/crates-release.yml",
@@ -575,109 +584,109 @@ assertContains(
 );
 assertContains(".github/workflows/package-release.yml", "requireFullNativeResources=true");
 assertContains(".github/workflows/release-preflight.yml", "requireFullNativeResources=true");
-assertContains("packages/kotlin-codec/settings.gradle.kts", 'rootProject.name = "reallyme-codec"');
-assertContains("packages/kotlin-codec/README.md", "me.really:codec:0.1.22");
-assertContains("packages/kotlin-codec/README.md", "ships Rust JNI libraries as platform resources");
+assertContains("packages/kotlin/settings.gradle.kts", 'rootProject.name = "reallyme-codec"');
+assertContains("packages/kotlin/README.md", "me.really:codec:0.1.22");
+assertContains("packages/kotlin/README.md", "ships Rust JNI libraries as platform resources");
 assertContains(
-  "packages/kotlin-codec/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
   "/me/really/codec/native",
 );
 assertContains(
-  "packages/kotlin-codec/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
   'ANDROID_LIBRARY_NAME: String = "reallyme_codec_ffi"',
 );
 assertContains(
-  "packages/kotlin-codec/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
   "System.loadLibrary(ANDROID_LIBRARY_NAME)",
 );
 assertContains(
-  "packages/kotlin-codec/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
   "createPrivateExtractionDirectory",
 );
 assertContains(
-  "packages/kotlin-codec/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
   "MessageDigest.isEqual",
 );
 assertContains(
-  "packages/kotlin-codec/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
   "isSecurePosixTempMode",
 );
 assertContains(
-  "packages/kotlin-codec/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
   "isTrustedPosixTempOwner",
 );
 assertContains(
-  "packages/kotlin-codec/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
   "AclFileAttributeView",
 );
 assertContains(
-  "packages/kotlin-codec/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
   "restrictAclToOwner",
 );
 assertContains(
-  "packages/kotlin-codec/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
   "makeExtractedLibraryReadOnly",
 );
 assertNotContains(
-  "packages/kotlin-codec/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
   "File.createTempFile",
 );
-assertContains("packages/kotlin-codec/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "@JvmStatic");
+assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "@JvmStatic");
 assertContains(
-  "packages/kotlin-codec/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
   "UnsafeByteOperations.unsafeWrap(bytes)",
 );
 assertNotContains(
-  "packages/kotlin-codec/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
   "ByteString.copyFrom(bytes)",
 );
-assertContains("packages/kotlin-codec/build.gradle.kts", "fun nonBlank(value: String?): String?");
-assertContains("packages/kotlin-codec/build.gradle.kts", "verifyRemoteMavenPublishingConfigured");
-assertContains("packages/kotlin-codec/build.gradle.kts", "remote Maven publishing is not configured");
-assertContains("packages/kotlin-codec/build.gradle.kts", 'parsed.scheme != "https"');
-assertNotContains("packages/kotlin-codec/build.gradle.kts", "reallyme.maven.requireRemote");
-assertNotContains("packages/kotlin-codec/build.gradle.kts", 'name = "localRelease"');
+assertContains("packages/kotlin/build.gradle.kts", "fun nonBlank(value: String?): String?");
+assertContains("packages/kotlin/build.gradle.kts", "verifyRemoteMavenPublishingConfigured");
+assertContains("packages/kotlin/build.gradle.kts", "remote Maven publishing is not configured");
+assertContains("packages/kotlin/build.gradle.kts", 'parsed.scheme != "https"');
+assertNotContains("packages/kotlin/build.gradle.kts", "reallyme.maven.requireRemote");
+assertNotContains("packages/kotlin/build.gradle.kts", 'name = "localRelease"');
 assertNotContains(".github/workflows/package-release.yml", "-Preallyme.maven.requireRemote=true");
-assertContains("packages/kotlin-codec/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "public fun tryParseCid(cid: String): String?");
-assertContains("packages/kotlin-codec/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "public fun dagCborCodecCode(): Int");
+assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "public fun tryParseCid(cid: String): String?");
+assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "public fun dagCborCodecCode(): Int");
 assertContains("crates/codec/ffi/src/codec.rs", "MAX_CODEC_FFI_OUTPUT_BYTES");
 assertContains("crates/codec/ffi/src/kotlin_codec.rs", "probed_output_capacity");
 assertContains("crates/codec/ffi/src/kotlin_codec.rs", "produced_len != output.len()");
-assertContains("packages/kotlin-codec/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "CodingErrorAction.REPORT");
-assertContains("packages/kotlin-codec/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "bytes.fill(0)");
-assertContains("packages/kotlin-codec/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "boundaryResourceLimitResult");
-assertContains("packages/kotlin-codec/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "exceptionForCodecErrorPayload");
-assertContains("packages/kotlin-codec/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "CODEC_ERROR_REASON_CANONICAL_INTERNAL");
-assertContains("packages/kotlin-codec/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED");
-assertContains("packages/kotlin-codec/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "withTextBytes");
+assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "CodingErrorAction.REPORT");
+assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "bytes.fill(0)");
+assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "boundaryResourceLimitResult");
+assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "exceptionForCodecErrorPayload");
+assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "CODEC_ERROR_REASON_CANONICAL_INTERNAL");
+assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED");
+assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "withTextBytes");
 assertContains(
-  "packages/kotlin-codec/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt",
+  "packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt",
   "nativeDigestMetadataAndTempPermissionsFailClosed",
 );
-assertContains("packages/kotlin-codec/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", 'assertNull(codec.tryParseCid("not-a-cid"))');
-assertContains("packages/kotlin-codec/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", "assertEquals(0x71, codec.dagCborCodecCode())");
-assertContains("packages/kotlin-codec/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", 'codec.base58btcDecode("")');
-assertContains("packages/kotlin-codec/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", "codec.base58btcEncode(oversizedBase58Input)");
-assertContains("packages/kotlin-codec/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", 'codec.multicodecPrefixForNameProto("not-a-codec")');
-assertContains("packages/kotlin-codec/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", "codec.multicodecLookupPrefixProto(byteArrayOf(0, 0, 7))");
-assertContains("packages/kotlin-codec/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", 'codec.dagCborVerifyCid("", encoded)');
-assertContains("packages/kotlin-codec/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", "throwingProtoApisPreserveCallerVersusProviderAttribution");
+assertContains("packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", 'assertNull(codec.tryParseCid("not-a-cid"))');
+assertContains("packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", "assertEquals(0x71, codec.dagCborCodecCode())");
+assertContains("packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", 'codec.base58btcDecode("")');
+assertContains("packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", "codec.base58btcEncode(oversizedBase58Input)");
+assertContains("packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", 'codec.multicodecPrefixForNameProto("not-a-codec")');
+assertContains("packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", "codec.multicodecLookupPrefixProto(byteArrayOf(0, 0, 7))");
+assertContains("packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", 'codec.dagCborVerifyCid("", encoded)');
+assertContains("packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", "throwingProtoApisPreserveCallerVersusProviderAttribution");
 assertContains("crates/codec/multibase/src/base58btc.rs", "bytes.len() > MAX_BASE58BTC_INPUT_LEN");
 assertContains("crates/codec/multibase/tests/base58btc_tests.rs", "rejects_inputs_above_encode_cap_before_base58_conversion");
 assertContains(
-  "packages/kotlin-codec/src/test/java/me/really/codec/ReallyMeCodecJavaTest.java",
+  "packages/kotlin/src/test/java/me/really/codec/ReallyMeCodecJavaTest.java",
   "ReallyMeCodec.base64urlEncode",
 );
 assertContains(
-  "packages/kotlin-codec/src/test/java/me/really/codec/ReallyMeCodecJavaTest.java",
+  "packages/kotlin/src/test/java/me/really/codec/ReallyMeCodecJavaTest.java",
   'assertNull(ReallyMeCodec.tryParseCid("not-a-cid"))',
 );
 assertContains(
-  "packages/kotlin-codec/src/test/java/me/really/codec/ReallyMeCodecJavaTest.java",
+  "packages/kotlin/src/test/java/me/really/codec/ReallyMeCodecJavaTest.java",
   "ReallyMeCodec.base58btcEncode(oversizedBase58Input)",
 );
 assertContains(
-  "packages/kotlin-codec/src/test/java/me/really/codec/ReallyMeCodecJavaTest.java",
+  "packages/kotlin/src/test/java/me/really/codec/ReallyMeCodecJavaTest.java",
   "javaCallersCanProcessSharedProtoVector",
 );
 const codecVectorManifest = readJson("test-vectors/codec-vectors.json");
@@ -712,12 +721,12 @@ assertContains("test-vectors/README.md", "trusted-upstream");
 assertContains("test-vectors/README.md", "reallyme-pinned");
 assertContains("crates/codec/tests/vector_suite.rs", "shared_vector_suite_covers_core_codec_methods");
 assertContains("crates/codec/tests/vector_suite.rs", "shared_vector_suite_rejects_non_canonical_inputs");
-assertContains("packages/codec/test/reallyme-codec.test.mjs", "shared codec vector suite covers TypeScript public methods");
-assertContains("packages/codec/test/reallyme-codec.test.mjs", "shared codec vector suite rejects non-canonical inputs in TypeScript");
-assertContains("packages/kotlin-codec/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", "sharedVectorSuiteCoversKotlinPublicMethods");
-assertContains("packages/kotlin-codec/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", "sharedVectorSuiteRejectsNonCanonicalInputs");
-assertContains("packages/kotlin-codec/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", "codec.processProtoJson");
-assertContains("packages/kotlin-codec/src/test/java/me/really/codec/ReallyMeCodecJavaTest.java", "ReallyMeCodec.processProtoJson");
+assertContains("packages/ts/test/reallyme-codec.test.mjs", "shared codec vector suite covers TypeScript public methods");
+assertContains("packages/ts/test/reallyme-codec.test.mjs", "shared codec vector suite rejects non-canonical inputs in TypeScript");
+assertContains("packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", "sharedVectorSuiteCoversKotlinPublicMethods");
+assertContains("packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", "sharedVectorSuiteRejectsNonCanonicalInputs");
+assertContains("packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", "codec.processProtoJson");
+assertContains("packages/kotlin/src/test/java/me/really/codec/ReallyMeCodecJavaTest.java", "ReallyMeCodec.processProtoJson");
 
 assertContains("Package.swift", 'name: "reallyme-codec"');
 assertContains("Package.swift", 'name: "ReallyMeCodec"');
@@ -788,31 +797,31 @@ assertContains(
   ".github/workflows/release-preflight.yml",
   "node scripts/run_pinned_release_readiness.mjs --release-packages",
 );
-assertContains("packages/codec/src/multiformat.ts", "ensureStringValue(encoded)");
-assertContains("packages/codec/src/cbor.ts", "ensureStringValue(cid)");
-assertContains("packages/codec/src/cbor.ts", "readDataProperty");
-assertContains("packages/codec/src/cbor.ts", 'readDataProperty(value, "length")');
-assertContains("packages/codec/src/cbor.ts", 'throw new ReallyMeCodecError("provider-failure")');
-assertContains("packages/codec/src/boundary.ts", "MAX_CODEC_BOUNDARY_NODES = MAX_CODEC_FFI_INPUT_BYTES");
-assertNotContains("packages/codec/src/boundary.ts", "MAX_CODEC_BOUNDARY_NODES = 65_536");
-assertContains("packages/codec/src/boundary.ts", 'readOwnDataProperty(value, "length")');
-assertContains("packages/codec/src/jcs.ts", "stringifyBoundaryJson");
-assertContains("packages/codec/src/multiformat.ts", "MAX_MULTICODEC_TABLE_ENTRIES");
-assertContains("packages/codec/src/pem.ts", "snapshotDecodePolicy");
-assertContains("packages/codec/src/protoProcess.ts", "envelope.payload.fill(0)");
-assertContains("packages/codec/src/protoProcess.ts", "boundaryResourceLimitResult");
-assertContains("packages/codec/src/protoProcess.ts", "errorCodeForCodecError");
-assertContains("packages/codec/src/protoProcess.ts", "MAX_CODEC_PROTO_JSON_BYTES");
-assertContains("packages/codec/src/protoProcess.ts", "CodecErrorReason.CANONICAL_INTERNAL");
-assertContains("packages/codec/src/protoProcess.ts", "CodecErrorReason.BOUNDARY_RESOURCE_LIMIT_EXCEEDED");
-assertNotContains("packages/codec/tsconfig.json", '"DOM"');
-assertContains("packages/codec/src/readOutput.ts", "MAX_CODEC_FFI_OUTPUT_BYTES");
-assertContains("packages/codec/src/wasmProvider.ts", "Object.getOwnPropertyDescriptor(module, name)");
-assertContains("packages/codec/src/proto.ts", "CodecBackendErrorSchema");
-assertContains("packages/codec/test/reallyme-codec.test.mjs", 'assert.deepEqual(base58btcDecode(""), bytes())');
-assertContains("packages/codec/test/reallyme-codec.test.mjs", 'dagCborVerifyCid("", encoded)');
-assertContains("packages/codec/test/reallyme-codec.test.mjs", "throwing protobuf APIs preserve caller-versus-provider attribution");
-assertContains("packages/codec/test/reallyme-codec.test.mjs", "array metadata is snapshotted once without invoking proxy getters");
+assertContains("packages/ts/src/multiformat.ts", "ensureStringValue(encoded)");
+assertContains("packages/ts/src/cbor.ts", "ensureStringValue(cid)");
+assertContains("packages/ts/src/cbor.ts", "readDataProperty");
+assertContains("packages/ts/src/cbor.ts", 'readDataProperty(value, "length")');
+assertContains("packages/ts/src/cbor.ts", 'throw new ReallyMeCodecError("provider-failure")');
+assertContains("packages/ts/src/boundary.ts", "MAX_CODEC_BOUNDARY_NODES = MAX_CODEC_FFI_INPUT_BYTES");
+assertNotContains("packages/ts/src/boundary.ts", "MAX_CODEC_BOUNDARY_NODES = 65_536");
+assertContains("packages/ts/src/boundary.ts", 'readOwnDataProperty(value, "length")');
+assertContains("packages/ts/src/jcs.ts", "stringifyBoundaryJson");
+assertContains("packages/ts/src/multiformat.ts", "MAX_MULTICODEC_TABLE_ENTRIES");
+assertContains("packages/ts/src/pem.ts", "snapshotDecodePolicy");
+assertContains("packages/ts/src/protoProcess.ts", "envelope.payload.fill(0)");
+assertContains("packages/ts/src/protoProcess.ts", "boundaryResourceLimitResult");
+assertContains("packages/ts/src/protoProcess.ts", "errorCodeForCodecError");
+assertContains("packages/ts/src/protoProcess.ts", "MAX_CODEC_PROTO_JSON_BYTES");
+assertContains("packages/ts/src/protoProcess.ts", "CodecErrorReason.CANONICAL_INTERNAL");
+assertContains("packages/ts/src/protoProcess.ts", "CodecErrorReason.BOUNDARY_RESOURCE_LIMIT_EXCEEDED");
+assertNotContains("packages/ts/tsconfig.json", '"DOM"');
+assertContains("packages/ts/src/readOutput.ts", "MAX_CODEC_FFI_OUTPUT_BYTES");
+assertContains("packages/ts/src/wasmProvider.ts", "Object.getOwnPropertyDescriptor(module, name)");
+assertContains("packages/ts/src/proto.ts", "CodecBackendErrorSchema");
+assertContains("packages/ts/test/reallyme-codec.test.mjs", 'assert.deepEqual(base58btcDecode(""), bytes())');
+assertContains("packages/ts/test/reallyme-codec.test.mjs", 'dagCborVerifyCid("", encoded)');
+assertContains("packages/ts/test/reallyme-codec.test.mjs", "throwing protobuf APIs preserve caller-versus-provider attribution");
+assertContains("packages/ts/test/reallyme-codec.test.mjs", "array metadata is snapshotted once without invoking proxy getters");
 if (releasePackagesMode) {
   const swiftPackage = readText("Package.swift");
   if (swiftPackage.includes('let ffiArtifactChecksum = "0000000000000000000000000000000000000000000000000000000000000000"')) {
@@ -828,50 +837,50 @@ if (readText("Package.swift").includes("ReallyMeCrypto")) {
   fail("Package.swift still exposes crypto Swift products");
 }
 
-const androidCodecBuild = readText("packages/android-codec/build.gradle.kts");
+const androidCodecBuild = readText("packages/kotlin-android/build.gradle.kts");
 if (!androidCodecBuild.includes(`version = "${codecPackageVersion}"`)) {
-  fail(`packages/android-codec/build.gradle.kts is not versioned ${codecPackageVersion}`);
+  fail(`packages/kotlin-android/build.gradle.kts is not versioned ${codecPackageVersion}`);
 }
-assertContains("packages/android-codec/settings.gradle.kts", 'rootProject.name = "reallyme-codec-android"');
-assertContains("packages/android-codec/build.gradle.kts", 'id("com.android.library")');
-assertContains("packages/android-codec/build.gradle.kts", 'id("com.android.library") version "9.3.0"');
-assertContains("packages/android-codec/build.gradle.kts", 'artifactId = "codec-android"');
-assertContains("packages/android-codec/build.gradle.kts", "com.google.protobuf:protobuf-javalite:4.35.1");
-assertContains("packages/android-codec/build.gradle.kts", "com.google.protobuf:protobuf-kotlin-lite:4.35.1");
-assertContains("packages/android-codec/build.gradle.kts", "jniLibs.directories");
-assertContains("packages/android-codec/build.gradle.kts", "assets.directories");
-assertContains("packages/android-codec/build.gradle.kts", "reallyme-codec/native-manifest.json");
-assertContains("packages/android-codec/build.gradle.kts", "inputs.dir(jniLibsDir).optional()");
-assertContains("packages/android-codec/build.gradle.kts", "verifyAndroidJniLibs");
-assertContains("packages/android-codec/build.gradle.kts", "verifyReleaseAarContainsJniLibs");
-assertContains("packages/android-codec/build.gradle.kts", "PublishToMavenRepository");
-assertContains("packages/android-codec/build.gradle.kts", "dependencyLocking {");
-assertContains("packages/android-codec/build.gradle.kts", "lockAllConfigurations()");
+assertContains("packages/kotlin-android/settings.gradle.kts", 'rootProject.name = "reallyme-codec-android"');
+assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.library")');
+assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.library") version "9.3.0"');
+assertContains("packages/kotlin-android/build.gradle.kts", 'artifactId = "codec-android"');
+assertContains("packages/kotlin-android/build.gradle.kts", "com.google.protobuf:protobuf-javalite:4.35.1");
+assertContains("packages/kotlin-android/build.gradle.kts", "com.google.protobuf:protobuf-kotlin-lite:4.35.1");
+assertContains("packages/kotlin-android/build.gradle.kts", "jniLibs.directories");
+assertContains("packages/kotlin-android/build.gradle.kts", "assets.directories");
+assertContains("packages/kotlin-android/build.gradle.kts", "reallyme-codec/native-manifest.json");
+assertContains("packages/kotlin-android/build.gradle.kts", "inputs.dir(jniLibsDir).optional()");
+assertContains("packages/kotlin-android/build.gradle.kts", "verifyAndroidJniLibs");
+assertContains("packages/kotlin-android/build.gradle.kts", "verifyReleaseAarContainsJniLibs");
+assertContains("packages/kotlin-android/build.gradle.kts", "PublishToMavenRepository");
+assertContains("packages/kotlin-android/build.gradle.kts", "dependencyLocking {");
+assertContains("packages/kotlin-android/build.gradle.kts", "lockAllConfigurations()");
 assertContains(
-  "packages/android-codec/gradle.properties",
+  "packages/kotlin-android/gradle.properties",
   "org.gradle.dependency.verification=strict",
 );
-assertContains("packages/android-codec/gradle.lockfile", "com.google.protobuf:protobuf-javalite");
+assertContains("packages/kotlin-android/gradle.lockfile", "com.google.protobuf:protobuf-javalite");
 assertContains(
-  "packages/android-codec/gradle/verification-metadata.xml",
+  "packages/kotlin-android/gradle/verification-metadata.xml",
   "<verify-metadata>true</verify-metadata>",
 );
 assertContains(
-  "packages/android-codec/gradle/verification-metadata.xml",
+  "packages/kotlin-android/gradle/verification-metadata.xml",
   '<component group="com.android.tools.build" name="gradle" version="9.3.0">',
 );
-assertContains("packages/android-codec/build.gradle.kts", "fun nonBlank(value: String?): String?");
-assertContains("packages/android-codec/build.gradle.kts", "verifyRemoteMavenPublishingConfigured");
-assertContains("packages/android-codec/build.gradle.kts", "remote Maven publishing is not configured");
-assertContains("packages/android-codec/build.gradle.kts", 'parsed.scheme != "https"');
-assertNotContains("packages/android-codec/build.gradle.kts", "reallyme.maven.requireRemote");
-assertNotContains("packages/android-codec/build.gradle.kts", 'name = "localRelease"');
-assertContains("packages/android-codec/consumer-rules.pro", "ReallyMeCodecException$*");
-assertContains("packages/android-codec/consumer-rules.pro", "ReallyMeCodecProtoStatus");
-assertContains("packages/android-codec/consumer-rules.pro", "ReallyMeCodecProtoResult");
-assertContains("packages/android-codec/README.md", "me.really:codec-android:0.1.22");
-assertContains("packages/android-codec/README.md", "never sourced from the Git worktree");
-for (const trackedAndroidFile of listFiles("packages/android-codec")) {
+assertContains("packages/kotlin-android/build.gradle.kts", "fun nonBlank(value: String?): String?");
+assertContains("packages/kotlin-android/build.gradle.kts", "verifyRemoteMavenPublishingConfigured");
+assertContains("packages/kotlin-android/build.gradle.kts", "remote Maven publishing is not configured");
+assertContains("packages/kotlin-android/build.gradle.kts", 'parsed.scheme != "https"');
+assertNotContains("packages/kotlin-android/build.gradle.kts", "reallyme.maven.requireRemote");
+assertNotContains("packages/kotlin-android/build.gradle.kts", 'name = "localRelease"');
+assertContains("packages/kotlin-android/consumer-rules.pro", "ReallyMeCodecException$*");
+assertContains("packages/kotlin-android/consumer-rules.pro", "ReallyMeCodecProtoStatus");
+assertContains("packages/kotlin-android/consumer-rules.pro", "ReallyMeCodecProtoResult");
+assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.1.22");
+assertContains("packages/kotlin-android/README.md", "never sourced from the Git worktree");
+for (const trackedAndroidFile of listFiles("packages/kotlin-android")) {
   if (trackedAndroidFile.endsWith(".so")) {
     fail(`${trackedAndroidFile} is a tracked prebuilt Android native library`);
   }
@@ -884,7 +893,7 @@ assertContains("scripts/build_android_native_resources.sh", "x86_64-linux-androi
 assertContains("scripts/build_android_native_resources.sh", "i686-linux-android");
 assertContains("scripts/build_kotlin_native_resource.sh", "-C panic=unwind");
 assertContains("scripts/build_kotlin_native_resource.sh", "cargo build --locked");
-assertContains("packages/kotlin-codec/build.gradle.kts", "-C panic=unwind");
+assertContains("packages/kotlin/build.gradle.kts", "-C panic=unwind");
 assertContains(".github/workflows/package-release.yml", "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/29.0.14206865");
 assertNotContains(".github/workflows/package-release.yml", "ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/29.0.14206865");
 assertContains(".github/workflows/release-preflight.yml", "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/29.0.14206865");
@@ -893,7 +902,7 @@ assertContains(".github/workflows/package-release.yml", "Write Android native ch
 assertContains(".github/workflows/release-preflight.yml", "Write Android native checksum manifest");
 assertContains(".github/workflows/package-release.yml", "verifyReleaseAarContainsJniLibs");
 assertContains(".github/workflows/package-release.yml", "RELEASE_VERSION");
-assertContains(".github/workflows/package-release.yml", "needs: swift-artifact");
+assertContains(".github/workflows/package-release.yml", "needs: [verify-release-sha, swift-artifact]");
 assertContains(".github/workflows/package-release.yml", "if: inputs.publish_swift == true");
 assertContains(".github/workflows/package-release.yml", "if: inputs.publish_maven == true");
 assertNotContains(".github/workflows/package-release.yml", "if: inputs.publish == true");
@@ -1034,7 +1043,7 @@ assertReallyMeProtobufReleasePolicy({
   generatedFreshness: {
     generatedPaths: [
       "crates/proto/codec/src/generated",
-      "packages/codec/src/proto/generated",
+      "packages/ts/src/proto/generated",
       "gen",
     ],
     commands: [

@@ -23,7 +23,7 @@ dependencies {
 
 ```sh
 scripts/build_android_native_resources.sh build/android-jniLibs
-packages/kotlin-codec/gradlew -p packages/android-codec bundleReleaseAar \
+packages/kotlin/gradlew -p packages/kotlin-android bundleReleaseAar \
   -Preallyme.codec.androidJniLibsDir="$PWD/build/android-jniLibs" \
   -Preallyme.codec.requireAndroidJniLibs=true
 ```

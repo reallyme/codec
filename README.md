@@ -44,10 +44,10 @@ implementations.
 |---|---|
 | Core codecs | `crates/codec/*` |
 | FFI and WASM adapters | `crates/codec/ffi`, `crates/codec/wasm-package` |
-| TypeScript package | `packages/codec` |
+| TypeScript package | `packages/ts` |
 | Swift package | `packages/swift`, `Package.swift` |
-| Java/Kotlin package | `packages/kotlin-codec` |
-| Android AAR build | `packages/android-codec` |
+| Java/Kotlin package | `packages/kotlin` |
+| Android AAR build | `packages/kotlin-android` |
 | Protobuf contract | `crates/proto/codec/proto/reallyme/codec/v1/codec.proto` |
 
 ## Supported Codecs

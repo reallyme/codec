@@ -8,14 +8,15 @@ on:
   workflow_dispatch:
     inputs:
       release_sha:
-        description: Exact 40-character main commit SHA that passed Code Checks and Release Preflight
-        required: true
+        description: Optional exact main commit SHA. Leave blank to use the current origin/main SHA.
+        required: false
         type: string
+        default: ""
       version:
         description: Release version without leading v
         required: true
         type: string
-        default: 0.2.0
+        default: 0.1.22
       publish_swift:
         description: Create the SwiftPM GitHub release and upload the xcframework
         required: true
@@ -41,12 +42,38 @@ jobs:
     permissions:
       actions: read
       contents: read
+    outputs:
+      release_sha: ${{ steps.resolve-release-sha.outputs.release_sha }}
     steps:
-      - name: Checkout exact release SHA
+      - name: Checkout main for release SHA resolution
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
-          ref: ${{ inputs.release_sha }}
+          ref: main
           fetch-depth: 0
+
+      - name: Resolve release SHA
+        id: resolve-release-sha
+        env:
+          RELEASE_SHA_INPUT: ${{ inputs.release_sha }}
+        run: |
+          git fetch --no-tags origin main
+          if [ -n "${RELEASE_SHA_INPUT}" ]; then
+            if [[ ! "${RELEASE_SHA_INPUT}" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::release_sha must be blank or a lowercase 40-character commit SHA"
+              exit 1
+            fi
+            release_sha="${RELEASE_SHA_INPUT}"
+          else
+            release_sha="$(git rev-parse origin/main)"
+          fi
+          if [ "$(git rev-parse origin/main)" != "${release_sha}" ]; then
+            echo "::error::resolved release SHA is not the current origin/main tip"
+            exit 1
+          fi
+          git checkout --detach "${release_sha}"
+          echo "release_sha=${release_sha}" >> "${GITHUB_OUTPUT}"
+          echo "RELEASE_SHA=${release_sha}" >> "${GITHUB_ENV}"
+          echo "Using release SHA ${release_sha}"
 
       - name: Install Node
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
@@ -57,7 +84,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          RELEASE_SHA: ${{ inputs.release_sha }}
+          RELEASE_SHA: ${{ steps.resolve-release-sha.outputs.release_sha }}
         run: node scripts/verify_release_attestation.mjs
 
       - name: Require at least one selected publication target
@@ -79,7 +106,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
-          ref: ${{ inputs.release_sha }}
+          ref: ${{ needs.verify-release-sha.outputs.release_sha }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88 # master
@@ -121,7 +148,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
-          ref: ${{ inputs.release_sha }}
+          ref: ${{ needs.verify-release-sha.outputs.release_sha }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88 # master
@@ -148,7 +175,7 @@ jobs:
         shell: bash
 
       - name: Test host native loader
-        working-directory: packages/kotlin-codec
+        working-directory: packages/kotlin
         run: ./gradlew test -Preallyme.codec.nativeResourcesDir=../../build/kotlin-native-resources
         shell: bash
 
@@ -161,7 +188,7 @@ jobs:
 
   maven-package:
     name: Maven package with bundled JNI
-    needs: jvm-native
+    needs: [verify-release-sha, jvm-native]
     if: inputs.publish_swift == false || inputs.publish_maven == true
     runs-on: ubuntu-latest
     permissions:
@@ -171,7 +198,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
-          ref: ${{ inputs.release_sha }}
+          ref: ${{ needs.verify-release-sha.outputs.release_sha }}
 
       - name: Install Java
         uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5
@@ -195,19 +222,19 @@ jobs:
         run: node scripts/write_native_manifest.mjs build/kotlin-native-resources build/kotlin-native-resources/me/really/codec/native/native-manifest.json
 
       - name: Test and package Maven artifact
-        working-directory: packages/kotlin-codec
+        working-directory: packages/kotlin
         run: ./gradlew test publishToMavenLocal -Preallyme.codec.nativeResourcesDir=${{ github.workspace }}/build/kotlin-native-resources -Preallyme.codec.requireFullNativeResources=true
 
       - name: Publish Maven artifact
         if: inputs.publish_maven == true
-        working-directory: packages/kotlin-codec
+        working-directory: packages/kotlin
         run: |
           node ../../scripts/verify_release_attestation.mjs
           ./gradlew publish -Preallyme.codec.nativeResourcesDir=${{ github.workspace }}/build/kotlin-native-resources
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          RELEASE_SHA: ${{ inputs.release_sha }}
+          RELEASE_SHA: ${{ needs.verify-release-sha.outputs.release_sha }}
           REALLYME_MAVEN_REPOSITORY_URL: ${{ secrets.REALLYME_MAVEN_REPOSITORY_URL }}
           REALLYME_MAVEN_USERNAME: ${{ secrets.REALLYME_MAVEN_USERNAME }}
           REALLYME_MAVEN_PASSWORD: ${{ secrets.REALLYME_MAVEN_PASSWORD }}
@@ -226,7 +253,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
-          ref: ${{ inputs.release_sha }}
+          ref: ${{ needs.verify-release-sha.outputs.release_sha }}
 
       - name: Install Java
         uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5
@@ -256,17 +283,17 @@ jobs:
         run: node scripts/write_native_manifest.mjs build/android-jniLibs build/android-native-assets/reallyme-codec/native-manifest.json
 
       - name: Build Android AAR
-        run: packages/kotlin-codec/gradlew -p packages/android-codec bundleReleaseAar verifyReleaseAarContainsJniLibs -Preallyme.codec.androidJniLibsDir=${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true
+        run: packages/kotlin/gradlew -p packages/kotlin-android bundleReleaseAar verifyReleaseAarContainsJniLibs -Preallyme.codec.androidJniLibsDir=${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true
 
       - name: Publish Android AAR
         if: inputs.publish_maven == true
         run: |
           node scripts/verify_release_attestation.mjs
-          packages/kotlin-codec/gradlew -p packages/android-codec publish -Preallyme.codec.androidJniLibsDir=${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true
+          packages/kotlin/gradlew -p packages/kotlin-android publish -Preallyme.codec.androidJniLibsDir=${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          RELEASE_SHA: ${{ inputs.release_sha }}
+          RELEASE_SHA: ${{ needs.verify-release-sha.outputs.release_sha }}
           REALLYME_MAVEN_REPOSITORY_URL: ${{ secrets.REALLYME_MAVEN_REPOSITORY_URL }}
           REALLYME_MAVEN_USERNAME: ${{ secrets.REALLYME_MAVEN_USERNAME }}
           REALLYME_MAVEN_PASSWORD: ${{ secrets.REALLYME_MAVEN_PASSWORD }}
@@ -275,7 +302,7 @@ jobs:
 
   swift-release:
     name: SwiftPM release tag
-    needs: swift-artifact
+    needs: [verify-release-sha, swift-artifact]
     if: inputs.publish_swift == true
     runs-on: ubuntu-latest
     permissions:
@@ -285,7 +312,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
-          ref: ${{ inputs.release_sha }}
+          ref: ${{ needs.verify-release-sha.outputs.release_sha }}
           fetch-depth: 0
 
       - name: Download Swift artifact
@@ -321,5 +348,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          RELEASE_SHA: ${{ inputs.release_sha }}
+          RELEASE_SHA: ${{ needs.verify-release-sha.outputs.release_sha }}
           RELEASE_VERSION: ${{ inputs.version }}

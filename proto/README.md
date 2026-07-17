@@ -18,4 +18,4 @@ buf generate
 ```
 
 The Buffa Rust output lives in `crates/proto/codec/src/generated/buffa`. SDK
-outputs live under `gen/` and `packages/codec/src/proto/generated`.
+outputs live under `gen/` and `packages/ts/src/proto/generated`.

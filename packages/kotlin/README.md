@@ -58,7 +58,7 @@ ReallyMeCodecRustNativeProvider.loadLibrary("/path/to/libreallyme_codec_ffi.dyli
 ## Test
 
 ```sh
-cd packages/kotlin-codec
+cd packages/kotlin
 ./gradlew test
 ```
 
@@ -67,7 +67,7 @@ resource from the repository root and point Gradle at that resource tree:
 
 ```sh
 scripts/build_kotlin_native_resource.sh build/kotlin-native-resources
-packages/kotlin-codec/gradlew -p packages/kotlin-codec test \
+packages/kotlin/gradlew -p packages/kotlin test \
   -Preallyme.codec.nativeResourcesDir="$PWD/build/kotlin-native-resources"
 ```
 

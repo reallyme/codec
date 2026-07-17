@@ -98,11 +98,11 @@ android {
     sourceSets {
         named("main") {
             java.directories.clear()
-            java.directories.add("../kotlin-codec/src/main/kotlin")
+            java.directories.add("../kotlin/src/main/kotlin")
             java.directories.add("../../gen/java")
             java.directories.add("../../gen/kotlin")
             kotlin.directories.clear()
-            kotlin.directories.add("../kotlin-codec/src/main/kotlin")
+            kotlin.directories.add("../kotlin/src/main/kotlin")
             kotlin.directories.add("../../gen/kotlin")
             jniLibs.directories.clear()
             jniLibs.directories.add(jniLibsDir.get().path)

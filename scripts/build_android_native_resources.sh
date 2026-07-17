@@ -6,7 +6,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-JNI_LIBS_ROOT="${1:-${ROOT_DIR}/packages/android-codec/src/main/jniLibs}"
+JNI_LIBS_ROOT="${1:-${ROOT_DIR}/packages/kotlin-android/src/main/jniLibs}"
 ANDROID_API="${ANDROID_API:-24}"
 FFI_RUSTFLAGS="${RUSTFLAGS:+${RUSTFLAGS} }-C panic=unwind"
 

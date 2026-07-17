@@ -18,8 +18,9 @@ SDK facades for Swift, Kotlin, and TypeScript.
   `@reallyme/codec`.
 - `crates/proto/codec` owns the publishable protobuf crate, generated bindings,
   and source schema for the cross-language codec wire contract.
-- `packages/codec`, `packages/swift`, and `packages/kotlin-codec` are thin
-  TypeScript, Swift, and Java/Kotlin facades over the Rust implementation.
+- `packages/ts`, `packages/swift`, `packages/kotlin`, and
+  `packages/kotlin-android` are thin TypeScript, Swift, Java/Kotlin, and
+  Android facades over the Rust implementation.
 
 The protobuf schema is canonical for cross-language request, response, and
 error shapes. Rust primitive modules remain canonical for behavior, but SDK
@@ -35,9 +36,10 @@ reallyme/codec
     codec/
     proto/codec/
   packages/
-    codec/
+    ts/
     swift/
-    kotlin-codec/
+    kotlin/
+    kotlin-android/
 ```
 
 Crypto primitives, provider policy, key generation, signing, encryption, KDFs,
