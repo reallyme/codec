@@ -69,4 +69,3 @@ public object CodecCanonicalizationErrorKt {
 }
 public inline fun me.really.codec.v1.CodecCanonicalizationError.copy(block: `me.really.codec.v1`.CodecCanonicalizationErrorKt.Dsl.() -> kotlin.Unit): me.really.codec.v1.CodecCanonicalizationError =
   `me.really.codec.v1`.CodecCanonicalizationErrorKt.Dsl._create(this.toBuilder()).apply { block() }._build()
-

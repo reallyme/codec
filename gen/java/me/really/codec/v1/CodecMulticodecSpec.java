@@ -98,7 +98,7 @@ public  final class CodecMulticodecSpec extends
    */
   private void setCode(com.google.protobuf.ByteString value) {
     java.lang.Class<?> valueClass = value.getClass();
-  
+
     code_ = value;
   }
   /**
@@ -144,7 +144,7 @@ public  final class CodecMulticodecSpec extends
    */
   private void setPrefix(com.google.protobuf.ByteString value) {
     java.lang.Class<?> valueClass = value.getClass();
-  
+
     prefix_ = value;
   }
   /**
@@ -263,7 +263,7 @@ public  final class CodecMulticodecSpec extends
    * @param value The fixedLength to set.
    */
   private void setFixedLength(int value) {
-    
+
     fixedLength_ = value;
   }
   /**
@@ -289,7 +289,7 @@ public  final class CodecMulticodecSpec extends
    * @param value The variableLength to set.
    */
   private void setVariableLength(boolean value) {
-    
+
     variableLength_ = value;
   }
   /**
@@ -870,4 +870,3 @@ public  final class CodecMulticodecSpec extends
     return DEFAULT_INSTANCE.getParserForType();
   }
 }
-

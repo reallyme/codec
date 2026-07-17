@@ -47,7 +47,7 @@ pub mod hex {
 /// JSON Canonicalization Scheme helpers.
 #[cfg(feature = "jcs")]
 pub mod jcs {
-    pub use codec_jcs::{canonicalize_json, JcsError};
+    pub use codec_jcs::{canonicalize_json_text, canonicalize_trusted_json_value, JcsError};
 }
 
 /// Multibase self-describing base encodings.
@@ -84,3 +84,7 @@ pub mod pem {
         PemLineEnding,
     };
 }
+
+/// Self-describing protobuf and generated ProtoJSON adapter lane.
+#[cfg(feature = "proto-process")]
+pub mod proto_process;

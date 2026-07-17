@@ -15,7 +15,8 @@ package me.really.codec.v1;
  * 200-299: PEM armor
  * 300-399: multiformats and key envelopes
  * 400-499: CBOR/JCS/JSON canonicalization
- * 500-599: backend wire-boundary failures
+ * 500-599: backend and internal failures
+ * 600-699: caller-controlled protobuf and ProtoJSON boundary failures
  * </pre>
  *
  * Protobuf enum {@code reallyme.codec.v1.CodecErrorReason}
@@ -137,24 +138,32 @@ public enum CodecErrorReason
   CODEC_ERROR_REASON_CANONICAL_INTERNAL(404),
   /**
    * <pre>
-   * Backend wire-boundary failures.
+   * Backend failures.
    * </pre>
    *
    * <code>CODEC_ERROR_REASON_BACKEND_INTERNAL = 500;</code>
    */
   CODEC_ERROR_REASON_BACKEND_INTERNAL(500),
   /**
-   * <code>CODEC_ERROR_REASON_BACKEND_MALFORMED_PROTOBUF = 501;</code>
+   * <pre>
+   * Caller-controlled wire-boundary failures.
+   * </pre>
+   *
+   * <code>CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF = 600;</code>
    */
-  CODEC_ERROR_REASON_BACKEND_MALFORMED_PROTOBUF(501),
+  CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF(600),
   /**
-   * <code>CODEC_ERROR_REASON_BACKEND_MALFORMED_JSON = 502;</code>
+   * <code>CODEC_ERROR_REASON_BOUNDARY_MALFORMED_JSON = 601;</code>
    */
-  CODEC_ERROR_REASON_BACKEND_MALFORMED_JSON(502),
+  CODEC_ERROR_REASON_BOUNDARY_MALFORMED_JSON(601),
   /**
-   * <code>CODEC_ERROR_REASON_BACKEND_RESOURCE_LIMIT_EXCEEDED = 503;</code>
+   * <code>CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED = 602;</code>
    */
-  CODEC_ERROR_REASON_BACKEND_RESOURCE_LIMIT_EXCEEDED(503),
+  CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED(602),
+  /**
+   * <code>CODEC_ERROR_REASON_BOUNDARY_MISSING_OPERATION = 603;</code>
+   */
+  CODEC_ERROR_REASON_BOUNDARY_MISSING_OPERATION(603),
   UNRECOGNIZED(-1),
   ;
 
@@ -272,24 +281,32 @@ public enum CodecErrorReason
   public static final int CODEC_ERROR_REASON_CANONICAL_INTERNAL_VALUE = 404;
   /**
    * <pre>
-   * Backend wire-boundary failures.
+   * Backend failures.
    * </pre>
    *
    * <code>CODEC_ERROR_REASON_BACKEND_INTERNAL = 500;</code>
    */
   public static final int CODEC_ERROR_REASON_BACKEND_INTERNAL_VALUE = 500;
   /**
-   * <code>CODEC_ERROR_REASON_BACKEND_MALFORMED_PROTOBUF = 501;</code>
+   * <pre>
+   * Caller-controlled wire-boundary failures.
+   * </pre>
+   *
+   * <code>CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF = 600;</code>
    */
-  public static final int CODEC_ERROR_REASON_BACKEND_MALFORMED_PROTOBUF_VALUE = 501;
+  public static final int CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF_VALUE = 600;
   /**
-   * <code>CODEC_ERROR_REASON_BACKEND_MALFORMED_JSON = 502;</code>
+   * <code>CODEC_ERROR_REASON_BOUNDARY_MALFORMED_JSON = 601;</code>
    */
-  public static final int CODEC_ERROR_REASON_BACKEND_MALFORMED_JSON_VALUE = 502;
+  public static final int CODEC_ERROR_REASON_BOUNDARY_MALFORMED_JSON_VALUE = 601;
   /**
-   * <code>CODEC_ERROR_REASON_BACKEND_RESOURCE_LIMIT_EXCEEDED = 503;</code>
+   * <code>CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED = 602;</code>
    */
-  public static final int CODEC_ERROR_REASON_BACKEND_RESOURCE_LIMIT_EXCEEDED_VALUE = 503;
+  public static final int CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED_VALUE = 602;
+  /**
+   * <code>CODEC_ERROR_REASON_BOUNDARY_MISSING_OPERATION = 603;</code>
+   */
+  public static final int CODEC_ERROR_REASON_BOUNDARY_MISSING_OPERATION_VALUE = 603;
 
 
   @java.lang.Override
@@ -337,9 +354,10 @@ public enum CodecErrorReason
       case 403: return CODEC_ERROR_REASON_CANONICAL_NON_CANONICAL_JSON;
       case 404: return CODEC_ERROR_REASON_CANONICAL_INTERNAL;
       case 500: return CODEC_ERROR_REASON_BACKEND_INTERNAL;
-      case 501: return CODEC_ERROR_REASON_BACKEND_MALFORMED_PROTOBUF;
-      case 502: return CODEC_ERROR_REASON_BACKEND_MALFORMED_JSON;
-      case 503: return CODEC_ERROR_REASON_BACKEND_RESOURCE_LIMIT_EXCEEDED;
+      case 600: return CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF;
+      case 601: return CODEC_ERROR_REASON_BOUNDARY_MALFORMED_JSON;
+      case 602: return CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED;
+      case 603: return CODEC_ERROR_REASON_BOUNDARY_MISSING_OPERATION;
       default: return null;
     }
   }
@@ -357,13 +375,13 @@ public enum CodecErrorReason
           }
         };
 
-  public static com.google.protobuf.Internal.EnumVerifier 
+  public static com.google.protobuf.Internal.EnumVerifier
       internalGetVerifier() {
     return CodecErrorReasonVerifier.INSTANCE;
   }
 
-  private static final class CodecErrorReasonVerifier implements 
-       com.google.protobuf.Internal.EnumVerifier { 
+  private static final class CodecErrorReasonVerifier implements
+       com.google.protobuf.Internal.EnumVerifier {
           static final com.google.protobuf.Internal.EnumVerifier
               INSTANCE = new CodecErrorReasonVerifier();
           @java.lang.Override
@@ -380,4 +398,3 @@ public enum CodecErrorReason
 
   // @@protoc_insertion_point(enum_scope:reallyme.codec.v1.CodecErrorReason)
 }
-

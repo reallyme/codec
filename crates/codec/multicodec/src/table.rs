@@ -4,6 +4,7 @@
 
 /// Multicodec table tag.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum CodecTag {
     /// `encryption` table tag.
     Encryption,
@@ -19,6 +20,7 @@ pub enum CodecTag {
 
 /// Key-material class for codecs that carry raw key bytes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum KeyMaterialKind {
     /// The codec is not raw key material.
     NotKey,

@@ -19,7 +19,7 @@ by Git URL; the source lives under `packages/swift` with the other language SDKs
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.1.21"
+    from: "0.1.22"
 )
 ```
 
@@ -52,10 +52,13 @@ let decoded = try codec.base64urlDecode(encoded)
 multicodec, multikey, DAG-CBOR, CID helpers, and JCS. The package does not
 silently fall back to local Swift implementations.
 
+PEM input, output, and decoded JSON use `[UInt8]` rather than `String` so
+callers can clear private-key armor promptly with their own memory policy.
+
 Local development builds can still pass an explicit Rust ABI library:
 
 ```sh
-cargo build -p reallyme-codec-ffi
+cargo build --locked -p reallyme-codec-ffi
 ```
 
 ```swift
@@ -66,6 +69,6 @@ let codec = try ReallyMeCodec(rustCAbiLibrary: codecAbi)
 ## Test
 
 ```sh
-cargo build -p reallyme-codec-ffi
+cargo build --locked -p reallyme-codec-ffi
 REALLYME_CODEC_FFI_LIBRARY_PATH="$PWD/target/debug/libreallyme_codec_ffi.dylib" swift test
 ```

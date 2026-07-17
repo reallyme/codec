@@ -210,4 +210,3 @@ public object CodecMulticodecSpecKt {
 }
 public inline fun me.really.codec.v1.CodecMulticodecSpec.copy(block: `me.really.codec.v1`.CodecMulticodecSpecKt.Dsl.() -> kotlin.Unit): me.really.codec.v1.CodecMulticodecSpec =
   `me.really.codec.v1`.CodecMulticodecSpecKt.Dsl._create(this.toBuilder()).apply { block() }._build()
-

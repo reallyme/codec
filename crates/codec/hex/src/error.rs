@@ -6,6 +6,7 @@ use thiserror::Error;
 
 /// Error returned when canonical lowercase hex decoding fails.
 #[derive(Debug, Error, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum HexError {
     /// Hex input must contain two lowercase hexadecimal characters per byte.
     #[error("odd-length hex input")]

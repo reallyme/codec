@@ -86,7 +86,7 @@ public  final class CodecMulticodecLookupResult extends
    * @param value The prefixLength to set.
    */
   private void setPrefixLength(int value) {
-    
+
     prefixLength_ = value;
   }
   /**
@@ -448,4 +448,3 @@ public  final class CodecMulticodecLookupResult extends
     return DEFAULT_INSTANCE.getParserForType();
   }
 }
-

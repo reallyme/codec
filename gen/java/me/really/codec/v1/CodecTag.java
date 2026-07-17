@@ -111,13 +111,13 @@ public enum CodecTag
           }
         };
 
-  public static com.google.protobuf.Internal.EnumVerifier 
+  public static com.google.protobuf.Internal.EnumVerifier
       internalGetVerifier() {
     return CodecTagVerifier.INSTANCE;
   }
 
-  private static final class CodecTagVerifier implements 
-       com.google.protobuf.Internal.EnumVerifier { 
+  private static final class CodecTagVerifier implements
+       com.google.protobuf.Internal.EnumVerifier {
           static final com.google.protobuf.Internal.EnumVerifier
               INSTANCE = new CodecTagVerifier();
           @java.lang.Override
@@ -134,4 +134,3 @@ public enum CodecTag
 
   // @@protoc_insertion_point(enum_scope:reallyme.codec.v1.CodecTag)
 }
-

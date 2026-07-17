@@ -21,6 +21,12 @@ SDK facades for Swift, Kotlin, and TypeScript.
 - `packages/codec`, `packages/swift`, and `packages/kotlin-codec` are thin
   TypeScript, Swift, and Java/Kotlin facades over the Rust implementation.
 
+The protobuf schema is canonical for cross-language request, response, and
+error shapes. Rust primitive modules remain canonical for behavior, but SDK
+wire DTOs and typed boundary errors must be generated from, or mechanically
+backed by, the protobuf schema rather than maintained as independent parallel
+models.
+
 ## Repository Shape
 
 ```text

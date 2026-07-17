@@ -5,6 +5,8 @@
 import org.gradle.api.publish.maven.tasks.PublishToMavenLocal
 import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
 import org.gradle.external.javadoc.StandardJavadocDocletOptions
+import java.net.URI
+import java.security.MessageDigest
 
 plugins {
     kotlin("jvm") version "2.4.0"
@@ -14,7 +16,11 @@ plugins {
 }
 
 group = "me.really"
-version = "0.1.21"
+version = "0.1.22"
+
+dependencyLocking {
+    lockAllConfigurations()
+}
 
 val remoteMavenRepositoryUrl = providers.gradleProperty("reallyme.maven.repositoryUrl")
     .orElse(providers.environmentVariable("REALLYME_MAVEN_REPOSITORY_URL"))
@@ -26,10 +32,6 @@ val signingKey = providers.gradleProperty("signingInMemoryKey")
     .orElse(providers.environmentVariable("MAVEN_SIGNING_KEY"))
 val signingPassword = providers.gradleProperty("signingInMemoryKeyPassword")
     .orElse(providers.environmentVariable("MAVEN_SIGNING_PASSWORD"))
-val requireRemoteMavenPublishing = providers.gradleProperty("reallyme.maven.requireRemote")
-    .map { it == "true" }
-    .orElse(false)
-
 fun nonBlank(value: String?): String? = value?.trim()?.takeIf { it.isNotEmpty() }
 
 val remoteMavenRepositoryUrlValue = nonBlank(remoteMavenRepositoryUrl.orNull)
@@ -37,6 +39,25 @@ val remoteMavenUsernameValue = nonBlank(remoteMavenUsername.orNull)
 val remoteMavenPasswordValue = nonBlank(remoteMavenPassword.orNull)
 val signingKeyValue = nonBlank(signingKey.orNull)
 val signingPasswordValue = nonBlank(signingPassword.orNull)
+val remoteMavenRepositoryUri = remoteMavenRepositoryUrlValue?.let { value ->
+    val parsed = try {
+        URI(value)
+    } catch (_: IllegalArgumentException) {
+        throw GradleException("remote Maven repository URL is invalid")
+    }
+    if (
+        parsed.scheme != "https" ||
+        parsed.host.isNullOrBlank() ||
+        parsed.userInfo != null ||
+        parsed.query != null ||
+        parsed.fragment != null
+    ) {
+        throw GradleException(
+            "remote Maven repository URL must be an absolute HTTPS URL without embedded credentials, a query, or a fragment"
+        )
+    }
+    parsed
+}
 val configuredNativeResourcesDir = providers.gradleProperty("reallyme.codec.nativeResourcesDir")
 val nativeResourcesDir = configuredNativeResourcesDir
     .map { file(it) }
@@ -46,10 +67,15 @@ val requireFullNativeResources = providers.gradleProperty("reallyme.codec.requir
     .orElse(false)
 val requiredNativeResources = listOf(
     "me/really/codec/native/linux-x86_64/libreallyme_codec_ffi.so",
+    "me/really/codec/native/linux-x86_64/libreallyme_codec_ffi.so.sha256",
     "me/really/codec/native/linux-aarch64/libreallyme_codec_ffi.so",
+    "me/really/codec/native/linux-aarch64/libreallyme_codec_ffi.so.sha256",
     "me/really/codec/native/macos-x86_64/libreallyme_codec_ffi.dylib",
+    "me/really/codec/native/macos-x86_64/libreallyme_codec_ffi.dylib.sha256",
     "me/really/codec/native/macos-aarch64/libreallyme_codec_ffi.dylib",
+    "me/really/codec/native/macos-aarch64/libreallyme_codec_ffi.dylib.sha256",
     "me/really/codec/native/windows-x86_64/reallyme_codec_ffi.dll",
+    "me/really/codec/native/windows-x86_64/reallyme_codec_ffi.dll.sha256",
     "me/really/codec/native/native-manifest.json",
 )
 val hostNativePlatform = when {
@@ -70,6 +96,11 @@ val hostNativeLibraryName = when (hostNativePlatform) {
 }
 val requiredHostNativeResource =
     "me/really/codec/native/$hostNativePlatform-$hostNativeArch/$hostNativeLibraryName"
+val requiredHostNativeDigest = "$requiredHostNativeResource.sha256"
+val ffiRustFlags = listOfNotNull(
+    nonBlank(providers.environmentVariable("RUSTFLAGS").orNull),
+    "-C panic=unwind",
+).joinToString(" ")
 
 kotlin {
     jvmToolchain(21)
@@ -97,7 +128,8 @@ val buildHostNativeLibrary = tasks.register<Exec>("buildHostNativeLibrary") {
     description = "Builds the host Rust JNI library for local JVM tests."
     onlyIf { !configuredNativeResourcesDir.isPresent }
     workingDir = layout.projectDirectory.dir("../..").asFile
-    commandLine("cargo", "build", "-p", "reallyme-codec-ffi", "--release")
+    environment("RUSTFLAGS", ffiRustFlags)
+    commandLine("cargo", "build", "--locked", "-p", "reallyme-codec-ffi", "--release")
 }
 
 val stageHostNativeResource = tasks.register<Copy>("stageHostNativeResource") {
@@ -109,6 +141,43 @@ val stageHostNativeResource = tasks.register<Copy>("stageHostNativeResource") {
     into(nativeResourcesDir.map {
         it.resolve("me/really/codec/native/$hostNativePlatform-$hostNativeArch")
     })
+}
+
+val writeHostNativeDigest = tasks.register("writeHostNativeDigest") {
+    group = "build"
+    description = "Writes bounded integrity metadata for the local host JNI library."
+    onlyIf { !configuredNativeResourcesDir.isPresent }
+    dependsOn(stageHostNativeResource)
+    val library = nativeResourcesDir.map { it.resolve(requiredHostNativeResource) }
+    val sidecar = nativeResourcesDir.map { it.resolve(requiredHostNativeDigest) }
+    inputs.file(library)
+    outputs.file(sidecar)
+    doLast {
+        val libraryFile = library.get()
+        val digest = MessageDigest.getInstance("SHA-256")
+        libraryFile.inputStream().use { input ->
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            try {
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read < 0) {
+                        break
+                    }
+                    if (read > 0) {
+                        digest.update(buffer, 0, read)
+                    }
+                }
+            } finally {
+                buffer.fill(0)
+            }
+        }
+        val hex = digest.digest().joinToString(separator = "") { byte ->
+            "%02x".format(byte)
+        }
+        val sidecarFile = sidecar.get()
+        sidecarFile.parentFile.mkdirs()
+        sidecarFile.writeText("$hex ${libraryFile.length()}\n")
+    }
 }
 
 dependencies {
@@ -127,11 +196,11 @@ tasks.test {
 }
 
 tasks.named("processResources") {
-    dependsOn(stageHostNativeResource)
+    dependsOn(writeHostNativeDigest)
 }
 
 tasks.named("sourcesJar") {
-    dependsOn(stageHostNativeResource)
+    dependsOn(writeHostNativeDigest)
 }
 
 tasks.withType<Javadoc>().configureEach {
@@ -159,13 +228,18 @@ val verifyBundledNativeResources = tasks.register("verifyBundledNativeResources"
 val verifyHostBundledNativeResource = tasks.register("verifyHostBundledNativeResource") {
     group = "verification"
     description = "Verifies that local JVM artifacts include the host Rust JNI library."
-    dependsOn(stageHostNativeResource)
+    dependsOn(writeHostNativeDigest)
     inputs.dir(nativeResourcesDir)
     doLast {
         val root = nativeResourcesDir.get()
         if (!root.resolve(requiredHostNativeResource).isFile) {
             throw GradleException(
                 "missing ReallyMe codec host native resource: $requiredHostNativeResource"
+            )
+        }
+        if (!root.resolve(requiredHostNativeDigest).isFile) {
+            throw GradleException(
+                "missing ReallyMe codec host native digest: $requiredHostNativeDigest"
             )
         }
     }
@@ -185,7 +259,6 @@ tasks.withType<PublishToMavenRepository>().configureEach {
 val verifyRemoteMavenPublishingConfigured = tasks.register("verifyRemoteMavenPublishingConfigured") {
     group = "verification"
     description = "Verifies that remote Maven publishing credentials are configured."
-    onlyIf { requireRemoteMavenPublishing.get() }
     doLast {
         val missing = buildList {
             if (remoteMavenRepositoryUrlValue == null) {
@@ -253,14 +326,10 @@ publishing {
         }
     }
     repositories {
-        maven {
-            name = "localRelease"
-            url = layout.buildDirectory.dir("repos/releases").get().asFile.toURI()
-        }
-        if (remoteMavenRepositoryUrlValue != null) {
+        if (remoteMavenRepositoryUri != null) {
             maven {
                 name = "remoteRelease"
-                url = uri(remoteMavenRepositoryUrlValue)
+                url = remoteMavenRepositoryUri
                 credentials {
                     username = remoteMavenUsernameValue
                     password = remoteMavenPasswordValue

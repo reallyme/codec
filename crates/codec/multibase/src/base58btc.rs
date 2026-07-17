@@ -14,6 +14,7 @@ pub const MAX_BASE58BTC_INPUT_LEN: usize = 8 * 1024;
 
 /// Error returned when base58btc decoding fails.
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum Base58Error {
     /// The output buffer was too small to hold the decoded bytes.
     #[error("base58btc output buffer too small")]

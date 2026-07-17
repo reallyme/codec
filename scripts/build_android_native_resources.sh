@@ -8,6 +8,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 JNI_LIBS_ROOT="${1:-${ROOT_DIR}/packages/android-codec/src/main/jniLibs}"
 ANDROID_API="${ANDROID_API:-24}"
+FFI_RUSTFLAGS="${RUSTFLAGS:+${RUSTFLAGS} }-C panic=unwind"
 
 if [ -z "${ANDROID_NDK_HOME:-}" ]; then
   printf 'ANDROID_NDK_HOME must point to an installed Android NDK\n' >&2
@@ -43,7 +44,8 @@ build_android_target() {
   rustup target add "${rust_target}"
   export "${linker_var}=${TOOLCHAIN_BIN}/${clang_prefix}${ANDROID_API}-clang"
   export "${ar_var}=${TOOLCHAIN_BIN}/llvm-ar"
-  cargo build -p reallyme-codec-ffi --release --target "${rust_target}"
+  RUSTFLAGS="${FFI_RUSTFLAGS}" \
+    cargo build --locked -p reallyme-codec-ffi --release --target "${rust_target}"
 
   mkdir -p "${JNI_LIBS_ROOT}/${abi}"
   cp "${ROOT_DIR}/target/${rust_target}/release/libreallyme_codec_ffi.so" \

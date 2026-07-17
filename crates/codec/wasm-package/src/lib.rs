@@ -5,6 +5,7 @@
 //! WASM facade over the Rust ReallyMe codec crates.
 
 mod base_encoding;
+mod boundary;
 mod cbor;
 mod jcs;
 mod map_error;
@@ -31,9 +32,4 @@ pub use multiformat::{
     validate_key_binding_wasm,
 };
 pub use pem::{pem_decode, pem_encode};
-pub use proto_output::{
-    dag_cbor_verify_cid_proto, dag_cbor_verify_cid_proto_result, multicodec_lookup_prefix_proto,
-    multicodec_lookup_prefix_proto_result, multicodec_prefix_for_name_proto,
-    multicodec_prefix_for_name_proto_result, multicodec_table_proto, multicodec_table_proto_result,
-    multikey_parse_proto, multikey_parse_proto_result, pem_decode_proto, pem_decode_proto_result,
-};
+pub use proto_output::{process_proto, process_proto_json};

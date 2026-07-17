@@ -2,7 +2,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::error::{classify_binding_algorithm, classify_binding_type, MultikeyError};
+use crate::error::{
+    classify_binding_algorithm, classify_binding_type, classify_multikey_codec, MultikeyError,
+};
 use crate::parse::ParsedMultikey;
 
 /// Generic binding compatibility rules.
@@ -68,8 +70,8 @@ pub fn validate_key_binding(
     if !binding_type_matches_codec(binding.binding_type, parsed.codec_name) {
         return Err(MultikeyError::BindingTypeCodecMismatch {
             binding_type: classify_binding_type(binding.binding_type),
-            codec_name: parsed.codec_name,
-            alg: parsed.alg,
+            codec: classify_multikey_codec(parsed.codec_name),
+            algorithm: classify_binding_algorithm(parsed.alg),
         });
     }
 
@@ -77,7 +79,7 @@ pub fn validate_key_binding(
         if binding_alg != parsed.alg {
             return Err(MultikeyError::BindingAlgorithmMismatch {
                 binding_alg: classify_binding_algorithm(binding_alg),
-                codec_alg: parsed.alg,
+                codec_algorithm: classify_binding_algorithm(parsed.alg),
             });
         }
     } else if binding.binding_type != "Multikey" {

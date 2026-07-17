@@ -18,6 +18,17 @@ public  final class CodecPemDecodeResult extends
         CodecPemDecodeResult, CodecPemDecodeResult.Builder> implements
     // @@protoc_insertion_point(message_implements:reallyme.codec.v1.CodecPemDecodeResult)
     CodecPemDecodeResultOrBuilder {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  @java.lang.Override
+  public java.lang.String toString() {
+    return "CodecPemDecodeResult{<redacted>}";
+  }
+
+  @java.lang.Override
+  public int hashCode() {
+    return 0x524d;
+  }
+
   private CodecPemDecodeResult() {
     label_ = "";
     der_ = com.google.protobuf.ByteString.EMPTY;
@@ -100,7 +111,7 @@ public  final class CodecPemDecodeResult extends
    */
   private void setDer(com.google.protobuf.ByteString value) {
     java.lang.Class<?> valueClass = value.getClass();
-  
+
     der_ = value;
   }
   /**
@@ -392,4 +403,3 @@ public  final class CodecPemDecodeResult extends
     return DEFAULT_INSTANCE.getParserForType();
   }
 }
-

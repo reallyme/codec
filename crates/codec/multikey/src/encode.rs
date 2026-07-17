@@ -5,7 +5,7 @@
 use codec_multibase::bytes_to_multibase58btc;
 use codec_multicodec::{KeyMaterialKind, MULTICODEC_TABLE, VARIABLE_KEY_LENGTH};
 
-use crate::error::{CodecNameReason, MultikeyError};
+use crate::error::{classify_multikey_codec, CodecNameReason, MultikeyError};
 
 /// Maximum accepted RSA public-key DER payload in a multikey.
 ///
@@ -34,7 +34,7 @@ pub fn encode_multikey(codec_name: &str, public_key: &[u8]) -> Result<String, Mu
 
     if spec.key_length == VARIABLE_KEY_LENGTH && public_key.is_empty() {
         return Err(MultikeyError::KeyLengthMismatch {
-            codec_name: canonical_codec_name,
+            codec: classify_multikey_codec(canonical_codec_name),
             expected: spec.key_length,
             actual: public_key.len(),
         });
@@ -42,7 +42,7 @@ pub fn encode_multikey(codec_name: &str, public_key: &[u8]) -> Result<String, Mu
 
     if *canonical_codec_name == "rsa-pub" && public_key.len() > MAX_RSA_PUBLIC_KEY_DER_LEN {
         return Err(MultikeyError::KeyTooLarge {
-            codec_name: canonical_codec_name,
+            codec: classify_multikey_codec(canonical_codec_name),
             max: MAX_RSA_PUBLIC_KEY_DER_LEN,
             actual: public_key.len(),
         });
@@ -50,7 +50,7 @@ pub fn encode_multikey(codec_name: &str, public_key: &[u8]) -> Result<String, Mu
 
     if spec.key_length != VARIABLE_KEY_LENGTH && public_key.len() != spec.key_length {
         return Err(MultikeyError::KeyLengthMismatch {
-            codec_name: canonical_codec_name,
+            codec: classify_multikey_codec(canonical_codec_name),
             expected: spec.key_length,
             actual: public_key.len(),
         });
@@ -61,7 +61,7 @@ pub fn encode_multikey(codec_name: &str, public_key: &[u8]) -> Result<String, Mu
             .len()
             .checked_add(public_key.len())
             .ok_or(MultikeyError::KeyLengthMismatch {
-                codec_name: canonical_codec_name,
+                codec: classify_multikey_codec(canonical_codec_name),
                 expected: spec.key_length,
                 actual: public_key.len(),
             })?;

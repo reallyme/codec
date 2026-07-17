@@ -7,6 +7,10 @@ name: Crates.io Release
 on:
   workflow_dispatch:
     inputs:
+      release_sha:
+        description: Exact 40-character main commit SHA that passed Code Checks and Release Preflight
+        required: true
+        type: string
       publish:
         description: Publish crates to crates.io after the dry run succeeds
         required: true
@@ -16,15 +20,47 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: crates-release-${{ inputs.release_sha }}
+  cancel-in-progress: false
+
 jobs:
+  verify-release-sha:
+    name: Verify audited release SHA
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout exact release SHA
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ inputs.release_sha }}
+          fetch-depth: 0
+
+      - name: Install Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+
+      - name: Require current main and successful checks for exact SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_SHA: ${{ inputs.release_sha }}
+        run: node scripts/verify_release_attestation.mjs
+
   dry-run:
     name: crates.io publish preflight
+    needs: verify-release-sha
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ inputs.release_sha }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88 # master
@@ -48,10 +84,13 @@ jobs:
     if: inputs.publish == true
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ inputs.release_sha }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88 # master
@@ -67,6 +106,11 @@ jobs:
         uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
 
       - name: Publish crates in dependency order
-        run: node scripts/publish_crates_in_order.mjs publish
+        run: |
+          node scripts/verify_release_attestation.mjs
+          node scripts/publish_crates_in_order.mjs publish
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_SHA: ${{ inputs.release_sha }}

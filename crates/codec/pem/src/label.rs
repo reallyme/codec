@@ -6,6 +6,7 @@ use crate::PemError;
 
 /// Supported PEM labels.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum PemLabel {
     /// PKCS#8 private key material.
     PrivateKey,

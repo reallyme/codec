@@ -32,6 +32,7 @@ public  final class CodecError extends
     MULTIFORMAT(3),
     CANONICALIZATION(4),
     BACKEND(5),
+    BOUNDARY(6),
     ERROR_NOT_SET(0);
     private final int value;
     private ErrorCase(int value) {
@@ -52,6 +53,7 @@ public  final class CodecError extends
         case 3: return MULTIFORMAT;
         case 4: return CANONICALIZATION;
         case 5: return BACKEND;
+        case 6: return BOUNDARY;
         case 0: return ERROR_NOT_SET;
         default: return null;
       }
@@ -328,6 +330,58 @@ public  final class CodecError extends
    */
   private void clearBackend() {
     if (errorCase_ == 5) {
+      errorCase_ = 0;
+      error_ = null;
+    }
+  }
+
+  public static final int BOUNDARY_FIELD_NUMBER = 6;
+  /**
+   * <code>.reallyme.codec.v1.CodecBoundaryError boundary = 6 [json_name = "boundary"];</code>
+   */
+  @java.lang.Override
+  public boolean hasBoundary() {
+    return errorCase_ == 6;
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecBoundaryError boundary = 6 [json_name = "boundary"];</code>
+   */
+  @java.lang.Override
+  public me.really.codec.v1.CodecBoundaryError getBoundary() {
+    if (errorCase_ == 6) {
+       return (me.really.codec.v1.CodecBoundaryError) error_;
+    }
+    return me.really.codec.v1.CodecBoundaryError.getDefaultInstance();
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecBoundaryError boundary = 6 [json_name = "boundary"];</code>
+   */
+  @java.lang.SuppressWarnings("ReturnValueIgnored")
+  private void setBoundary(me.really.codec.v1.CodecBoundaryError value) {
+    value.getClass();  // minimal bytecode null check
+    error_ = value;
+    errorCase_ = 6;
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecBoundaryError boundary = 6 [json_name = "boundary"];</code>
+   */
+  @java.lang.SuppressWarnings("ReturnValueIgnored")
+  private void mergeBoundary(me.really.codec.v1.CodecBoundaryError value) {
+    value.getClass();  // minimal bytecode null check
+    if (errorCase_ == 6 &&
+        error_ != me.really.codec.v1.CodecBoundaryError.getDefaultInstance()) {
+      error_ = me.really.codec.v1.CodecBoundaryError.newBuilder((me.really.codec.v1.CodecBoundaryError) error_)
+          .mergeFrom(value).buildPartial();
+    } else {
+      error_ = value;
+    }
+    errorCase_ = 6;
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecBoundaryError boundary = 6 [json_name = "boundary"];</code>
+   */
+  private void clearBoundary() {
+    if (errorCase_ == 6) {
       errorCase_ = 0;
       error_ = null;
     }
@@ -689,6 +743,54 @@ public  final class CodecError extends
       return this;
     }
 
+    /**
+     * <code>.reallyme.codec.v1.CodecBoundaryError boundary = 6 [json_name = "boundary"];</code>
+     */
+    @java.lang.Override
+    public boolean hasBoundary() {
+      return instance.hasBoundary();
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecBoundaryError boundary = 6 [json_name = "boundary"];</code>
+     */
+    @java.lang.Override
+    public me.really.codec.v1.CodecBoundaryError getBoundary() {
+      return instance.getBoundary();
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecBoundaryError boundary = 6 [json_name = "boundary"];</code>
+     */
+    public Builder setBoundary(me.really.codec.v1.CodecBoundaryError value) {
+      copyOnWrite();
+      instance.setBoundary(value);
+      return this;
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecBoundaryError boundary = 6 [json_name = "boundary"];</code>
+     */
+    public Builder setBoundary(
+        me.really.codec.v1.CodecBoundaryError.Builder builderForValue) {
+      copyOnWrite();
+      instance.setBoundary(builderForValue.build());
+      return this;
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecBoundaryError boundary = 6 [json_name = "boundary"];</code>
+     */
+    public Builder mergeBoundary(me.really.codec.v1.CodecBoundaryError value) {
+      copyOnWrite();
+      instance.mergeBoundary(value);
+      return this;
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecBoundaryError boundary = 6 [json_name = "boundary"];</code>
+     */
+    public Builder clearBoundary() {
+      copyOnWrite();
+      instance.clearBoundary();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:reallyme.codec.v1.CodecError)
   }
   @java.lang.Override
@@ -712,10 +814,11 @@ public  final class CodecError extends
             me.really.codec.v1.CodecMultiformatError.class,
             me.really.codec.v1.CodecCanonicalizationError.class,
             me.really.codec.v1.CodecBackendError.class,
+            me.really.codec.v1.CodecBoundaryError.class,
           };
           java.lang.String info =
-              "\u0000\u0005\u0001\u0000\u0001\u0005\u0005\u0000\u0000\u0000\u0001<\u0000\u0002<" +
-              "\u0000\u0003<\u0000\u0004<\u0000\u0005<\u0000";
+              "\u0000\u0006\u0001\u0000\u0001\u0006\u0006\u0000\u0000\u0000\u0001<\u0000\u0002<" +
+              "\u0000\u0003<\u0000\u0004<\u0000\u0005<\u0000\u0006<\u0000";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {
@@ -769,4 +872,3 @@ public  final class CodecError extends
     return DEFAULT_INSTANCE.getParserForType();
   }
 }
-

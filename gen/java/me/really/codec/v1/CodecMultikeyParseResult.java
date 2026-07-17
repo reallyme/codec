@@ -18,6 +18,17 @@ public  final class CodecMultikeyParseResult extends
         CodecMultikeyParseResult, CodecMultikeyParseResult.Builder> implements
     // @@protoc_insertion_point(message_implements:reallyme.codec.v1.CodecMultikeyParseResult)
     CodecMultikeyParseResultOrBuilder {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  @java.lang.Override
+  public java.lang.String toString() {
+    return "CodecMultikeyParseResult{<redacted>}";
+  }
+
+  @java.lang.Override
+  public int hashCode() {
+    return 0x524d;
+  }
+
   private CodecMultikeyParseResult() {
     codecName_ = "";
     algorithmName_ = "";
@@ -135,7 +146,7 @@ public  final class CodecMultikeyParseResult extends
    */
   private void setPublicKey(com.google.protobuf.ByteString value) {
     java.lang.Class<?> valueClass = value.getClass();
-  
+
     publicKey_ = value;
   }
   /**
@@ -161,7 +172,7 @@ public  final class CodecMultikeyParseResult extends
    * @param value The expectedPublicKeyLength to set.
    */
   private void setExpectedPublicKeyLength(int value) {
-    
+
     expectedPublicKeyLength_ = value;
   }
   /**
@@ -187,7 +198,7 @@ public  final class CodecMultikeyParseResult extends
    * @param value The variablePublicKeyLength to set.
    */
   private void setVariablePublicKeyLength(boolean value) {
-    
+
     variablePublicKeyLength_ = value;
   }
   /**
@@ -559,4 +570,3 @@ public  final class CodecMultikeyParseResult extends
     return DEFAULT_INSTANCE.getParserForType();
   }
 }
-

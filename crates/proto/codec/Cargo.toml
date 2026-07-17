@@ -4,7 +4,7 @@
 
 [package]
 name = "reallyme-codec-proto"
-version = "0.1.21"
+version = "0.1.22"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -23,12 +23,13 @@ include = [
 
 [features]
 default = []
-generated = ["dep:buffa", "dep:serde", "dep:serde_json"]
+generated = ["dep:buffa", "buffa/json", "dep:serde", "dep:serde_json", "dep:zeroize"]
 
 [dependencies]
 buffa = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
+zeroize = { workspace = true, optional = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]

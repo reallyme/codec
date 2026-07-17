@@ -47,8 +47,22 @@ const decoded = ReallyMeCodec.base64urlDecode(encoded);
 | Multiformats | `base58btcEncode`, `base58btcDecode`, `multibase*`, `multicodec*`, `multikey*`, binding validation |
 | DAG-CBOR and CID | `dagCborEncode`, `dagCborDecode`, `dagCborComputeCid`, `dagCborVerifyCid`, content hash and multihash helpers |
 | JCS | `canonicalizeJson`, `canonicalizeJsonText` |
-| PEM | `encodePem`, `decodePem` with strict label and size policy |
-| Protobuf | `@reallyme/codec/proto` exports `reallyme.codec.v1` generated types |
+| PEM | wipeable `Uint8Array` armor through `encodePem`, `decodePem`, with strict label and size policy |
+| Protobuf | `processProto`, `processProtoJson`, and `@reallyme/codec/proto` generated types |
+
+`processProto` accepts binary generated `CodecOperationRequest` bytes.
+`processProtoJson` accepts UTF-8 bytes containing the generated ProtoJSON view
+of that same message. Both return binary `CodecProtoResultEnvelope` bytes;
+expected validation failures are represented in the envelope and are not
+thrown as backend exceptions.
+
+The operation-specific `*Proto` helpers remain ergonomic request builders. They
+encode generated messages and enter the same single WASM boundary rather than
+calling operation-specific WASM exports.
+
+Swift and Kotlin/Java expose the same generic `processProto` and
+`processProtoJson` methods through the Rust C/JNI boundary. The method names
+and envelope semantics are intentionally identical across SDKs.
 
 Errors are typed as `ReallyMeCodecError`; they do not include raw input bytes
 or backend exception text.

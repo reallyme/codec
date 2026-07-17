@@ -14,6 +14,10 @@ on:
       - "crates/proto/**"
       - "packages/codec/src/proto/**"
       - "gen/**"
+      - "scripts/check_release_readiness.mjs"
+      - "scripts/run_pinned_release_readiness.mjs"
+      - "scripts/release-readiness/core.mjs"
+      - "scripts/redact_codec_proto_debug.mjs"
   push:
     branches:
       - main
@@ -24,13 +28,17 @@ on:
       - "crates/proto/**"
       - "packages/codec/src/proto/**"
       - "gen/**"
+      - "scripts/check_release_readiness.mjs"
+      - "scripts/run_pinned_release_readiness.mjs"
+      - "scripts/release-readiness/core.mjs"
+      - "scripts/redact_codec_proto_debug.mjs"
 
 permissions:
   contents: read
 
 env:
   BUFFA_VERSION: 0.8.1
-  BUF_VERSION: 1.59.0
+  BUF_VERSION: 1.71.0
 
 jobs:
   protobuf:
@@ -47,6 +55,11 @@ jobs:
         with:
           toolchain: 1.96.0
 
+      - name: Install Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+
       - name: Cache Cargo
         uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
 
@@ -60,20 +73,11 @@ jobs:
           cargo install protoc-gen-buffa --version "$BUFFA_VERSION" --locked
           cargo install protoc-gen-buffa-packaging --version "$BUFFA_VERSION" --locked
 
-      - name: Lint protobuf schema
-        run: buf lint
-
       - name: Fetch main for breaking-change comparison
         run: git fetch origin main:refs/remotes/origin/main
 
       - name: Check protobuf breaking changes
         run: buf breaking --against '.git#branch=origin/main'
 
-      - name: Regenerate protobuf artifacts
-        run: buf generate
-
-      - name: Format generated Rust protobuf artifacts
-        run: cargo fmt --package reallyme-codec-proto
-
-      - name: Check generated artifacts are fresh
-        run: git diff --exit-code -- crates/proto/codec/proto crates/proto/codec/src/generated packages/codec/src/proto/generated gen
+      - name: Check release readiness generated freshness
+        run: node scripts/run_pinned_release_readiness.mjs --generated-freshness

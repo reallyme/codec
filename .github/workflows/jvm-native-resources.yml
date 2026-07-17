@@ -37,8 +37,28 @@ jobs:
         with:
           toolchain: 1.96.0
 
+      - name: Install Java
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+
       - name: Stage codec JNI resource
         run: scripts/build_kotlin_native_resource.sh build/kotlin-native-resources
+        shell: bash
+
+      - name: Write host native integrity metadata
+        run: node scripts/write_native_manifest.mjs build/kotlin-native-resources build/kotlin-native-resources/me/really/codec/native/native-manifest.json
+        shell: bash
+
+      - name: Test host native loader
+        working-directory: packages/kotlin-codec
+        run: ./gradlew test -Preallyme.codec.nativeResourcesDir=../../build/kotlin-native-resources
         shell: bash
 
       - name: Upload codec JNI resource

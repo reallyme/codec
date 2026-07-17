@@ -6,13 +6,48 @@ name: Release Preflight
 
 on:
   workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Exact current main commit SHA to certify
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 jobs:
+  verify-source-sha:
+    name: verify source SHA
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact release SHA
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ inputs.release_sha }}
+          fetch-depth: 0
+
+      - name: Require workflow and current main to match exact SHA
+        env:
+          RELEASE_SHA: ${{ inputs.release_sha }}
+          WORKFLOW_SHA: ${{ github.sha }}
+        run: |
+          if [[ ! "${RELEASE_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::release_sha must be a lowercase 40-character commit SHA"
+            exit 1
+          fi
+          if [ "${WORKFLOW_SHA}" != "${RELEASE_SHA}" ] || [ "$(git rev-parse HEAD)" != "${RELEASE_SHA}" ]; then
+            echo "::error::dispatch ref, checkout, and release_sha must identify the same commit"
+            exit 1
+          fi
+          git fetch --no-tags origin main
+          if [ "$(git rev-parse origin/main)" != "${RELEASE_SHA}" ]; then
+            echo "::error::release_sha is not the current origin/main tip"
+            exit 1
+          fi
+
   rust-crates:
     name: rust crate metadata
+    needs: verify-source-sha
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -35,10 +70,11 @@ jobs:
         run: cargo package -p reallyme-codec --list
 
       - name: Check release readiness contract
-        run: node scripts/check_release_readiness.mjs
+        run: node scripts/run_pinned_release_readiness.mjs
 
   swift-package:
     name: swift package preflight
+    needs: verify-source-sha
     runs-on: macos-15
     steps:
       - name: Checkout
@@ -55,7 +91,7 @@ jobs:
           swift --version
 
       - name: Build codec FFI dylib
-        run: cargo build -p reallyme-codec-ffi
+        run: cargo build --locked -p reallyme-codec-ffi
 
       - name: Test Swift package
         run: swift test
@@ -69,13 +105,13 @@ jobs:
       - name: Verify SwiftPM binary manifest wiring
         run: |
           checksum="$(cat build/swift/ReallyMeCodecFFI.xcframework.checksum)"
-          node scripts/prepare_swift_binary_manifest.mjs 0.1.21 "${checksum}"
-          node scripts/check_release_readiness.mjs --release-packages
+          node scripts/prepare_swift_binary_manifest.mjs 0.2.0 "${checksum}"
+          node scripts/run_pinned_release_readiness.mjs --release-packages
 
       - name: Prepare local SwiftPM binary manifest
         run: |
           checksum="$(cat build/swift/ReallyMeCodecFFI.xcframework.checksum)"
-          node scripts/prepare_swift_binary_manifest.mjs 0.1.21 "${checksum}" --local-artifact-path build/swift/ReallyMeCodecFFI.xcframework
+          node scripts/prepare_swift_binary_manifest.mjs 0.2.0 "${checksum}" --local-artifact-path build/swift/ReallyMeCodecFFI.xcframework
 
       - name: Reset SwiftPM package state
         run: swift package reset
@@ -85,6 +121,7 @@ jobs:
 
   jvm-native:
     name: jvm native preflight ${{ matrix.platform }}
+    needs: verify-source-sha
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -109,8 +146,28 @@ jobs:
         with:
           toolchain: 1.96.0
 
+      - name: Install Java
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+
       - name: Stage codec JNI resource
         run: scripts/build_kotlin_native_resource.sh build/kotlin-native-resources
+        shell: bash
+
+      - name: Write host native integrity metadata
+        run: node scripts/write_native_manifest.mjs build/kotlin-native-resources build/kotlin-native-resources/me/really/codec/native/native-manifest.json
+        shell: bash
+
+      - name: Test host native loader
+        working-directory: packages/kotlin-codec
+        run: ./gradlew test -Preallyme.codec.nativeResourcesDir=../../build/kotlin-native-resources
         shell: bash
 
       - name: Upload codec JNI resource
@@ -155,6 +212,7 @@ jobs:
 
   android-package:
     name: android aar preflight
+    needs: verify-source-sha
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -192,6 +250,7 @@ jobs:
 
   npm-package:
     name: npm package preflight
+    needs: verify-source-sha
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

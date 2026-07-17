@@ -29,4 +29,7 @@ public data class ReallyMeCodecProtoResult(
     override fun hashCode(): Int {
         return 31 * status.hashCode() + bytes.contentHashCode()
     }
+
+    override fun toString(): String =
+        "ReallyMeCodecProtoResult(status=$status, bytes=<redacted>)"
 }

@@ -326,4 +326,3 @@ public  final class CodecMultiformatError extends
     return DEFAULT_INSTANCE.getParserForType();
   }
 }
-

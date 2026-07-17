@@ -35,5 +35,5 @@ Out of scope:
 
 ## Supported Versions
 
-The current `0.1.x` line receives security fixes while the public API remains in
+The current `0.2.x` line receives security fixes while the public API remains in
 early release. Pin exact versions in production deployments.

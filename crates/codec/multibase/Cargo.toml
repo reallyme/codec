@@ -4,7 +4,7 @@
 
 [package]
 name = "reallyme-codec-multibase"
-version = "0.1.21"
+version = "0.1.22"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -18,7 +18,7 @@ name = "codec_multibase"
 
 [dependencies]
 bs58 = { workspace = true }
-codec-base64url = { package = "reallyme-codec-base64url", version = "0.1.21", path = "../base64url" }
+codec-base64url = { package = "reallyme-codec-base64url", version = "0.1.22", path = "../base64url" }
 thiserror = { workspace = true }
 
 [lints]

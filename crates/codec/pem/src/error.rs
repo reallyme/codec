@@ -6,6 +6,7 @@ use thiserror::Error;
 
 /// Error returned when PEM text armor cannot be parsed or encoded.
 #[derive(Debug, Error, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum PemError {
     /// The input text exceeded the configured maximum size.
     #[error("pem: input too large")]

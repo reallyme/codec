@@ -155,6 +155,30 @@ public object CodecErrorKt {
     public fun hasBackend(): kotlin.Boolean {
       return _builder.hasBackend()
     }
+
+    /**
+     * `.reallyme.codec.v1.CodecBoundaryError boundary = 6 [json_name = "boundary"];`
+     */
+    public var boundary: me.really.codec.v1.CodecBoundaryError
+      @kotlin.jvm.JvmName("getBoundary")
+        get() = _builder.boundary
+      @kotlin.jvm.JvmName("setBoundary")
+        set(value) {
+        _builder.boundary = value
+      }
+    /**
+     * `.reallyme.codec.v1.CodecBoundaryError boundary = 6 [json_name = "boundary"];`
+     */
+    public fun clearBoundary() {
+      _builder.clearBoundary()
+    }
+    /**
+     * `.reallyme.codec.v1.CodecBoundaryError boundary = 6 [json_name = "boundary"];`
+     * @return Whether the boundary field is set.
+     */
+    public fun hasBoundary(): kotlin.Boolean {
+      return _builder.hasBoundary()
+    }
     public val errorCase: me.really.codec.v1.CodecError.ErrorCase
     @kotlin.jvm.JvmName("getErrorCase")
       get() = _builder.errorCase
@@ -182,3 +206,5 @@ public val me.really.codec.v1.CodecErrorOrBuilder.canonicalizationOrNull: me.rea
 public val me.really.codec.v1.CodecErrorOrBuilder.backendOrNull: me.really.codec.v1.CodecBackendError?
   get() = if (hasBackend()) getBackend() else null
 
+public val me.really.codec.v1.CodecErrorOrBuilder.boundaryOrNull: me.really.codec.v1.CodecBoundaryError?
+  get() = if (hasBoundary()) getBoundary() else null

@@ -39,22 +39,24 @@ pub(crate) fn set_u32(object: &Object, name: &str, value: usize) -> Result<(), J
     Ok(())
 }
 
-fn codec_tag_name(tag: CodecTag) -> &'static str {
+fn codec_tag_name(tag: CodecTag) -> Result<&'static str, JsValue> {
     match tag {
-        CodecTag::Encryption => "encryption",
-        CodecTag::Hash => "hash",
-        CodecTag::Key => "key",
-        CodecTag::Multihash => "multihash",
-        CodecTag::Multikey => "multikey",
+        CodecTag::Encryption => Ok("encryption"),
+        CodecTag::Hash => Ok("hash"),
+        CodecTag::Key => Ok("key"),
+        CodecTag::Multihash => Ok("multihash"),
+        CodecTag::Multikey => Ok("multikey"),
+        _ => Err(provider_failure()),
     }
 }
 
-fn key_material_name(kind: KeyMaterialKind) -> &'static str {
+fn key_material_name(kind: KeyMaterialKind) -> Result<&'static str, JsValue> {
     match kind {
-        KeyMaterialKind::NotKey => "not-key",
-        KeyMaterialKind::PublicKey => "public-key",
-        KeyMaterialKind::PrivateKey => "private-key",
-        KeyMaterialKind::SymmetricKey => "symmetric-key",
+        KeyMaterialKind::NotKey => Ok("not-key"),
+        KeyMaterialKind::PublicKey => Ok("public-key"),
+        KeyMaterialKind::PrivateKey => Ok("private-key"),
+        KeyMaterialKind::SymmetricKey => Ok("symmetric-key"),
+        _ => Err(provider_failure()),
     }
 }
 
@@ -62,8 +64,12 @@ pub(crate) fn codec_spec_to_js(name: &str, spec: &CodecSpec) -> Result<JsValue, 
     let object = Object::new();
     set_string(&object, "name", name)?;
     set_string(&object, "alg", spec.alg)?;
-    set_string(&object, "tag", codec_tag_name(spec.tag))?;
-    set_string(&object, "keyMaterial", key_material_name(spec.key_material))?;
+    set_string(&object, "tag", codec_tag_name(spec.tag)?)?;
+    set_string(
+        &object,
+        "keyMaterial",
+        key_material_name(spec.key_material)?,
+    )?;
     set_bytes(&object, "prefix", spec.codec)?;
     if spec.key_length != VARIABLE_KEY_LENGTH {
         set_u32(&object, "expectedKeyLength", spec.key_length)?;
@@ -75,11 +81,11 @@ pub(crate) fn codec_lookup_to_js(found: CodecLookupResult) -> Result<JsValue, Js
     let object = Object::new();
     set_string(&object, "name", found.name)?;
     set_string(&object, "alg", found.alg)?;
-    set_string(&object, "tag", codec_tag_name(found.tag))?;
+    set_string(&object, "tag", codec_tag_name(found.tag)?)?;
     set_string(
         &object,
         "keyMaterial",
-        key_material_name(found.key_material),
+        key_material_name(found.key_material)?,
     )?;
     set_bytes(&object, "prefix", found.codec)?;
     if found.key_length != VARIABLE_KEY_LENGTH {

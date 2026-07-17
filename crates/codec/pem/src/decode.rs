@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use base64::{engine::general_purpose::STANDARD, Engine as _};
+use base64::{decoded_len_estimate, engine::general_purpose::STANDARD, Engine as _};
 use zeroize::Zeroizing;
 
 use crate::{PemDecodePolicy, PemDocument, PemError, PemLabel};
@@ -20,7 +20,7 @@ pub fn decode_pem(input: &str, policy: PemDecodePolicy<'_>) -> Result<PemDocumen
         return Err(PemError::InvalidOptions);
     }
 
-    let normalized = Zeroizing::new(normalize_line_endings(input));
+    let normalized = Zeroizing::new(normalize_line_endings(input)?);
     let mut lines = normalized.split('\n');
 
     let begin_line = next_nonempty_line(&mut lines).ok_or(PemError::MissingBegin)?;
@@ -30,9 +30,12 @@ pub fn decode_pem(input: &str, policy: PemDecodePolicy<'_>) -> Result<PemDocumen
         return Err(PemError::UnsupportedLabel);
     }
 
-    let mut body = Zeroizing::new(String::new());
-    let mut found_end = false;
     let encoded_limit = encoded_len_limit(policy.max_der_len)?;
+    // Every body byte is drawn from `input`, so this upper bound prevents the
+    // secret-bearing String from reallocating while it is assembled.
+    let body_capacity = input.len().min(encoded_limit);
+    let mut body = Zeroizing::new(String::with_capacity(body_capacity));
+    let mut found_end = false;
 
     for line in lines {
         if line.is_empty() {
@@ -72,11 +75,13 @@ pub fn decode_pem(input: &str, policy: PemDecodePolicy<'_>) -> Result<PemDocumen
         return Err(PemError::InvalidBody);
     }
 
-    let der = Zeroizing::new(
-        STANDARD
-            .decode(body.as_bytes())
-            .map_err(|_| PemError::InvalidBase64)?,
-    );
+    // Decode into one conservatively sized allocation. `Zeroizing<Vec<_>>`
+    // wipes the full capacity, including the unused estimate tail, on drop.
+    let mut der = Zeroizing::new(vec![0_u8; decoded_len_estimate(body.len())]);
+    let decoded_length = STANDARD
+        .decode_slice(body.as_bytes(), der.as_mut_slice())
+        .map_err(|_| PemError::InvalidBase64)?;
+    der.truncate(decoded_length);
     if der.is_empty() || der.len() > policy.max_der_len {
         return Err(PemError::DerTooLarge);
     }
@@ -84,8 +89,29 @@ pub fn decode_pem(input: &str, policy: PemDecodePolicy<'_>) -> Result<PemDocumen
     Ok(PemDocument { label, der })
 }
 
-fn normalize_line_endings(input: &str) -> String {
-    input.replace("\r\n", "\n").replace('\r', "\n")
+fn normalize_line_endings(input: &str) -> Result<String, PemError> {
+    // The normalized text cannot exceed the original byte length. Reserving
+    // that exact upper bound avoids the chained `replace` allocations that
+    // previously left private-key armor in freed heap blocks.
+    let mut output = String::with_capacity(input.len());
+    let bytes = input.as_bytes();
+    let mut cursor = 0_usize;
+    while cursor < bytes.len() {
+        let start = cursor;
+        while cursor < bytes.len() && bytes[cursor] != b'\r' {
+            cursor = cursor.checked_add(1).ok_or(PemError::InvalidOptions)?;
+        }
+        output.push_str(&input[start..cursor]);
+        if cursor == bytes.len() {
+            break;
+        }
+        output.push('\n');
+        cursor = cursor.checked_add(1).ok_or(PemError::InvalidOptions)?;
+        if cursor < bytes.len() && bytes[cursor] == b'\n' {
+            cursor = cursor.checked_add(1).ok_or(PemError::InvalidOptions)?;
+        }
+    }
+    Ok(output)
 }
 
 fn next_nonempty_line<'a>(lines: &mut impl Iterator<Item = &'a str>) -> Option<&'a str> {

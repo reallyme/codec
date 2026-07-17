@@ -8,6 +8,7 @@ use crate::base58btc::Base58Error;
 
 /// Error returned when decoding a multibase string fails.
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum MultibaseError {
     /// The input is too short to contain a multibase prefix and payload.
     #[error("invalid multibase string: too short")]

@@ -1,6 +1,6 @@
 {
   "name": "@reallyme/codec",
-  "version": "0.1.21",
+  "version": "0.1.22",
   "description": "TypeScript facade for the ReallyMe codec WASM package.",
   "license": "Apache-2.0",
   "sideEffects": false,

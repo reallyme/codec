@@ -37,13 +37,13 @@ jobs:
       - name: Install Rust nightly
         uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88 # master
         with:
-          toolchain: nightly
+          toolchain: nightly-2026-07-01
 
       - name: Install cargo-fuzz
-        run: cargo install cargo-fuzz --locked
+        run: cargo install --git https://github.com/rust-fuzz/cargo-fuzz.git --rev 984c861c8dfea28055254c5f1d2659ab2cd63f76 --locked cargo-fuzz
 
       - name: Build fuzz targets
-        run: cargo +nightly fuzz build
+        run: cargo +nightly-2026-07-01 fuzz build
 
   scheduled:
     name: scheduled fuzz (${{ matrix.target }})
@@ -58,6 +58,8 @@ jobs:
           - multibase
           - multicodec
           - multikey
+          - proto_process
+          - jcs_text
     steps:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
@@ -65,13 +67,13 @@ jobs:
       - name: Install Rust nightly
         uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88 # master
         with:
-          toolchain: nightly
+          toolchain: nightly-2026-07-01
 
       - name: Install cargo-fuzz
-        run: cargo install cargo-fuzz --locked
+        run: cargo install --git https://github.com/rust-fuzz/cargo-fuzz.git --rev 984c861c8dfea28055254c5f1d2659ab2cd63f76 --locked cargo-fuzz
 
       - name: Run time-boxed fuzz target
-        run: cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=300 -rss_limit_mb=4096
+        run: cargo +nightly-2026-07-01 fuzz run ${{ matrix.target }} -- -max_total_time=300 -rss_limit_mb=4096
 
       - name: Upload crash artifacts
         if: failure()

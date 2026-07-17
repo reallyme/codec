@@ -4,14 +4,13 @@
 
 enum ReallyMeCodecRustCAbiStatus {
     static let ok: Int32 = 0
-    static let protoError: Int32 = 1
     static let invalidArgument: Int32 = -1
     static let bufferTooSmall: Int32 = -5
     static let internalError: Int32 = -128
 
     static func throwIfError(_ status: Int32) throws {
         switch status {
-        case ok, protoError:
+        case ok:
             return
         case invalidArgument:
             throw ReallyMeCodecError.invalidInput

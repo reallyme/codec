@@ -74,6 +74,13 @@ fn encode_value(v: &CborValue, out: &mut Vec<u8>, depth: usize) -> Result<(), Cb
                     .then_with(|| ka.as_bytes().cmp(kb.as_bytes()))
             });
 
+            if sorted
+                .windows(2)
+                .any(|pair| pair[0].0.as_bytes() == pair[1].0.as_bytes())
+            {
+                return Err(CborError::DuplicateMapKey);
+            }
+
             write_header(MT_MAP, len_as_u64(sorted.len())?, out)?;
 
             for (k, v) in sorted {

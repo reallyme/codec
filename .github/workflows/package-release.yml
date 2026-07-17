@@ -7,11 +7,15 @@ name: Package Release
 on:
   workflow_dispatch:
     inputs:
+      release_sha:
+        description: Exact 40-character main commit SHA that passed Code Checks and Release Preflight
+        required: true
+        type: string
       version:
         description: Release version without leading v
         required: true
         type: string
-        default: 0.1.21
+        default: 0.2.0
       publish_swift:
         description: Create the SwiftPM GitHub release and upload the xcframework
         required: true
@@ -26,14 +30,56 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: package-release-${{ inputs.version }}
+  cancel-in-progress: false
+
 jobs:
+  verify-release-sha:
+    name: Verify audited release SHA
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout exact release SHA
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ inputs.release_sha }}
+          fetch-depth: 0
+
+      - name: Install Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+
+      - name: Require current main and successful checks for exact SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_SHA: ${{ inputs.release_sha }}
+        run: node scripts/verify_release_attestation.mjs
+
+      - name: Require at least one selected publication target
+        env:
+          PUBLISH_MAVEN: ${{ inputs.publish_maven }}
+          PUBLISH_SWIFT: ${{ inputs.publish_swift }}
+        run: |
+          if [ "${PUBLISH_MAVEN}" != "true" ] && [ "${PUBLISH_SWIFT}" != "true" ]; then
+            echo "::error::select publish_maven, publish_swift, or both"
+            exit 1
+          fi
+
   swift-artifact:
     name: Swift xcframework
+    needs: verify-release-sha
     if: inputs.publish_maven == false || inputs.publish_swift == true
     runs-on: macos-15
     steps:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ inputs.release_sha }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88 # master
@@ -54,6 +100,7 @@ jobs:
 
   jvm-native:
     name: JVM native ${{ matrix.platform }}
+    needs: verify-release-sha
     if: inputs.publish_swift == false || inputs.publish_maven == true
     runs-on: ${{ matrix.os }}
     strategy:
@@ -73,15 +120,37 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ inputs.release_sha }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88 # master
         with:
           toolchain: 1.96.0
 
+      - name: Install Java
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+
       - name: Build native resource
         shell: bash
         run: scripts/build_kotlin_native_resource.sh build/kotlin-native-resources
+
+      - name: Write host native integrity metadata
+        run: node scripts/write_native_manifest.mjs build/kotlin-native-resources build/kotlin-native-resources/me/really/codec/native/native-manifest.json
+        shell: bash
+
+      - name: Test host native loader
+        working-directory: packages/kotlin-codec
+        run: ./gradlew test -Preallyme.codec.nativeResourcesDir=../../build/kotlin-native-resources
+        shell: bash
 
       - name: Upload native resource
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -95,9 +164,14 @@ jobs:
     needs: jvm-native
     if: inputs.publish_swift == false || inputs.publish_maven == true
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ inputs.release_sha }}
 
       - name: Install Java
         uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5
@@ -124,28 +198,16 @@ jobs:
         working-directory: packages/kotlin-codec
         run: ./gradlew test publishToMavenLocal -Preallyme.codec.nativeResourcesDir=${{ github.workspace }}/build/kotlin-native-resources -Preallyme.codec.requireFullNativeResources=true
 
-      - name: Check Maven remote publishing configuration
-        id: maven_remote
-        if: inputs.publish_maven == true
-        run: |
-          if [ -n "${REALLYME_MAVEN_REPOSITORY_URL}" ] && [ -n "${REALLYME_MAVEN_USERNAME}" ] && [ -n "${REALLYME_MAVEN_PASSWORD}" ] && [ -n "${MAVEN_SIGNING_KEY}" ] && [ -n "${MAVEN_SIGNING_PASSWORD}" ]; then
-            echo "configured=true" >> "${GITHUB_OUTPUT}"
-          else
-            echo "::notice::publish_maven was requested, but remote Maven credentials are incomplete; packaged artifacts were verified locally and remote publish is skipped."
-            echo "configured=false" >> "${GITHUB_OUTPUT}"
-          fi
-        env:
-          REALLYME_MAVEN_REPOSITORY_URL: ${{ secrets.REALLYME_MAVEN_REPOSITORY_URL }}
-          REALLYME_MAVEN_USERNAME: ${{ secrets.REALLYME_MAVEN_USERNAME }}
-          REALLYME_MAVEN_PASSWORD: ${{ secrets.REALLYME_MAVEN_PASSWORD }}
-          MAVEN_SIGNING_KEY: ${{ secrets.MAVEN_SIGNING_KEY }}
-          MAVEN_SIGNING_PASSWORD: ${{ secrets.MAVEN_SIGNING_PASSWORD }}
-
       - name: Publish Maven artifact
-        if: inputs.publish_maven == true && steps.maven_remote.outputs.configured == 'true'
+        if: inputs.publish_maven == true
         working-directory: packages/kotlin-codec
-        run: ./gradlew publish -Preallyme.codec.nativeResourcesDir=${{ github.workspace }}/build/kotlin-native-resources -Preallyme.maven.requireRemote=true
+        run: |
+          node ../../scripts/verify_release_attestation.mjs
+          ./gradlew publish -Preallyme.codec.nativeResourcesDir=${{ github.workspace }}/build/kotlin-native-resources
         env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_SHA: ${{ inputs.release_sha }}
           REALLYME_MAVEN_REPOSITORY_URL: ${{ secrets.REALLYME_MAVEN_REPOSITORY_URL }}
           REALLYME_MAVEN_USERNAME: ${{ secrets.REALLYME_MAVEN_USERNAME }}
           REALLYME_MAVEN_PASSWORD: ${{ secrets.REALLYME_MAVEN_PASSWORD }}
@@ -154,11 +216,17 @@ jobs:
 
   android-aar:
     name: Android AAR with bundled JNI
+    needs: verify-release-sha
     if: inputs.publish_swift == false || inputs.publish_maven == true
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ inputs.release_sha }}
 
       - name: Install Java
         uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5
@@ -190,27 +258,15 @@ jobs:
       - name: Build Android AAR
         run: packages/kotlin-codec/gradlew -p packages/android-codec bundleReleaseAar verifyReleaseAarContainsJniLibs -Preallyme.codec.androidJniLibsDir=${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true
 
-      - name: Check Maven remote publishing configuration
-        id: maven_remote
+      - name: Publish Android AAR
         if: inputs.publish_maven == true
         run: |
-          if [ -n "${REALLYME_MAVEN_REPOSITORY_URL}" ] && [ -n "${REALLYME_MAVEN_USERNAME}" ] && [ -n "${REALLYME_MAVEN_PASSWORD}" ] && [ -n "${MAVEN_SIGNING_KEY}" ] && [ -n "${MAVEN_SIGNING_PASSWORD}" ]; then
-            echo "configured=true" >> "${GITHUB_OUTPUT}"
-          else
-            echo "::notice::publish_maven was requested, but remote Maven credentials are incomplete; packaged artifacts were verified locally and remote publish is skipped."
-            echo "configured=false" >> "${GITHUB_OUTPUT}"
-          fi
+          node scripts/verify_release_attestation.mjs
+          packages/kotlin-codec/gradlew -p packages/android-codec publish -Preallyme.codec.androidJniLibsDir=${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true
         env:
-          REALLYME_MAVEN_REPOSITORY_URL: ${{ secrets.REALLYME_MAVEN_REPOSITORY_URL }}
-          REALLYME_MAVEN_USERNAME: ${{ secrets.REALLYME_MAVEN_USERNAME }}
-          REALLYME_MAVEN_PASSWORD: ${{ secrets.REALLYME_MAVEN_PASSWORD }}
-          MAVEN_SIGNING_KEY: ${{ secrets.MAVEN_SIGNING_KEY }}
-          MAVEN_SIGNING_PASSWORD: ${{ secrets.MAVEN_SIGNING_PASSWORD }}
-
-      - name: Publish Android AAR
-        if: inputs.publish_maven == true && steps.maven_remote.outputs.configured == 'true'
-        run: packages/kotlin-codec/gradlew -p packages/android-codec publish -Preallyme.codec.androidJniLibsDir=${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true -Preallyme.maven.requireRemote=true
-        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_SHA: ${{ inputs.release_sha }}
           REALLYME_MAVEN_REPOSITORY_URL: ${{ secrets.REALLYME_MAVEN_REPOSITORY_URL }}
           REALLYME_MAVEN_USERNAME: ${{ secrets.REALLYME_MAVEN_USERNAME }}
           REALLYME_MAVEN_PASSWORD: ${{ secrets.REALLYME_MAVEN_PASSWORD }}
@@ -223,11 +279,13 @@ jobs:
     if: inputs.publish_swift == true
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
+          ref: ${{ inputs.release_sha }}
           fetch-depth: 0
 
       - name: Download Swift artifact
@@ -243,22 +301,25 @@ jobs:
 
       - name: Verify SwiftPM manifest
         run: |
-          checksum="$(cat build/swift/ReallyMeCodecFFI.xcframework.checksum)"
-          grep -F "let ffiArtifactChecksum = \"${checksum}\"" Package.swift
-          grep -F "let ffiArtifactVersion = \"${RELEASE_VERSION}\"" Package.swift
-          node scripts/check_release_readiness.mjs --release-packages
+          node scripts/verify_swift_release_artifact.mjs build/swift/ReallyMeCodecFFI.xcframework.zip build/swift/ReallyMeCodecFFI.xcframework.checksum Package.swift "${RELEASE_VERSION}"
+          node scripts/run_pinned_release_readiness.mjs --release-packages
         env:
           RELEASE_VERSION: ${{ inputs.version }}
 
-      - name: Create or update GitHub release with Swift artifact
+      - name: Create immutable GitHub release with Swift artifact
         run: |
-          release_target="$(git rev-parse HEAD)"
+          node scripts/verify_release_attestation.mjs
           if gh release view "v${RELEASE_VERSION}" >/dev/null 2>&1; then
-            gh release edit "v${RELEASE_VERSION}" --target "${release_target}" --title "ReallyMe Codec v${RELEASE_VERSION}" --notes "ReallyMe Codec package release v${RELEASE_VERSION}."
-            gh release upload "v${RELEASE_VERSION}" build/swift/ReallyMeCodecFFI.xcframework.zip --clobber
-          else
-            gh release create "v${RELEASE_VERSION}" build/swift/ReallyMeCodecFFI.xcframework.zip --target "${release_target}" --title "ReallyMe Codec v${RELEASE_VERSION}" --notes "ReallyMe Codec package release v${RELEASE_VERSION}."
+            echo "::error::GitHub release v${RELEASE_VERSION} already exists"
+            exit 1
           fi
+          if git ls-remote --exit-code --tags origin "refs/tags/v${RELEASE_VERSION}" >/dev/null 2>&1; then
+            echo "::error::Git tag v${RELEASE_VERSION} already exists"
+            exit 1
+          fi
+          gh release create "v${RELEASE_VERSION}" build/swift/ReallyMeCodecFFI.xcframework.zip --target "${RELEASE_SHA}" --title "ReallyMe Codec v${RELEASE_VERSION}" --notes "ReallyMe Codec package release v${RELEASE_VERSION}."
         env:
           GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_SHA: ${{ inputs.release_sha }}
           RELEASE_VERSION: ${{ inputs.version }}

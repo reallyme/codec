@@ -11,6 +11,7 @@ HEADERS_DIR="${BUILD_DIR}/headers"
 FRAMEWORK_DIR="${BUILD_DIR}/ReallyMeCodecFFI.xcframework"
 ZIP_PATH="${BUILD_DIR}/ReallyMeCodecFFI.xcframework.zip"
 CHECKSUM_PATH="${BUILD_DIR}/ReallyMeCodecFFI.xcframework.checksum"
+FFI_RUSTFLAGS="${RUSTFLAGS:+${RUSTFLAGS} }-C panic=unwind"
 
 require_tool() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -22,7 +23,8 @@ require_tool() {
 build_target() {
   local target="$1"
   rustup target add "${target}"
-  cargo build -p reallyme-codec-ffi --release --target "${target}"
+  RUSTFLAGS="${FFI_RUSTFLAGS}" \
+    cargo build --locked -p reallyme-codec-ffi --release --target "${target}"
 }
 
 copy_or_lipo() {
@@ -86,6 +88,9 @@ cat >"${HEADERS_DIR}/reallyme_codec_ffi.h" <<'HEADER'
 
 typedef int32_t rm_codec_status_t;
 
+uint32_t rm_codec_abi_version(void);
+size_t rm_codec_max_proto_result_envelope_bytes(void);
+
 rm_codec_status_t rm_codec_process(
     uint32_t operation,
     const uint8_t *first_ptr,
@@ -99,13 +104,15 @@ rm_codec_status_t rm_codec_process(
     size_t *len_out);
 
 rm_codec_status_t rm_codec_process_proto(
-    uint32_t operation,
-    const uint8_t *first_ptr,
-    size_t first_len,
-    const uint8_t *second_ptr,
-    size_t second_len,
-    const uint8_t *third_ptr,
-    size_t third_len,
+    const uint8_t *request_ptr,
+    size_t request_len,
+    uint8_t *out_ptr,
+    size_t out_capacity,
+    size_t *len_out);
+
+rm_codec_status_t rm_codec_process_proto_json(
+    const uint8_t *request_ptr,
+    size_t request_len,
     uint8_t *out_ptr,
     size_t out_capacity,
     size_t *len_out);
