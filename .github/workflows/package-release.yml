@@ -89,16 +89,6 @@ jobs:
           RELEASE_ATTESTATION_POLL_SECONDS: "20"
         run: node scripts/verify_release_attestation.mjs
 
-      - name: Require at least one selected publication target
-        env:
-          PUBLISH_MAVEN: ${{ inputs.publish_maven }}
-          PUBLISH_SWIFT: ${{ inputs.publish_swift }}
-        run: |
-          if [ "${PUBLISH_MAVEN}" != "true" ] && [ "${PUBLISH_SWIFT}" != "true" ]; then
-            echo "::error::select publish_maven, publish_swift, or both"
-            exit 1
-          fi
-
   swift-artifact:
     name: Swift xcframework
     needs: verify-release-sha
