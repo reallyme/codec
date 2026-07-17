@@ -14,6 +14,10 @@ const REQUIRED_EVENTS = Object.freeze({
   "release-preflight.yml": "workflow_dispatch",
 });
 const MAX_COMMAND_OUTPUT_BYTES = 1_048_576;
+const MAX_WAIT_SECONDS = 7_200;
+const DEFAULT_POLL_SECONDS = 20;
+const MAX_POLL_SECONDS = 300;
+const NON_NEGATIVE_INTEGER_PATTERN = /^(0|[1-9][0-9]*)$/u;
 
 export class ReleaseAttestationError extends Error {
   constructor(code) {
@@ -25,6 +29,29 @@ export class ReleaseAttestationError extends Error {
 
 const fail = (code) => {
   throw new ReleaseAttestationError(code);
+};
+
+const parseSeconds = (value, defaultValue, errorCode, maximum) => {
+  if (value === undefined || value === "") {
+    return defaultValue;
+  }
+  if (typeof value !== "string" || !NON_NEGATIVE_INTEGER_PATTERN.test(value)) {
+    fail(errorCode);
+  }
+  const seconds = Number(value);
+  if (!Number.isSafeInteger(seconds) || seconds > maximum) {
+    fail(errorCode);
+  }
+  return seconds;
+};
+
+const sleepSeconds = (seconds) => {
+  if (seconds === 0) {
+    return;
+  }
+  const waitBuffer = new SharedArrayBuffer(4);
+  const waitView = new Int32Array(waitBuffer);
+  Atomics.wait(waitView, 0, 0, seconds * 1_000);
 };
 
 export const run = (command, arguments_, options = {}) => {
@@ -98,6 +125,63 @@ export const requireLatestSuccessfulRun = (rawRuns, releaseSha, workflow) => {
   }
 };
 
+const isWaitableWorkflowFailure = (error, workflow) =>
+  error instanceof ReleaseAttestationError &&
+  (error.code === `missing-${workflow}-run` ||
+    error.code === `latest-${workflow}-run-not-successful`);
+
+const queryWorkflowRuns = ({ cwd, env, releaseSha, repository, workflow }) => {
+  const encoded = run(
+    "gh",
+    [
+      "run",
+      "list",
+      "--repo",
+      repository,
+      "--workflow",
+      workflow,
+      "--commit",
+      releaseSha,
+      "--limit",
+      "100",
+      "--json",
+      "attempt,conclusion,databaseId,event,headBranch,headSha,status",
+    ],
+    { cwd, env, errorCode: `query-${workflow}-failed` },
+  );
+  try {
+    return JSON.parse(encoded);
+  } catch {
+    fail("invalid-workflow-run-response");
+  }
+};
+
+const requireWorkflowWithOptionalWait = ({
+  cwd,
+  env,
+  releaseSha,
+  repository,
+  workflow,
+  waitSeconds,
+  pollSeconds,
+}) => {
+  const deadlineMs = Date.now() + waitSeconds * 1_000;
+  for (;;) {
+    const rawRuns = queryWorkflowRuns({ cwd, env, releaseSha, repository, workflow });
+    try {
+      requireLatestSuccessfulRun(rawRuns, releaseSha, workflow);
+      return;
+    } catch (error) {
+      if (!isWaitableWorkflowFailure(error, workflow) || Date.now() >= deadlineMs) {
+        throw error;
+      }
+      console.error(`release attestation waiting for ${workflow}: ${error.code}`);
+      const remainingSeconds = Math.max(1, Math.ceil((deadlineMs - Date.now()) / 1_000));
+      sleepSeconds(Math.min(pollSeconds, remainingSeconds));
+    }
+  }
+};
+
 export const verifyReleaseAttestation = ({ cwd = process.cwd(), env = process.env } = {}) => {
   const releaseSha = env.RELEASE_SHA;
   const repository = env.GITHUB_REPOSITORY;
@@ -110,6 +194,18 @@ export const verifyReleaseAttestation = ({ cwd = process.cwd(), env = process.en
   if (typeof env.GH_TOKEN !== "string" || env.GH_TOKEN.length === 0) {
     fail("missing-github-token");
   }
+  const waitSeconds = parseSeconds(
+    env.RELEASE_ATTESTATION_WAIT_SECONDS,
+    0,
+    "invalid-release-attestation-wait-seconds",
+    MAX_WAIT_SECONDS,
+  );
+  const pollSeconds = parseSeconds(
+    env.RELEASE_ATTESTATION_POLL_SECONDS,
+    DEFAULT_POLL_SECONDS,
+    "invalid-release-attestation-poll-seconds",
+    MAX_POLL_SECONDS,
+  );
 
   const checkedOutSha = run("git", ["rev-parse", "HEAD"], {
     cwd,
@@ -135,31 +231,15 @@ export const verifyReleaseAttestation = ({ cwd = process.cwd(), env = process.en
   }
 
   for (const workflow of REQUIRED_WORKFLOWS) {
-    const encoded = run(
-      "gh",
-      [
-        "run",
-        "list",
-        "--repo",
-        repository,
-        "--workflow",
-        workflow,
-        "--commit",
-        releaseSha,
-        "--limit",
-        "100",
-        "--json",
-        "attempt,conclusion,databaseId,event,headBranch,headSha,status",
-      ],
-      { cwd, env, errorCode: `query-${workflow}-failed` },
-    );
-    let rawRuns;
-    try {
-      rawRuns = JSON.parse(encoded);
-    } catch {
-      fail("invalid-workflow-run-response");
-    }
-    requireLatestSuccessfulRun(rawRuns, releaseSha, workflow);
+    requireWorkflowWithOptionalWait({
+      cwd,
+      env,
+      releaseSha,
+      repository,
+      workflow,
+      waitSeconds,
+      pollSeconds,
+    });
   }
 };
 

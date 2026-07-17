@@ -75,6 +75,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           RELEASE_SHA: ${{ steps.resolve-release-sha.outputs.release_sha }}
+          RELEASE_ATTESTATION_WAIT_SECONDS: "3600"
+          RELEASE_ATTESTATION_POLL_SECONDS: "20"
         run: node scripts/verify_release_attestation.mjs
 
   dry-run:
@@ -141,3 +143,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           RELEASE_SHA: ${{ needs.verify-release-sha.outputs.release_sha }}
+          RELEASE_ATTESTATION_WAIT_SECONDS: "3600"
+          RELEASE_ATTESTATION_POLL_SECONDS: "20"

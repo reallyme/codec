@@ -85,6 +85,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           RELEASE_SHA: ${{ steps.resolve-release-sha.outputs.release_sha }}
+          RELEASE_ATTESTATION_WAIT_SECONDS: "3600"
+          RELEASE_ATTESTATION_POLL_SECONDS: "20"
         run: node scripts/verify_release_attestation.mjs
 
       - name: Require at least one selected publication target
@@ -235,6 +237,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           RELEASE_SHA: ${{ needs.verify-release-sha.outputs.release_sha }}
+          RELEASE_ATTESTATION_WAIT_SECONDS: "3600"
+          RELEASE_ATTESTATION_POLL_SECONDS: "20"
           REALLYME_MAVEN_REPOSITORY_URL: ${{ secrets.REALLYME_MAVEN_REPOSITORY_URL }}
           REALLYME_MAVEN_USERNAME: ${{ secrets.REALLYME_MAVEN_USERNAME }}
           REALLYME_MAVEN_PASSWORD: ${{ secrets.REALLYME_MAVEN_PASSWORD }}
@@ -294,6 +298,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           RELEASE_SHA: ${{ needs.verify-release-sha.outputs.release_sha }}
+          RELEASE_ATTESTATION_WAIT_SECONDS: "3600"
+          RELEASE_ATTESTATION_POLL_SECONDS: "20"
           REALLYME_MAVEN_REPOSITORY_URL: ${{ secrets.REALLYME_MAVEN_REPOSITORY_URL }}
           REALLYME_MAVEN_USERNAME: ${{ secrets.REALLYME_MAVEN_USERNAME }}
           REALLYME_MAVEN_PASSWORD: ${{ secrets.REALLYME_MAVEN_PASSWORD }}
@@ -349,4 +355,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           RELEASE_SHA: ${{ needs.verify-release-sha.outputs.release_sha }}
+          RELEASE_ATTESTATION_WAIT_SECONDS: "3600"
+          RELEASE_ATTESTATION_POLL_SECONDS: "20"
           RELEASE_VERSION: ${{ inputs.version }}
