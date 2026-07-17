@@ -2,7 +2,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+import { create } from "@bufbuild/protobuf";
+
 import { ReallyMeCodecError } from "./errors.js";
+import {
+  CodecMulticodecLookupPrefixRequestSchema,
+  CodecMulticodecPrefixForNameRequestSchema,
+  CodecMulticodecTableRequestSchema,
+  CodecMultikeyParseRequestSchema,
+  CodecOperationRequestSchema,
+} from "./proto/generated/reallyme/codec/v1/codec_pb.js";
+import {
+  processGeneratedProtoRequest,
+  protoPayloadOrThrow,
+} from "./protoProcess.js";
 import {
   ensureBytesInput,
   ensureStringInput,
@@ -11,7 +24,6 @@ import {
   readBytesOutput,
   readBytesProperty,
   readObjectOutput,
-  readProtoResultOutput,
   readOptionalLengthProperty,
   readStringOutput,
   readStringProperty,
@@ -62,6 +74,8 @@ const validKeyMaterialKinds: ReadonlySet<string> = new Set([
   "private-key",
   "symmetric-key",
 ]);
+
+const MAX_MULTICODEC_TABLE_ENTRIES = 1_024;
 
 const readTag = (object: object): ReallyMeMulticodecTag => {
   const tag = readStringProperty(object, "tag");
@@ -132,10 +146,29 @@ const readParsedMultikey = (value: unknown): ReallyMeParsedMultikey => {
 };
 
 const readMulticodecTable = (value: unknown): ReadonlyArray<ReallyMeMulticodecMetadata> => {
-  if (!Array.isArray(value)) {
+  try {
+    if (
+      !Array.isArray(value) ||
+      Object.getPrototypeOf(value) !== Array.prototype ||
+      value.length > MAX_MULTICODEC_TABLE_ENTRIES
+    ) {
+      throw new ReallyMeCodecError("provider-failure");
+    }
+    const table: ReallyMeMulticodecMetadata[] = [];
+    for (let index = 0; index < value.length; index += 1) {
+      const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+      if (descriptor === undefined || !("value" in descriptor)) {
+        throw new ReallyMeCodecError("provider-failure");
+      }
+      table.push(readMulticodecMetadata(descriptor.value));
+    }
+    return table;
+  } catch (error: unknown) {
+    if (error instanceof ReallyMeCodecError) {
+      throw error;
+    }
     throw new ReallyMeCodecError("provider-failure");
   }
-  return value.map(readMulticodecMetadata);
 };
 
 export const base58btcEncode = (bytes: Uint8Array): string => {
@@ -177,19 +210,21 @@ export const multicodecPrefixForName = (
 };
 
 export const multicodecPrefixForNameProto = (codecName: string): Uint8Array => {
-  ensureStringInput(codecName);
-  return readBytesOutput(
-    requireReallyMeCodecWasmProvider().multicodecPrefixForNameProto(codecName),
-  );
+  return protoPayloadOrThrow(multicodecPrefixForNameProtoResult(codecName));
 };
 
 export const multicodecPrefixForNameProtoResult = (
   codecName: string,
 ): ReallyMeCodecProtoResult => {
   ensureStringInput(codecName);
-  return readProtoResultOutput(
-    requireReallyMeCodecWasmProvider().multicodecPrefixForNameProtoResult(codecName),
-  );
+  return processGeneratedProtoRequest(create(CodecOperationRequestSchema, {
+    operation: {
+      case: "multicodecPrefixForName",
+      value: create(CodecMulticodecPrefixForNameRequestSchema, {
+        name: codecName,
+      }),
+    },
+  }));
 };
 
 export const multicodecLookupPrefix = (
@@ -202,19 +237,21 @@ export const multicodecLookupPrefix = (
 };
 
 export const multicodecLookupPrefixProto = (bytes: Uint8Array): Uint8Array => {
-  ensureBytesInput(bytes);
-  return readBytesOutput(
-    requireReallyMeCodecWasmProvider().multicodecLookupPrefixProto(bytes),
-  );
+  return protoPayloadOrThrow(multicodecLookupPrefixProtoResult(bytes));
 };
 
 export const multicodecLookupPrefixProtoResult = (
   bytes: Uint8Array,
 ): ReallyMeCodecProtoResult => {
   ensureBytesInput(bytes);
-  return readProtoResultOutput(
-    requireReallyMeCodecWasmProvider().multicodecLookupPrefixProtoResult(bytes),
-  );
+  return processGeneratedProtoRequest(create(CodecOperationRequestSchema, {
+    operation: {
+      case: "multicodecLookupPrefix",
+      value: create(CodecMulticodecLookupPrefixRequestSchema, {
+        value: bytes,
+      }),
+    },
+  }));
 };
 
 export const multicodecStripPrefix = (bytes: Uint8Array): Uint8Array => {
@@ -226,10 +263,15 @@ export const multicodecTable = (): ReadonlyArray<ReallyMeMulticodecMetadata> =>
   readMulticodecTable(requireReallyMeCodecWasmProvider().multicodecTable());
 
 export const multicodecTableProto = (): Uint8Array =>
-  readBytesOutput(requireReallyMeCodecWasmProvider().multicodecTableProto());
+  protoPayloadOrThrow(multicodecTableProtoResult());
 
 export const multicodecTableProtoResult = (): ReallyMeCodecProtoResult =>
-  readProtoResultOutput(requireReallyMeCodecWasmProvider().multicodecTableProtoResult());
+  processGeneratedProtoRequest(create(CodecOperationRequestSchema, {
+    operation: {
+      case: "multicodecTable",
+      value: create(CodecMulticodecTableRequestSchema),
+    },
+  }));
 
 export const multikeyEncode = (codecName: string, publicKey: Uint8Array): string => {
   ensureStringInput(codecName);
@@ -245,17 +287,19 @@ export const multikeyParse = (multikey: string): ReallyMeParsedMultikey => {
 };
 
 export const multikeyParseProto = (multikey: string): Uint8Array => {
-  ensureStringInput(multikey);
-  return readBytesOutput(requireReallyMeCodecWasmProvider().multikeyParseProto(multikey));
+  return protoPayloadOrThrow(multikeyParseProtoResult(multikey));
 };
 
 export const multikeyParseProtoResult = (
   multikey: string,
 ): ReallyMeCodecProtoResult => {
   ensureStringInput(multikey);
-  return readProtoResultOutput(
-    requireReallyMeCodecWasmProvider().multikeyParseProtoResult(multikey),
-  );
+  return processGeneratedProtoRequest(create(CodecOperationRequestSchema, {
+    operation: {
+      case: "multikeyParse",
+      value: create(CodecMultikeyParseRequestSchema, { multikey }),
+    },
+  }));
 };
 
 export const bindingTypeMatchesCodec = (

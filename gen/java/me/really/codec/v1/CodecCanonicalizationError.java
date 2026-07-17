@@ -326,4 +326,3 @@ public  final class CodecCanonicalizationError extends
     return DEFAULT_INSTANCE.getParserForType();
   }
 }
-

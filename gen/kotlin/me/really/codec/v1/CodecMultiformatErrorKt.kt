@@ -69,4 +69,3 @@ public object CodecMultiformatErrorKt {
 }
 public inline fun me.really.codec.v1.CodecMultiformatError.copy(block: `me.really.codec.v1`.CodecMultiformatErrorKt.Dsl.() -> kotlin.Unit): me.really.codec.v1.CodecMultiformatError =
   `me.really.codec.v1`.CodecMultiformatErrorKt.Dsl._create(this.toBuilder()).apply { block() }._build()
-

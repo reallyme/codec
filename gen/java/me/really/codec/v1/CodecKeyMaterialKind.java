@@ -104,13 +104,13 @@ public enum CodecKeyMaterialKind
           }
         };
 
-  public static com.google.protobuf.Internal.EnumVerifier 
+  public static com.google.protobuf.Internal.EnumVerifier
       internalGetVerifier() {
     return CodecKeyMaterialKindVerifier.INSTANCE;
   }
 
-  private static final class CodecKeyMaterialKindVerifier implements 
-       com.google.protobuf.Internal.EnumVerifier { 
+  private static final class CodecKeyMaterialKindVerifier implements
+       com.google.protobuf.Internal.EnumVerifier {
           static final com.google.protobuf.Internal.EnumVerifier
               INSTANCE = new CodecKeyMaterialKindVerifier();
           @java.lang.Override
@@ -127,4 +127,3 @@ public enum CodecKeyMaterialKind
 
   // @@protoc_insertion_point(enum_scope:reallyme.codec.v1.CodecKeyMaterialKind)
 }
-

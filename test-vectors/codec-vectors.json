@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 2,
+  "sources": [
+    {
+      "name": "RFC 4648",
+      "url": "https://www.rfc-editor.org/rfc/rfc4648",
+      "provenance": "official",
+      "covers": ["base64", "base64url", "base16"]
+    },
+    {
+      "name": "RFC 8785",
+      "url": "https://www.rfc-editor.org/rfc/rfc8785",
+      "provenance": "official",
+      "covers": ["jcs"]
+    },
+    {
+      "name": "IPLD DAG-CBOR specification",
+      "url": "https://ipld.io/specs/codecs/dag-cbor/spec/",
+      "provenance": "trusted-upstream",
+      "covers": ["dag-cbor"]
+    },
+    {
+      "name": "Multiformats multicodec table",
+      "url": "https://github.com/multiformats/multicodec",
+      "provenance": "trusted-upstream",
+      "covers": ["multicodec", "multibase", "multikey"]
+    },
+    {
+      "name": "ReallyMe pinned SDK parity vectors",
+      "url": "https://github.com/reallyme/codec",
+      "provenance": "reallyme-pinned",
+      "covers": ["selected-inputs", "canonical-rejections", "pem", "proto-entrypoints"]
+    }
+  ],
+  "vectors": {
+    "baseInputHex": "000102fbff",
+    "base64Padded": "AAEC+/8=",
+    "base64MissingPadding": "Zg",
+    "base64NonCanonicalTrailingBits": "Zh==",
+    "base64urlUnpadded": "AAEC-_8",
+    "base64urlPadded": "AA==",
+    "base64urlNonCanonicalTrailingBits": "AB",
+    "lowerHex": "000102fbff",
+    "base58btcEncoded": "12VzRU",
+    "publicKeyHex": "0000000000000000000000000000000000000000000000000000000000000007",
+    "ed25519CodecName": "ed25519-pub",
+    "ed25519AlgorithmName": "Ed25519",
+    "ed25519Tag": "key",
+    "ed25519KeyMaterial": "public-key",
+    "ed25519ExpectedKeyLength": 32,
+    "ed25519PrefixHex": "ed01",
+    "ed25519PrefixedPublicKeyHex": "ed010000000000000000000000000000000000000000000000000000000000000007",
+    "publicKeyBase58btc": "11111111111111111111111111111118",
+    "publicKeyMultibaseBase58btc": "z11111111111111111111111111111118",
+    "publicKeyMultibaseBase64url": "uAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAc",
+    "unsupportedMultibase": "xdata",
+    "ed25519Multikey": "z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnW",
+    "nonCanonicalBase64urlMultikey": "u7QEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABw",
+    "multikeyBindingType": "Multikey",
+    "mismatchedBindingType": "P256Key2024",
+    "mismatchedBindingAlgorithm": "P-256",
+    "multicodecTableRequiredName": "mlkem-1024-pub",
+    "dagCborTaggedJson": "{\"type\":\"map\",\"value\":[{\"key\":\"b\",\"value\":{\"type\":\"int\",\"value\":2}},{\"key\":\"a\",\"value\":{\"type\":\"string\",\"value\":\"one\"}},{\"key\":\"bytes\",\"value\":{\"type\":\"bytes\",\"value\":\"AAEC\"}}]}",
+    "dagCborCanonicalTaggedJson": "{\"type\":\"map\",\"value\":[{\"key\":\"a\",\"value\":{\"type\":\"string\",\"value\":\"one\"}},{\"key\":\"b\",\"value\":{\"type\":\"int\",\"value\":2}},{\"key\":\"bytes\",\"value\":{\"type\":\"bytes\",\"value\":\"AAEC\"}}]}",
+    "dagCborEncodedHex": "a36161636f6e6561620265627974657343000102",
+    "dagCborNonCanonicalIntegerHex": "1800",
+    "dagCborDuplicateKeyHex": "a2616101616102",
+    "dagCborOutOfOrderKeyHex": "a2616201616102",
+    "dagCborCid": "bafyreicj4zalmwir73njfcoq6l2vb4ycqlle32tiw6fcmfmn6pmce4cu2a",
+    "dagCborSha256Hex": "49e640b65911feda9289d0f2f550f30282d64dea68b78a26158df3d8227054d0",
+    "dagCborMultihashHex": "122049e640b65911feda9289d0f2f550f30282d64dea68b78a26158df3d8227054d0",
+    "dagCborCodecCode": 113,
+    "invalidCid": "not-a-cid",
+    "jcsObjectInputJson": "{\"b\":2,\"a\":1}",
+    "jcsObjectCanonicalJson": "{\"a\":1,\"b\":2}",
+    "jcsNumberInputJson": "333333333.33333329",
+    "jcsNumberCanonicalJson": "333333333.3333333",
+    "jcsDuplicateMemberJson": "{\"a\":1,\"a\":2}",
+    "jcsNonInteroperableIntegerJson": "9007199254740992",
+    "jcsLoneSurrogateJson": "\"\\ud800\"",
+    "pemPrivateLabel": "PRIVATE KEY",
+    "pemPrivateDerHex": "3003020101",
+    "pemPrivatePem": "-----BEGIN PRIVATE KEY-----\nMAMCAQE=\n-----END PRIVATE KEY-----\n",
+    "pemPublicLabel": "PUBLIC KEY",
+    "pemWrappedDerText": "not real der",
+    "pemWrappedPem": "-----BEGIN PUBLIC KEY-----\nbm90\nIHJl\nYWwg\nZGVy\n-----END PUBLIC KEY-----\n",
+    "pemLineWidthOptionsJson": "{\"lineWidth\":4}",
+    "pemPublicOnlyDecodeOptionsJson": "{\"allowedLabels\":[\"PUBLIC KEY\"]}",
+    "protoMulticodecTableRequestHex": "d23e00",
+    "protoMulticodecTableRequestJson": "{\"multicodecTable\":{}}"
+  }
+}

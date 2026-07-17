@@ -43,6 +43,7 @@ impl Default for PemDecodePolicy<'_> {
 
 /// Line ending emitted by PEM encoding.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum PemLineEnding {
     /// Unix line endings.
     Lf,

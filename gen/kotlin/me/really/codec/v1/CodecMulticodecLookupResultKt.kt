@@ -101,4 +101,3 @@ public inline fun me.really.codec.v1.CodecMulticodecLookupResult.copy(block: `me
 
 public val me.really.codec.v1.CodecMulticodecLookupResultOrBuilder.metadataOrNull: me.really.codec.v1.CodecMulticodecSpec?
   get() = if (hasMetadata()) getMetadata() else null
-

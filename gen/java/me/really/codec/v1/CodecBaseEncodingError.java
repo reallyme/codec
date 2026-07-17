@@ -326,4 +326,3 @@ public  final class CodecBaseEncodingError extends
     return DEFAULT_INSTANCE.getParserForType();
   }
 }
-

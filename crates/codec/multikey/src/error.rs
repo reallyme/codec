@@ -6,6 +6,7 @@ use thiserror::Error;
 
 /// Reason a codec name could not be resolved, used in error messages.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum CodecNameReason {
     /// The codec name is not one of the supported multicodec names.
     Unsupported,
@@ -20,8 +21,68 @@ impl core::fmt::Display for CodecNameReason {
     }
 }
 
+/// Classified multicodec name used for deterministic, non-string error context.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum MultikeyCodecKind {
+    /// Ed25519 public key.
+    Ed25519,
+    /// Ed448 public key.
+    Ed448,
+    /// X25519 public key.
+    X25519,
+    /// NIST P-256 public key.
+    P256,
+    /// NIST P-384 public key.
+    P384,
+    /// NIST P-521 public key.
+    P521,
+    /// RSA public key.
+    Rsa,
+    /// secp256k1 public key.
+    Secp256k1,
+    /// ML-DSA-44 public key.
+    MlDsa44,
+    /// ML-DSA-65 public key.
+    MlDsa65,
+    /// ML-DSA-87 public key.
+    MlDsa87,
+    /// ML-KEM-512 public key.
+    MlKem512,
+    /// ML-KEM-768 public key.
+    MlKem768,
+    /// ML-KEM-1024 public key.
+    MlKem1024,
+    /// A codec outside the supported public-key set.
+    Unsupported,
+}
+
+impl core::fmt::Display for MultikeyCodecKind {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let detail = match self {
+            MultikeyCodecKind::Ed25519 => "ed25519-pub",
+            MultikeyCodecKind::Ed448 => "ed448-pub",
+            MultikeyCodecKind::X25519 => "x25519-pub",
+            MultikeyCodecKind::P256 => "p256-pub",
+            MultikeyCodecKind::P384 => "p384-pub",
+            MultikeyCodecKind::P521 => "p521-pub",
+            MultikeyCodecKind::Rsa => "rsa-pub",
+            MultikeyCodecKind::Secp256k1 => "secp256k1-pub",
+            MultikeyCodecKind::MlDsa44 => "mldsa-44-pub",
+            MultikeyCodecKind::MlDsa65 => "mldsa-65-pub",
+            MultikeyCodecKind::MlDsa87 => "mldsa-87-pub",
+            MultikeyCodecKind::MlKem512 => "mlkem-512-pub",
+            MultikeyCodecKind::MlKem768 => "mlkem-768-pub",
+            MultikeyCodecKind::MlKem1024 => "mlkem-1024-pub",
+            MultikeyCodecKind::Unsupported => "unsupported codec",
+        };
+        write!(f, "{detail}")
+    }
+}
+
 /// Classified binding-type label, used for stable error reporting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum BindingTypeKind {
     /// Generic `Multikey` binding, allowing any supported algorithm.
     Multikey,
@@ -71,6 +132,7 @@ impl core::fmt::Display for BindingTypeKind {
 
 /// Classified algorithm label, used for stable error reporting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum BindingAlgorithmKind {
     /// Ed25519 signature algorithm.
     Ed25519,
@@ -131,6 +193,7 @@ impl core::fmt::Display for BindingAlgorithmKind {
 ///
 /// Parsing fails closed: malformed input yields one of these variants.
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum MultikeyError {
     /// The input is not a valid multibase string.
     #[error("multikey: invalid multibase string")]
@@ -152,10 +215,10 @@ pub enum MultikeyError {
     },
 
     /// The key length does not match the length required by the codec.
-    #[error("multikey: key length mismatch for {codec_name}: expected {expected}, got {actual}")]
+    #[error("multikey: key length mismatch for {codec}: expected {expected}, got {actual}")]
     KeyLengthMismatch {
         /// Canonical codec name whose length requirement was violated.
-        codec_name: &'static str,
+        codec: MultikeyCodecKind,
         /// Key length in bytes the codec requires.
         expected: usize,
         /// Key length in bytes that was supplied.
@@ -163,10 +226,10 @@ pub enum MultikeyError {
     },
 
     /// A variable-length key exceeded this crate's semantic safety limit.
-    #[error("multikey: key too large for {codec_name}: maximum {max}, got {actual}")]
+    #[error("multikey: key too large for {codec}: maximum {max}, got {actual}")]
     KeyTooLarge {
         /// Canonical codec name whose length limit was violated.
-        codec_name: &'static str,
+        codec: MultikeyCodecKind,
         /// Maximum accepted key length in bytes.
         max: usize,
         /// Key length in bytes that was supplied.
@@ -179,26 +242,26 @@ pub enum MultikeyError {
 
     /// The binding type is incompatible with the key's multicodec.
     #[error(
-        "multikey: binding type '{binding_type}' does not match codec '{codec_name}' (alg={alg})"
+        "multikey: binding type '{binding_type}' does not match codec '{codec}' (alg={algorithm})"
     )]
     BindingTypeCodecMismatch {
         /// Declared binding type.
         binding_type: BindingTypeKind,
         /// Canonical codec name implied by the key.
-        codec_name: &'static str,
+        codec: MultikeyCodecKind,
         /// Algorithm string implied by the codec.
-        alg: &'static str,
+        algorithm: BindingAlgorithmKind,
     },
 
     /// The declared binding algorithm disagrees with the codec's algorithm.
     #[error(
-        "multikey: algorithm mismatch: binding.algorithm='{binding_alg}' but codec implies '{codec_alg}'"
+        "multikey: algorithm mismatch: binding.algorithm='{binding_alg}' but codec implies '{codec_algorithm}'"
     )]
     BindingAlgorithmMismatch {
         /// Algorithm declared in the binding.
         binding_alg: BindingAlgorithmKind,
         /// Algorithm string implied by the codec.
-        codec_alg: &'static str,
+        codec_algorithm: BindingAlgorithmKind,
     },
 
     /// A required explicit algorithm was omitted for this binding type.
@@ -245,5 +308,25 @@ pub(crate) fn classify_binding_algorithm(algorithm: &str) -> BindingAlgorithmKin
         "ML-KEM-768" => BindingAlgorithmKind::MlKem768,
         "ML-KEM-1024" => BindingAlgorithmKind::MlKem1024,
         _ => BindingAlgorithmKind::Unsupported,
+    }
+}
+
+pub(crate) fn classify_multikey_codec(codec_name: &str) -> MultikeyCodecKind {
+    match codec_name {
+        "ed25519-pub" => MultikeyCodecKind::Ed25519,
+        "ed448-pub" => MultikeyCodecKind::Ed448,
+        "x25519-pub" => MultikeyCodecKind::X25519,
+        "p256-pub" => MultikeyCodecKind::P256,
+        "p384-pub" => MultikeyCodecKind::P384,
+        "p521-pub" => MultikeyCodecKind::P521,
+        "rsa-pub" => MultikeyCodecKind::Rsa,
+        "secp256k1-pub" => MultikeyCodecKind::Secp256k1,
+        "mldsa-44-pub" => MultikeyCodecKind::MlDsa44,
+        "mldsa-65-pub" => MultikeyCodecKind::MlDsa65,
+        "mldsa-87-pub" => MultikeyCodecKind::MlDsa87,
+        "mlkem-512-pub" => MultikeyCodecKind::MlKem512,
+        "mlkem-768-pub" => MultikeyCodecKind::MlKem768,
+        "mlkem-1024-pub" => MultikeyCodecKind::MlKem1024,
+        _ => MultikeyCodecKind::Unsupported,
     }
 }

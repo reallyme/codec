@@ -7,6 +7,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RESOURCES_ROOT="${1:-${ROOT_DIR}/packages/kotlin-codec/native}"
+FFI_RUSTFLAGS="${RUSTFLAGS:+${RUSTFLAGS} }-C panic=unwind"
 
 case "$(uname -s)" in
   Darwin)
@@ -24,5 +25,5 @@ case "$(uname -s)" in
     ;;
 esac
 
-cargo build -p reallyme-codec-ffi --release
+RUSTFLAGS="${FFI_RUSTFLAGS}" cargo build --locked -p reallyme-codec-ffi --release
 node "${ROOT_DIR}/scripts/stage_kotlin_native_resource.mjs" "${LIBRARY_PATH}" "${RESOURCES_ROOT}"

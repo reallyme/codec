@@ -101,8 +101,20 @@ jobs:
       - name: Test TypeScript codec package
         run: npm --prefix packages/codec test
 
+      - name: Test release-readiness CLI
+        run: node --test scripts/release-readiness/cli.test.mjs
+
+      - name: Test native manifest integrity metadata
+        run: node --test scripts/write_native_manifest.test.mjs
+
+      - name: Test release attestation policy
+        run: node --test scripts/verify_release_attestation.test.mjs
+
+      - name: Test Swift release artifact verification
+        run: node --test scripts/verify_swift_release_artifact.test.mjs
+
       - name: Release readiness
-        run: node scripts/check_release_readiness.mjs
+        run: node scripts/run_pinned_release_readiness.mjs
 
       - name: Dependency policy
         run: cargo deny check
@@ -120,7 +132,7 @@ jobs:
           swift --version
 
       - name: Build codec FFI dylib
-        run: cargo build -p reallyme-codec-ffi
+        run: cargo build --locked -p reallyme-codec-ffi
 
       - name: Test Swift package
         run: swift test
@@ -135,6 +147,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@0723195856401067f7a2779048b490ace7a47d7c # v5
+
       - name: Install Java
         uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5
         with:
@@ -147,7 +162,7 @@ jobs:
           toolchain: 1.96.0
 
       - name: Build codec FFI dylib
-        run: cargo build -p reallyme-codec-ffi
+        run: cargo build --locked -p reallyme-codec-ffi
 
       - name: Test Kotlin codec package
         working-directory: packages/kotlin-codec

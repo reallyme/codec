@@ -36,7 +36,7 @@ every codec family. Consumers that need a smaller dependency surface can select
 only the families they use:
 
 ```toml
-reallyme-codec = { version = "0.1.21", default-features = false, features = [
+reallyme-codec = { version = "0.1.22", default-features = false, features = [
   "base64url",
   "multikey",
 ] }
@@ -47,7 +47,7 @@ reallyme-codec = { version = "0.1.21", default-features = false, features = [
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.1.21"
+    from: "0.1.22"
 )
 ```
 
@@ -59,7 +59,7 @@ reallyme-codec = { version = "0.1.21", default-features = false, features = [
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.1.21")
+    implementation("me.really:codec:0.1.22")
 }
 ```
 
@@ -67,7 +67,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.1.21")
+    implementation("me.really:codec-android:0.1.22")
 }
 ```
 
@@ -134,19 +134,22 @@ The importable wire/config contract lives in the publishable proto crate at
 Service, application, and storage protos can import it when they need stable
 codec identifiers or non-secret error envelopes.
 
-Fixed-shape runtime results also have protobuf forms at the FFI/WASM boundary.
-Use the `*Proto` methods, such as `multikeyParseProto`, `decodePemProto`, and
-`dagCborVerifyCidProto`, when another protocol layer needs binary protobuf
-bytes instead of the SDK JSON convenience shapes.
+The executable transport boundary accepts one generated
+`CodecOperationRequest` and returns one binary `CodecProtoResultEnvelope`.
+Operation-specific `*Proto` SDK helpers are request builders over that same
+entrypoint; they are not separate wire APIs. Native Rust callers retain the
+typed codec APIs and do not need to serialize.
+
+ProtoJSON uses protobuf enum names and standard padded Base64 for bytes. JSON requests return binary protobuf responses. Prefer binary protobuf or native APIs for sensitive data.
 
 The generated proto surfaces are available through:
 
-| Language | Proto surface |
-|---|---|
-| Rust | `reallyme-codec-proto` |
-| Swift | `ReallyMeCodecProto` |
-| Kotlin | `me.really.codec.v1` |
-| TypeScript | `@reallyme/codec/proto` |
+| Language | Proto surface | Generic execution |
+|---|---|---|
+| Rust | `reallyme-codec-proto` | `process_proto`, `process_proto_json` |
+| Swift | `ReallyMeCodecProto` | `processProto`, `processProtoJson` |
+| Kotlin / Java | `me.really.codec.v1` | `processProto`, `processProtoJson` |
+| TypeScript | `@reallyme/codec/proto` | `processProto`, `processProtoJson` |
 
 See [docs/protobuf.md](docs/protobuf.md) for the boundary rules.
 

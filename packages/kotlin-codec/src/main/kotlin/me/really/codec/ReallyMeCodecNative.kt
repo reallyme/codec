@@ -14,12 +14,9 @@ internal object ReallyMeCodecNative {
         third: ByteArray,
     ): ByteArray
 
-    external fun processProtoNative(
-        operation: Int,
-        first: ByteArray,
-        second: ByteArray,
-        third: ByteArray,
-    ): ByteArray
+    external fun processProtoNative(request: ByteArray): ByteArray
+
+    external fun processProtoJsonNative(requestJson: ByteArray): ByteArray
 
     external fun processBoolNative(
         operation: Int,
@@ -27,10 +24,5 @@ internal object ReallyMeCodecNative {
         second: ByteArray,
     ): Int
 
-    external fun processProtoResultNative(
-        operation: Int,
-        first: ByteArray,
-        second: ByteArray,
-        third: ByteArray,
-    ): ReallyMeCodecProtoResult
+    external fun processProtoResultNative(request: ByteArray): ReallyMeCodecProtoResult
 }

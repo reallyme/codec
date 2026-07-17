@@ -4,6 +4,7 @@
 
 import org.gradle.api.publish.maven.tasks.PublishToMavenLocal
 import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
+import java.net.URI
 import java.security.MessageDigest
 
 plugins {
@@ -13,11 +14,16 @@ plugins {
 }
 
 group = "me.really"
-version = "0.1.21"
+version = "0.1.22"
 
-val jniLibsDir = providers.gradleProperty("reallyme.codec.androidJniLibsDir")
+dependencyLocking {
+    lockAllConfigurations()
+}
+
+val configuredAndroidJniLibsDir = providers.gradleProperty("reallyme.codec.androidJniLibsDir")
     .map { file(it) }
-    .orElse(layout.projectDirectory.dir("src/main/jniLibs").asFile)
+val jniLibsDir = configuredAndroidJniLibsDir
+    .orElse(layout.buildDirectory.dir("generated/android-jniLibs").map { it.asFile })
 val configuredNativeAssetsDir = providers.gradleProperty("reallyme.codec.androidNativeAssetsDir")
 val nativeAssetsDir = configuredNativeAssetsDir
     .map { file(it) }
@@ -35,10 +41,6 @@ val signingKey = providers.gradleProperty("signingInMemoryKey")
     .orElse(providers.environmentVariable("MAVEN_SIGNING_KEY"))
 val signingPassword = providers.gradleProperty("signingInMemoryKeyPassword")
     .orElse(providers.environmentVariable("MAVEN_SIGNING_PASSWORD"))
-val requireRemoteMavenPublishing = providers.gradleProperty("reallyme.maven.requireRemote")
-    .map { it == "true" }
-    .orElse(false)
-
 fun nonBlank(value: String?): String? = value?.trim()?.takeIf { it.isNotEmpty() }
 
 val remoteMavenRepositoryUrlValue = nonBlank(remoteMavenRepositoryUrl.orNull)
@@ -46,6 +48,25 @@ val remoteMavenUsernameValue = nonBlank(remoteMavenUsername.orNull)
 val remoteMavenPasswordValue = nonBlank(remoteMavenPassword.orNull)
 val signingKeyValue = nonBlank(signingKey.orNull)
 val signingPasswordValue = nonBlank(signingPassword.orNull)
+val remoteMavenRepositoryUri = remoteMavenRepositoryUrlValue?.let { value ->
+    val parsed = try {
+        URI(value)
+    } catch (_: IllegalArgumentException) {
+        throw GradleException("remote Maven repository URL is invalid")
+    }
+    if (
+        parsed.scheme != "https" ||
+        parsed.host.isNullOrBlank() ||
+        parsed.userInfo != null ||
+        parsed.query != null ||
+        parsed.fragment != null
+    ) {
+        throw GradleException(
+            "remote Maven repository URL must be an absolute HTTPS URL without embedded credentials, a query, or a fragment"
+        )
+    }
+    parsed
+}
 
 val requiredAndroidJniLibs = listOf(
     "arm64-v8a/libreallyme_codec_ffi.so",
@@ -112,7 +133,11 @@ val generateAndroidNativeManifest = tasks.register("generateAndroidNativeManifes
         val nativeFiles = requiredAndroidJniLibs.map { relativePath ->
             val file = root.resolve(relativePath)
             if (!file.isFile) {
-                throw GradleException("missing ReallyMe codec Android jniLib for manifest: $relativePath")
+                throw GradleException(
+                    "missing freshly built ReallyMe codec Android jniLib for manifest: $relativePath; " +
+                        "run scripts/build_android_native_resources.sh and pass " +
+                        "-Preallyme.codec.androidJniLibsDir"
+                )
             }
             file
         }
@@ -212,7 +237,6 @@ tasks.withType<PublishToMavenRepository>().configureEach {
 val verifyRemoteMavenPublishingConfigured = tasks.register("verifyRemoteMavenPublishingConfigured") {
     group = "verification"
     description = "Verifies that remote Maven publishing credentials are configured."
-    onlyIf { requireRemoteMavenPublishing.get() }
     doLast {
         val missing = buildList {
             if (remoteMavenRepositoryUrlValue == null) {
@@ -282,14 +306,10 @@ publishing {
         }
     }
     repositories {
-        maven {
-            name = "localRelease"
-            url = layout.buildDirectory.dir("repos/releases").get().asFile.toURI()
-        }
-        if (remoteMavenRepositoryUrlValue != null) {
+        if (remoteMavenRepositoryUri != null) {
             maven {
                 name = "remoteRelease"
-                url = uri(remoteMavenRepositoryUrlValue)
+                url = remoteMavenRepositoryUri
                 credentials {
                     username = remoteMavenUsernameValue
                     password = remoteMavenPasswordValue

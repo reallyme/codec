@@ -121,4 +121,3 @@ public object CodecMultikeyParseResultKt {
 }
 public inline fun me.really.codec.v1.CodecMultikeyParseResult.copy(block: `me.really.codec.v1`.CodecMultikeyParseResultKt.Dsl.() -> kotlin.Unit): me.really.codec.v1.CodecMultikeyParseResult =
   `me.really.codec.v1`.CodecMultikeyParseResultKt.Dsl._create(this.toBuilder()).apply { block() }._build()
-

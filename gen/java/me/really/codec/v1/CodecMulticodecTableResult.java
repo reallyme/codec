@@ -33,7 +33,7 @@ public  final class CodecMulticodecTableResult extends
   /**
    * <code>repeated .reallyme.codec.v1.CodecMulticodecSpec entries = 1 [json_name = "entries"];</code>
    */
-  public java.util.List<? extends me.really.codec.v1.CodecMulticodecSpecOrBuilder> 
+  public java.util.List<? extends me.really.codec.v1.CodecMulticodecSpecOrBuilder>
       getEntriesOrBuilderList() {
     return entries_;
   }
@@ -395,4 +395,3 @@ public  final class CodecMulticodecTableResult extends
     return DEFAULT_INSTANCE.getParserForType();
   }
 }
-

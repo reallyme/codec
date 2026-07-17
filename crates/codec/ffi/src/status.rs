@@ -9,7 +9,10 @@ pub type CodecStatus = i32;
 
 /// Operation succeeded (`0`).
 pub const CODEC_OK: CodecStatus = 0;
-/// Protobuf operation produced a typed `CodecError` envelope (`1`).
+/// Legacy protobuf operation status (`1`).
+///
+/// Current protobuf entry points return `CODEC_OK` for successfully encoded
+/// result envelopes; typed codec errors are carried inside the envelope.
 pub const CODEC_PROTO_ERROR: CodecStatus = 1;
 /// A pointer/length argument was invalid, null where required, or malformed (`-1`).
 pub const CODEC_INVALID_ARGUMENT: CodecStatus = -1;

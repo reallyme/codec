@@ -146,7 +146,17 @@ fn rejects_duplicate_map_keys() {
     // map(2) { "a":1, "a":2 }
     let bad = vec![0xA2, 0x61, 0x61, 0x01, 0x61, 0x61, 0x02];
 
-    assert!(decode_dag_cbor(&bad).is_err());
+    assert_eq!(decode_dag_cbor(&bad), Err(CborError::DuplicateMapKey));
+}
+
+#[test]
+fn encoder_rejects_duplicate_map_keys() {
+    let duplicate = CborValue::Map(vec![
+        ("a".into(), CborValue::Int(1)),
+        ("a".into(), CborValue::Int(2)),
+    ]);
+
+    assert_eq!(encode_dag_cbor(&duplicate), Err(CborError::DuplicateMapKey));
 }
 
 #[test]

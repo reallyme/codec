@@ -7,18 +7,48 @@ use std::cmp::Ordering;
 use serde_json::Value;
 
 use crate::error::JcsError;
+use crate::parse_json::parse_json_text;
 
-/// Canonicalize a JSON value according to RFC 8785 (JSON Canonicalization
-/// Scheme).
+const MAX_INTEROPERABLE_INTEGER: u64 = 9_007_199_254_740_991;
+const MIN_INTEROPERABLE_INTEGER: i64 = -9_007_199_254_740_991;
+
+/// Canonicalize a trusted, already-materialized JSON value according to RFC
+/// 8785 (JSON Canonicalization Scheme).
 ///
-/// The output follows RFC 8785 for object member ordering and finite
-/// floating-point number formatting. Integer values that `serde_json` stores
-/// exactly as `i64`/`u64` are emitted verbatim, including values outside the
-/// ES6 safe-integer range. Callers that require strict I-JSON interoperability
-/// should reject integers outside `[-(2^53)+1, (2^53)-1]` before calling this
-/// function.
-pub fn canonicalize_json(value: &Value) -> Result<String, JcsError> {
+/// Integer values stored exactly as `i64` or `u64` are rejected outside the
+/// interoperable `[-(2^53)+1, (2^53)-1]` range. This function cannot determine
+/// whether a source document contained duplicate object member names because
+/// [`Value`] has already discarded that provenance. It is therefore intended
+/// only for values constructed programmatically or produced by a parser that
+/// already enforced the same duplicate-member policy. Call
+/// [`canonicalize_json_text`] at every untrusted text boundary.
+pub fn canonicalize_trusted_json_value(value: &Value) -> Result<String, JcsError> {
     canonicalize(value, 0)
+}
+
+/// Deprecated alias for [`canonicalize_trusted_json_value`].
+///
+/// The old name did not communicate that duplicate-member provenance has
+/// already been lost. New code must select the explicitly trusted-value API or
+/// the raw-text boundary API.
+#[deprecated(
+    since = "0.1.22",
+    note = "use canonicalize_json_text at text boundaries or canonicalize_trusted_json_value for trusted Values"
+)]
+pub fn canonicalize_json(value: &Value) -> Result<String, JcsError> {
+    canonicalize_trusted_json_value(value)
+}
+
+/// Parse and canonicalize one untrusted JSON text according to RFC 8785.
+///
+/// Unlike deserializing directly into [`Value`], this entry point detects and
+/// rejects duplicate object member names instead of silently retaining one
+/// value. It also rejects trailing data. Integer tokens retained exactly as
+/// `i64` or `u64` are rejected outside the interoperable range, while numbers
+/// parsed as binary64 follow RFC 8785's required ECMAScript rounding behavior.
+pub fn canonicalize_json_text(input: &str) -> Result<String, JcsError> {
+    let value = parse_json_text(input)?;
+    canonicalize_trusted_json_value(&value)
 }
 
 /// `depth` counts the array/object containers currently open, bounded by
@@ -78,14 +108,16 @@ fn utf16_cmp(left: &str, right: &str) -> Ordering {
 }
 
 fn canonicalize_number(value: &serde_json::Number) -> Result<String, JcsError> {
-    // This crate deliberately preserves exactly represented serde_json
-    // integers instead of coercing them through an ES6 double. That keeps Rust
-    // inputs lossless, but callers that need strict RFC 8785/I-JSON behavior
-    // must reject integers outside the ES6 safe-integer range at the boundary.
     if let Some(unsigned) = value.as_u64() {
+        if unsigned > MAX_INTEROPERABLE_INTEGER {
+            return Err(JcsError::IntegerOutsideInteroperableRange);
+        }
         return Ok(unsigned.to_string());
     }
     if let Some(signed) = value.as_i64() {
+        if signed < MIN_INTEROPERABLE_INTEGER {
+            return Err(JcsError::IntegerOutsideInteroperableRange);
+        }
         return Ok(signed.to_string());
     }
 

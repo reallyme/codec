@@ -5,13 +5,15 @@
 use codec_pem::{
     decode_pem, encode_pem, PemDecodePolicy, PemEncodeOptions, PemLabel, PemLineEnding,
 };
-use js_sys::{Object, Uint8Array};
+use js_sys::{JsString, Object, Uint8Array};
 use serde::Deserialize;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
-use zeroize::Zeroizing;
 
-use crate::map_error::invalid_input;
+use crate::boundary::{
+    validate_input_lengths, validate_js_inputs, zeroizing_bytes, zeroizing_string,
+};
+use crate::map_error::{invalid_input, provider_failure};
 use crate::write_js_object::{set_bytes, set_string};
 
 const DEFAULT_MAX_PEM_INPUT_LEN: usize = 1024 * 1024;
@@ -61,11 +63,12 @@ pub(crate) fn parse_label(label: &str) -> Result<PemLabel, JsValue> {
     }
 }
 
-pub(crate) fn label_text(label: PemLabel) -> &'static str {
+pub(crate) fn label_text(label: PemLabel) -> Result<&'static str, JsValue> {
     match label {
-        PemLabel::PrivateKey => "PRIVATE KEY",
-        PemLabel::EcPrivateKey => "EC PRIVATE KEY",
-        PemLabel::PublicKey => "PUBLIC KEY",
+        PemLabel::PrivateKey => Ok("PRIVATE KEY"),
+        PemLabel::EcPrivateKey => Ok("EC PRIVATE KEY"),
+        PemLabel::PublicKey => Ok("PUBLIC KEY"),
+        _ => Err(provider_failure()),
     }
 }
 
@@ -100,9 +103,14 @@ fn parse_encode_options(options_json: &str) -> Result<EncodeOptions, JsValue> {
 }
 
 #[wasm_bindgen(js_name = pemDecode)]
-/// Decode PEM text armor with caller-supplied size and label policy.
-pub fn pem_decode(input: &str, options_json: &str) -> Result<JsValue, JsValue> {
-    let options = parse_decode_options(options_json)?;
+/// Decode PEM armor bytes with caller-supplied size and label policy.
+pub fn pem_decode(input: &Uint8Array, options_json: &JsString) -> Result<JsValue, JsValue> {
+    validate_js_inputs(&[options_json], &[input])?;
+    let options_json = zeroizing_string(options_json)?;
+    let input = zeroizing_bytes(input)?;
+    validate_input_lengths(&[input.len(), options_json.len()])?;
+    let input = core::str::from_utf8(input.as_slice()).map_err(|_| invalid_input())?;
+    let options = parse_decode_options(&options_json)?;
     let labels = match options.allowed_labels {
         Some(labels) => {
             let mut parsed = Vec::with_capacity(labels.len());
@@ -124,23 +132,31 @@ pub fn pem_decode(input: &str, options_json: &str) -> Result<JsValue, JsValue> {
     };
     let decoded = decode_pem(input, policy).map_err(|_| invalid_input())?;
     let object = Object::new();
-    set_string(&object, "label", label_text(decoded.label))?;
+    set_string(&object, "label", label_text(decoded.label)?)?;
     set_bytes(&object, "der", decoded.der.as_slice())?;
     Ok(object.into())
 }
 
 #[wasm_bindgen(js_name = pemEncode)]
-/// Encode DER bytes as PEM text armor.
-pub fn pem_encode(label: &str, der: &Uint8Array, options_json: &str) -> Result<String, JsValue> {
-    let options = parse_encode_options(options_json)?;
+/// Encode DER bytes as wipeable PEM armor bytes.
+pub fn pem_encode(
+    label: &JsString,
+    der: &Uint8Array,
+    options_json: &JsString,
+) -> Result<Uint8Array, JsValue> {
+    validate_js_inputs(&[label, options_json], &[der])?;
+    let label = zeroizing_string(label)?;
+    let options_json = zeroizing_string(options_json)?;
+    let der = zeroizing_bytes(der)?;
+    validate_input_lengths(&[label.len(), der.len(), options_json.len()])?;
+    let options = parse_encode_options(&options_json)?;
     let line_ending = parse_line_ending(options.line_ending.as_deref())?;
     let options = PemEncodeOptions {
         max_der_len: options.max_der_len,
         line_width: options.line_width,
         line_ending,
     };
-    let der = Zeroizing::new(der.to_vec());
     let encoded =
-        encode_pem(parse_label(label)?, der.as_slice(), options).map_err(|_| invalid_input())?;
-    Ok(encoded.as_str().to_owned())
+        encode_pem(parse_label(&label)?, der.as_slice(), options).map_err(|_| invalid_input())?;
+    Ok(Uint8Array::from(encoded.as_bytes()))
 }

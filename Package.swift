@@ -8,7 +8,7 @@
 // SwiftPM and Xcode only read `Package.swift` at the repository root when a
 // package is consumed by URL, e.g.
 //
-//     .package(url: "https://github.com/reallyme/codec", from: "0.1.21")
+//     .package(url: "https://github.com/reallyme/codec", from: "0.1.22")
 //     .product(name: "ReallyMeCodec", package: "codec")
 //
 // The Swift sources live under `packages/swift/` to keep symmetry with the
@@ -20,8 +20,8 @@ import Foundation
 
 let ffiArtifactChecksumPlaceholder =
     "0000000000000000000000000000000000000000000000000000000000000000"
-let ffiArtifactChecksum = "3781461fee6cc52eb8cd88ca54a6a086b2e47e7fa47fee2245d2d9ee5dbf2dcc"
-let ffiArtifactVersion = "0.1.21"
+let ffiArtifactChecksum = "870bd3ce012402632743a7a8ac041152ae05b2419d2d3117085d1cad0896444a"
+let ffiArtifactVersion = "0.1.22"
 let ffiArtifactLocalPathOverride = ""
 let hasReleasedFfiArtifact = ffiArtifactChecksum != ffiArtifactChecksumPlaceholder
 let useRuntimeFfiProvider =
@@ -30,6 +30,8 @@ let useRuntimeFfiProvider =
 var codecTargetDependencies: [Target.Dependency] = []
 var codecSwiftSettings: [SwiftSetting] = []
 var packageTargets: [Target] = []
+
+codecTargetDependencies.append("ReallyMeCodecProto")
 
 if hasReleasedFfiArtifact && !useRuntimeFfiProvider {
     codecTargetDependencies.append("ReallyMeCodecFFI")
@@ -51,6 +53,10 @@ if hasReleasedFfiArtifact && !useRuntimeFfiProvider {
         )
     }
 }
+
+codecTargetDependencies.append(
+    .product(name: "SwiftProtobuf", package: "swift-protobuf")
+)
 
 packageTargets.append(
     .target(
@@ -99,7 +105,7 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/apple/swift-protobuf.git",
-            from: "1.30.0"
+            from: "1.38.1"
         ),
     ],
     targets: packageTargets

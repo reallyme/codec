@@ -11,5 +11,7 @@ mod parse;
 
 pub use binding::{binding_type_matches_codec, validate_key_binding, KeyBindingInput};
 pub use encode::encode_multikey;
-pub use error::MultikeyError;
+pub use error::{
+    BindingAlgorithmKind, BindingTypeKind, CodecNameReason, MultikeyCodecKind, MultikeyError,
+};
 pub use parse::{parse_multikey, ParsedMultikey};

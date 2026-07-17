@@ -47,11 +47,9 @@ const walk = (directory) => {
 };
 
 const gitCommitSha = () => {
-  if (process.env.GITHUB_SHA !== undefined && /^[0-9a-f]{40}$/.test(process.env.GITHUB_SHA)) {
-    return process.env.GITHUB_SHA;
-  }
+  let checkedOutSha;
   try {
-    return execFileSync("git", ["rev-parse", "HEAD"], {
+    checkedOutSha = execFileSync("git", ["rev-parse", "HEAD"], {
       cwd: process.cwd(),
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
@@ -59,6 +57,18 @@ const gitCommitSha = () => {
   } catch {
     fail("unable to determine git commit SHA");
   }
+  if (!/^[0-9a-f]{40}$/.test(checkedOutSha)) {
+    fail("checked-out git commit SHA is not a lowercase full SHA");
+  }
+  if (process.env.GITHUB_SHA !== undefined) {
+    if (!/^[0-9a-f]{40}$/.test(process.env.GITHUB_SHA)) {
+      fail("GITHUB_SHA is not a lowercase full SHA");
+    }
+    if (process.env.GITHUB_SHA !== checkedOutSha) {
+      fail("GITHUB_SHA does not match the checked-out source SHA");
+    }
+  }
+  return checkedOutSha;
 };
 
 const nativeFiles = walk(nativeRoot).sort((left, right) => left.localeCompare(right));
@@ -68,9 +78,14 @@ if (nativeFiles.length === 0) {
 
 const entries = nativeFiles.map((path) => {
   const bytes = readFileSync(path);
+  const sha256 = createHash("sha256").update(bytes).digest("hex");
+  // The JVM loader consumes this fixed-format sidecar before extracting the
+  // matching library. Keeping the parser deliberately narrow avoids making a
+  // general JSON parser part of the native-loader trust boundary.
+  writeFileSync(`${path}.sha256`, `${sha256} ${bytes.length}\n`, { mode: 0o600 });
   return {
     path: relative(nativeRoot, path).split(sep).join("/"),
-    sha256: createHash("sha256").update(bytes).digest("hex"),
+    sha256,
     size: bytes.length,
   };
 });

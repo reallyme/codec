@@ -20,6 +20,12 @@
 // their safety docs in the module-level boundary rules.
 #![allow(clippy::missing_safety_doc)]
 
+// `catch_unwind` cannot protect an embedding process when this crate is built
+// with panic=abort. Refuse such artifacts at compile time instead of shipping
+// a panic firewall that is structurally present but operationally inert.
+#[cfg(not(panic = "unwind"))]
+compile_error!("reallyme-codec-ffi must be compiled with panic=unwind");
+
 /// C ABI surface for ReallyMe codec operations used by platform packages.
 pub mod codec;
 pub mod guard;

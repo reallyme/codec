@@ -69,4 +69,3 @@ public object CodecBackendErrorKt {
 }
 public inline fun me.really.codec.v1.CodecBackendError.copy(block: `me.really.codec.v1`.CodecBackendErrorKt.Dsl.() -> kotlin.Unit): me.really.codec.v1.CodecBackendError =
   `me.really.codec.v1`.CodecBackendErrorKt.Dsl._create(this.toBuilder()).apply { block() }._build()
-

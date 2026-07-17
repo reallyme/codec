@@ -521,8 +521,9 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
+ "buffa",
  "reallyme-codec-base64",
  "reallyme-codec-base64url",
  "reallyme-codec-cbor",
@@ -532,11 +533,14 @@ dependencies = [
  "reallyme-codec-multicodec",
  "reallyme-codec-multikey",
  "reallyme-codec-pem",
+ "reallyme-codec-proto",
+ "serde_json",
+ "zeroize",
 ]
 
 [[package]]
 name = "reallyme-codec-base64"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "base64",
  "thiserror",
@@ -544,7 +548,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-base64url"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "base64",
  "serde",
@@ -554,7 +558,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-cbor"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "cid",
  "multihash",
@@ -565,10 +569,10 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-ffi"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
- "buffa",
  "jni",
+ "reallyme-codec",
  "reallyme-codec-base64",
  "reallyme-codec-base64url",
  "reallyme-codec-cbor",
@@ -586,23 +590,24 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-hex"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "thiserror",
 ]
 
 [[package]]
 name = "reallyme-codec-jcs"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "ryu-js",
+ "serde",
  "serde_json",
  "thiserror",
 ]
 
 [[package]]
 name = "reallyme-codec-multibase"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "bs58",
  "reallyme-codec-base64url",
@@ -611,11 +616,11 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-multicodec"
-version = "0.1.21"
+version = "0.1.22"
 
 [[package]]
 name = "reallyme-codec-multikey"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "reallyme-codec-base64url",
  "reallyme-codec-multibase",
@@ -625,7 +630,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-pem"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "base64",
  "thiserror",
@@ -634,20 +639,21 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-proto"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "buffa",
  "serde",
  "serde_json",
  "thiserror",
+ "zeroize",
 ]
 
 [[package]]
 name = "reallyme-codec-wasm"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
- "buffa",
  "js-sys",
+ "reallyme-codec",
  "reallyme-codec-base64",
  "reallyme-codec-base64url",
  "reallyme-codec-cbor",

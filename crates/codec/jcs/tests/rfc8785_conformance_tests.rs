@@ -10,7 +10,7 @@
 #![allow(missing_docs)]
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use codec_jcs::canonicalize_json;
+use codec_jcs::{canonicalize_json_text, canonicalize_trusted_json_value, JcsError};
 use serde_json::json;
 
 #[test]
@@ -33,7 +33,8 @@ fn number_serialization_matches_ecmascript() {
         (123456789.0, "123456789"),
     ];
     for (input, expected) in cases {
-        let actual = canonicalize_json(&json!(input)).expect("finite number canonicalizes");
+        let actual =
+            canonicalize_trusted_json_value(&json!(input)).expect("finite number canonicalizes");
         assert_eq!(actual, *expected, "number {input} serialized as {actual}");
     }
 }
@@ -43,23 +44,50 @@ fn rfc8785_appendix_numbers_parse_with_roundtrip_precision() {
     let value: serde_json::Value =
         serde_json::from_str("333333333.33333329").expect("appendix number is valid JSON");
 
-    assert_eq!(canonicalize_json(&value).unwrap(), "333333333.3333333");
+    assert_eq!(
+        canonicalize_trusted_json_value(&value).unwrap(),
+        "333333333.3333333"
+    );
 }
 
 #[test]
-fn integers_are_emitted_verbatim() {
-    assert_eq!(canonicalize_json(&json!(0)).unwrap(), "0");
+fn interoperable_integers_are_emitted_verbatim() {
+    assert_eq!(canonicalize_trusted_json_value(&json!(0)).unwrap(), "0");
     assert_eq!(
-        canonicalize_json(&json!(9_007_199_254_740_991_i64)).unwrap(),
+        canonicalize_trusted_json_value(&json!(9_007_199_254_740_991_i64)).unwrap(),
         "9007199254740991"
     );
     assert_eq!(
-        canonicalize_json(&json!(u64::MAX)).unwrap(),
-        "18446744073709551615"
+        canonicalize_trusted_json_value(&json!(-9_007_199_254_740_991_i64)).unwrap(),
+        "-9007199254740991"
+    );
+}
+
+#[test]
+fn non_interoperable_integers_are_rejected() {
+    assert_eq!(
+        canonicalize_trusted_json_value(&json!(9_007_199_254_740_992_u64)),
+        Err(JcsError::IntegerOutsideInteroperableRange)
     );
     assert_eq!(
-        canonicalize_json(&json!(i64::MIN)).unwrap(),
-        "-9223372036854775808"
+        canonicalize_trusted_json_value(&json!(-9_007_199_254_740_992_i64)),
+        Err(JcsError::IntegerOutsideInteroperableRange)
+    );
+    assert_eq!(
+        canonicalize_json_text("18446744073709551615"),
+        Err(JcsError::IntegerOutsideInteroperableRange)
+    );
+}
+
+#[test]
+fn binary64_number_tokens_follow_ecmascript_rounding() {
+    assert_eq!(
+        canonicalize_json_text("18446744073709551616").unwrap(),
+        "18446744073709552000"
+    );
+    assert_eq!(
+        canonicalize_json_text("9007199254740992.0").unwrap(),
+        "9007199254740992"
     );
 }
 
@@ -74,7 +102,7 @@ fn object_keys_sorted_by_utf16_code_unit() {
         "\u{FB00}": 1,
         "\u{1F600}": 2,
     });
-    let canonical = canonicalize_json(&value).unwrap();
+    let canonical = canonicalize_trusted_json_value(&value).unwrap();
     let emoji_at = canonical.find('\u{1F600}').expect("emoji key present");
     let bmp_at = canonical.find('\u{FB00}').expect("bmp key present");
     assert!(
@@ -88,7 +116,7 @@ fn ascii_keys_sorted_lexicographically() {
     let value = json!({ "b": 1, "a": 2, "c": 3, "A": 4 });
     // Uppercase 'A' (0x41) sorts before lowercase letters (0x61+).
     assert_eq!(
-        canonicalize_json(&value).unwrap(),
+        canonicalize_trusted_json_value(&value).unwrap(),
         r#"{"A":4,"a":2,"b":1,"c":3}"#
     );
 }
@@ -100,7 +128,7 @@ fn nested_structure_is_fully_canonicalized() {
         "a": { "y": 1e21, "x": 42 },
     });
     assert_eq!(
-        canonicalize_json(&value).unwrap(),
+        canonicalize_trusted_json_value(&value).unwrap(),
         r#"{"a":{"x":42,"y":1e+21},"z":[3,2,1]}"#
     );
 }
@@ -111,5 +139,5 @@ fn non_finite_numbers_rejected() {
     // construct through an f64 that is finite here; this asserts the API
     // contract that only finite numbers are accepted. (Non-finite values
     // cannot appear in valid JSON input and are rejected at parse time.)
-    assert!(canonicalize_json(&json!(1.0)).is_ok());
+    assert!(canonicalize_trusted_json_value(&json!(1.0)).is_ok());
 }

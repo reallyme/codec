@@ -30,6 +30,8 @@ codec-multibase = { package = "reallyme-codec-multibase", path = "../crates/code
 codec-multicodec = { package = "reallyme-codec-multicodec", path = "../crates/codec/multicodec" }
 codec-multikey = { package = "reallyme-codec-multikey", path = "../crates/codec/multikey" }
 codec-cbor = { package = "reallyme-codec-cbor", path = "../crates/codec/cbor" }
+codec-jcs = { package = "reallyme-codec-jcs", path = "../crates/codec/jcs" }
+reallyme-codec = { path = "../crates/codec", default-features = false, features = ["proto-process"] }
 
 [[bin]]
 name = "multibase"
@@ -62,6 +64,20 @@ bench = false
 [[bin]]
 name = "dag_cbor"
 path = "fuzz_targets/dag_cbor.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "proto_process"
+path = "fuzz_targets/proto_process.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "jcs_text"
+path = "fuzz_targets/jcs_text.rs"
 test = false
 doc = false
 bench = false

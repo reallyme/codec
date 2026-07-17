@@ -9,6 +9,7 @@ use thiserror::Error;
 /// Decoding fails closed: any malformed or non-canonical input yields one of
 /// these variants rather than a partial or best-effort value.
 #[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum CborError {
     /// Extra bytes remain after decoding the top-level value.
     #[error("CBOR: trailing bytes after top-level value")]
@@ -57,6 +58,13 @@ pub enum CborError {
     /// A map key was not a text string, which DAG-CBOR requires.
     #[error("CBOR: map key must be text string")]
     MapKeyMustBeString,
+
+    /// A map contained the same text key more than once.
+    ///
+    /// Duplicate keys make the data model ambiguous and would cause the
+    /// encoder to produce bytes that the canonical decoder must reject.
+    #[error("CBOR: duplicate map key")]
+    DuplicateMapKey,
 
     /// Map keys were not in the canonical (sorted) order DAG-CBOR requires.
     #[error("CBOR: map keys out of canonical order")]

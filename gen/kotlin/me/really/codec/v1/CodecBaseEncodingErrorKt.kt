@@ -69,4 +69,3 @@ public object CodecBaseEncodingErrorKt {
 }
 public inline fun me.really.codec.v1.CodecBaseEncodingError.copy(block: `me.really.codec.v1`.CodecBaseEncodingErrorKt.Dsl.() -> kotlin.Unit): me.really.codec.v1.CodecBaseEncodingError =
   `me.really.codec.v1`.CodecBaseEncodingErrorKt.Dsl._create(this.toBuilder()).apply { block() }._build()
-

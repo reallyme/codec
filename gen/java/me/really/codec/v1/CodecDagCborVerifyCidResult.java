@@ -38,7 +38,7 @@ public  final class CodecDagCborVerifyCidResult extends
    * @param value The valid to set.
    */
   private void setValid(boolean value) {
-    
+
     valid_ = value;
   }
   /**
@@ -449,4 +449,3 @@ public  final class CodecDagCborVerifyCidResult extends
     return DEFAULT_INSTANCE.getParserForType();
   }
 }
-

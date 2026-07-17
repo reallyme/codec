@@ -33,6 +33,17 @@ pub mod __buffa {
     /// Register this package's `Any` type entries and extension entries.
     pub fn register_types(reg: &mut ::buffa::type_registry::TypeRegistry) {
         reg.register_json_any(super::__CODEC_ERROR_JSON_ANY);
+        reg.register_json_any(super::__CODEC_PROTO_RESULT_ENVELOPE_JSON_ANY);
+        reg.register_json_any(
+            super::__CODEC_MULTICODEC_PREFIX_FOR_NAME_REQUEST_JSON_ANY,
+        );
+        reg.register_json_any(super::__CODEC_MULTICODEC_LOOKUP_PREFIX_REQUEST_JSON_ANY);
+        reg.register_json_any(super::__CODEC_MULTICODEC_TABLE_REQUEST_JSON_ANY);
+        reg.register_json_any(super::__CODEC_MULTIKEY_PARSE_REQUEST_JSON_ANY);
+        reg.register_json_any(super::__CODEC_DAG_CBOR_VERIFY_CID_REQUEST_JSON_ANY);
+        reg.register_json_any(super::__CODEC_PEM_DECODE_OPTIONS_JSON_ANY);
+        reg.register_json_any(super::__CODEC_PEM_DECODE_REQUEST_JSON_ANY);
+        reg.register_json_any(super::__CODEC_OPERATION_REQUEST_JSON_ANY);
         reg.register_json_any(super::__CODEC_MULTICODEC_SPEC_JSON_ANY);
         reg.register_json_any(super::__CODEC_MULTICODEC_LOOKUP_RESULT_JSON_ANY);
         reg.register_json_any(super::__CODEC_MULTICODEC_TABLE_RESULT_JSON_ANY);
@@ -44,12 +55,37 @@ pub mod __buffa {
         reg.register_json_any(super::__CODEC_MULTIFORMAT_ERROR_JSON_ANY);
         reg.register_json_any(super::__CODEC_CANONICALIZATION_ERROR_JSON_ANY);
         reg.register_json_any(super::__CODEC_BACKEND_ERROR_JSON_ANY);
+        reg.register_json_any(super::__CODEC_BOUNDARY_ERROR_JSON_ANY);
     }
 }
 #[doc(inline)]
 pub use self::__buffa::view::CodecErrorView;
 #[doc(inline)]
 pub use self::__buffa::view::CodecErrorOwnedView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecProtoResultEnvelopeView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecMulticodecPrefixForNameRequestView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecMulticodecPrefixForNameRequestOwnedView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecMulticodecLookupPrefixRequestView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecMulticodecTableRequestView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecMulticodecTableRequestOwnedView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecMultikeyParseRequestView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecDagCborVerifyCidRequestView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecPemDecodeOptionsView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecPemDecodeOptionsOwnedView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecPemDecodeRequestView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecOperationRequestView;
 #[doc(inline)]
 pub use self::__buffa::view::CodecMulticodecSpecView;
 #[doc(inline)]
@@ -65,15 +101,11 @@ pub use self::__buffa::view::CodecMulticodecTableResultOwnedView;
 #[doc(inline)]
 pub use self::__buffa::view::CodecMultikeyParseResultView;
 #[doc(inline)]
-pub use self::__buffa::view::CodecMultikeyParseResultOwnedView;
-#[doc(inline)]
 pub use self::__buffa::view::CodecDagCborVerifyCidResultView;
 #[doc(inline)]
 pub use self::__buffa::view::CodecDagCborVerifyCidResultOwnedView;
 #[doc(inline)]
 pub use self::__buffa::view::CodecPemDecodeResultView;
-#[doc(inline)]
-pub use self::__buffa::view::CodecPemDecodeResultOwnedView;
 #[doc(inline)]
 pub use self::__buffa::view::CodecBaseEncodingErrorView;
 #[doc(inline)]
@@ -94,5 +126,9 @@ pub use self::__buffa::view::CodecCanonicalizationErrorOwnedView;
 pub use self::__buffa::view::CodecBackendErrorView;
 #[doc(inline)]
 pub use self::__buffa::view::CodecBackendErrorOwnedView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecBoundaryErrorView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecBoundaryErrorOwnedView;
 #[doc(inline)]
 pub use self::__buffa::register_types;

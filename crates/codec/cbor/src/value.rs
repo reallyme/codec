@@ -4,6 +4,7 @@
 
 /// A decoded DAG-CBOR value.
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum CborValue {
     /// CBOR null.
     Null,

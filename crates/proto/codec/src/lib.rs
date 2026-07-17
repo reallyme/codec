@@ -10,6 +10,8 @@ use buffa::{DecodeOptions, EnumValue, Enumeration, Message};
 use serde::de::DeserializeOwned;
 #[cfg(feature = "generated")]
 use thiserror::Error;
+#[cfg(feature = "generated")]
+use zeroize::{Zeroize, Zeroizing};
 
 /// Generated protobuf boundary.
 pub mod generated;
@@ -30,10 +32,42 @@ pub const MAX_CODEC_PROTO_JSON_BYTES: usize = 1_572_864;
 const CODEC_PROTO_RECURSION_LIMIT: u32 = 64;
 
 #[cfg(feature = "generated")]
+const CODEC_PROTO_UNKNOWN_FIELD_LIMIT: usize = 0;
+
+#[cfg(feature = "generated")]
+/// Maximum framing overhead added around a bounded codec result payload.
+#[cfg(feature = "generated")]
+const MAX_CODEC_PROTO_ENVELOPE_OVERHEAD_BYTES: usize = 16;
+
+/// Maximum encoded size of a codec result envelope.
+///
+/// This is the single source of truth consumed by native adapters before they
+/// allocate memory from a provider-reported result length.
+#[cfg(feature = "generated")]
+pub const MAX_CODEC_PROTO_RESULT_ENVELOPE_BYTES: usize =
+    max_codec_proto_result_envelope_bytes_const();
+
+#[cfg(feature = "generated")]
+const fn max_codec_proto_result_envelope_bytes_const() -> usize {
+    match MAX_CODEC_PROTO_MESSAGE_BYTES.checked_add(MAX_CODEC_PROTO_ENVELOPE_OVERHEAD_BYTES) {
+        Some(limit) => limit,
+        // The constants above are compile-time protocol limits. Returning zero
+        // makes a future overflow fail closed in every consuming adapter.
+        None => 0,
+    }
+}
+
+// This assertion is evaluated by the compiler and has no runtime panic path.
+// It prevents a future protocol-limit edit from silently disabling the cap.
+#[cfg(feature = "generated")]
+const _: () = assert!(MAX_CODEC_PROTO_RESULT_ENVELOPE_BYTES != 0);
+
+#[cfg(feature = "generated")]
 use generated::proto::reallyme::codec::v1::{
     __buffa::oneof::codec_error::Error as CodecErrorBranchProto, CodecBackendError,
-    CodecBaseEncodingError, CodecCanonicalizationError, CodecError, CodecErrorReason,
-    CodecMultiformatError, CodecPemError,
+    CodecBaseEncodingError, CodecBoundaryError, CodecCanonicalizationError, CodecError,
+    CodecErrorReason, CodecMultiformatError, CodecPemError, CodecProtoResultEnvelope,
+    CodecProtoResultStatus,
 };
 
 /// Stable codec wire-error branch.
@@ -51,6 +85,80 @@ pub enum CodecWireErrorBranch {
     Canonicalization,
     /// Serialization, protobuf, dispatch, FFI, WASM, and internal failures.
     Backend,
+    /// Malformed, oversized, or incomplete caller-controlled wire requests.
+    Boundary,
+}
+
+/// Stable status of a codec protobuf result payload.
+#[cfg(feature = "generated")]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[non_exhaustive]
+pub enum CodecProtoStatus {
+    /// Payload contains the operation-specific result message.
+    Result,
+    /// Payload contains a structured [`CodecError`].
+    CodecError,
+}
+
+/// Owned result returned by the executable protobuf adapter lane.
+#[cfg(feature = "generated")]
+pub struct CodecProtoResult {
+    status: CodecProtoStatus,
+    bytes: Zeroizing<Vec<u8>>,
+}
+
+#[cfg(feature = "generated")]
+impl CodecProtoResult {
+    /// Constructs an operation result.
+    #[must_use]
+    pub fn result(bytes: Vec<u8>) -> Self {
+        Self {
+            status: CodecProtoStatus::Result,
+            bytes: Zeroizing::new(bytes),
+        }
+    }
+
+    /// Encodes an operation-specific result message.
+    #[must_use]
+    pub fn from_message<M: Message>(message: &M) -> Self {
+        Self {
+            status: CodecProtoStatus::Result,
+            bytes: encode_protobuf(message),
+        }
+    }
+
+    /// Constructs a structured codec error result.
+    #[must_use]
+    pub fn codec_error(error: CodecWireError) -> Self {
+        Self {
+            status: CodecProtoStatus::CodecError,
+            bytes: codec_error_bytes(error),
+        }
+    }
+
+    /// Returns the payload status.
+    #[must_use]
+    pub const fn status(&self) -> CodecProtoStatus {
+        self.status
+    }
+
+    /// Returns the protobuf payload bytes.
+    #[must_use]
+    pub fn bytes(&self) -> &[u8] {
+        self.bytes.as_slice()
+    }
+
+    /// Returns the payload length.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.bytes.len()
+    }
+
+    /// Returns whether the payload is empty.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.bytes.is_empty()
+    }
 }
 
 /// Validated public codec wire error.
@@ -106,29 +214,35 @@ impl CodecWireError {
         Ok(Self { branch, reason })
     }
 
-    /// Internal constructor for crate-owned known-good backend mappings.
+    /// Internal constructor for crate-owned known-good mappings.
     #[must_use]
-    const fn backend_internal(reason: CodecErrorReason) -> Self {
-        Self {
-            branch: CodecWireErrorBranch::Backend,
-            reason,
-        }
+    const fn known_good(branch: CodecWireErrorBranch, reason: CodecErrorReason) -> Self {
+        Self { branch, reason }
+    }
+
+    /// Returns the deterministic malformed-protobuf boundary error.
+    #[must_use]
+    pub const fn malformed_protobuf() -> Self {
+        Self::known_good(
+            CodecWireErrorBranch::Boundary,
+            CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF,
+        )
     }
 }
 
 /// Encodes a protobuf message with Buffa.
 #[cfg(feature = "generated")]
 #[must_use]
-pub fn encode_protobuf<M: Message>(message: &M) -> Vec<u8> {
-    message.encode_to_vec()
+pub fn encode_protobuf<M: Message>(message: &M) -> Zeroizing<Vec<u8>> {
+    Zeroizing::new(message.encode_to_vec())
 }
 
 /// Decodes a bounded protobuf message from untrusted bytes.
 ///
 /// # Errors
 ///
-/// Returns a backend wire error when input exceeds the boundary size limit or
-/// fails protobuf decoding.
+/// Returns a boundary wire error when input exceeds the size limit or fails
+/// protobuf decoding.
 #[cfg(feature = "generated")]
 pub fn decode_protobuf<M: Message>(bytes: &[u8]) -> CodecWireResult<M> {
     decode_protobuf_with_limit(bytes, MAX_CODEC_PROTO_MESSAGE_BYTES)
@@ -142,7 +256,7 @@ pub fn decode_protobuf<M: Message>(bytes: &[u8]) -> CodecWireResult<M> {
 ///
 /// # Errors
 ///
-/// Returns a backend wire error for oversized or malformed
+/// Returns a boundary wire error for oversized or malformed
 /// JSON and for JSON messages whose binary encoding exceeds the protobuf cap.
 #[cfg(feature = "generated")]
 pub fn decode_json<M: DeserializeOwned + Message>(bytes: &[u8]) -> CodecWireResult<M> {
@@ -151,8 +265,9 @@ pub fn decode_json<M: DeserializeOwned + Message>(bytes: &[u8]) -> CodecWireResu
     }
 
     let message: M = serde_json::from_slice(bytes).map_err(|_| {
-        CodecWireError::backend_internal(
-            CodecErrorReason::CODEC_ERROR_REASON_BACKEND_MALFORMED_JSON,
+        CodecWireError::known_good(
+            CodecWireErrorBranch::Boundary,
+            CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_MALFORMED_JSON,
         )
     })?;
     let encoded = encode_protobuf(&message);
@@ -196,6 +311,12 @@ pub fn codec_error(error: CodecWireError) -> CodecError {
                 __buffa_unknown_fields: Default::default(),
             }))
         }
+        CodecWireErrorBranch::Boundary => {
+            CodecErrorBranchProto::Boundary(Box::new(CodecBoundaryError {
+                reason,
+                __buffa_unknown_fields: Default::default(),
+            }))
+        }
     };
 
     CodecError {
@@ -207,7 +328,7 @@ pub fn codec_error(error: CodecWireError) -> CodecError {
 /// Encodes a structured `CodecError` as protobuf bytes.
 #[cfg(feature = "generated")]
 #[must_use]
-pub fn codec_error_bytes(error: CodecWireError) -> Vec<u8> {
+pub fn codec_error_bytes(error: CodecWireError) -> Zeroizing<Vec<u8>> {
     encode_protobuf(&codec_error(error))
 }
 
@@ -236,6 +357,9 @@ pub fn decode_codec_error_payload(payload: &[u8]) -> CodecWireResult<CodecWireEr
         Some(CodecErrorBranchProto::Backend(error)) => {
             (CodecWireErrorBranch::Backend, error.reason)
         }
+        Some(CodecErrorBranchProto::Boundary(error)) => {
+            (CodecWireErrorBranch::Boundary, error.reason)
+        }
         None => return Err(malformed_protobuf_error()),
     };
 
@@ -249,6 +373,126 @@ pub fn decode_codec_error_payload(payload: &[u8]) -> CodecWireResult<CodecWireEr
     }
 }
 
+/// Encodes a result/error payload into the single bounded binary envelope.
+///
+/// # Errors
+///
+/// Returns a structured resource-limit result when the payload or final
+/// envelope exceeds the public protobuf boundary.
+#[cfg(feature = "generated")]
+pub fn encode_proto_result_envelope(
+    result: &CodecProtoResult,
+) -> Result<Zeroizing<Vec<u8>>, CodecProtoResult> {
+    if result.len() > MAX_CODEC_PROTO_MESSAGE_BYTES {
+        return Err(resource_limit_result());
+    }
+
+    let mut envelope = proto_result_envelope_from_result(result);
+    let encoded = encode_protobuf(&envelope);
+    envelope.payload.zeroize();
+    if encoded.len() > max_codec_proto_result_envelope_bytes()? {
+        return Err(resource_limit_result());
+    }
+    Ok(encoded)
+}
+
+/// Encodes a result envelope with a deterministic structured fallback.
+#[cfg(feature = "generated")]
+#[must_use]
+pub fn encode_proto_result_envelope_or_error(result: &CodecProtoResult) -> Zeroizing<Vec<u8>> {
+    match encode_proto_result_envelope(result) {
+        Ok(encoded) => encoded,
+        Err(error) => encode_proto_result_envelope_unchecked(&error),
+    }
+}
+
+/// Decodes and validates a bounded binary result envelope.
+///
+/// # Errors
+///
+/// Returns a structured codec result when the envelope is malformed,
+/// oversized, has no concrete status, or contains an invalid error payload.
+#[cfg(feature = "generated")]
+pub fn decode_proto_result_envelope(bytes: &[u8]) -> Result<CodecProtoResult, CodecProtoResult> {
+    let max_bytes = max_codec_proto_result_envelope_bytes()?;
+    if bytes.len() > max_bytes {
+        return Err(resource_limit_result());
+    }
+    let envelope = decode_protobuf_with_limit::<CodecProtoResultEnvelope>(bytes, max_bytes)
+        .map_err(CodecProtoResult::codec_error)?;
+    codec_proto_result_from_envelope(envelope)
+}
+
+#[cfg(feature = "generated")]
+fn codec_proto_result_from_envelope(
+    mut envelope: CodecProtoResultEnvelope,
+) -> Result<CodecProtoResult, CodecProtoResult> {
+    if envelope.payload.len() > MAX_CODEC_PROTO_MESSAGE_BYTES {
+        envelope.payload.zeroize();
+        return Err(resource_limit_result());
+    }
+
+    let status = match envelope.status.as_known() {
+        Some(CodecProtoResultStatus::CODEC_PROTO_RESULT_STATUS_RESULT) => CodecProtoStatus::Result,
+        Some(CodecProtoResultStatus::CODEC_PROTO_RESULT_STATUS_CODEC_ERROR) => {
+            if decode_codec_error_payload(&envelope.payload).is_err() {
+                envelope.payload.zeroize();
+                return Err(CodecProtoResult::codec_error(malformed_protobuf_error()));
+            }
+            CodecProtoStatus::CodecError
+        }
+        Some(CodecProtoResultStatus::CODEC_PROTO_RESULT_STATUS_UNSPECIFIED) | None => {
+            envelope.payload.zeroize();
+            return Err(CodecProtoResult::codec_error(malformed_protobuf_error()));
+        }
+    };
+
+    let bytes = core::mem::take(&mut envelope.payload);
+    Ok(CodecProtoResult {
+        status,
+        bytes: Zeroizing::new(bytes),
+    })
+}
+
+#[cfg(feature = "generated")]
+fn proto_result_envelope_from_result(result: &CodecProtoResult) -> CodecProtoResultEnvelope {
+    let status = match result.status {
+        CodecProtoStatus::Result => CodecProtoResultStatus::CODEC_PROTO_RESULT_STATUS_RESULT,
+        CodecProtoStatus::CodecError => {
+            CodecProtoResultStatus::CODEC_PROTO_RESULT_STATUS_CODEC_ERROR
+        }
+    };
+    CodecProtoResultEnvelope {
+        status: EnumValue::from(status),
+        payload: result.bytes().to_vec(),
+        __buffa_unknown_fields: Default::default(),
+    }
+}
+
+#[cfg(feature = "generated")]
+fn encode_proto_result_envelope_unchecked(result: &CodecProtoResult) -> Zeroizing<Vec<u8>> {
+    let mut envelope = proto_result_envelope_from_result(result);
+    let encoded = encode_protobuf(&envelope);
+    envelope.payload.zeroize();
+    encoded
+}
+
+#[cfg(feature = "generated")]
+fn max_codec_proto_result_envelope_bytes() -> Result<usize, CodecProtoResult> {
+    if MAX_CODEC_PROTO_RESULT_ENVELOPE_BYTES == 0 {
+        return Err(CodecProtoResult::codec_error(CodecWireError::known_good(
+            CodecWireErrorBranch::Backend,
+            CodecErrorReason::CODEC_ERROR_REASON_BACKEND_INTERNAL,
+        )));
+    }
+    Ok(MAX_CODEC_PROTO_RESULT_ENVELOPE_BYTES)
+}
+
+#[cfg(feature = "generated")]
+fn resource_limit_result() -> CodecProtoResult {
+    CodecProtoResult::codec_error(resource_limit_error())
+}
+
 #[cfg(feature = "generated")]
 fn decode_protobuf_with_limit<M: Message>(bytes: &[u8], max_bytes: usize) -> CodecWireResult<M> {
     if bytes.len() > max_bytes {
@@ -258,6 +502,7 @@ fn decode_protobuf_with_limit<M: Message>(bytes: &[u8], max_bytes: usize) -> Cod
     DecodeOptions::new()
         .with_recursion_limit(CODEC_PROTO_RECURSION_LIMIT)
         .with_max_message_size(max_bytes)
+        .with_unknown_field_limit(CODEC_PROTO_UNKNOWN_FIELD_LIMIT)
         .decode_from_slice(bytes)
         .map_err(|_| malformed_protobuf_error())
 }
@@ -271,19 +516,19 @@ fn reason_is_valid_for_branch(branch: CodecWireErrorBranch, reason: CodecErrorRe
         CodecWireErrorBranch::Multiformat => (300..=399).contains(&value),
         CodecWireErrorBranch::Canonicalization => (400..=499).contains(&value),
         CodecWireErrorBranch::Backend => (500..=599).contains(&value),
+        CodecWireErrorBranch::Boundary => (600..=699).contains(&value),
     }
 }
 
 #[cfg(feature = "generated")]
 fn malformed_protobuf_error() -> CodecWireError {
-    CodecWireError::backend_internal(
-        CodecErrorReason::CODEC_ERROR_REASON_BACKEND_MALFORMED_PROTOBUF,
-    )
+    CodecWireError::malformed_protobuf()
 }
 
 #[cfg(feature = "generated")]
 fn resource_limit_error() -> CodecWireError {
-    CodecWireError::backend_internal(
-        CodecErrorReason::CODEC_ERROR_REASON_BACKEND_RESOURCE_LIMIT_EXCEEDED,
+    CodecWireError::known_good(
+        CodecWireErrorBranch::Boundary,
+        CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED,
     )
 }

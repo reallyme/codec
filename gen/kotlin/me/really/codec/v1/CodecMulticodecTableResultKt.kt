@@ -107,4 +107,3 @@ public object CodecMulticodecTableResultKt {
 }
 public inline fun me.really.codec.v1.CodecMulticodecTableResult.copy(block: `me.really.codec.v1`.CodecMulticodecTableResultKt.Dsl.() -> kotlin.Unit): me.really.codec.v1.CodecMulticodecTableResult =
   `me.really.codec.v1`.CodecMulticodecTableResultKt.Dsl._create(this.toBuilder()).apply { block() }._build()
-

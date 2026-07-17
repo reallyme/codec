@@ -68,4 +68,3 @@ public object CodecPemErrorKt {
 }
 public inline fun me.really.codec.v1.CodecPemError.copy(block: `me.really.codec.v1`.CodecPemErrorKt.Dsl.() -> kotlin.Unit): me.really.codec.v1.CodecPemError =
   `me.really.codec.v1`.CodecPemErrorKt.Dsl._create(this.toBuilder()).apply { block() }._build()
-

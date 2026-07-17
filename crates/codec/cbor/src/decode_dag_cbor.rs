@@ -133,8 +133,10 @@ fn decode_value(
 
                 let key_bytes = key.as_bytes().to_vec();
                 if let Some(prev) = &last_key_bytes {
-                    if compare_bytes(prev, &key_bytes) != Ordering::Less {
-                        return Err(CborError::MapKeysOutOfOrder);
+                    match compare_bytes(prev, &key_bytes) {
+                        Ordering::Less => {}
+                        Ordering::Equal => return Err(CborError::DuplicateMapKey),
+                        Ordering::Greater => return Err(CborError::MapKeysOutOfOrder),
                     }
                 }
                 last_key_bytes = Some(key_bytes);

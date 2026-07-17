@@ -6,7 +6,7 @@ use codec_multibase::multibase_to_bytes;
 use codec_multicodec::{lookup_codec_prefix, KeyMaterialKind, VARIABLE_KEY_LENGTH};
 
 use crate::encode::MAX_RSA_PUBLIC_KEY_DER_LEN;
-use crate::error::MultikeyError;
+use crate::error::{classify_multikey_codec, MultikeyError};
 
 /// A multikey decoded into its codec metadata and raw public key bytes.
 pub struct ParsedMultikey {
@@ -54,7 +54,7 @@ pub fn parse_multikey(multibase_key: &str) -> Result<ParsedMultikey, MultikeyErr
     // 3) key length validation
     if found.key_length == VARIABLE_KEY_LENGTH && public_key.is_empty() {
         return Err(MultikeyError::KeyLengthMismatch {
-            codec_name: found.name,
+            codec: classify_multikey_codec(found.name),
             expected: found.key_length,
             actual: public_key.len(),
         });
@@ -62,7 +62,7 @@ pub fn parse_multikey(multibase_key: &str) -> Result<ParsedMultikey, MultikeyErr
 
     if found.name == "rsa-pub" && public_key.len() > MAX_RSA_PUBLIC_KEY_DER_LEN {
         return Err(MultikeyError::KeyTooLarge {
-            codec_name: found.name,
+            codec: classify_multikey_codec(found.name),
             max: MAX_RSA_PUBLIC_KEY_DER_LEN,
             actual: public_key.len(),
         });
@@ -70,7 +70,7 @@ pub fn parse_multikey(multibase_key: &str) -> Result<ParsedMultikey, MultikeyErr
 
     if found.key_length != VARIABLE_KEY_LENGTH && public_key.len() != found.key_length {
         return Err(MultikeyError::KeyLengthMismatch {
-            codec_name: found.name,
+            codec: classify_multikey_codec(found.name),
             expected: found.key_length,
             actual: public_key.len(),
         });

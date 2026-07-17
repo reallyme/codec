@@ -6,6 +6,7 @@ use thiserror::Error;
 
 /// Error returned when base64url decoding fails.
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum Base64UrlError {
     /// The input was not valid base64url.
     #[error("invalid base64url")]

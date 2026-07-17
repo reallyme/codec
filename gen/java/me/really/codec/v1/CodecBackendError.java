@@ -326,4 +326,3 @@ public  final class CodecBackendError extends
     return DEFAULT_INSTANCE.getParserForType();
   }
 }
-

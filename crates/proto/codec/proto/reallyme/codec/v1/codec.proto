@@ -21,6 +21,92 @@ message CodecError {
     CodecMultiformatError multiformat = 3;
     CodecCanonicalizationError canonicalization = 4;
     CodecBackendError backend = 5;
+    CodecBoundaryError boundary = 6;
+  }
+}
+
+// CodecProtoResultStatus identifies the protobuf message carried by the
+// result-envelope payload.
+enum CodecProtoResultStatus {
+  CODEC_PROTO_RESULT_STATUS_UNSPECIFIED = 0;
+  CODEC_PROTO_RESULT_STATUS_RESULT = 1;
+  CODEC_PROTO_RESULT_STATUS_CODEC_ERROR = 2;
+}
+
+// CodecProtoResultEnvelope is the single binary response shape for executable
+// protobuf and generated ProtoJSON requests.
+message CodecProtoResultEnvelope {
+  CodecProtoResultStatus status = 1;
+  bytes payload = 2;
+}
+
+// CodecPemLabel is the typed protobuf representation of the PEM labels accepted
+// by the codec parser.
+enum CodecPemLabel {
+  CODEC_PEM_LABEL_UNSPECIFIED = 0;
+  CODEC_PEM_LABEL_PRIVATE_KEY = 100;
+  CODEC_PEM_LABEL_EC_PRIVATE_KEY = 110;
+  CODEC_PEM_LABEL_PUBLIC_KEY = 120;
+}
+
+message CodecMulticodecPrefixForNameRequest {
+  string name = 1;
+}
+
+message CodecMulticodecLookupPrefixRequest {
+  bytes value = 1;
+}
+
+message CodecMulticodecTableRequest {}
+
+message CodecMultikeyParseRequest {
+  string multikey = 1;
+}
+
+message CodecDagCborVerifyCidRequest {
+  string cid = 1;
+  bytes payload = 2;
+}
+
+// Zero limits select the audited codec defaults. An empty allowed-label list
+// selects the default PRIVATE KEY, EC PRIVATE KEY, and PUBLIC KEY set.
+message CodecPemDecodeOptions {
+  repeated CodecPemLabel allowed_labels = 1;
+  uint32 max_input_len = 2;
+  uint32 max_der_len = 3;
+}
+
+message CodecPemDecodeRequest {
+  // PEM may contain private-key material. Bytes avoid long-lived immutable
+  // managed strings and let generated hardening wipe the owned request field.
+  bytes pem = 1;
+  CodecPemDecodeOptions options = 2;
+}
+
+// CodecOperationRequest is the single executable protobuf request. Native SDK
+// callers continue to use typed methods; binary protobuf and generated
+// ProtoJSON adapters select exactly one operation through this oneof. Sparse
+// field bands keep related codec families together without creating a second
+// out-of-band operation namespace.
+message CodecOperationRequest {
+  reserved 1 to 999;
+
+  oneof operation {
+    // 1000-1999: multicodec table and prefix lookups. The upstream registry
+    // is intentionally broad, so keep ample room for validation and lookup
+    // operations without mixing them with adjacent codec families.
+    CodecMulticodecPrefixForNameRequest multicodec_prefix_for_name = 1000;
+    CodecMulticodecLookupPrefixRequest multicodec_lookup_prefix = 1001;
+    CodecMulticodecTableRequest multicodec_table = 1002;
+
+    // 2000-2999: multikey parsing and validation.
+    CodecMultikeyParseRequest multikey_parse = 2000;
+
+    // 3000-3999: DAG-CBOR and content-addressed canonicalization helpers.
+    CodecDagCborVerifyCidRequest dag_cbor_verify_cid = 3000;
+
+    // 4000-4999: PEM armor and DER envelope helpers.
+    CodecPemDecodeRequest pem_decode = 4000;
   }
 }
 
@@ -137,6 +223,14 @@ message CodecBackendError {
   CodecErrorReason reason = 1;
 }
 
+// CodecBoundaryError describes malformed, oversized, or incomplete caller
+// requests. These failures are not backend failures and never contain parser
+// or runtime exception text.
+message CodecBoundaryError {
+  // Reason must be one of the CODEC_ERROR_REASON_BOUNDARY_* values.
+  CodecErrorReason reason = 1;
+}
+
 // CodecErrorReason is the component-owned reason-code enum for reallyme/codec.
 // Values are stable public boundary codes; local parser errors must map into
 // one of these before crossing RPC, SDK, FFI, storage, audit, or telemetry
@@ -145,7 +239,8 @@ message CodecBackendError {
 //   200-299: PEM armor
 //   300-399: multiformats and key envelopes
 //   400-499: CBOR/JCS/JSON canonicalization
-//   500-599: backend wire-boundary failures
+//   500-599: backend and internal failures
+//   600-699: caller-controlled protobuf and ProtoJSON boundary failures
 enum CodecErrorReason {
   reserved 112;
 
@@ -182,9 +277,12 @@ enum CodecErrorReason {
   CODEC_ERROR_REASON_CANONICAL_NON_CANONICAL_JSON = 403;
   CODEC_ERROR_REASON_CANONICAL_INTERNAL = 404;
 
-  // Backend wire-boundary failures.
+  // Backend failures.
   CODEC_ERROR_REASON_BACKEND_INTERNAL = 500;
-  CODEC_ERROR_REASON_BACKEND_MALFORMED_PROTOBUF = 501;
-  CODEC_ERROR_REASON_BACKEND_MALFORMED_JSON = 502;
-  CODEC_ERROR_REASON_BACKEND_RESOURCE_LIMIT_EXCEEDED = 503;
+
+  // Caller-controlled wire-boundary failures.
+  CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF = 600;
+  CODEC_ERROR_REASON_BOUNDARY_MALFORMED_JSON = 601;
+  CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED = 602;
+  CODEC_ERROR_REASON_BOUNDARY_MISSING_OPERATION = 603;
 }

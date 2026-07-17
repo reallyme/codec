@@ -6,7 +6,7 @@ The `me.really:codec` JVM package provides codecs for Java and Kotlin.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.1.21")
+    implementation("me.really:codec:0.1.22")
 }
 ```
 
@@ -35,6 +35,9 @@ byte[] decoded = ReallyMeCodec.base64urlDecode(encoded);
 multibase, multicodec, multikey, DAG-CBOR, JCS, and PEM armor. Structured
 results such as multicodec metadata and PEM decode output are returned as the
 compact JSON emitted by the Rust codec bridge.
+
+PEM input, output, and decoded JSON use `ByteArray` rather than `String` so
+callers can overwrite private-key armor promptly after use.
 
 Local development builds can still load an explicit Rust ABI library when
 debugging provider loading:

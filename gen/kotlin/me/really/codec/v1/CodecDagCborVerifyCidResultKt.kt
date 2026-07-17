@@ -88,4 +88,3 @@ public object CodecDagCborVerifyCidResultKt {
 }
 public inline fun me.really.codec.v1.CodecDagCborVerifyCidResult.copy(block: `me.really.codec.v1`.CodecDagCborVerifyCidResultKt.Dsl.() -> kotlin.Unit): me.really.codec.v1.CodecDagCborVerifyCidResult =
   `me.really.codec.v1`.CodecDagCborVerifyCidResultKt.Dsl._create(this.toBuilder()).apply { block() }._build()
-

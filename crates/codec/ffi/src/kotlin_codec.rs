@@ -9,10 +9,17 @@
 //! JVM packaging; base encodings, multicodec, DAG-CBOR, JCS, and PEM parsing
 //! remain single-sourced in Rust.
 
-use crate::codec::{rm_codec_process, rm_codec_process_bool, rm_codec_process_proto};
+use crate::codec::{
+    rm_codec_process, rm_codec_process_bool, rm_codec_process_proto, rm_codec_process_proto_json,
+    MAX_CODEC_FFI_INPUT_BYTES, MAX_CODEC_FFI_OUTPUT_BYTES,
+};
+use crate::guard::with_redacted_panic_hook;
 use crate::status::{
     CODEC_BUFFER_TOO_SMALL, CODEC_INTERNAL_ERROR, CODEC_INVALID_ARGUMENT, CODEC_OK,
-    CODEC_PROTO_ERROR,
+};
+use codec_proto::{
+    decode_proto_result_envelope, CodecProtoStatus, MAX_CODEC_PROTO_JSON_BYTES,
+    MAX_CODEC_PROTO_MESSAGE_BYTES, MAX_CODEC_PROTO_RESULT_ENVELOPE_BYTES,
 };
 use jni::objects::{JByteArray, JObject, JValue};
 use jni::signature::{FieldSignature, JavaType, MethodSignature, Primitive};
@@ -34,9 +41,19 @@ type CodecProcessCFunction = unsafe extern "C" fn(
     *mut usize,
 ) -> i32;
 
+type CodecProtoProcessCFunction =
+    unsafe extern "C" fn(*const u8, usize, *mut u8, usize, *mut usize) -> i32;
+
 struct NativeOutput {
-    status: i32,
     bytes: Zeroizing<Vec<u8>>,
+}
+
+fn probed_output_capacity(status: i32, produced_len: usize) -> Option<usize> {
+    match (status, produced_len) {
+        (CODEC_OK, 0) => Some(0),
+        (CODEC_BUFFER_TOO_SMALL, 1..=MAX_CODEC_FFI_OUTPUT_BYTES) => Some(produced_len),
+        _ => None,
+    }
 }
 
 // SAFETY: The literal descriptor is the JVM field descriptor for the
@@ -81,17 +98,57 @@ pub extern "system" fn Java_me_really_codec_ReallyMeCodecNative_processNative<'l
     process_with_function(env, operation, first, second, third, rm_codec_process)
 }
 
-/// Runs a protobuf-output codec operation for `me.really:codec`.
+/// Executes one binary protobuf request and returns the raw binary envelope.
 #[no_mangle]
 pub extern "system" fn Java_me_really_codec_ReallyMeCodecNative_processProtoNative<'local>(
     env: EnvUnowned<'local>,
     _receiver: JObject<'local>,
-    operation: jint,
-    first: JByteArray<'local>,
-    second: JByteArray<'local>,
-    third: JByteArray<'local>,
+    request: JByteArray<'local>,
 ) -> jbyteArray {
-    process_with_function(env, operation, first, second, third, rm_codec_process_proto)
+    process_proto_envelope(
+        env,
+        request,
+        MAX_CODEC_PROTO_MESSAGE_BYTES,
+        rm_codec_process_proto,
+    )
+}
+
+/// Executes one generated ProtoJSON request and returns the raw binary envelope.
+#[no_mangle]
+pub extern "system" fn Java_me_really_codec_ReallyMeCodecNative_processProtoJsonNative<'local>(
+    env: EnvUnowned<'local>,
+    _receiver: JObject<'local>,
+    request: JByteArray<'local>,
+) -> jbyteArray {
+    process_proto_envelope(
+        env,
+        request,
+        MAX_CODEC_PROTO_JSON_BYTES,
+        rm_codec_process_proto_json,
+    )
+}
+
+fn process_proto_envelope<'local>(
+    mut env: EnvUnowned<'local>,
+    request: JByteArray<'local>,
+    max_request_len: usize,
+    process: CodecProtoProcessCFunction,
+) -> jbyteArray {
+    let outcome = with_redacted_panic_hook(|| {
+        env.with_env(|env| -> jni::errors::Result<jbyteArray> {
+            let request = bounded_proto_request_bytes(env, request, max_request_len)?;
+            let output = process_proto_output(env, request.as_slice(), process)?;
+            env.byte_array_from_slice(output.as_slice())
+                .map(|value| value.into_raw())
+        })
+    });
+    match outcome.into_outcome() {
+        Outcome::Ok(value) => value,
+        Outcome::Err(_) | Outcome::Panic(_) => {
+            throw_provider_failure_if_clear(&mut env);
+            ptr::null_mut()
+        }
+    }
 }
 
 /// Runs a protobuf-output operation once and returns both its status and bytes.
@@ -99,12 +156,9 @@ pub extern "system" fn Java_me_really_codec_ReallyMeCodecNative_processProtoNati
 pub extern "system" fn Java_me_really_codec_ReallyMeCodecNative_processProtoResultNative<'local>(
     env: EnvUnowned<'local>,
     _receiver: JObject<'local>,
-    operation: jint,
-    first: JByteArray<'local>,
-    second: JByteArray<'local>,
-    third: JByteArray<'local>,
+    request: JByteArray<'local>,
 ) -> jobject {
-    process_proto_result(env, operation, first, second, third)
+    process_proto_result(env, request)
 }
 
 fn process_with_function<'local>(
@@ -115,10 +169,13 @@ fn process_with_function<'local>(
     third: JByteArray<'local>,
     process: CodecProcessCFunction,
 ) -> jbyteArray {
-    let outcome = env.with_env(|env| -> jni::errors::Result<jbyteArray> {
-        let output = process_output_with_function(env, operation, first, second, third, process)?;
-        env.byte_array_from_slice(&output.bytes)
-            .map(|value| value.into_raw())
+    let outcome = with_redacted_panic_hook(|| {
+        env.with_env(|env| -> jni::errors::Result<jbyteArray> {
+            let output =
+                process_output_with_function(env, operation, first, second, third, process)?;
+            env.byte_array_from_slice(&output.bytes)
+                .map(|value| value.into_raw())
+        })
     });
 
     match outcome.into_outcome() {
@@ -136,45 +193,42 @@ fn process_with_function<'local>(
 
 fn process_proto_result<'local>(
     mut env: EnvUnowned<'local>,
-    operation: jint,
-    first: JByteArray<'local>,
-    second: JByteArray<'local>,
-    third: JByteArray<'local>,
+    request: JByteArray<'local>,
 ) -> jobject {
-    let outcome = env.with_env(|env| -> jni::errors::Result<jobject> {
-        let output = process_output_with_function(
-            env,
-            operation,
-            first,
-            second,
-            third,
-            rm_codec_process_proto,
-        )?;
-        let status = match output.status {
-            CODEC_OK => env
-                .get_static_field(
-                    jni::jni_str!("me/really/codec/ReallyMeCodecProtoStatus"),
-                    jni::jni_str!("RESULT"),
-                    PROTO_STATUS_FIELD_SIGNATURE,
-                )?
-                .l()?,
-            CODEC_PROTO_ERROR => env
-                .get_static_field(
-                    jni::jni_str!("me/really/codec/ReallyMeCodecProtoStatus"),
-                    jni::jni_str!("CODEC_ERROR"),
-                    PROTO_STATUS_FIELD_SIGNATURE,
-                )?
-                .l()?,
-            _ => return throw_provider_failure(env),
-        };
-        let bytes = env.byte_array_from_slice(&output.bytes)?;
-        let bytes_object = JObject::from(bytes);
-        let result = env.new_object(
-            jni::jni_str!("me/really/codec/ReallyMeCodecProtoResult"),
-            PROTO_RESULT_CONSTRUCTOR_SIGNATURE,
-            &[JValue::Object(&status), JValue::Object(&bytes_object)],
-        )?;
-        Ok(result.into_raw())
+    let outcome = with_redacted_panic_hook(|| {
+        env.with_env(|env| -> jni::errors::Result<jobject> {
+            let request = bounded_proto_request_bytes(env, request, MAX_CODEC_PROTO_MESSAGE_BYTES)?;
+            let output = process_proto_output(env, request.as_slice(), rm_codec_process_proto)?;
+            let decoded = match decode_proto_result_envelope(&output) {
+                Ok(value) => value,
+                Err(_) => return throw_provider_failure(env),
+            };
+            let status = match decoded.status() {
+                CodecProtoStatus::Result => env
+                    .get_static_field(
+                        jni::jni_str!("me/really/codec/ReallyMeCodecProtoStatus"),
+                        jni::jni_str!("RESULT"),
+                        PROTO_STATUS_FIELD_SIGNATURE,
+                    )?
+                    .l()?,
+                CodecProtoStatus::CodecError => env
+                    .get_static_field(
+                        jni::jni_str!("me/really/codec/ReallyMeCodecProtoStatus"),
+                        jni::jni_str!("CODEC_ERROR"),
+                        PROTO_STATUS_FIELD_SIGNATURE,
+                    )?
+                    .l()?,
+                _ => return throw_provider_failure(env),
+            };
+            let bytes = env.byte_array_from_slice(decoded.bytes())?;
+            let bytes_object = JObject::from(bytes);
+            let result = env.new_object(
+                jni::jni_str!("me/really/codec/ReallyMeCodecProtoResult"),
+                PROTO_RESULT_CONSTRUCTOR_SIGNATURE,
+                &[JValue::Object(&status), JValue::Object(&bytes_object)],
+            )?;
+            Ok(result.into_raw())
+        })
     });
 
     match outcome.into_outcome() {
@@ -190,6 +244,73 @@ fn process_proto_result<'local>(
     }
 }
 
+fn process_proto_output<'local>(
+    env: &mut jni::Env<'local>,
+    request_bytes: &[u8],
+    process: CodecProtoProcessCFunction,
+) -> jni::errors::Result<Zeroizing<Vec<u8>>> {
+    let mut produced_len = 0_usize;
+    // SAFETY: The request vector and produced-length output are owned by this
+    // JNI frame and remain valid for the duration of the call.
+    let probe_status = unsafe {
+        process(
+            request_bytes.as_ptr(),
+            request_bytes.len(),
+            ptr::null_mut(),
+            0,
+            &mut produced_len,
+        )
+    };
+    if probe_status != CODEC_BUFFER_TOO_SMALL
+        || produced_len == 0
+        || produced_len > MAX_CODEC_PROTO_RESULT_ENVELOPE_BYTES
+    {
+        return throw_provider_failure(env);
+    }
+
+    let mut output = Zeroizing::new(vec![0_u8; produced_len]);
+    // SAFETY: The request and output vectors are distinct JNI-frame-owned
+    // allocations and `produced_len` is writable stack storage.
+    let status = unsafe {
+        process(
+            request_bytes.as_ptr(),
+            request_bytes.len(),
+            output.as_mut_ptr(),
+            output.len(),
+            &mut produced_len,
+        )
+    };
+    if status != CODEC_OK || produced_len != output.len() {
+        return throw_provider_failure(env);
+    }
+    Ok(output)
+}
+
+fn bounded_proto_request_bytes<'local>(
+    env: &mut jni::Env<'local>,
+    request: JByteArray<'local>,
+    max_request_len: usize,
+) -> jni::errors::Result<Zeroizing<Vec<u8>>> {
+    let request_len = match request.len(env) {
+        Ok(value) => value,
+        Err(_) => return throw_provider_failure(env),
+    };
+    if request_len > max_request_len {
+        // Resource-limit failures belong in the protobuf result envelope. A
+        // bounded over-limit sentinel asks the native boundary to construct
+        // that envelope without copying an attacker-sized managed array.
+        let sentinel_len = match max_request_len.checked_add(1) {
+            Some(value) => value,
+            None => return throw_provider_failure(env),
+        };
+        return Ok(Zeroizing::new(vec![0_u8; sentinel_len]));
+    }
+    match env.convert_byte_array(&request) {
+        Ok(value) => Ok(Zeroizing::new(value)),
+        Err(_) => throw_provider_failure(env),
+    }
+}
+
 fn process_output_with_function<'local>(
     env: &mut jni::Env<'local>,
     operation: jint,
@@ -202,6 +323,7 @@ fn process_output_with_function<'local>(
         Ok(value) => value,
         Err(_) => return throw_invalid_input(env),
     };
+    validate_managed_input_lengths(env, &[&first, &second, &third], MAX_CODEC_FFI_INPUT_BYTES)?;
     let first_bytes = match env.convert_byte_array(&first) {
         Ok(value) => Zeroizing::new(value),
         Err(_) => return throw_provider_failure(env),
@@ -233,20 +355,19 @@ fn process_output_with_function<'local>(
             &mut produced_len,
         )
     };
-    if first_status != CODEC_OK
-        && first_status != CODEC_PROTO_ERROR
-        && first_status != CODEC_BUFFER_TOO_SMALL
-    {
+    if first_status != CODEC_OK && first_status != CODEC_BUFFER_TOO_SMALL {
         return throw_for_status(env, first_status);
     }
-    if produced_len == 0 {
+    let Some(output_capacity) = probed_output_capacity(first_status, produced_len) else {
+        return throw_provider_failure(env);
+    };
+    if output_capacity == 0 {
         return Ok(NativeOutput {
-            status: first_status,
             bytes: Zeroizing::new(Vec::new()),
         });
     }
 
-    let mut output = Zeroizing::new(vec![0_u8; produced_len]);
+    let mut output = Zeroizing::new(vec![0_u8; output_capacity]);
     // SAFETY: The input byte vectors and output vector are owned by this JNI
     // frame, non-aliasing, and live for the call. `produced_len` is a writable
     // stack-owned length output.
@@ -264,14 +385,13 @@ fn process_output_with_function<'local>(
             &mut produced_len,
         )
     };
-    if (status != CODEC_OK && status != CODEC_PROTO_ERROR) || produced_len > output.len() {
+    if status != CODEC_OK {
         return throw_for_status(env, status);
     }
-    output.truncate(produced_len);
-    Ok(NativeOutput {
-        status,
-        bytes: output,
-    })
+    if produced_len != output.len() {
+        return throw_provider_failure(env);
+    }
+    Ok(NativeOutput { bytes: output })
 }
 
 /// Runs a codec predicate for `me.really:codec`.
@@ -283,53 +403,56 @@ pub extern "system" fn Java_me_really_codec_ReallyMeCodecNative_processBoolNativ
     first: JByteArray<'local>,
     second: JByteArray<'local>,
 ) -> jint {
-    let outcome = env.with_env(|env| -> jni::errors::Result<jint> {
-        let operation = match u32::try_from(operation) {
-            Ok(value) => value,
-            Err(_) => {
-                env.throw_new_void(jni::jni_str!(
-                    "me/really/codec/ReallyMeCodecException$InvalidInput"
-                ))?;
-                return Ok(-1);
-            }
-        };
-        let first_bytes = match env.convert_byte_array(&first) {
-            Ok(value) => Zeroizing::new(value),
-            Err(_) => {
-                env.throw_new_void(jni::jni_str!(
-                    "me/really/codec/ReallyMeCodecException$ProviderFailure"
-                ))?;
-                return Ok(-1);
-            }
-        };
-        let second_bytes = match env.convert_byte_array(&second) {
-            Ok(value) => Zeroizing::new(value),
-            Err(_) => {
-                env.throw_new_void(jni::jni_str!(
-                    "me/really/codec/ReallyMeCodecException$ProviderFailure"
-                ))?;
-                return Ok(-1);
-            }
-        };
+    let outcome = with_redacted_panic_hook(|| {
+        env.with_env(|env| -> jni::errors::Result<jint> {
+            let operation = match u32::try_from(operation) {
+                Ok(value) => value,
+                Err(_) => {
+                    env.throw_new_void(jni::jni_str!(
+                        "me/really/codec/ReallyMeCodecException$InvalidInput"
+                    ))?;
+                    return Ok(-1);
+                }
+            };
+            validate_managed_input_lengths(env, &[&first, &second], MAX_CODEC_FFI_INPUT_BYTES)?;
+            let first_bytes = match env.convert_byte_array(&first) {
+                Ok(value) => Zeroizing::new(value),
+                Err(_) => {
+                    env.throw_new_void(jni::jni_str!(
+                        "me/really/codec/ReallyMeCodecException$ProviderFailure"
+                    ))?;
+                    return Ok(-1);
+                }
+            };
+            let second_bytes = match env.convert_byte_array(&second) {
+                Ok(value) => Zeroizing::new(value),
+                Err(_) => {
+                    env.throw_new_void(jni::jni_str!(
+                        "me/really/codec/ReallyMeCodecException$ProviderFailure"
+                    ))?;
+                    return Ok(-1);
+                }
+            };
 
-        let mut result = 0_i32;
-        // SAFETY: The byte vectors are owned by this JNI frame and live for
-        // the call. `result` is writable stack-owned `i32` output storage.
-        let status = unsafe {
-            rm_codec_process_bool(
-                operation,
-                first_bytes.as_ptr(),
-                first_bytes.len(),
-                second_bytes.as_ptr(),
-                second_bytes.len(),
-                &mut result,
-            )
-        };
-        if status != CODEC_OK {
-            throw_for_status(env, status)?;
-            return Ok(-1);
-        }
-        Ok(result)
+            let mut result = 0_i32;
+            // SAFETY: The byte vectors are owned by this JNI frame and live for
+            // the call. `result` is writable stack-owned `i32` output storage.
+            let status = unsafe {
+                rm_codec_process_bool(
+                    operation,
+                    first_bytes.as_ptr(),
+                    first_bytes.len(),
+                    second_bytes.as_ptr(),
+                    second_bytes.len(),
+                    &mut result,
+                )
+            };
+            if status != CODEC_OK {
+                throw_for_status(env, status)?;
+                return Ok(-1);
+            }
+            Ok(result)
+        })
     });
 
     match outcome.into_outcome() {
@@ -343,6 +466,28 @@ pub extern "system" fn Java_me_really_codec_ReallyMeCodecNative_processBoolNativ
             -1
         }
     }
+}
+
+fn validate_managed_input_lengths<'local>(
+    env: &mut jni::Env<'local>,
+    inputs: &[&JByteArray<'local>],
+    maximum: usize,
+) -> jni::errors::Result<()> {
+    let mut aggregate = 0_usize;
+    for input in inputs {
+        let length = match input.len(env) {
+            Ok(value) => value,
+            Err(_) => return throw_provider_failure(env),
+        };
+        aggregate = match aggregate.checked_add(length) {
+            Some(value) => value,
+            None => return throw_invalid_input(env),
+        };
+        if aggregate > maximum {
+            return throw_invalid_input(env);
+        }
+    }
+    Ok(())
 }
 
 fn throw_provider_failure_if_clear(env: &mut EnvUnowned<'_>) {
@@ -376,4 +521,23 @@ fn throw_provider_failure<'local, T>(env: &mut jni::Env<'local>) -> jni::errors:
         "me/really/codec/ReallyMeCodecException$ProviderFailure"
     ))?;
     Err(jni::errors::Error::JavaException)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{probed_output_capacity, MAX_CODEC_FFI_OUTPUT_BYTES};
+    use crate::status::{CODEC_BUFFER_TOO_SMALL, CODEC_INTERNAL_ERROR, CODEC_OK};
+
+    #[test]
+    fn generic_output_probe_is_strict_and_bounded() {
+        assert_eq!(probed_output_capacity(CODEC_OK, 0), Some(0));
+        assert_eq!(probed_output_capacity(CODEC_BUFFER_TOO_SMALL, 1), Some(1));
+        assert_eq!(probed_output_capacity(CODEC_OK, 1), None);
+        assert_eq!(probed_output_capacity(CODEC_BUFFER_TOO_SMALL, 0), None);
+        assert_eq!(
+            probed_output_capacity(CODEC_BUFFER_TOO_SMALL, MAX_CODEC_FFI_OUTPUT_BYTES + 1),
+            None
+        );
+        assert_eq!(probed_output_capacity(CODEC_INTERNAL_ERROR, 1), None);
+    }
 }

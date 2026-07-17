@@ -63,6 +63,7 @@ export type {
 } from "./cbor.js";
 export { canonicalizeJson, canonicalizeJsonText } from "./jcs.js";
 export { decodePem, decodePemProto, decodePemProtoResult, encodePem } from "./pem.js";
+export { processProto, processProtoJson } from "./protoProcess.js";
 export type { ReallyMeCodecProtoResult, ReallyMeCodecProtoStatus } from "./readOutput.js";
 export type {
   ReallyMePemDecodePolicy,
@@ -126,6 +127,7 @@ import {
   validateKeyBinding,
 } from "./multiformat.js";
 import { decodePem, decodePemProto, decodePemProtoResult, encodePem } from "./pem.js";
+import { processProto, processProtoJson } from "./protoProcess.js";
 
 export const ReallyMeCodec = {
   base64Decode,
@@ -174,4 +176,6 @@ export const ReallyMeCodec = {
   decodePemProto,
   decodePemProtoResult,
   encodePem,
+  processProto,
+  processProtoJson,
 } as const;

@@ -19,13 +19,9 @@ type ValidateKeyBindingFn = (
   algorithm: string | undefined,
   multikey: string,
 ) => unknown;
-type PemDecodeFn = (input: string, optionsJson: string) => unknown;
+type PemDecodeFn = (input: Uint8Array, optionsJson: string) => unknown;
 type PemEncodeFn = (label: string, der: Uint8Array, optionsJson: string) => unknown;
 type Function0 = () => unknown;
-type StringToObjectOutputFn = (text: string) => unknown;
-type BytesToObjectOutputFn = (bytes: Uint8Array) => unknown;
-type StringBytesToObjectOutputFn = (text: string, bytes: Uint8Array) => unknown;
-type PemDecodeObjectOutputFn = (input: string, optionsJson: string) => unknown;
 type WasmArgument = Uint8Array | string | undefined;
 type WasmCallable = (...args: ReadonlyArray<WasmArgument>) => unknown;
 
@@ -42,19 +38,11 @@ export const REALLYME_CODEC_WASM_EXPORTS = [
   "multibaseBase64urlEncode",
   "multibaseDecode",
   "multicodecLookupPrefix",
-  "multicodecLookupPrefixProto",
-  "multicodecLookupPrefixProtoResult",
   "multicodecPrefixForName",
-  "multicodecPrefixForNameProto",
-  "multicodecPrefixForNameProtoResult",
   "multicodecStripPrefix",
   "multicodecTable",
-  "multicodecTableProto",
-  "multicodecTableProtoResult",
   "multikeyEncode",
   "multikeyParse",
-  "multikeyParseProto",
-  "multikeyParseProtoResult",
   "bindingTypeMatchesCodec",
   "validateKeyBinding",
   "requireSupportedMulticodec",
@@ -65,15 +53,13 @@ export const REALLYME_CODEC_WASM_EXPORTS = [
   "dagCborMultihash",
   "dagCborSha256ContentHash",
   "dagCborVerifyCid",
-  "dagCborVerifyCidProto",
-  "dagCborVerifyCidProtoResult",
   "isValidCidString",
   "tryParseCid",
   "canonicalizeJson",
   "pemDecode",
-  "pemDecodeProto",
-  "pemDecodeProtoResult",
   "pemEncode",
+  "processProto",
+  "processProtoJson",
 ] as const;
 
 export type ReallyMeCodecWasmProvider = Readonly<{
@@ -89,19 +75,11 @@ export type ReallyMeCodecWasmProvider = Readonly<{
   multibaseBase64urlEncode: BytesToStringFn;
   multibaseDecode: StringToBytesFn;
   multicodecLookupPrefix: BytesToObjectFn;
-  multicodecLookupPrefixProto: BytesToBytesFn;
-  multicodecLookupPrefixProtoResult: BytesToObjectOutputFn;
   multicodecPrefixForName: StringToObjectFn;
-  multicodecPrefixForNameProto: StringToBytesFn;
-  multicodecPrefixForNameProtoResult: StringToObjectOutputFn;
   multicodecStripPrefix: BytesToBytesFn;
   multicodecTable: Function0;
-  multicodecTableProto: Function0;
-  multicodecTableProtoResult: Function0;
   multikeyEncode: StringBytesToStringFn;
   multikeyParse: StringToObjectFn;
-  multikeyParseProto: StringToBytesFn;
-  multikeyParseProtoResult: StringToObjectOutputFn;
   bindingTypeMatchesCodec: StringStringToBooleanFn;
   validateKeyBinding: ValidateKeyBindingFn;
   requireSupportedMulticodec: StringToStringFn;
@@ -112,15 +90,13 @@ export type ReallyMeCodecWasmProvider = Readonly<{
   dagCborMultihash: BytesToBytesFn;
   dagCborSha256ContentHash: BytesToBytesFn;
   dagCborVerifyCid: StringBytesToStringFn;
-  dagCborVerifyCidProto: StringBytesToStringFn;
-  dagCborVerifyCidProtoResult: StringBytesToObjectOutputFn;
   isValidCidString: StringToBooleanFn;
   tryParseCid: StringToObjectFn;
   canonicalizeJson: StringToStringFn;
   pemDecode: PemDecodeFn;
-  pemDecodeProto: PemDecodeFn;
-  pemDecodeProtoResult: PemDecodeObjectOutputFn;
   pemEncode: PemEncodeFn;
+  processProto: BytesToBytesFn;
+  processProtoJson: BytesToBytesFn;
 }>;
 
 let installedProvider: ReallyMeCodecWasmProvider | undefined;
@@ -147,7 +123,19 @@ const requireObject = (module: unknown): object => {
 };
 
 const requireFunction = (module: object, name: string): WasmCallable => {
-  const candidate: unknown = Reflect.get(module, name);
+  let candidate: unknown;
+  try {
+    const descriptor = Object.getOwnPropertyDescriptor(module, name);
+    if (descriptor === undefined || !("value" in descriptor)) {
+      throw new ReallyMeCodecError("provider-failure");
+    }
+    candidate = descriptor.value;
+  } catch (error: unknown) {
+    if (error instanceof ReallyMeCodecError) {
+      throw error;
+    }
+    throw new ReallyMeCodecError("provider-failure");
+  }
   if (typeof candidate !== "function") {
     throw new ReallyMeCodecError("provider-failure");
   }
@@ -207,7 +195,7 @@ const validateKeyBindingFunction = (
 
 const pemDecodeFunction = (module: object, name: string): PemDecodeFn => {
   const callable = requireFunction(module, name);
-  return (input: string, optionsJson: string): unknown => callable(input, optionsJson);
+  return (input: Uint8Array, optionsJson: string): unknown => callable(input, optionsJson);
 };
 
 const pemEncodeFunction = (module: object, name: string): PemEncodeFn => {
@@ -240,34 +228,11 @@ export const installReallyMeCodecWasmProvider = (module: unknown): void => {
     ),
     multibaseDecode: stringFunction1(providerModule, "multibaseDecode"),
     multicodecLookupPrefix: bytesFunction1(providerModule, "multicodecLookupPrefix"),
-    multicodecLookupPrefixProto: bytesFunction1(
-      providerModule,
-      "multicodecLookupPrefixProto",
-    ),
-    multicodecLookupPrefixProtoResult: bytesFunction1(
-      providerModule,
-      "multicodecLookupPrefixProtoResult",
-    ),
     multicodecPrefixForName: stringFunction1(providerModule, "multicodecPrefixForName"),
-    multicodecPrefixForNameProto: stringFunction1(
-      providerModule,
-      "multicodecPrefixForNameProto",
-    ),
-    multicodecPrefixForNameProtoResult: stringFunction1(
-      providerModule,
-      "multicodecPrefixForNameProtoResult",
-    ),
     multicodecStripPrefix: bytesFunction1(providerModule, "multicodecStripPrefix"),
     multicodecTable: function0(providerModule, "multicodecTable"),
-    multicodecTableProto: function0(providerModule, "multicodecTableProto"),
-    multicodecTableProtoResult: function0(providerModule, "multicodecTableProtoResult"),
     multikeyEncode: stringBytesFunction2(providerModule, "multikeyEncode"),
     multikeyParse: stringFunction1(providerModule, "multikeyParse"),
-    multikeyParseProto: stringFunction1(providerModule, "multikeyParseProto"),
-    multikeyParseProtoResult: stringFunction1(
-      providerModule,
-      "multikeyParseProtoResult",
-    ),
     bindingTypeMatchesCodec: stringStringBooleanFunction(
       providerModule,
       "bindingTypeMatchesCodec",
@@ -287,21 +252,13 @@ export const installReallyMeCodecWasmProvider = (module: unknown): void => {
       "dagCborSha256ContentHash",
     ),
     dagCborVerifyCid: stringBytesFunction2(providerModule, "dagCborVerifyCid"),
-    dagCborVerifyCidProto: stringBytesFunction2(
-      providerModule,
-      "dagCborVerifyCidProto",
-    ),
-    dagCborVerifyCidProtoResult: stringBytesFunction2(
-      providerModule,
-      "dagCborVerifyCidProtoResult",
-    ),
     isValidCidString: stringBooleanFunction(providerModule, "isValidCidString"),
     tryParseCid: stringFunction1(providerModule, "tryParseCid"),
     canonicalizeJson: stringFunction1(providerModule, "canonicalizeJson"),
     pemDecode: pemDecodeFunction(providerModule, "pemDecode"),
-    pemDecodeProto: pemDecodeFunction(providerModule, "pemDecodeProto"),
-    pemDecodeProtoResult: pemDecodeFunction(providerModule, "pemDecodeProtoResult"),
     pemEncode: pemEncodeFunction(providerModule, "pemEncode"),
+    processProto: bytesFunction1(providerModule, "processProto"),
+    processProtoJson: bytesFunction1(providerModule, "processProtoJson"),
   };
 };
 

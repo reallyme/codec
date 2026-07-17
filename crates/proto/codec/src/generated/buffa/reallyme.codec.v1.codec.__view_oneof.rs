@@ -33,5 +33,57 @@ pub mod codec_error {
                 super::super::super::super::__buffa::view::CodecBackendErrorView<'a>,
             >,
         ),
+        Boundary(
+            ::buffa::alloc::boxed::Box<
+                super::super::super::super::__buffa::view::CodecBoundaryErrorView<'a>,
+            >,
+        ),
+    }
+}
+pub mod codec_operation_request {
+    #[allow(unused_imports)]
+    use super::*;
+    #[derive(Clone, Debug)]
+    pub enum Operation<'a> {
+        MulticodecPrefixForName(
+            ::buffa::alloc::boxed::Box<
+                super::super::super::super::__buffa::view::CodecMulticodecPrefixForNameRequestView<
+                    'a,
+                >,
+            >,
+        ),
+        MulticodecLookupPrefix(
+            ::buffa::alloc::boxed::Box<
+                super::super::super::super::__buffa::view::CodecMulticodecLookupPrefixRequestView<
+                    'a,
+                >,
+            >,
+        ),
+        MulticodecTable(
+            ::buffa::alloc::boxed::Box<
+                super::super::super::super::__buffa::view::CodecMulticodecTableRequestView<
+                    'a,
+                >,
+            >,
+        ),
+        MultikeyParse(
+            ::buffa::alloc::boxed::Box<
+                super::super::super::super::__buffa::view::CodecMultikeyParseRequestView<
+                    'a,
+                >,
+            >,
+        ),
+        DagCborVerifyCid(
+            ::buffa::alloc::boxed::Box<
+                super::super::super::super::__buffa::view::CodecDagCborVerifyCidRequestView<
+                    'a,
+                >,
+            >,
+        ),
+        PemDecode(
+            ::buffa::alloc::boxed::Box<
+                super::super::super::super::__buffa::view::CodecPemDecodeRequestView<'a>,
+            >,
+        ),
     }
 }

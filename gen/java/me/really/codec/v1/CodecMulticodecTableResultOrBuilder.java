@@ -13,7 +13,7 @@ public interface CodecMulticodecTableResultOrBuilder extends
   /**
    * <code>repeated .reallyme.codec.v1.CodecMulticodecSpec entries = 1 [json_name = "entries"];</code>
    */
-  java.util.List<me.really.codec.v1.CodecMulticodecSpec> 
+  java.util.List<me.really.codec.v1.CodecMulticodecSpec>
       getEntriesList();
   /**
    * <code>repeated .reallyme.codec.v1.CodecMulticodecSpec entries = 1 [json_name = "entries"];</code>

@@ -65,5 +65,16 @@ public interface CodecErrorOrBuilder extends
    */
   me.really.codec.v1.CodecBackendError getBackend();
 
+  /**
+   * <code>.reallyme.codec.v1.CodecBoundaryError boundary = 6 [json_name = "boundary"];</code>
+   * @return Whether the boundary field is set.
+   */
+  boolean hasBoundary();
+  /**
+   * <code>.reallyme.codec.v1.CodecBoundaryError boundary = 6 [json_name = "boundary"];</code>
+   * @return The boundary.
+   */
+  me.really.codec.v1.CodecBoundaryError getBoundary();
+
   public me.really.codec.v1.CodecError.ErrorCase getErrorCase();
 }
