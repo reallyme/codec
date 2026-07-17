@@ -791,6 +791,7 @@ assertContains("docs/protobuf.md", "degrade toward quadratic behavior");
 assertContains("scripts/build_swift_xcframework.sh", "Modules/module.modulemap");
 assertNotContains("scripts/build_swift_xcframework.sh", "HEADERS_DIR}/module.modulemap");
 assertContains("scripts/build_swift_xcframework.sh", "verify_xcframework_layout");
+assertContains("scripts/build_swift_xcframework.sh", "normalize_xcframework_info_plist");
 assertContains("scripts/build_swift_xcframework.sh", "Headers/module.modulemap");
 assertContains("scripts/prepare_swift_binary_manifest.mjs", "ffiArtifactChecksum");
 assertContains("scripts/prepare_swift_binary_manifest.mjs", "--local-artifact-path");
