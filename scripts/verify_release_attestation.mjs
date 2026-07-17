@@ -27,15 +27,22 @@ const fail = (code) => {
   throw new ReleaseAttestationError(code);
 };
 
-const run = (command, arguments_, options = {}) => {
+export const run = (command, arguments_, options = {}) => {
+  const capturesStdout = options.capture !== false;
   const result = spawnSync(command, arguments_, {
     cwd: options.cwd,
     encoding: "utf8",
     env: options.env,
     maxBuffer: MAX_COMMAND_OUTPUT_BYTES,
-    stdio: options.capture === false ? ["ignore", "ignore", "ignore"] : ["ignore", "pipe", "ignore"],
+    stdio: capturesStdout ? ["ignore", "pipe", "ignore"] : ["ignore", "ignore", "ignore"],
   });
   if (result.error !== undefined || result.status !== 0) {
+    fail(options.errorCode ?? "command-failed");
+  }
+  if (!capturesStdout) {
+    return "";
+  }
+  if (typeof result.stdout !== "string") {
     fail(options.errorCode ?? "command-failed");
   }
   return result.stdout.trim();
