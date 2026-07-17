@@ -8,9 +8,10 @@ on:
   workflow_dispatch:
     inputs:
       release_sha:
-        description: Exact 40-character main commit SHA that passed Code Checks and Release Preflight
-        required: true
+        description: Optional exact main commit SHA. Leave blank to use the current origin/main SHA.
+        required: false
         type: string
+        default: ""
       publish:
         description: Publish crates to crates.io after the dry run succeeds
         required: true
@@ -21,7 +22,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: crates-release-${{ inputs.release_sha }}
+  group: crates-release-${{ inputs.release_sha || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -31,12 +32,38 @@ jobs:
     permissions:
       actions: read
       contents: read
+    outputs:
+      release_sha: ${{ steps.resolve-release-sha.outputs.release_sha }}
     steps:
-      - name: Checkout exact release SHA
+      - name: Checkout main for release SHA resolution
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
-          ref: ${{ inputs.release_sha }}
+          ref: main
           fetch-depth: 0
+
+      - name: Resolve release SHA
+        id: resolve-release-sha
+        env:
+          RELEASE_SHA_INPUT: ${{ inputs.release_sha }}
+        run: |
+          git fetch --no-tags origin main
+          if [ -n "${RELEASE_SHA_INPUT}" ]; then
+            if [[ ! "${RELEASE_SHA_INPUT}" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::release_sha must be blank or a lowercase 40-character commit SHA"
+              exit 1
+            fi
+            release_sha="${RELEASE_SHA_INPUT}"
+          else
+            release_sha="$(git rev-parse origin/main)"
+          fi
+          if [ "$(git rev-parse origin/main)" != "${release_sha}" ]; then
+            echo "::error::resolved release SHA is not the current origin/main tip"
+            exit 1
+          fi
+          git checkout --detach "${release_sha}"
+          echo "release_sha=${release_sha}" >> "${GITHUB_OUTPUT}"
+          echo "RELEASE_SHA=${release_sha}" >> "${GITHUB_ENV}"
+          echo "Using release SHA ${release_sha}"
 
       - name: Install Node
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
@@ -47,7 +74,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          RELEASE_SHA: ${{ inputs.release_sha }}
+          RELEASE_SHA: ${{ steps.resolve-release-sha.outputs.release_sha }}
         run: node scripts/verify_release_attestation.mjs
 
   dry-run:
@@ -60,7 +87,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
-          ref: ${{ inputs.release_sha }}
+          ref: ${{ needs.verify-release-sha.outputs.release_sha }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88 # master
@@ -80,7 +107,7 @@ jobs:
 
   publish:
     name: publish crates
-    needs: dry-run
+    needs: [verify-release-sha, dry-run]
     if: inputs.publish == true
     runs-on: ubuntu-latest
     permissions:
@@ -90,7 +117,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
-          ref: ${{ inputs.release_sha }}
+          ref: ${{ needs.verify-release-sha.outputs.release_sha }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88 # master
@@ -113,4 +140,4 @@ jobs:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          RELEASE_SHA: ${{ inputs.release_sha }}
+          RELEASE_SHA: ${{ needs.verify-release-sha.outputs.release_sha }}

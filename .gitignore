@@ -14,6 +14,8 @@ target/
 *.profraw
 *.d
 
+refactor-0.2.0.md
+
 # OS/editor noise
 .DS_Store
 **/.DS_Store
@@ -47,8 +49,8 @@ proptest-regressions/
 **/src/generated/**
 !crates/proto/codec/src/generated/
 !crates/proto/codec/src/generated/**
-!packages/codec/src/proto/generated/
-!packages/codec/src/proto/generated/**
+!packages/ts/src/proto/generated/
+!packages/ts/src/proto/generated/**
 **/src/pb
 **/src/pb/**
 **/src/prost

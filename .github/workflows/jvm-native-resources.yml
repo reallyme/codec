@@ -57,7 +57,7 @@ jobs:
         shell: bash
 
       - name: Test host native loader
-        working-directory: packages/kotlin-codec
+        working-directory: packages/kotlin
         run: ./gradlew test -Preallyme.codec.nativeResourcesDir=../../build/kotlin-native-resources
         shell: bash
 

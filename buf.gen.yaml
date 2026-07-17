@@ -15,7 +15,7 @@ plugins:
 
   # TypeScript package output.
   - remote: buf.build/bufbuild/es:v2.12.1
-    out: packages/codec/src/proto/generated
+    out: packages/ts/src/proto/generated
     opt:
       - target=ts
 

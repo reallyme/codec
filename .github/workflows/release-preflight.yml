@@ -8,9 +8,15 @@ on:
   workflow_dispatch:
     inputs:
       release_sha:
-        description: Exact current main commit SHA to certify
+        description: Optional exact main commit SHA to certify. Leave blank to use current origin/main.
+        required: false
+        type: string
+        default: ""
+      version:
+        description: Release version without leading v
         required: true
         type: string
+        default: 0.1.22
 
 permissions:
   contents: read
@@ -19,31 +25,37 @@ jobs:
   verify-source-sha:
     name: verify source SHA
     runs-on: ubuntu-latest
+    outputs:
+      release_sha: ${{ steps.resolve-release-sha.outputs.release_sha }}
     steps:
-      - name: Checkout exact release SHA
+      - name: Checkout main for release SHA resolution
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
-          ref: ${{ inputs.release_sha }}
+          ref: main
           fetch-depth: 0
 
-      - name: Require workflow and current main to match exact SHA
+      - name: Resolve release SHA
+        id: resolve-release-sha
         env:
-          RELEASE_SHA: ${{ inputs.release_sha }}
-          WORKFLOW_SHA: ${{ github.sha }}
+          RELEASE_SHA_INPUT: ${{ inputs.release_sha }}
         run: |
-          if [[ ! "${RELEASE_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "::error::release_sha must be a lowercase 40-character commit SHA"
-            exit 1
-          fi
-          if [ "${WORKFLOW_SHA}" != "${RELEASE_SHA}" ] || [ "$(git rev-parse HEAD)" != "${RELEASE_SHA}" ]; then
-            echo "::error::dispatch ref, checkout, and release_sha must identify the same commit"
-            exit 1
-          fi
           git fetch --no-tags origin main
-          if [ "$(git rev-parse origin/main)" != "${RELEASE_SHA}" ]; then
-            echo "::error::release_sha is not the current origin/main tip"
+          if [ -n "${RELEASE_SHA_INPUT}" ]; then
+            if [[ ! "${RELEASE_SHA_INPUT}" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::release_sha must be blank or a lowercase 40-character commit SHA"
+              exit 1
+            fi
+            release_sha="${RELEASE_SHA_INPUT}"
+          else
+            release_sha="$(git rev-parse origin/main)"
+          fi
+          if [ "$(git rev-parse origin/main)" != "${release_sha}" ]; then
+            echo "::error::resolved release SHA is not the current origin/main tip"
             exit 1
           fi
+          git checkout --detach "${release_sha}"
+          echo "release_sha=${release_sha}" >> "${GITHUB_OUTPUT}"
+          echo "Using release SHA ${release_sha}"
 
   rust-crates:
     name: rust crate metadata
@@ -52,6 +64,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ needs.verify-source-sha.outputs.release_sha }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88 # master
@@ -79,6 +93,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ needs.verify-source-sha.outputs.release_sha }}
 
       - name: Install Node
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
@@ -105,13 +121,17 @@ jobs:
       - name: Verify SwiftPM binary manifest wiring
         run: |
           checksum="$(cat build/swift/ReallyMeCodecFFI.xcframework.checksum)"
-          node scripts/prepare_swift_binary_manifest.mjs 0.2.0 "${checksum}"
+          node scripts/prepare_swift_binary_manifest.mjs "${RELEASE_VERSION}" "${checksum}"
           node scripts/run_pinned_release_readiness.mjs --release-packages
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
 
       - name: Prepare local SwiftPM binary manifest
         run: |
           checksum="$(cat build/swift/ReallyMeCodecFFI.xcframework.checksum)"
-          node scripts/prepare_swift_binary_manifest.mjs 0.2.0 "${checksum}" --local-artifact-path build/swift/ReallyMeCodecFFI.xcframework
+          node scripts/prepare_swift_binary_manifest.mjs "${RELEASE_VERSION}" "${checksum}" --local-artifact-path build/swift/ReallyMeCodecFFI.xcframework
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
 
       - name: Reset SwiftPM package state
         run: swift package reset
@@ -140,6 +160,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ needs.verify-source-sha.outputs.release_sha }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88 # master
@@ -166,7 +188,7 @@ jobs:
         shell: bash
 
       - name: Test host native loader
-        working-directory: packages/kotlin-codec
+        working-directory: packages/kotlin
         run: ./gradlew test -Preallyme.codec.nativeResourcesDir=../../build/kotlin-native-resources
         shell: bash
 
@@ -179,11 +201,13 @@ jobs:
 
   kotlin-package:
     name: kotlin maven preflight
-    needs: jvm-native
+    needs: [verify-source-sha, jvm-native]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ needs.verify-source-sha.outputs.release_sha }}
 
       - name: Install Java
         uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5
@@ -207,7 +231,7 @@ jobs:
         run: node scripts/write_native_manifest.mjs build/kotlin-native-resources build/kotlin-native-resources/me/really/codec/native/native-manifest.json
 
       - name: Test codec package and publish to Maven local
-        working-directory: packages/kotlin-codec
+        working-directory: packages/kotlin
         run: ./gradlew test publishToMavenLocal -Preallyme.codec.nativeResourcesDir=${{ github.workspace }}/build/kotlin-native-resources -Preallyme.codec.requireFullNativeResources=true
 
   android-package:
@@ -217,6 +241,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ needs.verify-source-sha.outputs.release_sha }}
 
       - name: Install Java
         uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5
@@ -246,7 +272,7 @@ jobs:
         run: node scripts/write_native_manifest.mjs build/android-jniLibs build/android-native-assets/reallyme-codec/native-manifest.json
 
       - name: Build Android AAR
-        run: packages/kotlin-codec/gradlew -p packages/android-codec bundleReleaseAar verifyReleaseAarContainsJniLibs -Preallyme.codec.androidJniLibsDir=${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true
+        run: packages/kotlin/gradlew -p packages/kotlin-android bundleReleaseAar verifyReleaseAarContainsJniLibs -Preallyme.codec.androidJniLibsDir=${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true
 
   npm-package:
     name: npm package preflight
@@ -255,13 +281,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ needs.verify-source-sha.outputs.release_sha }}
 
       - name: Install Node
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: '24'
           cache: npm
-          cache-dependency-path: packages/codec/package-lock.json
+          cache-dependency-path: packages/ts/package-lock.json
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88 # master
@@ -281,12 +309,12 @@ jobs:
 
       - name: Install TypeScript codec package dependencies
         run: npm ci
-        working-directory: packages/codec
+        working-directory: packages/ts
 
       - name: Test TypeScript codec package
         run: npm test
-        working-directory: packages/codec
+        working-directory: packages/ts
 
       - name: Build codec npm tarball dry run
         run: npm pack --dry-run
-        working-directory: packages/codec
+        working-directory: packages/ts

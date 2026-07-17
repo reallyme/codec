@@ -6,7 +6,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-RESOURCES_ROOT="${1:-${ROOT_DIR}/packages/kotlin-codec/native}"
+RESOURCES_ROOT="${1:-${ROOT_DIR}/packages/kotlin/native}"
 FFI_RUSTFLAGS="${RUSTFLAGS:+${RUSTFLAGS} }-C panic=unwind"
 
 case "$(uname -s)" in
