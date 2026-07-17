@@ -501,6 +501,7 @@ assertContains(".github/workflows/release-preflight.yml", "default: 0.1.22");
 assertContains(".github/workflows/release-preflight.yml", "needs: [verify-source-sha, jvm-native]");
 assertContains(".github/workflows/package-release.yml", "needs: [verify-release-sha, jvm-native]");
 assertContains(".github/workflows/package-release.yml", "needs: [verify-release-sha, swift-artifact]");
+assertContains(".github/workflows/package-release.yml", "needs: [verify-release-sha, swift-artifact, swift-verify]");
 assertContains(".github/workflows/crates-release.yml", "needs: [verify-release-sha, dry-run]");
 assertWorkflowRunStep(
   ".github/workflows/package-release.yml",
@@ -524,6 +525,16 @@ assertWorkflowRunStep(
   `node scripts/verify_release_attestation.mjs
 packages/kotlin/gradlew -p packages/kotlin-android publish -Preallyme.codec.androidJniLibsDir=\${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=\${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true`,
 );
+assertMinOccurrences(
+  ".github/workflows/package-release.yml",
+  "steps.maven_remote.outputs.configured == 'true'",
+  2,
+);
+assertContains(".github/workflows/package-release.yml", "configured=false");
+assertContains(
+  ".github/workflows/package-release.yml",
+  "remote Maven credentials are incomplete; packaged artifacts were verified locally and remote publish is skipped",
+);
 assertWorkflowRunStep(
   ".github/workflows/crates-release.yml",
   "Publish crates in dependency order",
@@ -536,6 +547,7 @@ assertWorkflowRunStep(
   `node scripts/verify_swift_release_artifact.mjs build/swift/ReallyMeCodecFFI.xcframework.zip build/swift/ReallyMeCodecFFI.xcframework.checksum Package.swift "\${RELEASE_VERSION}"
 node scripts/run_pinned_release_readiness.mjs --release-packages`,
 );
+assertContains(".github/workflows/package-release.yml", "SwiftPM artifact verification");
 assertWorkflowRunStep(
   ".github/workflows/package-release.yml",
   "Create immutable GitHub release with Swift artifact",
@@ -550,8 +562,6 @@ if git ls-remote --exit-code --tags origin "refs/tags/v\${RELEASE_VERSION}" >/de
 fi
 gh release create "v\${RELEASE_VERSION}" build/swift/ReallyMeCodecFFI.xcframework.zip --target "\${RELEASE_SHA}" --title "ReallyMe Codec v\${RELEASE_VERSION}" --notes "ReallyMe Codec package release v\${RELEASE_VERSION}."`,
 );
-assertNotContains(".github/workflows/package-release.yml", "configured=false");
-assertNotContains(".github/workflows/package-release.yml", "remote publish is skipped");
 assertMinOccurrences(".github/workflows/package-release.yml", "node-version: '24'", 3);
 assertMinOccurrences(".github/workflows/release-preflight.yml", "node-version: '24'", 5);
 for (const workflowPath of [

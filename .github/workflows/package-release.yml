@@ -117,6 +117,35 @@ jobs:
             build/swift/ReallyMeCodecFFI.xcframework.checksum
           if-no-files-found: error
 
+  swift-verify:
+    name: SwiftPM artifact verification
+    needs: [verify-release-sha, swift-artifact]
+    if: inputs.publish_maven == false || inputs.publish_swift == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ needs.verify-release-sha.outputs.release_sha }}
+
+      - name: Download Swift artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: swift-xcframework
+          path: build/swift
+
+      - name: Install Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+
+      - name: Verify SwiftPM manifest
+        run: |
+          node scripts/verify_swift_release_artifact.mjs build/swift/ReallyMeCodecFFI.xcframework.zip build/swift/ReallyMeCodecFFI.xcframework.checksum Package.swift "${RELEASE_VERSION}"
+          node scripts/run_pinned_release_readiness.mjs --release-packages
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+
   jvm-native:
     name: JVM native ${{ matrix.platform }}
     needs: verify-release-sha
@@ -217,8 +246,25 @@ jobs:
         working-directory: packages/kotlin
         run: ./gradlew test publishToMavenLocal -Preallyme.codec.nativeResourcesDir=${{ github.workspace }}/build/kotlin-native-resources -Preallyme.codec.requireFullNativeResources=true
 
-      - name: Publish Maven artifact
+      - name: Check Maven remote publishing configuration
+        id: maven_remote
         if: inputs.publish_maven == true
+        run: |
+          if [ -n "${REALLYME_MAVEN_REPOSITORY_URL}" ] && [ -n "${REALLYME_MAVEN_USERNAME}" ] && [ -n "${REALLYME_MAVEN_PASSWORD}" ] && [ -n "${MAVEN_SIGNING_KEY}" ] && [ -n "${MAVEN_SIGNING_PASSWORD}" ]; then
+            echo "configured=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "::notice::publish_maven was requested, but remote Maven credentials are incomplete; packaged artifacts were verified locally and remote publish is skipped."
+            echo "configured=false" >> "${GITHUB_OUTPUT}"
+          fi
+        env:
+          REALLYME_MAVEN_REPOSITORY_URL: ${{ secrets.REALLYME_MAVEN_REPOSITORY_URL }}
+          REALLYME_MAVEN_USERNAME: ${{ secrets.REALLYME_MAVEN_USERNAME }}
+          REALLYME_MAVEN_PASSWORD: ${{ secrets.REALLYME_MAVEN_PASSWORD }}
+          MAVEN_SIGNING_KEY: ${{ secrets.MAVEN_SIGNING_KEY }}
+          MAVEN_SIGNING_PASSWORD: ${{ secrets.MAVEN_SIGNING_PASSWORD }}
+
+      - name: Publish Maven artifact
+        if: inputs.publish_maven == true && steps.maven_remote.outputs.configured == 'true'
         working-directory: packages/kotlin
         run: |
           node ../../scripts/verify_release_attestation.mjs
@@ -279,8 +325,25 @@ jobs:
       - name: Build Android AAR
         run: packages/kotlin/gradlew -p packages/kotlin-android bundleReleaseAar verifyReleaseAarContainsJniLibs -Preallyme.codec.androidJniLibsDir=${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true
 
-      - name: Publish Android AAR
+      - name: Check Maven remote publishing configuration
+        id: maven_remote
         if: inputs.publish_maven == true
+        run: |
+          if [ -n "${REALLYME_MAVEN_REPOSITORY_URL}" ] && [ -n "${REALLYME_MAVEN_USERNAME}" ] && [ -n "${REALLYME_MAVEN_PASSWORD}" ] && [ -n "${MAVEN_SIGNING_KEY}" ] && [ -n "${MAVEN_SIGNING_PASSWORD}" ]; then
+            echo "configured=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "::notice::publish_maven was requested, but remote Maven credentials are incomplete; packaged artifacts were verified locally and remote publish is skipped."
+            echo "configured=false" >> "${GITHUB_OUTPUT}"
+          fi
+        env:
+          REALLYME_MAVEN_REPOSITORY_URL: ${{ secrets.REALLYME_MAVEN_REPOSITORY_URL }}
+          REALLYME_MAVEN_USERNAME: ${{ secrets.REALLYME_MAVEN_USERNAME }}
+          REALLYME_MAVEN_PASSWORD: ${{ secrets.REALLYME_MAVEN_PASSWORD }}
+          MAVEN_SIGNING_KEY: ${{ secrets.MAVEN_SIGNING_KEY }}
+          MAVEN_SIGNING_PASSWORD: ${{ secrets.MAVEN_SIGNING_PASSWORD }}
+
+      - name: Publish Android AAR
+        if: inputs.publish_maven == true && steps.maven_remote.outputs.configured == 'true'
         run: |
           node scripts/verify_release_attestation.mjs
           packages/kotlin/gradlew -p packages/kotlin-android publish -Preallyme.codec.androidJniLibsDir=${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true
@@ -298,7 +361,7 @@ jobs:
 
   swift-release:
     name: SwiftPM release tag
-    needs: [verify-release-sha, swift-artifact]
+    needs: [verify-release-sha, swift-artifact, swift-verify]
     if: inputs.publish_swift == true
     runs-on: ubuntu-latest
     permissions:
@@ -321,13 +384,6 @@ jobs:
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: '24'
-
-      - name: Verify SwiftPM manifest
-        run: |
-          node scripts/verify_swift_release_artifact.mjs build/swift/ReallyMeCodecFFI.xcframework.zip build/swift/ReallyMeCodecFFI.xcframework.checksum Package.swift "${RELEASE_VERSION}"
-          node scripts/run_pinned_release_readiness.mjs --release-packages
-        env:
-          RELEASE_VERSION: ${{ inputs.version }}
 
       - name: Create immutable GitHub release with Swift artifact
         run: |
