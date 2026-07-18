@@ -1880,11 +1880,11 @@ assertContains(".github/workflows/npm-package-release.yml", "registry-url: 'http
 assertContains(".github/workflows/npm-package-release.yml", "NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}");
 assertContains(".github/workflows/npm-package-release.yml", "wasm-pack@0.15.0");
 assertContains(".github/workflows/npm-package-release.yml", "wasm-bindgen-cli@0.2.126");
-assertNotContains(".github/workflows/kotlin-android-package-release.yml", "steps.maven_remote.outputs.configured == 'true'");
-assertNotContains(".github/workflows/kotlin-android-package-release.yml", "configured=false");
-assertNotContains(
+assertContains(".github/workflows/kotlin-android-package-release.yml", "if: steps.maven_remote.outputs.configured == 'true'");
+assertContains(".github/workflows/kotlin-android-package-release.yml", "configured=false");
+assertContains(
   ".github/workflows/kotlin-android-package-release.yml",
-  "remote Maven credentials are incomplete; packaged artifacts were verified locally and remote publish is skipped",
+  "remote Maven credentials are incomplete; verified artifacts were packaged locally and remote publish is skipped",
 );
 assertNotContains("scripts/publish_crates_in_order.mjs", "already published; continuing");
 assertContains(

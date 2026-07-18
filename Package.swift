@@ -20,7 +20,7 @@ import Foundation
 
 let ffiArtifactChecksumPlaceholder =
     "0000000000000000000000000000000000000000000000000000000000000000"
-let ffiArtifactChecksum = "c0d444cbf0c245dc2042ba67891477b4141c1488f42334cd63e7dabdd59ac254"
+let ffiArtifactChecksum = "dec54225cacba3baab0ba4ec55d2ca04a36ad03176e548eeae144657127b434c"
 let ffiArtifactVersion = "0.2.0"
 let ffiArtifactLocalPathOverride = ""
 let hasReleasedFfiArtifact = ffiArtifactChecksum != ffiArtifactChecksumPlaceholder

@@ -164,7 +164,24 @@ jobs:
         working-directory: packages/kotlin
         run: ./gradlew test publishToMavenLocal -Preallyme.codec.nativeResourcesDir=${{ github.workspace }}/build/kotlin-native-resources -Preallyme.codec.requireFullNativeResources=true
 
+      - name: Check Maven remote publishing configuration
+        id: maven_remote
+        run: |
+          if [ -n "${REALLYME_MAVEN_REPOSITORY_URL}" ] && [ -n "${REALLYME_MAVEN_USERNAME}" ] && [ -n "${REALLYME_MAVEN_PASSWORD}" ] && [ -n "${MAVEN_SIGNING_KEY}" ] && [ -n "${MAVEN_SIGNING_PASSWORD}" ]; then
+            echo "configured=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "::notice::remote Maven credentials are incomplete; verified artifacts were packaged locally and remote publish is skipped."
+            echo "configured=false" >> "${GITHUB_OUTPUT}"
+          fi
+        env:
+          REALLYME_MAVEN_REPOSITORY_URL: ${{ secrets.REALLYME_MAVEN_REPOSITORY_URL }}
+          REALLYME_MAVEN_USERNAME: ${{ secrets.REALLYME_MAVEN_USERNAME }}
+          REALLYME_MAVEN_PASSWORD: ${{ secrets.REALLYME_MAVEN_PASSWORD }}
+          MAVEN_SIGNING_KEY: ${{ secrets.MAVEN_SIGNING_KEY }}
+          MAVEN_SIGNING_PASSWORD: ${{ secrets.MAVEN_SIGNING_PASSWORD }}
+
       - name: Publish Maven artifact
+        if: steps.maven_remote.outputs.configured == 'true'
         working-directory: packages/kotlin
         run: |
           node ../../scripts/verify_release_attestation.mjs
@@ -226,7 +243,24 @@ jobs:
       - name: Build Android AAR
         run: packages/kotlin/gradlew -p packages/kotlin-android bundleReleaseAar verifyReleaseAarContainsJniLibs -Preallyme.codec.androidJniLibsDir=${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true
 
+      - name: Check Maven remote publishing configuration
+        id: maven_remote
+        run: |
+          if [ -n "${REALLYME_MAVEN_REPOSITORY_URL}" ] && [ -n "${REALLYME_MAVEN_USERNAME}" ] && [ -n "${REALLYME_MAVEN_PASSWORD}" ] && [ -n "${MAVEN_SIGNING_KEY}" ] && [ -n "${MAVEN_SIGNING_PASSWORD}" ]; then
+            echo "configured=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "::notice::remote Maven credentials are incomplete; verified artifacts were packaged locally and remote publish is skipped."
+            echo "configured=false" >> "${GITHUB_OUTPUT}"
+          fi
+        env:
+          REALLYME_MAVEN_REPOSITORY_URL: ${{ secrets.REALLYME_MAVEN_REPOSITORY_URL }}
+          REALLYME_MAVEN_USERNAME: ${{ secrets.REALLYME_MAVEN_USERNAME }}
+          REALLYME_MAVEN_PASSWORD: ${{ secrets.REALLYME_MAVEN_PASSWORD }}
+          MAVEN_SIGNING_KEY: ${{ secrets.MAVEN_SIGNING_KEY }}
+          MAVEN_SIGNING_PASSWORD: ${{ secrets.MAVEN_SIGNING_PASSWORD }}
+
       - name: Publish Android AAR
+        if: steps.maven_remote.outputs.configured == 'true'
         run: |
           node scripts/verify_release_attestation.mjs
           packages/kotlin/gradlew -p packages/kotlin-android publish -Preallyme.codec.androidJniLibsDir=${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true
