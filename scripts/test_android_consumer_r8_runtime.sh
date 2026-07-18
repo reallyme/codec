@@ -47,6 +47,14 @@ fail() {
 
 ensure_avd_exists() {
     mkdir -p "$ANDROID_AVD_HOME_VALUE"
+    [[ -x "$SDKMANAGER" ]] || fail "Android sdkmanager is required at $SDKMANAGER"
+    [[ -x "$AVDMANAGER" ]] || fail "Android avdmanager is required at $AVDMANAGER"
+
+    if [[ ! -x "$EMULATOR" ]]; then
+        { yes || true; } | "$SDKMANAGER" "emulator" >/dev/null
+    fi
+    [[ -x "$EMULATOR" ]] || fail "Android emulator is required at $EMULATOR"
+
     local avd_exists="false"
     while IFS= read -r existing_avd; do
         if [[ "$existing_avd" == "$AVD_NAME" ]]; then
@@ -59,8 +67,6 @@ ensure_avd_exists() {
         return
     fi
 
-    [[ -x "$SDKMANAGER" ]] || fail "Android sdkmanager is required at $SDKMANAGER"
-    [[ -x "$AVDMANAGER" ]] || fail "Android avdmanager is required at $AVDMANAGER"
     { yes || true; } | "$SDKMANAGER" "emulator" "$ANDROID_R8_PLATFORM" "$ANDROID_R8_SYSTEM_IMAGE" >/dev/null
     printf 'no\n' | "$AVDMANAGER" create avd --force -n "$AVD_NAME" -k "$ANDROID_R8_SYSTEM_IMAGE" --device "pixel" >/tmp/reallyme-codec-r8-avdmanager.log
 
@@ -81,7 +87,6 @@ ensure_avd_exists() {
 [[ -d "$ANDROID_NDK_HOME_VALUE" ]] || fail "ANDROID_NDK_HOME is required at $ANDROID_NDK_HOME_VALUE"
 
 if [[ -n "$AVD_NAME" ]]; then
-    [[ -x "$EMULATOR" ]] || fail "Android emulator is required at $EMULATOR"
     ensure_avd_exists
     "$EMULATOR" -avd "$AVD_NAME" -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect >/tmp/reallyme-codec-r8-emulator.log 2>&1 &
     emulator_pid="$!"

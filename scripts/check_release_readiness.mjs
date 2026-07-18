@@ -2622,6 +2622,7 @@ assertContains("scripts/test_android_consumer_r8_runtime.sh", "ANDROID_AVD_HOME_
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "export ANDROID_AVD_HOME");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "$EMULATOR\" -list-avds");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "{ yes || true; } | \"$SDKMANAGER\"");
+assertContains("scripts/test_android_consumer_r8_runtime.sh", "$SDKMANAGER\" \"emulator\"");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android AVD was not available after creation");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "$AVDMANAGER\" create avd --force");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android consumer R8 runtime gate passed");
