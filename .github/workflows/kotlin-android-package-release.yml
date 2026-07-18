@@ -7,21 +7,11 @@ name: Kotlin Android Package Release
 on:
   workflow_dispatch:
     inputs:
-      release_sha:
-        description: Optional exact main commit SHA. Leave blank to use the current origin/main SHA.
-        required: false
-        type: string
-        default: ""
       version:
         description: Release version without leading v
         required: true
         type: string
         default: 0.2.0
-      publish:
-        description: Publish the JVM jar and Android AAR to Maven
-        required: true
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -46,21 +36,11 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Resolve release SHA
+      - name: Resolve current release SHA
         id: resolve-release-sha
-        env:
-          RELEASE_SHA_INPUT: ${{ inputs.release_sha }}
         run: |
           git fetch --no-tags origin main
-          if [ -n "${RELEASE_SHA_INPUT}" ]; then
-            if [[ ! "${RELEASE_SHA_INPUT}" =~ ^[0-9a-f]{40}$ ]]; then
-              echo "::error::release_sha must be blank or a lowercase 40-character commit SHA"
-              exit 1
-            fi
-            release_sha="${RELEASE_SHA_INPUT}"
-          else
-            release_sha="$(git rev-parse origin/main)"
-          fi
+          release_sha="$(git rev-parse origin/main)"
           if [ "$(git rev-parse origin/main)" != "${release_sha}" ]; then
             echo "::error::resolved release SHA is not the current origin/main tip"
             exit 1
@@ -185,7 +165,6 @@ jobs:
         run: ./gradlew test publishToMavenLocal -Preallyme.codec.nativeResourcesDir=${{ github.workspace }}/build/kotlin-native-resources -Preallyme.codec.requireFullNativeResources=true
 
       - name: Publish Maven artifact
-        if: inputs.publish == true
         working-directory: packages/kotlin
         run: |
           node ../../scripts/verify_release_attestation.mjs
@@ -235,7 +214,7 @@ jobs:
 
       - name: Install Android NDK
         run: |
-          yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "ndk;29.0.14206865"
+          { yes || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "ndk;29.0.14206865"
           echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/29.0.14206865" >> "${GITHUB_ENV}"
 
       - name: Stage Android JNI libraries
@@ -248,7 +227,6 @@ jobs:
         run: packages/kotlin/gradlew -p packages/kotlin-android bundleReleaseAar verifyReleaseAarContainsJniLibs -Preallyme.codec.androidJniLibsDir=${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true
 
       - name: Publish Android AAR
-        if: inputs.publish == true
         run: |
           node scripts/verify_release_attestation.mjs
           packages/kotlin/gradlew -p packages/kotlin-android publish -Preallyme.codec.androidJniLibsDir=${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true
