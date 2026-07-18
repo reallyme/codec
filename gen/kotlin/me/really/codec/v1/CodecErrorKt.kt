@@ -11,13 +11,6 @@ package me.really.codec.v1;
 public inline fun codecError(block: me.really.codec.v1.CodecErrorKt.Dsl.() -> kotlin.Unit): me.really.codec.v1.CodecError =
   me.really.codec.v1.CodecErrorKt.Dsl._create(me.really.codec.v1.CodecError.newBuilder()).apply { block() }._build()
 /**
- * ```
- * CodecError is the public, non-PII error envelope for codec boundary failures.
- * The oneof keeps base encoding, PEM, multiformat, and canonicalization
- * failures distinct while the shared CodecErrorReason enum provides stable
- * cross-language reason codes.
- * ```
- *
  * Protobuf type `reallyme.codec.v1.CodecError`
  */
 public object CodecErrorKt {
@@ -178,6 +171,42 @@ public object CodecErrorKt {
      */
     public fun hasBoundary(): kotlin.Boolean {
       return _builder.hasBoundary()
+    }
+
+    /**
+     * ```
+     * Error origin is explicit so SDKs never infer caller-versus-provider
+     * attribution from branch-specific numeric reason ranges. Missing, unknown,
+     * or inconsistent origin values must fail closed as provider failures.
+     * ```
+     *
+     * `.reallyme.codec.v1.CodecErrorOrigin origin = 100 [json_name = "origin"];`
+     */
+    public var origin: me.really.codec.v1.CodecErrorOrigin
+      @kotlin.jvm.JvmName("getOrigin")
+        get() = _builder.origin
+      @kotlin.jvm.JvmName("setOrigin")
+        set(value) {
+        _builder.origin = value
+      }
+    public var originValue: kotlin.Int
+      @kotlin.jvm.JvmName("getOriginValue")
+        get() = _builder.originValue
+      @kotlin.jvm.JvmName("setOriginValue")
+        set(value) {
+        _builder.originValue = value
+      }
+    /**
+     * ```
+     * Error origin is explicit so SDKs never infer caller-versus-provider
+     * attribution from branch-specific numeric reason ranges. Missing, unknown,
+     * or inconsistent origin values must fail closed as provider failures.
+     * ```
+     *
+     * `.reallyme.codec.v1.CodecErrorOrigin origin = 100 [json_name = "origin"];`
+     */
+    public fun clearOrigin() {
+      _builder.clearOrigin()
     }
     public val errorCase: me.really.codec.v1.CodecError.ErrorCase
     @kotlin.jvm.JvmName("getErrorCase")

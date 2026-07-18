@@ -9,6 +9,9 @@ import {
 } from "./boundary.js";
 import { ReallyMeCodecError } from "./errors.js";
 
+const uint8ArraySubarray = Uint8Array.prototype.subarray;
+const uint8ArraySet = Uint8Array.prototype.set;
+
 const readProviderProperty = (
   object: object,
   name: string,
@@ -44,7 +47,52 @@ const requireBoundedProviderString = (value: string, allowEmpty: boolean): strin
 };
 
 export const ensureBytesInput = (value: Uint8Array): void => {
-  if (!(value instanceof Uint8Array)) {
+  if (
+    !(value instanceof Uint8Array) ||
+    !ArrayBuffer.isView(value) ||
+    value.constructor !== Uint8Array
+  ) {
+    throw new ReallyMeCodecError("invalid-input");
+  }
+};
+
+/**
+ * Copies one bounded caller-owned byte view and verifies that the same length
+ * was copied. Length-tracking resizable buffers, detached buffers, and exotic
+ * typed-array wrappers must not let validation observe one length while the
+ * provider or protobuf serializer consumes another.
+ */
+export const snapshotBoundedBytesInput = (
+  value: Uint8Array,
+  maximumLength = MAX_CODEC_FFI_INPUT_BYTES,
+): Uint8Array => {
+  ensureBytesInput(value);
+  const expectedLength = value.length;
+  if (expectedLength > maximumLength) {
+    throw new ReallyMeCodecError("invalid-input");
+  }
+  let snapshot: Uint8Array | undefined;
+  try {
+    const boundedView = uint8ArraySubarray.call(value, 0, expectedLength);
+    if (boundedView.length !== expectedLength) {
+      throw new ReallyMeCodecError("invalid-input");
+    }
+    snapshot = new Uint8Array(expectedLength);
+    uint8ArraySet.call(snapshot, boundedView, 0);
+    if (
+      value.length !== expectedLength ||
+      boundedView.length !== expectedLength ||
+      snapshot.length !== expectedLength
+    ) {
+      snapshot.fill(0);
+      throw new ReallyMeCodecError("invalid-input");
+    }
+    return snapshot;
+  } catch (error: unknown) {
+    snapshot?.fill(0);
+    if (error instanceof ReallyMeCodecError) {
+      throw error;
+    }
     throw new ReallyMeCodecError("invalid-input");
   }
 };
@@ -84,19 +132,29 @@ export const readIndependentBoundedBytesOutput = (
   input: Uint8Array,
   maximumLength: number,
 ): Uint8Array => {
-  if (!(value instanceof Uint8Array)) {
+  try {
+    if (!(value instanceof Uint8Array)) {
+      throw new ReallyMeCodecError("provider-failure");
+    }
+    // Even non-overlapping views into one ArrayBuffer share transfer and detach
+    // semantics, so they do not provide independent result ownership.
+    if (value.buffer === input.buffer) {
+      throw new ReallyMeCodecError("provider-failure");
+    }
+    if (value.length === 0 || value.length > maximumLength) {
+      value.fill(0);
+      throw new ReallyMeCodecError("provider-failure");
+    }
+    return value;
+  } catch (error: unknown) {
+    if (error instanceof ReallyMeCodecError) {
+      throw error;
+    }
+    // Detached views and proxy-wrapped typed arrays can throw while reading
+    // buffer metadata or clearing storage. They are malformed provider output,
+    // never platform exceptions that should escape the typed SDK contract.
     throw new ReallyMeCodecError("provider-failure");
   }
-  // Even non-overlapping views into one ArrayBuffer share transfer and detach
-  // semantics, so they do not provide independent result ownership.
-  if (value.buffer === input.buffer) {
-    throw new ReallyMeCodecError("provider-failure");
-  }
-  if (value.length === 0 || value.length > maximumLength) {
-    value.fill(0);
-    throw new ReallyMeCodecError("provider-failure");
-  }
-  return value;
 };
 
 export const readNumberOutput = (value: unknown): number => {
@@ -166,14 +224,6 @@ export const readBytesProperty = (object: object, name: string): Uint8Array => {
   }
   return value;
 };
-
-export type ReallyMeCodecProtoStatus = "result" | "codec-error";
-
-export type ReallyMeCodecProtoResult = Readonly<{
-  status: ReallyMeCodecProtoStatus;
-  bytes: Uint8Array;
-  isCodecError: boolean;
-}>;
 
 export const readOptionalLengthProperty = (
   object: object,

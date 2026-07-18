@@ -7,10 +7,10 @@ plugins:
   # Rust Buffa message/view types. This mirrors the platform workspace
   # contract-generation convention and intentionally avoids build.rs codegen.
   - local: protoc-gen-buffa
-    out: crates/proto/codec/src/generated/buffa
+    out: crates/proto/src/generated/buffa
     opt: [views=true, json=true]
   - local: protoc-gen-buffa-packaging
-    out: crates/proto/codec/src/generated/buffa
+    out: crates/proto/src/generated/buffa
     strategy: all
 
   # TypeScript package output.

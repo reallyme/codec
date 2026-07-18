@@ -76,5 +76,28 @@ public interface CodecErrorOrBuilder extends
    */
   me.really.codec.v1.CodecBoundaryError getBoundary();
 
+  /**
+   * <pre>
+   * Error origin is explicit so SDKs never infer caller-versus-provider
+   * attribution from branch-specific numeric reason ranges. Missing, unknown,
+   * or inconsistent origin values must fail closed as provider failures.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecErrorOrigin origin = 100 [json_name = "origin"];</code>
+   * @return The enum numeric value on the wire for origin.
+   */
+  int getOriginValue();
+  /**
+   * <pre>
+   * Error origin is explicit so SDKs never infer caller-versus-provider
+   * attribution from branch-specific numeric reason ranges. Missing, unknown,
+   * or inconsistent origin values must fail closed as provider failures.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecErrorOrigin origin = 100 [json_name = "origin"];</code>
+   * @return The origin.
+   */
+  me.really.codec.v1.CodecErrorOrigin getOrigin();
+
   public me.really.codec.v1.CodecError.ErrorCase getErrorCase();
 }

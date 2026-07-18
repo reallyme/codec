@@ -11,14 +11,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.google.protobuf.ByteString;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import me.really.codec.v1.CodecMulticodecTableResult;
-import me.really.codec.v1.CodecProtoResultEnvelope;
-import me.really.codec.v1.CodecProtoResultStatus;
+import me.really.codec.v1.CodecDeterministicCborText;
+import me.really.codec.v1.CodecOperationResponse;
+import me.really.codec.v1.CodecPemDecodeResult;
 import org.junit.jupiter.api.Test;
 
 final class ReallyMeCodecJavaTest {
@@ -64,40 +65,61 @@ final class ReallyMeCodecJavaTest {
         loadConfiguredLibrary();
 
         byte[] der = new byte[] {0x30, 0x03, 0x02, 0x01, 0x01};
-        byte[] pem = ReallyMeCodec.encodePem("PRIVATE KEY", der);
-        byte[] decoded = ReallyMeCodec.decodePem(pem);
-        String decodedJson = new String(decoded, StandardCharsets.UTF_8);
+        byte[] pem = ReallyMeCodec.encodePem(ReallyMePemLabel.PRIVATE_KEY, der);
+        ReallyMePemDocument decoded = ReallyMeCodec.decodePem(pem);
 
         assertTrue(new String(pem, StandardCharsets.UTF_8).contains("BEGIN PRIVATE KEY"));
-        assertTrue(decodedJson.contains("\"label\":\"PRIVATE KEY\""));
-        assertTrue(decodedJson.contains("\"der\":\"MAMCAQE\""));
+        assertEquals(ReallyMePemLabel.PRIVATE_KEY, decoded.getLabel());
+        assertArrayEquals(der, decoded.der());
     }
 
     @Test
     void javaCallersCanProcessSharedProtoVector() throws Exception {
         loadConfiguredLibrary();
 
-        byte[] binaryEnvelope = ReallyMeCodec.processProto(
+        byte[] binaryResponse = ReallyMeCodec.processOperation(
             hexToBytes(vectorString("protoMulticodecTableRequestHex"))
         );
-        byte[] jsonEnvelope = ReallyMeCodec.processProtoJson(
+        byte[] jsonResponse = ReallyMeCodec.processOperationJson(
             vectorString("protoMulticodecTableRequestJson").getBytes(StandardCharsets.UTF_8)
         );
 
-        assertArrayEquals(binaryEnvelope, jsonEnvelope);
-        CodecProtoResultEnvelope decodedEnvelope =
-            CodecProtoResultEnvelope.parseFrom(binaryEnvelope);
+        assertArrayEquals(binaryResponse, jsonResponse);
+        CodecOperationResponse decodedResponse =
+            CodecOperationResponse.parseFrom(binaryResponse);
         assertEquals(
-            CodecProtoResultStatus.CODEC_PROTO_RESULT_STATUS_RESULT,
-            decodedEnvelope.getStatus()
+            CodecOperationResponse.OutcomeCase.RESULT,
+            decodedResponse.getOutcomeCase()
         );
         String requiredName = vectorString("multicodecTableRequiredName");
         assertTrue(
-            CodecMulticodecTableResult.parseFrom(decodedEnvelope.getPayload())
+            decodedResponse.getResult().getMulticodecTable()
                 .getEntriesList()
                 .stream()
                 .anyMatch(entry -> entry.getName().equals(requiredName))
         );
+    }
+
+    @Test
+    void generatedProtobufSensitiveFormattingAndHashingAreRedacted() {
+        CodecDeterministicCborText text =
+            CodecDeterministicCborText.newBuilder()
+                .setValue("passport-number")
+                .build();
+        CodecPemDecodeResult pem =
+            CodecPemDecodeResult.newBuilder()
+                .setLabel("PRIVATE KEY")
+                .setDer(ByteString.copyFrom(new byte[] {0x30, 0x03, 0x02, 0x01, 0x01}))
+                .build();
+        CodecPemDecodeResult otherPem =
+            pem.toBuilder()
+                .setDer(ByteString.copyFrom(new byte[] {0x30, 0x03, 0x02, 0x01, 0x02}))
+                .build();
+
+        assertEquals("CodecDeterministicCborText{<redacted>}", text.toString());
+        assertEquals("CodecPemDecodeResult{<redacted>}", pem.toString());
+        assertEquals(0x524d, pem.hashCode());
+        assertEquals(pem.hashCode(), otherPem.hashCode());
     }
 
     @Test
@@ -134,11 +156,11 @@ final class ReallyMeCodecJavaTest {
 
     private static File vectorPath() {
         File root = new File(System.getProperty("user.dir"));
-        File repoRelative = new File(root, "test-vectors/codec-vectors.json");
+        File repoRelative = new File(root, "vectors/codec-vectors.json");
         if (repoRelative.isFile()) {
             return repoRelative;
         }
-        return new File(root, "../../test-vectors/codec-vectors.json");
+        return new File(root, "../../vectors/codec-vectors.json");
     }
 
     private static byte[] hexToBytes(String hex) {

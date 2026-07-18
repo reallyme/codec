@@ -17,9 +17,12 @@ private struct CodecVectors: Decodable {
     let base64Padded: String
     let base64MissingPadding: String
     let base64NonCanonicalTrailingBits: String
+    let base64Whitespace: String
     let base64urlUnpadded: String
     let base64urlPadded: String
     let base64urlNonCanonicalTrailingBits: String
+    let base64urlInvalidLength: String
+    let base64urlWhitespace: String
     let lowerHex: String
     let base58btcEncoded: String
     let publicKeyHex: String
@@ -34,14 +37,13 @@ private struct CodecVectors: Decodable {
     let publicKeyMultibaseBase58btc: String
     let publicKeyMultibaseBase64url: String
     let unsupportedMultibase: String
+    let multibaseMultibytePrefix: String
     let ed25519Multikey: String
     let nonCanonicalBase64urlMultikey: String
     let multikeyBindingType: String
     let mismatchedBindingType: String
     let mismatchedBindingAlgorithm: String
     let multicodecTableRequiredName: String
-    let dagCborTaggedJson: String
-    let dagCborCanonicalTaggedJson: String
     let dagCborEncodedHex: String
     let dagCborNonCanonicalIntegerHex: String
     let dagCborDuplicateKeyHex: String
@@ -55,6 +57,8 @@ private struct CodecVectors: Decodable {
     let jcsObjectCanonicalJson: String
     let jcsNumberInputJson: String
     let jcsNumberCanonicalJson: String
+    let jcsUtf16KeyOrderInputJson: String
+    let jcsUtf16KeyOrderCanonicalJson: String
     let jcsDuplicateMemberJson: String
     let jcsNonInteroperableIntegerJson: String
     let jcsLoneSurrogateJson: String
@@ -100,8 +104,8 @@ final class ReallyMeCodecTests: XCTestCase {
     private static func codecVectors() throws -> CodecVectors {
         let currentDirectory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
         let candidates = [
-            currentDirectory.appendingPathComponent("test-vectors/codec-vectors.json"),
-            currentDirectory.appendingPathComponent("../../test-vectors/codec-vectors.json"),
+            currentDirectory.appendingPathComponent("vectors/codec-vectors.json"),
+            currentDirectory.appendingPathComponent("../../vectors/codec-vectors.json"),
         ]
         for candidate in candidates where FileManager.default.fileExists(atPath: candidate.path) {
             let data = try Data(contentsOf: candidate)
@@ -136,6 +140,14 @@ final class ReallyMeCodecTests: XCTestCase {
         bytes.map { String(format: "%02x", $0) }.joined()
     }
 
+    private static func dagCborVectorValue() throws -> ReallyMeDeterministicCborValue {
+        ReallyMeDagCbor.mapText([
+            ("b", ReallyMeDagCbor.unsigned(2)),
+            ("a", ReallyMeDagCbor.text("one")),
+            ("bytes", ReallyMeDagCbor.bytes([0, 1, 2])),
+        ])
+    }
+
     private static func jsonObject(_ text: String) throws -> [String: Any] {
         let data = Data(text.utf8)
         return try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
@@ -164,6 +176,36 @@ final class ReallyMeCodecTests: XCTestCase {
         }
     }
 
+    func testSwiftDataAndCborBuildersPreserveCanonicalBytes() throws {
+        let codec = try Self.configuredCodec()
+        let vectors = try Self.codecVectors()
+        let baseInput = Data(try Self.hexBytes(vectors.baseInputHex))
+
+        XCTAssertEqual(try codec.base64urlEncode(baseInput), vectors.base64urlUnpadded)
+        XCTAssertEqual(try codec.base64urlDecodeData(vectors.base64urlUnpadded), baseInput)
+
+        let deterministicValue = ReallyMeDeterministicCbor.mapText([
+            ("b", ReallyMeDeterministicCbor.unsigned(2)),
+            ("a", ReallyMeDeterministicCbor.unsigned(1)),
+        ])
+        let deterministicBytes = try codec.deterministicCborEncodeData(deterministicValue)
+        XCTAssertEqual(Array(deterministicBytes), [0xa2, 0x61, 0x61, 0x01, 0x61, 0x62, 0x02])
+        XCTAssertEqual(
+            try codec.deterministicCborEncode(codec.deterministicCborDecode(deterministicBytes)),
+            Array(deterministicBytes)
+        )
+
+        let dagValue = try Self.dagCborVectorValue()
+        let dagBytes = try codec.dagCborEncodeData(dagValue)
+        XCTAssertEqual(Self.hexString(Array(dagBytes)), vectors.dagCborEncodedHex)
+        XCTAssertEqual(try codec.dagCborComputeCid(dagBytes), vectors.dagCborCid)
+        XCTAssertTrue(try codec.dagCborVerifyCid(cid: vectors.dagCborCid, data: dagBytes).valid)
+        XCTAssertEqual(
+            try codec.dagCborSha256ContentHashData(dagBytes),
+            Data(try Self.hexBytes(vectors.dagCborSha256Hex))
+        )
+    }
+
     func testManagedBoundariesRejectOversizedInputsBeforeSerialization() throws {
         let codec = try Self.configuredCodec()
         let oversizedText = String(repeating: "a", count: 1_048_577)
@@ -172,13 +214,8 @@ final class ReallyMeCodecTests: XCTestCase {
         Self.assertCodecError(.invalidInput, try codec.canonicalizeJson(oversizedText))
         Self.assertCodecError(
             .invalidInput,
-            try codec.multicodecPrefixForNameProto(oversizedText)
+            try codec.multicodecPrefixForName(oversizedText)
         )
-
-        let result = try codec.multicodecPrefixForNameProtoResult(oversizedText)
-        XCTAssertEqual(result.status, .codecError)
-        let error = try ReallyMeProtoCodecError(serializedBytes: result.bytes)
-        XCTAssertEqual(error.boundary.reason, .boundaryResourceLimitExceeded)
     }
 
     func testBaseEncodingsHandleEmptyLargeAndInvalidInput() throws {
@@ -225,49 +262,24 @@ final class ReallyMeCodecTests: XCTestCase {
         XCTAssertEqual(try codec.multibaseDecode(vectors.publicKeyMultibaseBase58btc), publicKey)
         XCTAssertEqual(try codec.multibaseDecode(vectors.publicKeyMultibaseBase64url), publicKey)
 
-        let metadataJson = try Self.jsonObject(try codec.multicodecPrefixForName(vectors.ed25519CodecName))
-        XCTAssertEqual(metadataJson["name"] as? String, vectors.ed25519CodecName)
-        XCTAssertEqual(metadataJson["tag"] as? String, vectors.ed25519Tag)
-        let metadataProto = try ReallyMeProtoCodecMulticodecSpec(
-            serializedBytes: try codec.multicodecPrefixForNameProto(vectors.ed25519CodecName)
-        )
-        XCTAssertEqual(metadataProto.name, vectors.ed25519CodecName)
-        XCTAssertEqual(metadataProto.algorithmName, vectors.ed25519AlgorithmName)
-        XCTAssertEqual(Self.hexString(Array(metadataProto.prefix)), vectors.ed25519PrefixHex)
-        let metadataProtoResult = try codec.multicodecPrefixForNameProtoResult(vectors.ed25519CodecName)
-        XCTAssertEqual(metadataProtoResult.status, .result)
-        XCTAssertEqual(
-            try ReallyMeProtoCodecMulticodecSpec(serializedBytes: metadataProtoResult.bytes).name,
-            vectors.ed25519CodecName
-        )
+        let metadata = try codec.multicodecPrefixForName(vectors.ed25519CodecName)
+        XCTAssertEqual(metadata.name, vectors.ed25519CodecName)
+        XCTAssertEqual(metadata.tag, .key)
+        XCTAssertEqual(metadata.algorithmName, vectors.ed25519AlgorithmName)
+        XCTAssertEqual(Self.hexString(metadata.prefix), vectors.ed25519PrefixHex)
 
-        let lookupJson = try Self.jsonObject(try codec.multicodecLookupPrefix(prefixedPublicKey))
-        XCTAssertEqual(lookupJson["name"] as? String, vectors.ed25519CodecName)
-        let lookupProto = try ReallyMeProtoCodecMulticodecLookupResult(
-            serializedBytes: try codec.multicodecLookupPrefixProto(prefixedPublicKey)
-        )
-        XCTAssertEqual(lookupProto.name, vectors.ed25519CodecName)
-        XCTAssertEqual(try codec.multicodecLookupPrefixProtoResult(prefixedPublicKey).status, .result)
+        let lookup = try codec.multicodecLookupPrefix(prefixedPublicKey)
+        XCTAssertEqual(lookup.name, vectors.ed25519CodecName)
         XCTAssertEqual(try codec.multicodecStripPrefix(prefixedPublicKey), publicKey)
-        XCTAssertTrue(try codec.multicodecTable().contains(vectors.multicodecTableRequiredName))
-        let tableProto = try ReallyMeProtoCodecMulticodecTableResult(
-            serializedBytes: try codec.multicodecTableProto()
-        )
-        XCTAssertTrue(tableProto.entries.contains { $0.name == vectors.multicodecTableRequiredName })
-        XCTAssertEqual(try codec.multicodecTableProtoResult().status, .result)
+        XCTAssertTrue(try codec.multicodecTable().entries.contains { $0.name == vectors.multicodecTableRequiredName })
 
         XCTAssertEqual(
             try codec.multikeyEncode(codecName: vectors.ed25519CodecName, publicKey: publicKey),
             vectors.ed25519Multikey
         )
-        let parsedJson = try Self.jsonObject(try codec.multikeyParse(vectors.ed25519Multikey))
-        XCTAssertEqual(parsedJson["codecName"] as? String, vectors.ed25519CodecName)
-        let parsedProto = try ReallyMeProtoCodecMultikeyParseResult(
-            serializedBytes: try codec.multikeyParseProto(vectors.ed25519Multikey)
-        )
-        XCTAssertEqual(parsedProto.codecName, vectors.ed25519CodecName)
-        XCTAssertEqual(Array(parsedProto.publicKey), publicKey)
-        XCTAssertEqual(try codec.multikeyParseProtoResult(vectors.ed25519Multikey).status, .result)
+        let parsed = try codec.multikeyParse(vectors.ed25519Multikey)
+        XCTAssertEqual(parsed.codecName, vectors.ed25519CodecName)
+        XCTAssertEqual(parsed.publicKey, publicKey)
         XCTAssertTrue(
             try codec.bindingTypeMatchesCodec(
                 bindingType: vectors.multikeyBindingType,
@@ -289,16 +301,14 @@ final class ReallyMeCodecTests: XCTestCase {
             )
         )
 
-        let dagCborBytes = try codec.dagCborEncode(taggedJson: vectors.dagCborTaggedJson)
+        let dagCborBytes = try codec.dagCborEncode(Self.dagCborVectorValue())
         XCTAssertEqual(Self.hexString(dagCborBytes), vectors.dagCborEncodedHex)
-        XCTAssertEqual(try codec.dagCborDecode(dagCborBytes), vectors.dagCborCanonicalTaggedJson)
-        XCTAssertEqual(try codec.dagCborComputeCid(dagCborBytes), vectors.dagCborCid)
-        XCTAssertEqual(try codec.dagCborVerifyCid(cid: vectors.dagCborCid, bytes: dagCborBytes).contains("\"valid\":true"), true)
-        let verificationProto = try ReallyMeProtoCodecDagCborVerifyCidResult(
-            serializedBytes: try codec.dagCborVerifyCidProto(cid: vectors.dagCborCid, bytes: dagCborBytes)
+        XCTAssertEqual(
+            try codec.dagCborEncode(codec.dagCborDecode(dagCborBytes)),
+            dagCborBytes
         )
-        XCTAssertTrue(verificationProto.valid)
-        XCTAssertEqual(try codec.dagCborVerifyCidProtoResult(cid: vectors.dagCborCid, bytes: dagCborBytes).status, .result)
+        XCTAssertEqual(try codec.dagCborComputeCid(dagCborBytes), vectors.dagCborCid)
+        XCTAssertTrue(try codec.dagCborVerifyCid(cid: vectors.dagCborCid, bytes: dagCborBytes).valid)
         XCTAssertEqual(Self.hexString(try codec.dagCborSha256ContentHash(dagCborBytes)), vectors.dagCborSha256Hex)
         XCTAssertEqual(Self.hexString(try codec.dagCborMultihash(dagCborBytes)), vectors.dagCborMultihashHex)
         XCTAssertEqual(try codec.dagCborCodecCode(), vectors.dagCborCodecCode)
@@ -311,34 +321,49 @@ final class ReallyMeCodecTests: XCTestCase {
         XCTAssertEqual(try codec.canonicalizeJson(vectors.jcsNumberInputJson), vectors.jcsNumberCanonicalJson)
 
         let privateDer = try Self.hexBytes(vectors.pemPrivateDerHex)
+        let privateLabel = try XCTUnwrap(ReallyMePemLabel(rawValue: vectors.pemPrivateLabel))
         XCTAssertEqual(
-            try codec.encodePem(label: vectors.pemPrivateLabel, der: privateDer),
+            try codec.encodePem(label: privateLabel, der: privateDer),
             Array(vectors.pemPrivatePem.utf8)
         )
-        let decodedPemJson = try Self.jsonObject(try codec.decodePem(Array(vectors.pemPrivatePem.utf8)))
-        XCTAssertEqual(decodedPemJson["label"] as? String, vectors.pemPrivateLabel)
+        let decodedPem = try codec.decodePem(Array(vectors.pemPrivatePem.utf8))
+        XCTAssertEqual(decodedPem.label.rawValue, vectors.pemPrivateLabel)
         XCTAssertEqual(
             try codec.encodePem(
-                label: vectors.pemPublicLabel,
+                label: try XCTUnwrap(ReallyMePemLabel(rawValue: vectors.pemPublicLabel)),
                 der: Array(vectors.pemWrappedDerText.utf8),
-                optionsJson: vectors.pemLineWidthOptionsJson
+                options: ReallyMePemEncodeOptions(lineWidth: 4)
             ),
             Array(vectors.pemWrappedPem.utf8)
         )
 
-        let binaryEnvelope = try codec.processProto(
+        let binaryResponse = try codec.processOperation(
             Self.hexBytes(vectors.protoMulticodecTableRequestHex)
         )
-        let jsonEnvelope = try codec.processProtoJson(
+        let jsonResponse = try codec.processOperationJson(
             Array(vectors.protoMulticodecTableRequestJson.utf8)
         )
-        XCTAssertEqual(binaryEnvelope, jsonEnvelope)
-        let decodedEnvelope = try ReallyMeProtoCodecProtoResultEnvelope(serializedBytes: binaryEnvelope)
-        XCTAssertEqual(decodedEnvelope.status, .result)
-        let decodedTable = try ReallyMeProtoCodecMulticodecTableResult(
-            serializedBytes: decodedEnvelope.payload
-        )
+        XCTAssertEqual(binaryResponse, jsonResponse)
+        let decodedResponse = try ReallyMeProtoCodecOperationResponse(serializedBytes: binaryResponse)
+        guard case .result(let result)? = decodedResponse.outcome,
+              case .multicodecTable(let decodedTable)? = result.result else {
+            XCTFail("expected generated multicodec table result")
+            return
+        }
         XCTAssertTrue(decodedTable.entries.contains { $0.name == vectors.multicodecTableRequiredName })
+
+        Self.assertCodecError(.invalidInput, try codec.processGeneratedOperation(request: [0xff]))
+        let malformedJsonResponse = try ReallyMeProtoCodecOperationResponse(
+            serializedBytes: try codec.processOperationJson(Array("{".utf8))
+        )
+        guard case .error(let malformedJsonError)? = malformedJsonResponse.outcome else {
+            XCTFail("expected generated error envelope for malformed ProtoJSON request")
+            return
+        }
+        XCTAssertEqual(
+            ReallyMeCodecRustCAbiProvider.errorForCodecError(malformedJsonError),
+            .invalidInput
+        )
     }
 
     func testSharedVectorSuiteRejectsNonCanonicalInputs() throws {
@@ -350,12 +375,16 @@ final class ReallyMeCodecTests: XCTestCase {
             .invalidInput,
             try codec.base64Decode(vectors.base64NonCanonicalTrailingBits)
         )
+        Self.assertCodecError(.invalidInput, try codec.base64Decode(vectors.base64Whitespace))
         Self.assertCodecError(.invalidInput, try codec.base64urlDecode(vectors.base64urlPadded))
         Self.assertCodecError(
             .invalidInput,
             try codec.base64urlDecode(vectors.base64urlNonCanonicalTrailingBits)
         )
+        Self.assertCodecError(.invalidInput, try codec.base64urlDecode(vectors.base64urlInvalidLength))
+        Self.assertCodecError(.invalidInput, try codec.base64urlDecode(vectors.base64urlWhitespace))
         Self.assertCodecError(.invalidInput, try codec.multibaseDecode(vectors.unsupportedMultibase))
+        Self.assertCodecError(.invalidInput, try codec.multibaseDecode(vectors.multibaseMultibytePrefix))
         Self.assertCodecError(
             .invalidInput,
             try codec.multikeyParse(vectors.nonCanonicalBase64urlMultikey)
@@ -378,6 +407,10 @@ final class ReallyMeCodecTests: XCTestCase {
             try codec.canonicalizeJson(vectors.jcsNonInteroperableIntegerJson)
         )
         Self.assertCodecError(.invalidInput, try codec.canonicalizeJson(vectors.jcsLoneSurrogateJson))
+        XCTAssertEqual(
+            try codec.canonicalizeJson(vectors.jcsUtf16KeyOrderInputJson),
+            vectors.jcsUtf16KeyOrderCanonicalJson
+        )
     }
 
     func testMultibaseMulticodecAndMultikeyUseRustProvider() throws {
@@ -400,60 +433,26 @@ final class ReallyMeCodecTests: XCTestCase {
         Self.assertCodecError(.invalidInput, try codec.base58btcEncode(oversizedBase58Input))
         Self.assertCodecError(.invalidInput, try codec.multibaseBase58btcEncode(oversizedBase58Input))
 
-        let metadataJson = try Self.jsonObject(try codec.multicodecPrefixForName("ed25519-pub"))
-        XCTAssertEqual(metadataJson["name"] as? String, "ed25519-pub")
-        XCTAssertEqual(metadataJson["tag"] as? String, "key")
-        let metadataProto = try ReallyMeProtoCodecMulticodecSpec(
-            serializedBytes: try codec.multicodecPrefixForNameProto("ed25519-pub")
-        )
-        let metadataProtoResult = try codec.multicodecPrefixForNameProtoResult("ed25519-pub")
-        XCTAssertEqual(metadataProtoResult.status, .result)
-        XCTAssertFalse(metadataProtoResult.isCodecError)
-        XCTAssertEqual(
-            try ReallyMeProtoCodecMulticodecSpec(serializedBytes: metadataProtoResult.bytes).name,
-            "ed25519-pub"
-        )
-        XCTAssertEqual(metadataProto.name, "ed25519-pub")
-        XCTAssertEqual(metadataProto.algorithmName, "Ed25519")
-        XCTAssertEqual(metadataProto.fixedLength, 32)
-        Self.assertCodecError(.invalidInput, try codec.multicodecPrefixForNameProto("not-a-codec"))
-        let metadataErrorResult = try codec.multicodecPrefixForNameProtoResult("not-a-codec")
-        XCTAssertEqual(metadataErrorResult.status, .codecError)
+        let metadata = try codec.multicodecPrefixForName("ed25519-pub")
+        XCTAssertEqual(metadata.name, "ed25519-pub")
+        XCTAssertEqual(metadata.tag, .key)
+        XCTAssertEqual(metadata.algorithmName, "Ed25519")
+        XCTAssertEqual(metadata.expectedKeyLength, 32)
+        Self.assertCodecError(.invalidInput, try codec.multicodecPrefixForName("not-a-codec"))
 
-        let prefixed = Array(metadataProto.prefix) + publicKey
-        let lookupJson = try Self.jsonObject(try codec.multicodecLookupPrefix(prefixed))
-        XCTAssertEqual(lookupJson["name"] as? String, "ed25519-pub")
-        let lookupProto = try ReallyMeProtoCodecMulticodecLookupResult(
-            serializedBytes: try codec.multicodecLookupPrefixProto(prefixed)
-        )
-        XCTAssertEqual(try codec.multicodecLookupPrefixProtoResult(prefixed).status, .result)
-        XCTAssertEqual(lookupProto.name, "ed25519-pub")
-        Self.assertCodecError(.invalidInput, try codec.multicodecLookupPrefixProto([0, 0, 7]))
-        let lookupErrorResult = try codec.multicodecLookupPrefixProtoResult([0, 0, 7])
-        XCTAssertEqual(lookupErrorResult.status, .codecError)
+        let prefixed = metadata.prefix + publicKey
+        let lookup = try codec.multicodecLookupPrefix(prefixed)
+        XCTAssertEqual(lookup.name, "ed25519-pub")
+        XCTAssertEqual(lookup.prefixLength, UInt32(metadata.prefix.count))
+        Self.assertCodecError(.invalidInput, try codec.multicodecLookupPrefix([0, 0, 7]))
         XCTAssertEqual(try codec.multicodecStripPrefix(prefixed), publicKey)
-        XCTAssertTrue(try codec.multicodecTable().contains("mlkem-1024-pub"))
-        let tableProto = try ReallyMeProtoCodecMulticodecTableResult(
-            serializedBytes: try codec.multicodecTableProto()
-        )
-        XCTAssertEqual(try codec.multicodecTableProtoResult().status, .result)
-        XCTAssertTrue(tableProto.entries.contains { $0.name == "mlkem-1024-pub" })
+        XCTAssertTrue(try codec.multicodecTable().entries.contains { $0.name == "mlkem-1024-pub" })
 
         let multikey = try codec.multikeyEncode(codecName: "ed25519-pub", publicKey: publicKey)
-        let parsedJson = try Self.jsonObject(try codec.multikeyParse(multikey))
-        XCTAssertEqual(parsedJson["codecName"] as? String, "ed25519-pub")
-        let parsedProto = try ReallyMeProtoCodecMultikeyParseResult(
-            serializedBytes: try codec.multikeyParseProto(multikey)
-        )
-        let parsedProtoResult = try codec.multikeyParseProtoResult(multikey)
-        XCTAssertEqual(parsedProtoResult.status, .result)
-        XCTAssertEqual(
-            try ReallyMeProtoCodecMultikeyParseResult(serializedBytes: parsedProtoResult.bytes).codecName,
-            "ed25519-pub"
-        )
-        XCTAssertEqual(parsedProto.codecName, "ed25519-pub")
-        XCTAssertEqual(parsedProto.algorithmName, "Ed25519")
-        XCTAssertEqual(Array(parsedProto.publicKey), publicKey)
+        let parsed = try codec.multikeyParse(multikey)
+        XCTAssertEqual(parsed.codecName, "ed25519-pub")
+        XCTAssertEqual(parsed.algorithmName, "Ed25519")
+        XCTAssertEqual(parsed.publicKey, publicKey)
         XCTAssertTrue(try codec.bindingTypeMatchesCodec(bindingType: "Multikey", codecName: "ed25519-pub"))
         try codec.requireSupportedMulticodec("ed25519-pub")
         try codec.validateKeyBinding(bindingType: "Multikey", algorithm: nil, multikey: multikey)
@@ -464,29 +463,15 @@ final class ReallyMeCodecTests: XCTestCase {
             try codec.validateKeyBinding(bindingType: "P256Key2024", algorithm: "P-256", multikey: multikey)
         )
 
-        Self.assertCodecError(.invalidInput, try codec.multikeyParseProto("not-a-key"))
-        let multikeyErrorResult = try codec.multikeyParseProtoResult("not-a-key")
-        XCTAssertEqual(multikeyErrorResult.status, .codecError)
-        XCTAssertTrue(multikeyErrorResult.isCodecError)
-        let multikeyError = try ReallyMeProtoCodecError(serializedBytes: multikeyErrorResult.bytes)
-        XCTAssertNotNil(multikeyError.error)
-        guard case .multiformat(let multiformatError)? = multikeyError.error else {
-            XCTFail("expected multiformat error envelope")
-            return
-        }
-        XCTAssertEqual(multiformatError.reason, .multiformatInvalidMultikey)
+        Self.assertCodecError(.invalidInput, try codec.multikeyParse("not-a-key"))
     }
 
     func testDagCborCidAndJcsOperationsUseRustProvider() throws {
         let codec = try Self.configuredCodec()
-        let taggedJson = """
-        {"type":"map","value":[{"key":"b","value":{"type":"int","value":2}},{"key":"a","value":{"type":"string","value":"one"}},{"key":"bytes","value":{"type":"bytes","value":"AAEC"}}]}
-        """
 
-        let encoded = try codec.dagCborEncode(taggedJson: taggedJson)
+        let encoded = try codec.dagCborEncode(Self.dagCborVectorValue())
         XCTAssertFalse(encoded.isEmpty)
-        let decodedJson = try Self.jsonObject(try codec.dagCborDecode(encoded))
-        XCTAssertEqual(decodedJson["type"] as? String, "map")
+        XCTAssertEqual(try codec.dagCborEncode(codec.dagCborDecode(encoded)), encoded)
 
         let cid = try codec.dagCborComputeCid(encoded)
         XCTAssertTrue(try codec.isValidCidString(cid))
@@ -494,30 +479,18 @@ final class ReallyMeCodecTests: XCTestCase {
         XCTAssertEqual(try codec.tryParseCid(cid), cid)
         XCTAssertNil(try codec.tryParseCid("not-a-cid"))
 
-        let verificationJson = try Self.jsonObject(try codec.dagCborVerifyCid(cid: cid, bytes: encoded))
-        XCTAssertEqual(verificationJson["valid"] as? Bool, true)
-        let verificationProto = try ReallyMeProtoCodecDagCborVerifyCidResult(
-            serializedBytes: try codec.dagCborVerifyCidProto(cid: cid, bytes: encoded)
-        )
-        XCTAssertEqual(try codec.dagCborVerifyCidProtoResult(cid: cid, bytes: encoded).status, .result)
-        XCTAssertTrue(verificationProto.valid)
-        XCTAssertEqual(verificationProto.expectedCid, cid)
+        let verification = try codec.dagCborVerifyCid(cid: cid, bytes: encoded)
+        XCTAssertTrue(verification.valid)
+        XCTAssertEqual(verification.expectedCid, cid)
 
         let invalidUpperPayloadCid = String(cid.prefix(1)) + cid.dropFirst().uppercased()
-        let invalidVerification = try ReallyMeProtoCodecDagCborVerifyCidResult(
-            serializedBytes: try codec.dagCborVerifyCidProto(cid: invalidUpperPayloadCid, bytes: encoded)
-        )
+        let invalidVerification = try codec.dagCborVerifyCid(cid: invalidUpperPayloadCid, bytes: encoded)
         XCTAssertFalse(invalidVerification.valid)
         XCTAssertEqual(invalidVerification.actualCid, "")
-        let emptyCidVerificationJson = try Self.jsonObject(try codec.dagCborVerifyCid(cid: "", bytes: encoded))
-        XCTAssertEqual(emptyCidVerificationJson["valid"] as? Bool, false)
-        XCTAssertEqual(emptyCidVerificationJson["expectedCid"] as? String, cid)
-        XCTAssertEqual(emptyCidVerificationJson["actualCid"] as? String, "")
-        let emptyCidVerificationProto = try ReallyMeProtoCodecDagCborVerifyCidResult(
-            serializedBytes: try codec.dagCborVerifyCidProto(cid: "", bytes: encoded)
-        )
-        XCTAssertFalse(emptyCidVerificationProto.valid)
-        XCTAssertEqual(try codec.dagCborVerifyCidProtoResult(cid: "", bytes: encoded).status, .result)
+        let emptyCidVerification = try codec.dagCborVerifyCid(cid: "", bytes: encoded)
+        XCTAssertFalse(emptyCidVerification.valid)
+        XCTAssertEqual(emptyCidVerification.expectedCid, cid)
+        XCTAssertEqual(emptyCidVerification.actualCid, "")
 
         XCTAssertEqual(try codec.dagCborSha256ContentHash(encoded).count, 32)
         XCTAssertGreaterThan(try codec.dagCborMultihash(encoded).count, 32)
@@ -527,8 +500,6 @@ final class ReallyMeCodecTests: XCTestCase {
         Self.assertCodecError(.invalidInput, try codec.dagCborDecode(oversizedCbor))
         Self.assertCodecError(.invalidInput, try codec.dagCborComputeCid(oversizedCbor))
         Self.assertCodecError(.invalidInput, try codec.dagCborVerifyCid(cid: cid, bytes: oversizedCbor))
-        Self.assertCodecError(.invalidInput, try codec.dagCborVerifyCidProto(cid: cid, bytes: oversizedCbor))
-        XCTAssertEqual(try codec.dagCborVerifyCidProtoResult(cid: cid, bytes: oversizedCbor).status, .codecError)
         Self.assertCodecError(.invalidInput, try codec.dagCborSha256ContentHash(oversizedCbor))
         Self.assertCodecError(.invalidInput, try codec.dagCborMultihash(oversizedCbor))
 
@@ -537,23 +508,167 @@ final class ReallyMeCodecTests: XCTestCase {
         Self.assertCodecError(.invalidInput, try codec.canonicalizeJson("{"))
     }
 
+    func testDeterministicCborTypedSurfaceUsesGeneratedProto() throws {
+        let codec = try Self.configuredCodec()
+        let value = ReallyMeDeterministicCborValue.map([
+            ReallyMeDeterministicCborMapEntry(
+                key: .text("b"),
+                value: .integer(.unsigned(2))
+            ),
+            ReallyMeDeterministicCborMapEntry(
+                key: .integer(.unsigned(1)),
+                value: .text("i")
+            ),
+            ReallyMeDeterministicCborMapEntry(
+                key: .text("1"),
+                value: .text("t")
+            ),
+        ])
+
+        let encoded = try codec.deterministicCborEncode(value)
+        XCTAssertEqual(Self.hexString(encoded), "a301616961316174616202")
+        let decoded = try codec.deterministicCborDecode(encoded)
+        XCTAssertEqual(try codec.deterministicCborEncode(decoded), encoded)
+
+        var maximumDepth = ReallyMeDeterministicCborValue.null
+        for _ in 0..<64 {
+            maximumDepth = .map([
+                ReallyMeDeterministicCborMapEntry(
+                    key: .integer(.unsigned(1)),
+                    value: maximumDepth
+                )
+            ])
+        }
+        let maximumDepthEncoded = try codec.deterministicCborEncode(maximumDepth)
+        let maximumDepthDecoded = try codec.deterministicCborDecode(maximumDepthEncoded)
+        XCTAssertEqual(
+            try codec.deterministicCborEncode(maximumDepthDecoded),
+            maximumDepthEncoded
+        )
+        XCTAssertEqual(String(describing: value), "ReallyMeDeterministicCborValue(<redacted>)")
+        XCTAssertEqual(
+            String(describing: ReallyMeDeterministicCborMapKey.text("passportNumber")),
+            "ReallyMeDeterministicCborMapKey(<redacted>)"
+        )
+
+        XCTAssertThrowsError(try ReallyMeDeterministicCborNegativeInteger(0)) { error in
+            XCTAssertEqual(error as? ReallyMeCodecError, .invalidInput)
+        }
+        Self.assertCodecError(.invalidInput, try codec.deterministicCborDecode([0x18, 0x00]))
+    }
+
+    func testDeterministicCborProviderTreeIsValidatedBeforeSdkCopy() throws {
+        var nullValue = ReallyMeProtoCodecDeterministicCborValue()
+        nullValue.nullValue = ReallyMeProtoCodecDeterministicCborNull()
+
+        var oversizedArray = ReallyMeProtoCodecDeterministicCborArray()
+        oversizedArray.values = Array(repeating: nullValue, count: 16_385)
+        var oversizedValue = ReallyMeProtoCodecDeterministicCborValue()
+        oversizedValue.arrayValue = oversizedArray
+        XCTAssertThrowsError(try validateProviderDeterministicCborValue(oversizedValue)) { error in
+            XCTAssertEqual(error as? ReallyMeCodecError, .providerFailure)
+        }
+
+        let valueWithUnknownField = try ReallyMeProtoCodecDeterministicCborValue(
+            serializedBytes: [0x0a, 0x00, 0x98, 0x06, 0x01]
+        )
+        XCTAssertThrowsError(
+            try validateProviderDeterministicCborValue(valueWithUnknownField)
+        ) { error in
+            XCTAssertEqual(error as? ReallyMeCodecError, .providerFailure)
+        }
+
+        func textKey(_ value: String) -> ReallyMeProtoCodecDeterministicCborMapKey {
+            var text = ReallyMeProtoCodecDeterministicCborText()
+            text.value = value
+            var key = ReallyMeProtoCodecDeterministicCborMapKey()
+            key.textKey = text
+            return key
+        }
+
+        func unsignedKey(_ value: UInt64) -> ReallyMeProtoCodecDeterministicCborMapKey {
+            var unsigned = ReallyMeProtoCodecDeterministicCborUnsignedInteger()
+            unsigned.value = value
+            var integer = ReallyMeProtoCodecDeterministicCborInteger()
+            integer.unsignedValue = unsigned
+            var key = ReallyMeProtoCodecDeterministicCborMapKey()
+            key.integerKey = integer
+            return key
+        }
+
+        func entry(_ key: ReallyMeProtoCodecDeterministicCborMapKey)
+            -> ReallyMeProtoCodecDeterministicCborMapEntry
+        {
+            var entry = ReallyMeProtoCodecDeterministicCborMapEntry()
+            entry.key = key
+            entry.value = nullValue
+            return entry
+        }
+
+        var duplicateMap = ReallyMeProtoCodecDeterministicCborMap()
+        duplicateMap.entries = [entry(textKey("a")), entry(textKey("a"))]
+        var duplicateMapValue = ReallyMeProtoCodecDeterministicCborValue()
+        duplicateMapValue.mapValue = duplicateMap
+        XCTAssertThrowsError(
+            try validateProviderDeterministicCborValue(duplicateMapValue)
+        ) { error in
+            XCTAssertEqual(error as? ReallyMeCodecError, .providerFailure)
+        }
+
+        var duplicateUnsignedMap = ReallyMeProtoCodecDeterministicCborMap()
+        duplicateUnsignedMap.entries = [
+            entry(unsignedKey(UInt64.max)),
+            entry(unsignedKey(UInt64.max)),
+        ]
+        var duplicateUnsignedMapValue = ReallyMeProtoCodecDeterministicCborValue()
+        duplicateUnsignedMapValue.mapValue = duplicateUnsignedMap
+        XCTAssertThrowsError(
+            try validateProviderDeterministicCborValue(duplicateUnsignedMapValue)
+        ) { error in
+            XCTAssertEqual(error as? ReallyMeCodecError, .providerFailure)
+        }
+
+        var exactUtf8Map = ReallyMeProtoCodecDeterministicCborMap()
+        exactUtf8Map.entries = [
+            entry(textKey("\u{00e9}")),
+            entry(textKey("e\u{0301}")),
+        ]
+        var exactUtf8MapValue = ReallyMeProtoCodecDeterministicCborValue()
+        exactUtf8MapValue.mapValue = exactUtf8Map
+        XCTAssertNoThrow(try validateProviderDeterministicCborValue(exactUtf8MapValue))
+    }
+
     func testPemRoundTripAndProtoErrorsUseRustProvider() throws {
         let codec = try Self.configuredCodec()
         let der: [UInt8] = [0x30, 0x03, 0x02, 0x01, 0x01]
-        let pem = try codec.encodePem(label: "PRIVATE KEY", der: der)
+        let pem = try codec.encodePem(label: .privateKey, der: der)
 
         XCTAssertTrue(String(decoding: pem, as: UTF8.self).contains("-----BEGIN PRIVATE KEY-----"))
-        let decodedJson = try Self.jsonObject(try codec.decodePem(pem))
-        XCTAssertEqual(decodedJson["label"] as? String, "PRIVATE KEY")
-        XCTAssertEqual(decodedJson["der"] as? String, "MAMCAQE")
+        let decoded = try codec.decodePem(pem)
+        XCTAssertEqual(decoded.label, .privateKey)
+        XCTAssertEqual(decoded.der, der)
 
-        let wrapped = try codec.encodePem(label: "PUBLIC KEY", der: Array("not real der".utf8), optionsJson: "{\"lineWidth\":4}")
+        let wrapped = try codec.encodePem(
+            label: .publicKey,
+            der: Array("not real der".utf8),
+            options: ReallyMePemEncodeOptions(lineWidth: 4)
+        )
         XCTAssertTrue(String(decoding: wrapped, as: UTF8.self).contains("bm90\nIHJl\nYWwg\nZGVy"))
 
-        Self.assertCodecError(.invalidInput, try codec.encodePem(label: "CERTIFICATE", der: der))
         Self.assertCodecError(
             .invalidInput,
-            try codec.decodePem(pem, optionsJson: "{\"allowedLabels\":[\"PUBLIC KEY\"]}")
+            try codec.encodePem(
+                label: .publicKey,
+                der: der,
+                options: ReallyMePemEncodeOptions(lineWidth: 77)
+            )
+        )
+        Self.assertCodecError(
+            .invalidInput,
+            try codec.decodePem(
+                pem,
+                options: ReallyMePemDecodeOptions(allowedLabels: [.publicKey])
+            )
         )
 
     }
@@ -577,87 +692,8 @@ final class ReallyMeCodecTests: XCTestCase {
         XCTAssertEqual(Array(source), [0x11, 0x22, 0x33, 0x44])
     }
 
-    func testMalformedProviderEnvelopeMapsToTypedFailure() {
-        Self.assertCodecError(
-            .providerFailure,
-            try ReallyMeCodecRustCAbiProvider.decodeProtoResultEnvelope([0xFF])
-        )
-    }
-
-    func testThrowingProtoApisPreserveCallerVersusProviderAttribution() throws {
-        var backend = ReallyMeProtoCodecBackendError()
-        backend.reason = .backendInternal
-        var backendEnvelope = ReallyMeProtoCodecError()
-        backendEnvelope.backend = backend
-        XCTAssertEqual(
-            ReallyMeCodecRustCAbiProvider.errorForCodecErrorPayload(
-                try backendEnvelope.serializedBytes()
-            ),
-            .providerFailure
-        )
-
-        var internalError = ReallyMeProtoCodecCanonicalizationError()
-        internalError.reason = .canonicalInternal
-        var internalEnvelope = ReallyMeProtoCodecError()
-        internalEnvelope.canonicalization = internalError
-        XCTAssertEqual(
-            ReallyMeCodecRustCAbiProvider.errorForCodecErrorPayload(
-                try internalEnvelope.serializedBytes()
-            ),
-            .providerFailure
-        )
-
-        var malformedBoundary = ReallyMeProtoCodecBoundaryError()
-        malformedBoundary.reason = .boundaryMalformedProtobuf
-        var malformedBoundaryEnvelope = ReallyMeProtoCodecError()
-        malformedBoundaryEnvelope.boundary = malformedBoundary
-        XCTAssertEqual(
-            ReallyMeCodecRustCAbiProvider.errorForCodecErrorPayload(
-                try malformedBoundaryEnvelope.serializedBytes()
-            ),
-            .providerFailure
-        )
-
-        var resourceBoundary = ReallyMeProtoCodecBoundaryError()
-        resourceBoundary.reason = .boundaryResourceLimitExceeded
-        var resourceBoundaryEnvelope = ReallyMeProtoCodecError()
-        resourceBoundaryEnvelope.boundary = resourceBoundary
-        XCTAssertEqual(
-            ReallyMeCodecRustCAbiProvider.errorForCodecErrorPayload(
-                try resourceBoundaryEnvelope.serializedBytes()
-            ),
-            .invalidInput
-        )
-
-        var mismatched = ReallyMeProtoCodecBackendError()
-        mismatched.reason = .multiformatInvalidMultikey
-        var mismatchedEnvelope = ReallyMeProtoCodecError()
-        mismatchedEnvelope.backend = mismatched
-        XCTAssertEqual(
-            ReallyMeCodecRustCAbiProvider.errorForCodecErrorPayload(
-                try mismatchedEnvelope.serializedBytes()
-            ),
-            .providerFailure
-        )
-
-        var unknownReason = ReallyMeProtoCodecCanonicalizationError()
-        unknownReason.reason = .UNRECOGNIZED(450)
-        var unknownReasonEnvelope = ReallyMeProtoCodecError()
-        unknownReasonEnvelope.canonicalization = unknownReason
-        XCTAssertEqual(
-            ReallyMeCodecRustCAbiProvider.errorForCodecErrorPayload(
-                try unknownReasonEnvelope.serializedBytes()
-            ),
-            .providerFailure
-        )
-        XCTAssertEqual(
-            ReallyMeCodecRustCAbiProvider.errorForCodecErrorPayload([0xFF]),
-            .providerFailure
-        )
-    }
-
     func testAbiVersionMismatchFailsClosed() throws {
-        try ReallyMeCodecRustCAbiProvider.requireCompatibleAbiVersion(2)
+        try ReallyMeCodecRustCAbiProvider.requireCompatibleAbiVersion(5)
         Self.assertCodecError(
             .providerFailure,
             try ReallyMeCodecRustCAbiProvider.requireCompatibleAbiVersion(0)
@@ -668,24 +704,93 @@ final class ReallyMeCodecTests: XCTestCase {
         )
     }
 
-    func testProviderSuppliedProtoEnvelopeLimitFailsClosed() throws {
+    func testProviderSuppliedOperationResponseLimitFailsClosed() throws {
         XCTAssertEqual(
-            try ReallyMeCodecRustCAbiProvider.requireValidProtoResultEnvelopeLimit(1_048_592),
-            1_048_592
+            try ReallyMeCodecRustCAbiProvider.requireValidFfiLimit(67_108_864),
+            67_108_864
         )
         Self.assertCodecError(
             .providerFailure,
-            try ReallyMeCodecRustCAbiProvider.requireValidProtoResultEnvelopeLimit(0)
+            try ReallyMeCodecRustCAbiProvider.requireValidFfiLimit(0)
         )
         Self.assertCodecError(
             .providerFailure,
-            try ReallyMeCodecRustCAbiProvider.requireValidProtoResultEnvelopeLimit(67_108_865)
+            try ReallyMeCodecRustCAbiProvider.requireValidFfiLimit(UInt(Int.max) + 1)
+        )
+        XCTAssertEqual(
+            try ReallyMeCodecRustCAbiProvider.requireValidOperationResponseLimit(
+                10_489_856,
+                maxFfiOutputLength: 67_108_864
+            ),
+            10_489_856
+        )
+        Self.assertCodecError(
+            .providerFailure,
+            try ReallyMeCodecRustCAbiProvider.requireValidOperationResponseLimit(
+                0,
+                maxFfiOutputLength: 67_108_864
+            )
+        )
+        Self.assertCodecError(
+            .providerFailure,
+            try ReallyMeCodecRustCAbiProvider.requireValidOperationResponseLimit(
+                67_108_865,
+                maxFfiOutputLength: 67_108_864
+            )
+        )
+        Self.assertCodecError(
+            .providerFailure,
+            try ReallyMeCodecRustCAbiProvider.requireValidOperationResponseLimit(
+                UInt(Int.max) + 1,
+                maxFfiOutputLength: 67_108_864
+            )
+        )
+    }
+
+    func testProviderErrorOriginsAreAttributedDeterministically() {
+        var boundary = ReallyMeProtoCodecBoundaryError()
+        boundary.reason = .boundaryMalformedProtobuf
+        var callerError = ReallyMeProtoCodecError()
+        callerError.boundary = boundary
+        callerError.origin = .caller
+        XCTAssertEqual(
+            ReallyMeCodecRustCAbiProvider.errorForCodecError(callerError),
+            .invalidInput
+        )
+
+        var backend = ReallyMeProtoCodecBackendError()
+        backend.reason = .backendInternal
+        var providerError = ReallyMeProtoCodecError()
+        providerError.backend = backend
+        providerError.origin = .provider
+        XCTAssertEqual(
+            ReallyMeCodecRustCAbiProvider.errorForCodecError(providerError),
+            .providerFailure
+        )
+
+        var mismatchedOrigin = callerError
+        mismatchedOrigin.origin = .provider
+        XCTAssertEqual(
+            ReallyMeCodecRustCAbiProvider.errorForCodecError(mismatchedOrigin),
+            .providerFailure
+        )
+
+        var unrecognizedReason = ReallyMeProtoCodecBoundaryError()
+        unrecognizedReason.reason = .UNRECOGNIZED(699)
+        var unknownError = ReallyMeProtoCodecError()
+        unknownError.boundary = unrecognizedReason
+        unknownError.origin = .caller
+        XCTAssertEqual(
+            ReallyMeCodecRustCAbiProvider.errorForCodecError(unknownError),
+            .providerFailure
         )
     }
 
     func testSensitiveGeneratedMultikeyRequestFormattingIsRedacted() {
         var request = ReallyMeProtoCodecMultikeyParseRequest()
         request.multikey = "zSensitiveMultikey"
+        var otherRequest = ReallyMeProtoCodecMultikeyParseRequest()
+        otherRequest.multikey = "zDifferentSensitiveMultikey"
 
         XCTAssertEqual(
             request.debugDescription,
@@ -695,5 +800,11 @@ final class ReallyMeCodecTests: XCTestCase {
             request.textFormatString(),
             "ReallyMeProtoCodecMultikeyParseRequest(<redacted>)"
         )
+        var hasher = Hasher()
+        request.hash(into: &hasher)
+        let redactedHash = hasher.finalize()
+        var otherHasher = Hasher()
+        otherRequest.hash(into: &otherHasher)
+        XCTAssertEqual(redactedHash, otherHasher.finalize())
     }
 }

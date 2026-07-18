@@ -6,7 +6,7 @@ The `me.really:codec` JVM package provides codecs for Java and Kotlin.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.1.22")
+    implementation("me.really:codec:0.2.0")
 }
 ```
 
@@ -31,13 +31,29 @@ String encoded = ReallyMeCodec.base64urlEncode(new byte[] {1, 2, 3});
 byte[] decoded = ReallyMeCodec.base64urlDecode(encoded);
 ```
 
-`ReallyMeCodec` covers base64, base64url, lowercase hex, base58btc,
-multibase, multicodec, multikey, DAG-CBOR, JCS, and PEM armor. Structured
-results such as multicodec metadata and PEM decode output are returned as the
-compact JSON emitted by the Rust codec bridge.
+Structured results, including multicodec metadata and decoded PEM, are returned as typed SDK values.
 
-PEM input, output, and decoded JSON use `ByteArray` rather than `String` so
-callers can overwrite private-key armor promptly after use.
+Use typed builders for deterministic CBOR and DAG-CBOR:
+
+```kotlin
+val value = ReallyMeDeterministicCbor.mapText(
+    listOf(
+        "b" to ReallyMeDeterministicCbor.unsignedLong(2),
+        "a" to ReallyMeDeterministicCbor.bytes(byteArrayOf(0, 1, 2)),
+    ),
+)
+val encodedCbor = ReallyMeCodec.deterministicCborEncode(value)
+val dagCbor = ReallyMeCodec.dagCborEncode(
+    ReallyMeDagCbor.mapText(listOf("payload" to value)),
+)
+```
+
+Encoding canonicalizes map ordering. Decoding rejects duplicate semantic keys,
+non-canonical input, unsupported CBOR types, and values beyond the documented
+resource limits before returning SDK owners.
+
+PEM input, output, and decoded DER use `ByteArray` rather than `String` so
+callers can overwrite private-key material promptly after use.
 
 Local development builds can still load an explicit Rust ABI library when
 debugging provider loading:

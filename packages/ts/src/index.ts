@@ -20,26 +20,20 @@ export {
   multibaseBase58btcEncode,
   multibaseBase64urlEncode,
   multibaseDecode,
-  multicodecLookupPrefixProto,
-  multicodecLookupPrefixProtoResult,
   multicodecLookupPrefix,
-  multicodecPrefixForNameProto,
-  multicodecPrefixForNameProtoResult,
   multicodecPrefixForName,
   multicodecStripPrefix,
   multicodecTable,
-  multicodecTableProto,
-  multicodecTableProtoResult,
   multikeyEncode,
   multikeyParse,
-  multikeyParseProto,
-  multikeyParseProtoResult,
   requireSupportedMulticodec,
   validateKeyBinding,
 } from "./multiformat.js";
 export type {
   ReallyMeKeyMaterialKind,
+  ReallyMeMulticodecLookupResult,
   ReallyMeMulticodecMetadata,
+  ReallyMeMulticodecTable,
   ReallyMeMulticodecTag,
   ReallyMeParsedMultikey,
 } from "./multiformat.js";
@@ -51,20 +45,25 @@ export {
   dagCborMultihash,
   dagCborSha256ContentHash,
   dagCborVerifyCid,
-  dagCborVerifyCidProto,
-  dagCborVerifyCidProtoResult,
+  deterministicCborDecode,
+  deterministicCborEncode,
   isValidCidString,
+  ReallyMeDagCbor,
+  ReallyMeDeterministicCbor,
   tryParseCid,
 } from "./cbor.js";
 export type {
+  ReallyMeDeterministicCborInteger,
+  ReallyMeDeterministicCborMapEntry,
+  ReallyMeDeterministicCborMapKey,
+  ReallyMeDeterministicCborValue,
   ReallyMeCborMapEntry,
   ReallyMeCborValue,
   ReallyMeDagCborCidVerification,
 } from "./cbor.js";
 export { canonicalizeJson, canonicalizeJsonText } from "./jcs.js";
-export { decodePem, decodePemProto, decodePemProtoResult, encodePem } from "./pem.js";
-export { processProto, processProtoJson } from "./protoProcess.js";
-export type { ReallyMeCodecProtoResult, ReallyMeCodecProtoStatus } from "./readOutput.js";
+export { decodePem, encodePem } from "./pem.js";
+export { processOperation, processOperationJson } from "./operationContract.js";
 export type {
   ReallyMePemDecodePolicy,
   ReallyMePemDocument,
@@ -96,9 +95,11 @@ import {
   dagCborMultihash,
   dagCborSha256ContentHash,
   dagCborVerifyCid,
-  dagCborVerifyCidProto,
-  dagCborVerifyCidProtoResult,
+  deterministicCborDecode,
+  deterministicCborEncode,
   isValidCidString,
+  ReallyMeDagCbor,
+  ReallyMeDeterministicCbor,
   tryParseCid,
 } from "./cbor.js";
 import { canonicalizeJson, canonicalizeJsonText } from "./jcs.js";
@@ -109,25 +110,17 @@ import {
   multibaseBase58btcEncode,
   multibaseBase64urlEncode,
   multibaseDecode,
-  multicodecLookupPrefixProto,
-  multicodecLookupPrefixProtoResult,
   multicodecLookupPrefix,
-  multicodecPrefixForNameProto,
-  multicodecPrefixForNameProtoResult,
   multicodecPrefixForName,
   multicodecStripPrefix,
   multicodecTable,
-  multicodecTableProto,
-  multicodecTableProtoResult,
   multikeyEncode,
   multikeyParse,
-  multikeyParseProto,
-  multikeyParseProtoResult,
   requireSupportedMulticodec,
   validateKeyBinding,
 } from "./multiformat.js";
-import { decodePem, decodePemProto, decodePemProtoResult, encodePem } from "./pem.js";
-import { processProto, processProtoJson } from "./protoProcess.js";
+import { decodePem, encodePem } from "./pem.js";
+import { processOperation, processOperationJson } from "./operationContract.js";
 
 export const ReallyMeCodec = {
   base64Decode,
@@ -143,20 +136,12 @@ export const ReallyMeCodec = {
   multibaseBase58btcEncode,
   multibaseBase64urlEncode,
   multibaseDecode,
-  multicodecLookupPrefixProto,
-  multicodecLookupPrefixProtoResult,
   multicodecLookupPrefix,
-  multicodecPrefixForNameProto,
-  multicodecPrefixForNameProtoResult,
   multicodecPrefixForName,
   multicodecStripPrefix,
   multicodecTable,
-  multicodecTableProto,
-  multicodecTableProtoResult,
   multikeyEncode,
   multikeyParse,
-  multikeyParseProto,
-  multikeyParseProtoResult,
   requireSupportedMulticodec,
   validateKeyBinding,
   dagCborCodecCode,
@@ -166,16 +151,16 @@ export const ReallyMeCodec = {
   dagCborMultihash,
   dagCborSha256ContentHash,
   dagCborVerifyCid,
-  dagCborVerifyCidProto,
-  dagCborVerifyCidProtoResult,
+  deterministicCborDecode,
+  deterministicCborEncode,
   isValidCidString,
+  ReallyMeDagCbor,
+  ReallyMeDeterministicCbor,
   tryParseCid,
   canonicalizeJson,
   canonicalizeJsonText,
   decodePem,
-  decodePemProto,
-  decodePemProtoResult,
   encodePem,
-  processProto,
-  processProtoJson,
+  processOperation,
+  processOperationJson,
 } as const;

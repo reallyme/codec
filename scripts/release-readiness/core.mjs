@@ -11,7 +11,7 @@ import { spawnSync } from "node:child_process";
 // This module is intentionally written as a standalone, vendorable release
 // readiness core. Sister repositories should copy it byte-for-byte or consume a
 // pinned upstream revision so release-critical checks do not drift silently.
-export const RELEASE_READINESS_CORE_CONTRACT_VERSION = 7;
+export const RELEASE_READINESS_CORE_CONTRACT_VERSION = 8;
 
 const DEFAULT_FAILURE_PREFIX = "release readiness check failed";
 
@@ -63,6 +63,70 @@ const scrubProtoCommentsAndStrings = (source) => {
     } else if (
       (state === "double-quoted-string" && character === '"') ||
       (state === "single-quoted-string" && character === "'")
+    ) {
+      output += " ";
+      state = "normal";
+    } else {
+      output += character === "\n" ? "\n" : " ";
+    }
+  }
+  return output;
+};
+
+const scrubJavaScriptCommentsAndStrings = (source) => {
+  let output = "";
+  let state = "normal";
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index];
+    const next = source[index + 1];
+    if (state === "normal") {
+      if (character === "/" && next === "/") {
+        output += "  ";
+        index += 1;
+        state = "line-comment";
+      } else if (character === "/" && next === "*") {
+        output += "  ";
+        index += 1;
+        state = "block-comment";
+      } else if (character === '"' || character === "'" || character === "`") {
+        output += " ";
+        state =
+          character === '"'
+            ? "double-quoted-string"
+            : character === "'"
+              ? "single-quoted-string"
+              : "template-string";
+      } else {
+        output += character;
+      }
+      continue;
+    }
+    if (state === "line-comment") {
+      if (character === "\n") {
+        output += "\n";
+        state = "normal";
+      } else {
+        output += " ";
+      }
+      continue;
+    }
+    if (state === "block-comment") {
+      if (character === "*" && next === "/") {
+        output += "  ";
+        index += 1;
+        state = "normal";
+      } else {
+        output += character === "\n" ? "\n" : " ";
+      }
+      continue;
+    }
+    if (character === "\\" && next !== undefined) {
+      output += next === "\n" ? " \n" : "  ";
+      index += 1;
+    } else if (
+      (state === "double-quoted-string" && character === '"') ||
+      (state === "single-quoted-string" && character === "'") ||
+      (state === "template-string" && character === "`")
     ) {
       output += " ";
       state = "normal";
@@ -262,12 +326,16 @@ export function createReleaseReadinessContext(options) {
 
   const listFiles = (path) => {
     resolveRepositoryPath(path);
+    const directory = assertRepositoryDirectory(path);
     const prefix = `${path}/`;
     if (requireTrackedFiles) {
-      return [...loadTrackedFiles()].filter((file) => file.startsWith(prefix));
+      const files = [...loadTrackedFiles()].filter((file) => file.startsWith(prefix));
+      if (files.length === 0) {
+        fail(`${path} has no tracked files`);
+      }
+      return files;
     }
 
-    const directory = assertRepositoryDirectory(path);
     const files = [];
     const visit = (current) => {
       for (const entry of readdirSync(current).sort()) {
@@ -1020,9 +1088,9 @@ export function createReleaseReadinessContext(options) {
         typeof entry === "object" &&
         !Array.isArray(entry) &&
         typeof entry.message === "string" &&
-        /^[A-Z][A-Za-z0-9]*$/u.test(entry.message) &&
+        /^[A-Za-z_][A-Za-z0-9_]*$/u.test(entry.message) &&
         typeof entry.field === "string" &&
-        /^[a-z][a-z0-9_]*$/u.test(entry.field) &&
+        /^[A-Za-z_][A-Za-z0-9_]*$/u.test(entry.field) &&
         (entry.kind === "bytes" || entry.kind === "string") &&
         (entry.sensitivity === "sensitive" || entry.sensitivity === "public") &&
         Object.keys(entry).every((key) =>
@@ -1050,7 +1118,7 @@ export function createReleaseReadinessContext(options) {
     }
     const protoText = scrubProtoCommentsAndStrings(readText(protoSchema));
     const scalarSchemaKeys = new Set();
-    const messagePattern = /^\s*message\s+([A-Z][A-Za-z0-9]*)\s*\{/gmu;
+    const messagePattern = /^\s*message\s+([A-Za-z_][A-Za-z0-9_]*)\s*\{/gmu;
     for (const messageMatch of protoText.matchAll(messagePattern)) {
       const openIndex = messageMatch.index + messageMatch[0].lastIndexOf("{");
       let depth = 0;
@@ -1070,7 +1138,7 @@ export function createReleaseReadinessContext(options) {
         fail(`${protoSchema} has an unterminated message ${messageMatch[1]}`);
       }
       const body = protoText.slice(openIndex + 1, closeIndex);
-      if (/^\s+message\s+[A-Z][A-Za-z0-9]*\s*\{/mu.test(body)) {
+      if (/^\s+message\s+[A-Za-z_][A-Za-z0-9_]*\s*\{/mu.test(body)) {
         fail(
           `${protoSchema} nested messages require an explicit scalar-classifier extension`,
         );
@@ -1081,7 +1149,7 @@ export function createReleaseReadinessContext(options) {
         );
       }
       for (const fieldMatch of body.matchAll(
-        /(?:^|[;{}])\s*(?:(?:optional|required|repeated)\s+)?(bytes|string)\s+([a-z][a-z0-9_]*)\s*=\s*\d+(?:\s*\[[^\]]*\])?\s*(?=;)/gmu,
+        /(?:^|[;{}])\s*(?:(?:optional|required|repeated)\s+)?(bytes|string)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*\d+(?:\s*\[[^\]]*\])?\s*(?=;)/gmu,
       )) {
         scalarSchemaKeys.add(`${messageMatch[1]}.${fieldMatch[2]}:${fieldMatch[1]}`);
       }
@@ -1319,24 +1387,55 @@ cargo install protoc-gen-buffa-packaging --version "$BUFFA_VERSION" --locked`,
 
     requireTracked(scriptPath);
     requireTracked(corePath);
+    const executableCore = scrubJavaScriptCommentsAndStrings(readText(corePath));
+    const requireCoreDeclaration = (name) => {
+      const declaration = new RegExp(
+        `\\b(?:const|function)\\s+${escapeRegExp(name)}\\b`,
+        "u",
+      );
+      if (!declaration.test(executableCore)) {
+        fail(`${corePath} must define ${name}`);
+      }
+    };
+    const requireCoreExport = (name) => {
+      const exportPattern = new RegExp(`\\b${escapeRegExp(name)}\\s*,`, "u");
+      if (!exportPattern.test(executableCore)) {
+        fail(`${corePath} must export ${name}`);
+      }
+    };
+
     assertContains(corePath, `RELEASE_READINESS_CORE_CONTRACT_VERSION = ${contractVersion}`);
-    assertContains(corePath, "assertGeneratedArtifactsFresh");
-    assertContains(corePath, "assertGeneratedProtoHardeningPolicy");
-    assertContains(corePath, "assertReallyMeProtobufReleasePolicy");
-    assertContains(corePath, "assertReallyMeVendoredCorePolicy");
-    assertContains(corePath, "assertReallyMeRustProtoRepositoryPolicy");
-    assertContains(corePath, "assertCargoMetadataPolicy");
-    assertContains(corePath, "assertCargoWorkspacePolicy");
-    assertContains(corePath, "assertTextPolicy");
-    assertContains(corePath, "assertSpdxHeaders");
-    assertContains(corePath, "assertWorkflowActionsPinned");
-    assertContains(corePath, "assertWorkflowPolicy");
-    assertContains(corePath, "runCommands");
-    assertContains(corePath, "scalarFieldClassifications");
-    assertContains(corePath, "assertProtoContract");
-    assertContains(corePath, "assertReallyMeProtoBoundaryContract");
-    assertContains(corePath, "assertWorkflowRunStep");
-    assertContains(corePath, "assertWorkflowUsesStep");
+    for (const name of [
+      "assertGeneratedArtifactsFresh",
+      "assertGeneratedProtoHardeningPolicy",
+      "assertReallyMeProtobufReleasePolicy",
+      "assertReallyMeVendoredCorePolicy",
+      "assertReallyMeRustProtoRepositoryPolicy",
+      "assertCargoMetadataPolicy",
+      "assertCargoWorkspacePolicy",
+      "assertTextPolicy",
+      "assertSpdxHeaders",
+      "assertWorkflowActionsPinned",
+      "assertWorkflowPolicy",
+      "runCommands",
+      "assertProtoContract",
+      "assertReallyMeProtoBoundaryContract",
+      "assertReallyMeOperationBoundaryContract",
+      "assertWorkflowRunStep",
+      "assertWorkflowUsesStep",
+    ]) {
+      requireCoreDeclaration(name);
+      requireCoreExport(name);
+    }
+    for (const identifier of [
+      "scalarFieldClassifications",
+      "messagePattern",
+      "scalarSchemaKeys",
+    ]) {
+      if (!new RegExp(`\\b${escapeRegExp(identifier)}\\b`, "u").test(executableCore)) {
+        fail(`${corePath} must enforce ${identifier}`);
+      }
+    }
   };
 
   const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
@@ -1616,6 +1715,9 @@ cargo install protoc-gen-buffa-packaging --version "$BUFFA_VERSION" --locked`,
     for (const job of extractWorkflowJobs(path)) {
       const headers = [];
       for (let index = job.start + 1; index < job.end; index += 1) {
+        if (/^ {4}permissions:\s+\S/u.test(lines[index])) {
+          fail(`${path} job ${job.name} permissions must be a flat explicit mapping`);
+        }
         if (/^ {4}permissions:\s*$/u.test(lines[index])) {
           headers.push(index);
         }
@@ -1809,6 +1911,43 @@ cargo install protoc-gen-buffa-packaging --version "$BUFFA_VERSION" --locked`,
     }
   };
 
+  const extractWorkflowRunCommands = (path) => {
+    const lines = readText(path).replace(/\r\n/gu, "\n").split("\n");
+    const commands = [];
+    for (let index = 0; index < lines.length; index += 1) {
+      const runMatch = /^(\s*)(?:-\s+)?run:\s*(.*)\s*$/u.exec(lines[index]);
+      if (runMatch === null) {
+        continue;
+      }
+      const runIndent = runMatch[1].length;
+      const marker = runMatch[2].trim();
+      if (marker === ">") {
+        fail(`${path} uses an unsupported folded run scalar`);
+      }
+      if (marker === "|") {
+        const blockLines = [];
+        for (let blockCursor = index + 1; blockCursor < lines.length; blockCursor += 1) {
+          const blockLine = lines[blockCursor];
+          if (blockLine.trim().length !== 0 && countLeadingSpaces(blockLine) <= runIndent) {
+            break;
+          }
+          blockLines.push(blockLine);
+        }
+        const nonBlankIndents = blockLines
+          .filter((line) => line.trim().length !== 0)
+          .map((line) => countLeadingSpaces(line));
+        const blockIndent =
+          nonBlankIndents.length === 0 ? runIndent + 2 : Math.min(...nonBlankIndents);
+        commands.push(
+          blockLines.map((line) => line.slice(Math.min(blockIndent, line.length))).join("\n"),
+        );
+      } else {
+        commands.push(unquoteWorkflowScalar(marker));
+      }
+    }
+    return commands;
+  };
+
   const assertCargoFuzzWorkflowPolicy = (policy) => {
     const {
       workflow = ".github/workflows/fuzz.yml",
@@ -1864,17 +2003,21 @@ cargo install protoc-gen-buffa-packaging --version "$BUFFA_VERSION" --locked`,
     }
 
     const text = readText(workflow).replace(/\r\n/gu, "\n");
-    const installSteps = extractWorkflowSteps(workflow).filter(
-      (step) =>
-        step.run !== null &&
-        normalizeWorkflowRunCommand(step.run)
-          .split("\n")
-          .some(
-            (line) =>
-              /^cargo\s+install(?:\s|$)/u.test(line.trim()) &&
-              /(?:^|\s)cargo-fuzz(?:\s|$)/u.test(line.trim()),
-          ),
+    const workflowRuns = extractWorkflowSteps(workflow)
+      .filter((step) => step.run !== null)
+      .map((step) => ({ ...step, command: normalizeWorkflowRunCommand(step.run) }));
+    const allInstallCommands = extractWorkflowRunCommands(workflow).filter(
+      (command) =>
+        /^cargo\s+install(?:\s|$)/mu.test(normalizeWorkflowRunCommand(command)) &&
+        /(?:^|\s)cargo-fuzz(?:\s|$)/u.test(normalizeWorkflowRunCommand(command)),
     );
+    const installSteps = workflowRuns.filter((step) =>
+      /^cargo\s+install(?:\s|$)/mu.test(step.command) &&
+      /(?:^|\s)cargo-fuzz(?:\s|$)/u.test(step.command),
+    );
+    if (installSteps.length !== allInstallCommands.length) {
+      fail(`${workflow} cargo-fuzz installation must be in a named workflow step`);
+    }
     if (installSteps.length < minimumInstallations) {
       fail(
         `${workflow} must install cargo-fuzz at least ${minimumInstallations} times`,
@@ -2016,7 +2159,7 @@ cargo install protoc-gen-buffa-packaging --version "$BUFFA_VERSION" --locked`,
     assertCargoFuzzWorkflowPolicy(cargoFuzz);
     assertCargoWorkspacePolicy(cargoWorkspace);
     assertSpdxHeaders(spdx);
-    assertReallyMeProtoBoundaryContract(protobufBoundary);
+    assertReallyMeOperationBoundaryContract(protobufBoundary);
     assertReallyMeProtobufReleasePolicy({
       ...protobufRelease,
       generatedFreshnessMode,
@@ -2377,6 +2520,181 @@ cargo install protoc-gen-buffa-packaging --version "$BUFFA_VERSION" --locked`,
     }
   };
 
+  const assertReallyMeOperationBoundaryContract = (policy) => {
+    const {
+      protoPath,
+      operationRequest,
+      operationResponse,
+      operationResult = "CodecOperationResult",
+      errorMessage = "CodecError",
+      protoReadme,
+      protoCargo,
+      wirePath,
+      codecPath = wirePath,
+      bufGen = "buf.gen.yaml",
+      processOperationNeedle = "pub fn process_operation_response(",
+      processOperationJsonNeedle = "pub fn process_operation_response_json(",
+      binaryResponseNeedle = "CodecOperationResponse",
+      requiredCodecNeedles = [],
+      forbiddenCodecNeedles = [],
+      sdkAdapters = [],
+      allowServices = true,
+    } = policy ?? {};
+    for (const [name, value] of Object.entries({
+      protoPath,
+      protoReadme,
+      protoCargo,
+      wirePath,
+      codecPath,
+    })) {
+      if (typeof value !== "string" || value.length === 0) {
+        fail(`operation boundary policy ${name} must be a non-empty string`);
+      }
+    }
+    if (
+      !Array.isArray(requiredCodecNeedles) ||
+      requiredCodecNeedles.some((needle) => typeof needle !== "string" || needle.length === 0) ||
+      !Array.isArray(forbiddenCodecNeedles) ||
+      forbiddenCodecNeedles.some((needle) => typeof needle !== "string" || needle.length === 0)
+    ) {
+      fail("operation boundary codec needles must be arrays of non-empty strings");
+    }
+    if (
+      !Array.isArray(sdkAdapters) ||
+      sdkAdapters.some(
+        (adapter) =>
+          adapter === null ||
+          typeof adapter !== "object" ||
+          Array.isArray(adapter),
+      )
+    ) {
+      fail("operation boundary policy sdkAdapters must be an array of objects");
+    }
+    if (typeof allowServices !== "boolean") {
+      fail("operation boundary policy allowServices must be a boolean");
+    }
+    for (const [name, value] of Object.entries({
+      operationRequest,
+      operationResponse,
+      operationResult,
+      errorMessage,
+    })) {
+      if (
+        typeof value !== "string" ||
+        !/^[A-Za-z_][A-Za-z0-9_]*$/u.test(value)
+      ) {
+        fail(`operation boundary policy ${name} must be a protobuf identifier`);
+      }
+    }
+
+    assertProtoContract(protoPath);
+    const proto = stripProtoLineComments(readText(protoPath));
+    if (!allowServices && extractProtoBlocks(proto, "service").length !== 0) {
+      fail(`${protoPath} must define messages only and no protobuf service`);
+    }
+    const operationBlock = extractProtoBlocks(proto, "message").find(
+      (block) => block.name === operationRequest,
+    );
+    if (operationBlock === undefined || !/\boneof\s+operation\s*\{/u.test(operationBlock.body)) {
+      fail(`${protoPath} ${operationRequest} must define oneof operation`);
+    }
+    const responseBlock = extractProtoBlocks(proto, "message").find(
+      (block) => block.name === operationResponse,
+    );
+    if (
+      responseBlock === undefined ||
+      !/\boneof\s+outcome\s*\{/u.test(responseBlock.body) ||
+      !new RegExp(`^\\s*${operationResult}\\s+result\\s*=\\s*1\\s*;`, "mu").test(
+        responseBlock.body,
+      ) ||
+      !new RegExp(`^\\s*${errorMessage}\\s+error\\s*=\\s*2\\s*;`, "mu").test(
+        responseBlock.body,
+      )
+    ) {
+      fail(`${protoPath} ${operationResponse} must contain a generated result/error outcome oneof`);
+    }
+    const resultBlock = extractProtoBlocks(proto, "message").find(
+      (block) => block.name === operationResult,
+    );
+    if (resultBlock === undefined || !/\boneof\s+result\s*\{/u.test(resultBlock.body)) {
+      fail(`${protoPath} ${operationResult} must define oneof result`);
+    }
+
+    assertContains(
+      protoReadme,
+      "JSON is a generated ProtoJSON request convenience. Results remain one fully",
+    );
+    assertContains(bufGen, "local: protoc-gen-buffa");
+    assertContains(bufGen, "views=true");
+    assertContains(bufGen, "json=true");
+    assertContains(protoCargo, '"buffa/json"');
+    assertContains(protoCargo, "zeroize");
+    assertContains(wirePath, operationRequest);
+    assertContains(wirePath, operationResponse);
+    assertContains(wirePath, "Zeroizing<Vec<u8>>");
+    assertContains(wirePath, processOperationNeedle);
+    assertContains(wirePath, processOperationJsonNeedle);
+    assertContains(codecPath, "DecodeOptions::new()");
+    assertContains(codecPath, binaryResponseNeedle);
+    for (const needle of requiredCodecNeedles) {
+      assertContains(codecPath, needle);
+    }
+    for (const needle of forbiddenCodecNeedles) {
+      assertNotContains(codecPath, needle);
+    }
+    assertNotContains(wirePath, "pub fn process_json(");
+    assertNotContains(wirePath, "pub fn process_proto_with_operation");
+    assertNotContains(wirePath, "pub fn process_proto_operation");
+    assertNotContains(wirePath, "CodecProtoResultEnvelope");
+
+    for (const [index, adapter] of sdkAdapters.entries()) {
+      const {
+        path,
+        processOperationNeedle: adapterProcessOperationNeedle,
+        processOperationJsonNeedle: adapterProcessOperationJsonNeedle,
+        binaryResponseNeedle: adapterBinaryResponseNeedle = operationResponse,
+        requiredNeedles = [],
+        forbiddenNeedles = [],
+      } = adapter;
+      for (const [name, value] of Object.entries({
+        path,
+        processOperationNeedle: adapterProcessOperationNeedle,
+        processOperationJsonNeedle: adapterProcessOperationJsonNeedle,
+        binaryResponseNeedle: adapterBinaryResponseNeedle,
+      })) {
+        if (typeof value !== "string" || value.length === 0) {
+          fail(
+            `operation boundary sdkAdapters[${index}].${name} must be a non-empty string`,
+          );
+        }
+      }
+      for (const [name, needles] of Object.entries({
+        requiredNeedles,
+        forbiddenNeedles,
+      })) {
+        if (
+          !Array.isArray(needles) ||
+          needles.some(
+            (needle) => typeof needle !== "string" || needle.length === 0,
+          )
+        ) {
+          fail(
+            `operation boundary sdkAdapters[${index}].${name} must be an array of non-empty strings`,
+          );
+        }
+      }
+      assertContains(path, adapterProcessOperationNeedle);
+      assertContains(path, adapterProcessOperationJsonNeedle);
+      assertContains(path, adapterBinaryResponseNeedle);
+      for (const needle of requiredNeedles) {
+        assertContains(path, needle);
+      }
+      for (const needle of forbiddenNeedles) {
+        assertNotContains(path, needle);
+      }
+    }
+  };
+
   return {
     root,
     fail,
@@ -2421,6 +2739,7 @@ cargo install protoc-gen-buffa-packaging --version "$BUFFA_VERSION" --locked`,
     extractProtoBlocks,
     assertProtoContract,
     assertReallyMeProtoBoundaryContract,
+    assertReallyMeOperationBoundaryContract,
     assertSpdxHeaders,
   };
 }

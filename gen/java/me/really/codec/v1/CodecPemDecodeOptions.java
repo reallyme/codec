@@ -7,7 +7,7 @@ package me.really.codec.v1;
 
 /**
  * <pre>
- * Zero limits select the audited codec defaults. An empty allowed-label list
+ * Zero limits select the documented codec defaults. An empty allowed-label list
  * selects the default PRIVATE KEY, EC PRIVATE KEY, and PUBLIC KEY set.
  * </pre>
  *
@@ -294,7 +294,7 @@ public  final class CodecPemDecodeOptions extends
 
   /**
    * <pre>
-   * Zero limits select the audited codec defaults. An empty allowed-label list
+   * Zero limits select the documented codec defaults. An empty allowed-label list
    * selects the default PRIVATE KEY, EC PRIVATE KEY, and PUBLIC KEY set.
    * </pre>
    *

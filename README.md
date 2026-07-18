@@ -1,6 +1,6 @@
 # reallyme-codec
 
-Byte-format and canonical encoding utilities for Rust, TypeScript, Swift, Java and Kotlin.
+Codecs for base encodings, multiformats, CBOR, CID, canonical JSON and PEM, available in Rust and language SDKs.
 
 ## Published Surfaces
 
@@ -19,9 +19,9 @@ Byte-format and canonical encoding utilities for Rust, TypeScript, Swift, Java a
 |---|---|
 | Base encodings | base64, unpadded base64url, lowercase hex, base58btc |
 | Multiformats | multibase, multicodec, multikey, key-binding validation |
-| Canonical data | DAG-CBOR, CID helpers, SHA-256 content hash, multihash helpers, JCS |
+| Canonical data | deterministic generic CBOR, DAG-CBOR, CID helpers, SHA-256 content hash, multihash helpers, JCS |
 | PEM | strict PEM decode and encode with label, size, line-width, and line-ending policy |
-| Protobuf | `reallyme.codec.v1` codec error envelopes |
+| Protobuf | `reallyme.codec.v1` generated operation requests, generated ProtoJSON, and codec error envelopes |
 
 ## Install
 
@@ -36,7 +36,7 @@ every codec family. Consumers that need a smaller dependency surface can select
 only the families they use:
 
 ```toml
-reallyme-codec = { version = "0.1.22", default-features = false, features = [
+reallyme-codec = { version = "0.2.0", default-features = false, features = [
   "base64url",
   "multikey",
 ] }
@@ -47,7 +47,7 @@ reallyme-codec = { version = "0.1.22", default-features = false, features = [
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.1.22"
+    from: "0.2.0"
 )
 ```
 
@@ -59,7 +59,7 @@ reallyme-codec = { version = "0.1.22", default-features = false, features = [
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.1.22")
+    implementation("me.really:codec:0.2.0")
 }
 ```
 
@@ -67,7 +67,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.1.22")
+    implementation("me.really:codec-android:0.2.0")
 }
 ```
 
@@ -79,6 +79,12 @@ npm install @reallyme/codec
 
 For production deployments, pin exact package versions, release tags, or Git
 revisions so codec behavior remains identical across all language lanes.
+
+## Versioning
+
+This package is pre-1.0. Review compatibility notes before upgrading.
+
+Cargo version requirements use caret compatibility by default. Use exact constraints or lockfiles when deployment requires a fixed package version.
 
 ## Quick Start
 
@@ -125,17 +131,51 @@ import { ReallyMeCodec } from "@reallyme/codec";
 const encoded = ReallyMeCodec.base64urlEncode(new Uint8Array([1, 2, 3]));
 ```
 
+```swift
+let value = ReallyMeDeterministicCbor.mapText([
+    ("b", ReallyMeDeterministicCbor.unsigned(2)),
+    ("a", ReallyMeDeterministicCbor.bytes(Data([0, 1, 2]))),
+])
+let cbor = try codec.deterministicCborEncodeData(value)
+```
+
+```kotlin
+val value = ReallyMeDeterministicCbor.mapText(
+    linkedMapOf(
+        "b" to ReallyMeDeterministicCbor.unsignedLong(2),
+        "a" to ReallyMeDeterministicCbor.bytes(byteArrayOf(0, 1, 2)),
+    ),
+)
+val cbor = ReallyMeCodec.deterministicCborEncode(value)
+```
+
+```ts
+const value = ReallyMeDeterministicCbor.mapText([
+  ["b", ReallyMeDeterministicCbor.unsigned(2n)],
+  ["a", ReallyMeDeterministicCbor.bytes(new Uint8Array([0, 1, 2]))],
+]);
+const cbor = ReallyMeCodec.deterministicCborEncode(value);
+```
+
+Deterministic-CBOR encode canonicalizes map ordering. Decode rejects duplicate
+semantic map keys, non-canonical map order, non-minimal integer or length
+forms, unsupported CBOR types, and inputs outside the documented resource
+limits. DAG-CBOR remains a separate profile with CID helpers; its structured
+encode/decode methods use the same generated operation boundary and Rust
+semantic implementation.
+
 Swift and JVM packages include native libraries. See their package READMEs for installation and local-library loading.
 
 ## Protobuf
 
-The importable wire/config contract lives in the publishable proto crate at
-[`crates/proto/codec/proto/reallyme/codec/v1/codec.proto`](crates/proto/codec/proto/reallyme/codec/v1/codec.proto).
+The importable wire/config operation contract lives in the publishable proto crate at
+[`crates/proto/proto/reallyme/codec/v1/codec.proto`](crates/proto/proto/reallyme/codec/v1/codec.proto).
 Service, application, and storage protos can import it when they need stable
 codec identifiers or non-secret error envelopes.
 
 The executable transport boundary accepts one generated
-`CodecOperationRequest` and returns one binary `CodecProtoResultEnvelope`.
+`CodecOperationRequest` and returns one binary `CodecOperationResponse` whose
+oneofs identify either the exact operation result or a typed `CodecError`.
 Operation-specific `*Proto` SDK helpers are request builders over that same
 entrypoint; they are not separate wire APIs. Native Rust callers retain the
 typed codec APIs and do not need to serialize.
@@ -146,10 +186,10 @@ The generated proto surfaces are available through:
 
 | Language | Proto surface | Generic execution |
 |---|---|---|
-| Rust | `reallyme-codec-proto` | `process_proto`, `process_proto_json` |
-| Swift | `ReallyMeCodecProto` | `processProto`, `processProtoJson` |
-| Kotlin / Java | `me.really.codec.v1` | `processProto`, `processProtoJson` |
-| TypeScript | `@reallyme/codec/proto` | `processProto`, `processProtoJson` |
+| Rust | `reallyme-codec-proto` | `process_operation_response`, `process_operation_response_json` |
+| Swift | `ReallyMeCodecProto` | `processOperation`, `processOperationJson` |
+| Kotlin / Java | `me.really.codec.v1` | `processOperation`, `processOperationJson` |
+| TypeScript | `@reallyme/codec/proto` | `processOperation`, `processOperationJson` |
 
 See [docs/protobuf.md](docs/protobuf.md) for the boundary rules.
 

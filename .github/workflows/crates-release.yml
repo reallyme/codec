@@ -27,13 +27,14 @@ concurrency:
 
 jobs:
   verify-release-sha:
-    name: Verify audited release SHA
+    name: Verify reviewed release SHA
     runs-on: ubuntu-latest
     permissions:
       actions: read
       contents: read
     outputs:
       release_sha: ${{ steps.resolve-release-sha.outputs.release_sha }}
+      release_version: ${{ steps.resolve-release-sha.outputs.release_version }}
     steps:
       - name: Checkout main for release SHA resolution
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
@@ -61,9 +62,16 @@ jobs:
             exit 1
           fi
           git checkout --detach "${release_sha}"
+          release_version="$(sed -n 's/^version = "\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\)"$/\1/p' crates/codec/Cargo.toml | head -n 1)"
+          if [ -z "${release_version}" ]; then
+            echo "::error::could not derive release version from crates/codec/Cargo.toml"
+            exit 1
+          fi
           echo "release_sha=${release_sha}" >> "${GITHUB_OUTPUT}"
+          echo "release_version=${release_version}" >> "${GITHUB_OUTPUT}"
           echo "RELEASE_SHA=${release_sha}" >> "${GITHUB_ENV}"
-          echo "Using release SHA ${release_sha}"
+          echo "RELEASE_VERSION=${release_version}" >> "${GITHUB_ENV}"
+          echo "Using release SHA ${release_sha} for version ${release_version}"
 
       - name: Install Node
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
@@ -75,6 +83,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           RELEASE_SHA: ${{ steps.resolve-release-sha.outputs.release_sha }}
+          RELEASE_VERSION: ${{ steps.resolve-release-sha.outputs.release_version }}
+          RELEASE_ATTESTATION_PREFLIGHT_WORKFLOW: crates-package-preflight.yml
           RELEASE_ATTESTATION_WAIT_SECONDS: "3600"
           RELEASE_ATTESTATION_POLL_SECONDS: "20"
         run: node scripts/verify_release_attestation.mjs
@@ -143,5 +153,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           RELEASE_SHA: ${{ needs.verify-release-sha.outputs.release_sha }}
+          RELEASE_VERSION: ${{ needs.verify-release-sha.outputs.release_version }}
+          RELEASE_ATTESTATION_PREFLIGHT_WORKFLOW: crates-package-preflight.yml
           RELEASE_ATTESTATION_WAIT_SECONDS: "3600"
           RELEASE_ATTESTATION_POLL_SECONDS: "20"

@@ -14,14 +14,9 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file reallyme/codec/v1/codec.proto.
  */
 export const file_reallyme_codec_v1_codec: GenFile = /*@__PURE__*/
-  fileDesc("Ch1yZWFsbHltZS9jb2RlYy92MS9jb2RlYy5wcm90bxIRcmVhbGx5bWUuY29kZWMudjEiigMKCkNvZGVjRXJyb3ISQgoNYmFzZV9lbmNvZGluZxgBIAEoCzIpLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjQmFzZUVuY29kaW5nRXJyb3JIABIvCgNwZW0YAiABKAsyIC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY1BlbUVycm9ySAASPwoLbXVsdGlmb3JtYXQYAyABKAsyKC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY011bHRpZm9ybWF0RXJyb3JIABJJChBjYW5vbmljYWxpemF0aW9uGAQgASgLMi0ucmVhbGx5bWUuY29kZWMudjEuQ29kZWNDYW5vbmljYWxpemF0aW9uRXJyb3JIABI3CgdiYWNrZW5kGAUgASgLMiQucmVhbGx5bWUuY29kZWMudjEuQ29kZWNCYWNrZW5kRXJyb3JIABI5Cghib3VuZGFyeRgGIAEoCzIlLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjQm91bmRhcnlFcnJvckgAQgcKBWVycm9yImYKGENvZGVjUHJvdG9SZXN1bHRFbnZlbG9wZRI5CgZzdGF0dXMYASABKA4yKS5yZWFsbHltZS5jb2RlYy52MS5Db2RlY1Byb3RvUmVzdWx0U3RhdHVzEg8KB3BheWxvYWQYAiABKAwiMwojQ29kZWNNdWx0aWNvZGVjUHJlZml4Rm9yTmFtZVJlcXVlc3QSDAoEbmFtZRgBIAEoCSIzCiJDb2RlY011bHRpY29kZWNMb29rdXBQcmVmaXhSZXF1ZXN0Eg0KBXZhbHVlGAEgASgMIh0KG0NvZGVjTXVsdGljb2RlY1RhYmxlUmVxdWVzdCItChlDb2RlY011bHRpa2V5UGFyc2VSZXF1ZXN0EhAKCG11bHRpa2V5GAEgASgJIjwKHENvZGVjRGFnQ2JvclZlcmlmeUNpZFJlcXVlc3QSCwoDY2lkGAEgASgJEg8KB3BheWxvYWQYAiABKAwifQoVQ29kZWNQZW1EZWNvZGVPcHRpb25zEjgKDmFsbG93ZWRfbGFiZWxzGAEgAygOMiAucmVhbGx5bWUuY29kZWMudjEuQ29kZWNQZW1MYWJlbBIVCg1tYXhfaW5wdXRfbGVuGAIgASgNEhMKC21heF9kZXJfbGVuGAMgASgNIl8KFUNvZGVjUGVtRGVjb2RlUmVxdWVzdBILCgNwZW0YASABKAwSOQoHb3B0aW9ucxgCIAEoCzIoLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjUGVtRGVjb2RlT3B0aW9ucyKOBAoVQ29kZWNPcGVyYXRpb25SZXF1ZXN0El0KGm11bHRpY29kZWNfcHJlZml4X2Zvcl9uYW1lGOgHIAEoCzI2LnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjTXVsdGljb2RlY1ByZWZpeEZvck5hbWVSZXF1ZXN0SAASWgoYbXVsdGljb2RlY19sb29rdXBfcHJlZml4GOkHIAEoCzI1LnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjTXVsdGljb2RlY0xvb2t1cFByZWZpeFJlcXVlc3RIABJLChBtdWx0aWNvZGVjX3RhYmxlGOoHIAEoCzIuLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjTXVsdGljb2RlY1RhYmxlUmVxdWVzdEgAEkcKDm11bHRpa2V5X3BhcnNlGNAPIAEoCzIsLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjTXVsdGlrZXlQYXJzZVJlcXVlc3RIABJPChNkYWdfY2Jvcl92ZXJpZnlfY2lkGLgXIAEoCzIvLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRGFnQ2JvclZlcmlmeUNpZFJlcXVlc3RIABI/CgpwZW1fZGVjb2RlGKAfIAEoCzIoLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjUGVtRGVjb2RlUmVxdWVzdEgAQgsKCW9wZXJhdGlvbkoFCAEQ6Aci9gEKE0NvZGVjTXVsdGljb2RlY1NwZWMSDAoEbmFtZRgBIAEoCRIMCgRjb2RlGAIgASgMEg4KBnByZWZpeBgDIAEoDBIoCgN0YWcYBCABKA4yGy5yZWFsbHltZS5jb2RlYy52MS5Db2RlY1RhZxJCChFrZXlfbWF0ZXJpYWxfa2luZBgFIAEoDjInLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjS2V5TWF0ZXJpYWxLaW5kEhQKDGZpeGVkX2xlbmd0aBgGIAEoDRIXCg92YXJpYWJsZV9sZW5ndGgYByABKAgSFgoOYWxnb3JpdGhtX25hbWUYCCABKAkifAobQ29kZWNNdWx0aWNvZGVjTG9va3VwUmVzdWx0EgwKBG5hbWUYASABKAkSFQoNcHJlZml4X2xlbmd0aBgCIAEoDRI4CghtZXRhZGF0YRgDIAEoCzImLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjTXVsdGljb2RlY1NwZWMiVQoaQ29kZWNNdWx0aWNvZGVjVGFibGVSZXN1bHQSNwoHZW50cmllcxgBIAMoCzImLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjTXVsdGljb2RlY1NwZWMiogEKGENvZGVjTXVsdGlrZXlQYXJzZVJlc3VsdBISCgpjb2RlY19uYW1lGAEgASgJEhYKDmFsZ29yaXRobV9uYW1lGAIgASgJEhIKCnB1YmxpY19rZXkYAyABKAwSIgoaZXhwZWN0ZWRfcHVibGljX2tleV9sZW5ndGgYBCABKA0SIgoadmFyaWFibGVfcHVibGljX2tleV9sZW5ndGgYBSABKAgiVgobQ29kZWNEYWdDYm9yVmVyaWZ5Q2lkUmVzdWx0Eg0KBXZhbGlkGAEgASgIEhQKDGV4cGVjdGVkX2NpZBgCIAEoCRISCgphY3R1YWxfY2lkGAMgASgJIjIKFENvZGVjUGVtRGVjb2RlUmVzdWx0Eg0KBWxhYmVsGAEgASgJEgsKA2RlchgCIAEoDCJNChZDb2RlY0Jhc2VFbmNvZGluZ0Vycm9yEjMKBnJlYXNvbhgBIAEoDjIjLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRXJyb3JSZWFzb24iRAoNQ29kZWNQZW1FcnJvchIzCgZyZWFzb24YASABKA4yIy5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0Vycm9yUmVhc29uIkwKFUNvZGVjTXVsdGlmb3JtYXRFcnJvchIzCgZyZWFzb24YASABKA4yIy5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0Vycm9yUmVhc29uIlEKGkNvZGVjQ2Fub25pY2FsaXphdGlvbkVycm9yEjMKBnJlYXNvbhgBIAEoDjIjLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRXJyb3JSZWFzb24iSAoRQ29kZWNCYWNrZW5kRXJyb3ISMwoGcmVhc29uGAEgASgOMiMucmVhbGx5bWUuY29kZWMudjEuQ29kZWNFcnJvclJlYXNvbiJJChJDb2RlY0JvdW5kYXJ5RXJyb3ISMwoGcmVhc29uGAEgASgOMiMucmVhbGx5bWUuY29kZWMudjEuQ29kZWNFcnJvclJlYXNvbiqUAQoWQ29kZWNQcm90b1Jlc3VsdFN0YXR1cxIpCiVDT0RFQ19QUk9UT19SRVNVTFRfU1RBVFVTX1VOU1BFQ0lGSUVEEAASJAogQ09ERUNfUFJPVE9fUkVTVUxUX1NUQVRVU19SRVNVTFQQARIpCiVDT0RFQ19QUk9UT19SRVNVTFRfU1RBVFVTX0NPREVDX0VSUk9SEAIqlQEKDUNvZGVjUGVtTGFiZWwSHwobQ09ERUNfUEVNX0xBQkVMX1VOU1BFQ0lGSUVEEAASHwobQ09ERUNfUEVNX0xBQkVMX1BSSVZBVEVfS0VZEGQSIgoeQ09ERUNfUEVNX0xBQkVMX0VDX1BSSVZBVEVfS0VZEG4SHgoaQ09ERUNfUEVNX0xBQkVMX1BVQkxJQ19LRVkQeCrgAQoUQ29kZWNLZXlNYXRlcmlhbEtpbmQSJwojQ09ERUNfS0VZX01BVEVSSUFMX0tJTkRfVU5TUEVDSUZJRUQQABImCiJDT0RFQ19LRVlfTUFURVJJQUxfS0lORF9QVUJMSUNfS0VZEAESJwojQ09ERUNfS0VZX01BVEVSSUFMX0tJTkRfUFJJVkFURV9LRVkQAhIpCiVDT0RFQ19LRVlfTUFURVJJQUxfS0lORF9TWU1NRVRSSUNfS0VZEAMSIwofQ09ERUNfS0VZX01BVEVSSUFMX0tJTkRfTk9UX0tFWRAEKpcBCghDb2RlY1RhZxIZChVDT0RFQ19UQUdfVU5TUEVDSUZJRUQQABIYChRDT0RFQ19UQUdfRU5DUllQVElPThABEhEKDUNPREVDX1RBR19LRVkQAhISCg5DT0RFQ19UQUdfSEFTSBADEhcKE0NPREVDX1RBR19NVUxUSUhBU0gQBBIWChJDT0RFQ19UQUdfTVVMVElLRVkQBSqSCwoQQ29kZWNFcnJvclJlYXNvbhIiCh5DT0RFQ19FUlJPUl9SRUFTT05fVU5TUEVDSUZJRUQQABItCilDT0RFQ19FUlJPUl9SRUFTT05fQkFTRV9VTlNVUFBPUlRFRF9DT0RFQxBkEiwKKENPREVDX0VSUk9SX1JFQVNPTl9CQVNFX0lOVkFMSURfRU5DT0RJTkcQZRIqCiZDT0RFQ19FUlJPUl9SRUFTT05fQkFTRV9JTlZBTElEX0xFTkdUSBBmEisKJ0NPREVDX0VSUk9SX1JFQVNPTl9CQVNFX0lOUFVUX1RPT19MQVJHRRBnEiwKKENPREVDX0VSUk9SX1JFQVNPTl9CQVNFX09VVFBVVF9UT09fTEFSR0UQaBIqCiZDT0RFQ19FUlJPUl9SRUFTT05fQkFTRV9JTlZBTElEX0JBU0U2NBBuEi0KKUNPREVDX0VSUk9SX1JFQVNPTl9CQVNFX0lOVkFMSURfQkFTRTY0VVJMEG8SJwojQ09ERUNfRVJST1JfUkVBU09OX0JBU0VfSU5WQUxJRF9IRVgQeBItCilDT0RFQ19FUlJPUl9SRUFTT05fQkFTRV9OT05fQ0FOT05JQ0FMX0hFWBB5EiwKJ0NPREVDX0VSUk9SX1JFQVNPTl9QRU1fSU5WQUxJRF9CT1VOREFSWRDIARIqCiVDT0RFQ19FUlJPUl9SRUFTT05fUEVNX0xBQkVMX01JU01BVENIEMkBEi0KKENPREVDX0VSUk9SX1JFQVNPTl9QRU1fVU5TVVBQT1JURURfTEFCRUwQygESKAojQ09ERUNfRVJST1JfUkVBU09OX1BFTV9JTlZBTElEX0JPRFkQywESKQokQ09ERUNfRVJST1JfUkVBU09OX1BFTV9ERVJfVE9PX0xBUkdFEMwBEjwKN0NPREVDX0VSUk9SX1JFQVNPTl9NVUxUSUZPUk1BVF9JTlZBTElEX01VTFRJQkFTRV9QUkVGSVgQrAISPQo4Q09ERUNfRVJST1JfUkVBU09OX01VTFRJRk9STUFUX0lOVkFMSURfTVVMVElDT0RFQ19QUkVGSVgQrQISNgoxQ09ERUNfRVJST1JfUkVBU09OX01VTFRJRk9STUFUX1VOS05PV05fTVVMVElDT0RFQxCuAhI0Ci9DT0RFQ19FUlJPUl9SRUFTT05fTVVMVElGT1JNQVRfSU5WQUxJRF9NVUxUSUtFWRCvAhIuCilDT0RFQ19FUlJPUl9SRUFTT05fQ0FOT05JQ0FMX0lOVkFMSURfQ0JPUhCQAxI0Ci9DT0RFQ19FUlJPUl9SRUFTT05fQ0FOT05JQ0FMX05PTl9DQU5PTklDQUxfQ0JPUhCRAxIuCilDT0RFQ19FUlJPUl9SRUFTT05fQ0FOT05JQ0FMX0lOVkFMSURfSlNPThCSAxI0Ci9DT0RFQ19FUlJPUl9SRUFTT05fQ0FOT05JQ0FMX05PTl9DQU5PTklDQUxfSlNPThCTAxIqCiVDT0RFQ19FUlJPUl9SRUFTT05fQ0FOT05JQ0FMX0lOVEVSTkFMEJQDEigKI0NPREVDX0VSUk9SX1JFQVNPTl9CQUNLRU5EX0lOVEVSTkFMEPQDEjMKLkNPREVDX0VSUk9SX1JFQVNPTl9CT1VOREFSWV9NQUxGT1JNRURfUFJPVE9CVUYQ2AQSLwoqQ09ERUNfRVJST1JfUkVBU09OX0JPVU5EQVJZX01BTEZPUk1FRF9KU09OENkEEjgKM0NPREVDX0VSUk9SX1JFQVNPTl9CT1VOREFSWV9SRVNPVVJDRV9MSU1JVF9FWENFRURFRBDaBBIyCi1DT0RFQ19FUlJPUl9SRUFTT05fQk9VTkRBUllfTUlTU0lOR19PUEVSQVRJT04Q2wQiBAhwEHBCJgoSbWUucmVhbGx5LmNvZGVjLnYxUAG6Ag1SZWFsbHlNZVByb3RvYgZwcm90bzM");
+  fileDesc("Ch1yZWFsbHltZS9jb2RlYy92MS9jb2RlYy5wcm90bxIRcmVhbGx5bWUuY29kZWMudjEivwMKCkNvZGVjRXJyb3ISQgoNYmFzZV9lbmNvZGluZxgBIAEoCzIpLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjQmFzZUVuY29kaW5nRXJyb3JIABIvCgNwZW0YAiABKAsyIC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY1BlbUVycm9ySAASPwoLbXVsdGlmb3JtYXQYAyABKAsyKC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY011bHRpZm9ybWF0RXJyb3JIABJJChBjYW5vbmljYWxpemF0aW9uGAQgASgLMi0ucmVhbGx5bWUuY29kZWMudjEuQ29kZWNDYW5vbmljYWxpemF0aW9uRXJyb3JIABI3CgdiYWNrZW5kGAUgASgLMiQucmVhbGx5bWUuY29kZWMudjEuQ29kZWNCYWNrZW5kRXJyb3JIABI5Cghib3VuZGFyeRgGIAEoCzIlLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjQm91bmRhcnlFcnJvckgAEjMKBm9yaWdpbhhkIAEoDjIjLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRXJyb3JPcmlnaW5CBwoFZXJyb3IiMwojQ29kZWNNdWx0aWNvZGVjUHJlZml4Rm9yTmFtZVJlcXVlc3QSDAoEbmFtZRgBIAEoCSIzCiJDb2RlY011bHRpY29kZWNMb29rdXBQcmVmaXhSZXF1ZXN0Eg0KBXZhbHVlGAEgASgMIh0KG0NvZGVjTXVsdGljb2RlY1RhYmxlUmVxdWVzdCItChlDb2RlY011bHRpa2V5UGFyc2VSZXF1ZXN0EhAKCG11bHRpa2V5GAEgASgJIjwKHENvZGVjRGFnQ2JvclZlcmlmeUNpZFJlcXVlc3QSCwoDY2lkGAEgASgJEg8KB3BheWxvYWQYAiABKAwiWgoZQ29kZWNEYWdDYm9yRW5jb2RlUmVxdWVzdBI9CgV2YWx1ZRgBIAEoCzIuLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRGV0ZXJtaW5pc3RpY0Nib3JWYWx1ZSIrChhDb2RlY0RhZ0Nib3JFbmNvZGVSZXN1bHQSDwoHZW5jb2RlZBgBIAEoDCIsChlDb2RlY0RhZ0Nib3JEZWNvZGVSZXF1ZXN0Eg8KB2VuY29kZWQYASABKAwiWQoYQ29kZWNEYWdDYm9yRGVjb2RlUmVzdWx0Ej0KBXZhbHVlGAEgASgLMi4ucmVhbGx5bWUuY29kZWMudjEuQ29kZWNEZXRlcm1pbmlzdGljQ2JvclZhbHVlIn0KFUNvZGVjUGVtRGVjb2RlT3B0aW9ucxI4Cg5hbGxvd2VkX2xhYmVscxgBIAMoDjIgLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjUGVtTGFiZWwSFQoNbWF4X2lucHV0X2xlbhgCIAEoDRITCgttYXhfZGVyX2xlbhgDIAEoDSJfChVDb2RlY1BlbURlY29kZVJlcXVlc3QSCwoDcGVtGAEgASgMEjkKB29wdGlvbnMYAiABKAsyKC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY1BlbURlY29kZU9wdGlvbnMifAoVQ29kZWNQZW1FbmNvZGVPcHRpb25zEhMKC21heF9kZXJfbGVuGAEgASgNEhIKCmxpbmVfd2lkdGgYAiABKA0SOgoLbGluZV9lbmRpbmcYAyABKA4yJS5yZWFsbHltZS5jb2RlYy52MS5Db2RlY1BlbUxpbmVFbmRpbmcikAEKFUNvZGVjUGVtRW5jb2RlUmVxdWVzdBIvCgVsYWJlbBgBIAEoDjIgLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjUGVtTGFiZWwSCwoDZGVyGAIgASgMEjkKB29wdGlvbnMYAyABKAsyKC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY1BlbUVuY29kZU9wdGlvbnMiIwoUQ29kZWNQZW1FbmNvZGVSZXN1bHQSCwoDcGVtGAEgASgMIhwKGkNvZGVjRGV0ZXJtaW5pc3RpY0Nib3JOdWxsIisKGkNvZGVjRGV0ZXJtaW5pc3RpY0Nib3JCb29sEg0KBXZhbHVlGAEgASgIIjYKJUNvZGVjRGV0ZXJtaW5pc3RpY0Nib3JVbnNpZ25lZEludGVnZXISDQoFdmFsdWUYASABKAQiNgolQ29kZWNEZXRlcm1pbmlzdGljQ2Jvck5lZ2F0aXZlSW50ZWdlchINCgV2YWx1ZRgBIAEoEiLQAQodQ29kZWNEZXRlcm1pbmlzdGljQ2JvckludGVnZXISUgoOdW5zaWduZWRfdmFsdWUYASABKAsyOC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9yVW5zaWduZWRJbnRlZ2VySAASUgoObmVnYXRpdmVfdmFsdWUYAiABKAsyOC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9yTmVnYXRpdmVJbnRlZ2VySABCBwoFdmFsdWUiKwoaQ29kZWNEZXRlcm1pbmlzdGljQ2JvclRleHQSDQoFdmFsdWUYASABKAkiLAobQ29kZWNEZXRlcm1pbmlzdGljQ2JvckJ5dGVzEg0KBXZhbHVlGAEgASgMIrEBChxDb2RlY0RldGVybWluaXN0aWNDYm9yTWFwS2V5EkcKC2ludGVnZXJfa2V5GAEgASgLMjAucmVhbGx5bWUuY29kZWMudjEuQ29kZWNEZXRlcm1pbmlzdGljQ2JvckludGVnZXJIABJBCgh0ZXh0X2tleRgCIAEoCzItLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRGV0ZXJtaW5pc3RpY0Nib3JUZXh0SABCBQoDa2V5Ip0BCh5Db2RlY0RldGVybWluaXN0aWNDYm9yTWFwRW50cnkSPAoDa2V5GAEgASgLMi8ucmVhbGx5bWUuY29kZWMudjEuQ29kZWNEZXRlcm1pbmlzdGljQ2Jvck1hcEtleRI9CgV2YWx1ZRgCIAEoCzIuLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRGV0ZXJtaW5pc3RpY0Nib3JWYWx1ZSJdChtDb2RlY0RldGVybWluaXN0aWNDYm9yQXJyYXkSPgoGdmFsdWVzGAEgAygLMi4ucmVhbGx5bWUuY29kZWMudjEuQ29kZWNEZXRlcm1pbmlzdGljQ2JvclZhbHVlIl8KGUNvZGVjRGV0ZXJtaW5pc3RpY0Nib3JNYXASQgoHZW50cmllcxgBIAMoCzIxLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRGV0ZXJtaW5pc3RpY0Nib3JNYXBFbnRyeSKRBAobQ29kZWNEZXRlcm1pbmlzdGljQ2JvclZhbHVlEkMKCm51bGxfdmFsdWUYASABKAsyLS5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9yTnVsbEgAEkMKCmJvb2xfdmFsdWUYAiABKAsyLS5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9yQm9vbEgAEkkKDWludGVnZXJfdmFsdWUYAyABKAsyMC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9ySW50ZWdlckgAEkMKCnRleHRfdmFsdWUYBCABKAsyLS5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9yVGV4dEgAEkUKC2J5dGVzX3ZhbHVlGAUgASgLMi4ucmVhbGx5bWUuY29kZWMudjEuQ29kZWNEZXRlcm1pbmlzdGljQ2JvckJ5dGVzSAASRQoLYXJyYXlfdmFsdWUYBiABKAsyLi5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9yQXJyYXlIABJBCgltYXBfdmFsdWUYByABKAsyLC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9yTWFwSABCBwoFdmFsdWUiZAojQ29kZWNEZXRlcm1pbmlzdGljQ2JvckVuY29kZVJlcXVlc3QSPQoFdmFsdWUYASABKAsyLi5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9yVmFsdWUiNQoiQ29kZWNEZXRlcm1pbmlzdGljQ2JvckVuY29kZVJlc3VsdBIPCgdlbmNvZGVkGAEgASgMIjYKI0NvZGVjRGV0ZXJtaW5pc3RpY0Nib3JEZWNvZGVSZXF1ZXN0Eg8KB2VuY29kZWQYASABKAwiYwoiQ29kZWNEZXRlcm1pbmlzdGljQ2JvckRlY29kZVJlc3VsdBI9CgV2YWx1ZRgBIAEoCzIuLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRGV0ZXJtaW5pc3RpY0Nib3JWYWx1ZSL7BgoUQ29kZWNPcGVyYXRpb25SZXN1bHQSTQoabXVsdGljb2RlY19wcmVmaXhfZm9yX25hbWUY6AcgASgLMiYucmVhbGx5bWUuY29kZWMudjEuQ29kZWNNdWx0aWNvZGVjU3BlY0gAElMKGG11bHRpY29kZWNfbG9va3VwX3ByZWZpeBjpByABKAsyLi5yZWFsbHltZS5jb2RlYy52MS5Db2RlY011bHRpY29kZWNMb29rdXBSZXN1bHRIABJKChBtdWx0aWNvZGVjX3RhYmxlGOoHIAEoCzItLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjTXVsdGljb2RlY1RhYmxlUmVzdWx0SAASRgoObXVsdGlrZXlfcGFyc2UY0A8gASgLMisucmVhbGx5bWUuY29kZWMudjEuQ29kZWNNdWx0aWtleVBhcnNlUmVzdWx0SAASTgoTZGFnX2Nib3JfdmVyaWZ5X2NpZBi4FyABKAsyLi5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RhZ0Nib3JWZXJpZnlDaWRSZXN1bHRIABJHCg9kYWdfY2Jvcl9lbmNvZGUYuRcgASgLMisucmVhbGx5bWUuY29kZWMudjEuQ29kZWNEYWdDYm9yRW5jb2RlUmVzdWx0SAASRwoPZGFnX2Nib3JfZGVjb2RlGLoXIAEoCzIrLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRGFnQ2JvckRlY29kZVJlc3VsdEgAEj4KCnBlbV9kZWNvZGUYoB8gASgLMicucmVhbGx5bWUuY29kZWMudjEuQ29kZWNQZW1EZWNvZGVSZXN1bHRIABI+CgpwZW1fZW5jb2RlGKEfIAEoCzInLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjUGVtRW5jb2RlUmVzdWx0SAASWwoZZGV0ZXJtaW5pc3RpY19jYm9yX2VuY29kZRiIJyABKAsyNS5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9yRW5jb2RlUmVzdWx0SAASWwoZZGV0ZXJtaW5pc3RpY19jYm9yX2RlY29kZRiJJyABKAsyNS5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9yRGVjb2RlUmVzdWx0SABCCAoGcmVzdWx0SgUIARDoByKOAQoWQ29kZWNPcGVyYXRpb25SZXNwb25zZRI5CgZyZXN1bHQYASABKAsyJy5yZWFsbHltZS5jb2RlYy52MS5Db2RlY09wZXJhdGlvblJlc3VsdEgAEi4KBWVycm9yGAIgASgLMh0ucmVhbGx5bWUuY29kZWMudjEuQ29kZWNFcnJvckgAQgkKB291dGNvbWUinwcKFUNvZGVjT3BlcmF0aW9uUmVxdWVzdBJdChptdWx0aWNvZGVjX3ByZWZpeF9mb3JfbmFtZRjoByABKAsyNi5yZWFsbHltZS5jb2RlYy52MS5Db2RlY011bHRpY29kZWNQcmVmaXhGb3JOYW1lUmVxdWVzdEgAEloKGG11bHRpY29kZWNfbG9va3VwX3ByZWZpeBjpByABKAsyNS5yZWFsbHltZS5jb2RlYy52MS5Db2RlY011bHRpY29kZWNMb29rdXBQcmVmaXhSZXF1ZXN0SAASSwoQbXVsdGljb2RlY190YWJsZRjqByABKAsyLi5yZWFsbHltZS5jb2RlYy52MS5Db2RlY011bHRpY29kZWNUYWJsZVJlcXVlc3RIABJHCg5tdWx0aWtleV9wYXJzZRjQDyABKAsyLC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY011bHRpa2V5UGFyc2VSZXF1ZXN0SAASTwoTZGFnX2Nib3JfdmVyaWZ5X2NpZBi4FyABKAsyLy5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RhZ0Nib3JWZXJpZnlDaWRSZXF1ZXN0SAASSAoPZGFnX2Nib3JfZW5jb2RlGLkXIAEoCzIsLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRGFnQ2JvckVuY29kZVJlcXVlc3RIABJICg9kYWdfY2Jvcl9kZWNvZGUYuhcgASgLMiwucmVhbGx5bWUuY29kZWMudjEuQ29kZWNEYWdDYm9yRGVjb2RlUmVxdWVzdEgAEj8KCnBlbV9kZWNvZGUYoB8gASgLMigucmVhbGx5bWUuY29kZWMudjEuQ29kZWNQZW1EZWNvZGVSZXF1ZXN0SAASPwoKcGVtX2VuY29kZRihHyABKAsyKC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY1BlbUVuY29kZVJlcXVlc3RIABJcChlkZXRlcm1pbmlzdGljX2Nib3JfZW5jb2RlGIgnIAEoCzI2LnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRGV0ZXJtaW5pc3RpY0Nib3JFbmNvZGVSZXF1ZXN0SAASXAoZZGV0ZXJtaW5pc3RpY19jYm9yX2RlY29kZRiJJyABKAsyNi5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9yRGVjb2RlUmVxdWVzdEgAQgsKCW9wZXJhdGlvbkoFCAEQ6Aci9gEKE0NvZGVjTXVsdGljb2RlY1NwZWMSDAoEbmFtZRgBIAEoCRIMCgRjb2RlGAIgASgMEg4KBnByZWZpeBgDIAEoDBIoCgN0YWcYBCABKA4yGy5yZWFsbHltZS5jb2RlYy52MS5Db2RlY1RhZxJCChFrZXlfbWF0ZXJpYWxfa2luZBgFIAEoDjInLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjS2V5TWF0ZXJpYWxLaW5kEhQKDGZpeGVkX2xlbmd0aBgGIAEoDRIXCg92YXJpYWJsZV9sZW5ndGgYByABKAgSFgoOYWxnb3JpdGhtX25hbWUYCCABKAkifAobQ29kZWNNdWx0aWNvZGVjTG9va3VwUmVzdWx0EgwKBG5hbWUYASABKAkSFQoNcHJlZml4X2xlbmd0aBgCIAEoDRI4CghtZXRhZGF0YRgDIAEoCzImLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjTXVsdGljb2RlY1NwZWMiVQoaQ29kZWNNdWx0aWNvZGVjVGFibGVSZXN1bHQSNwoHZW50cmllcxgBIAMoCzImLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjTXVsdGljb2RlY1NwZWMiogEKGENvZGVjTXVsdGlrZXlQYXJzZVJlc3VsdBISCgpjb2RlY19uYW1lGAEgASgJEhYKDmFsZ29yaXRobV9uYW1lGAIgASgJEhIKCnB1YmxpY19rZXkYAyABKAwSIgoaZXhwZWN0ZWRfcHVibGljX2tleV9sZW5ndGgYBCABKA0SIgoadmFyaWFibGVfcHVibGljX2tleV9sZW5ndGgYBSABKAgiVgobQ29kZWNEYWdDYm9yVmVyaWZ5Q2lkUmVzdWx0Eg0KBXZhbGlkGAEgASgIEhQKDGV4cGVjdGVkX2NpZBgCIAEoCRISCgphY3R1YWxfY2lkGAMgASgJIjIKFENvZGVjUGVtRGVjb2RlUmVzdWx0Eg0KBWxhYmVsGAEgASgJEgsKA2RlchgCIAEoDCJNChZDb2RlY0Jhc2VFbmNvZGluZ0Vycm9yEjMKBnJlYXNvbhgBIAEoDjIjLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRXJyb3JSZWFzb24iRAoNQ29kZWNQZW1FcnJvchIzCgZyZWFzb24YASABKA4yIy5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0Vycm9yUmVhc29uIkwKFUNvZGVjTXVsdGlmb3JtYXRFcnJvchIzCgZyZWFzb24YASABKA4yIy5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0Vycm9yUmVhc29uIlEKGkNvZGVjQ2Fub25pY2FsaXphdGlvbkVycm9yEjMKBnJlYXNvbhgBIAEoDjIjLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRXJyb3JSZWFzb24iSAoRQ29kZWNCYWNrZW5kRXJyb3ISMwoGcmVhc29uGAEgASgOMiMucmVhbGx5bWUuY29kZWMudjEuQ29kZWNFcnJvclJlYXNvbiJJChJDb2RlY0JvdW5kYXJ5RXJyb3ISMwoGcmVhc29uGAEgASgOMiMucmVhbGx5bWUuY29kZWMudjEuQ29kZWNFcnJvclJlYXNvbip2ChBDb2RlY0Vycm9yT3JpZ2luEiIKHkNPREVDX0VSUk9SX09SSUdJTl9VTlNQRUNJRklFRBAAEh0KGUNPREVDX0VSUk9SX09SSUdJTl9DQUxMRVIQARIfChtDT0RFQ19FUlJPUl9PUklHSU5fUFJPVklERVIQAiqVAQoNQ29kZWNQZW1MYWJlbBIfChtDT0RFQ19QRU1fTEFCRUxfVU5TUEVDSUZJRUQQABIfChtDT0RFQ19QRU1fTEFCRUxfUFJJVkFURV9LRVkQZBIiCh5DT0RFQ19QRU1fTEFCRUxfRUNfUFJJVkFURV9LRVkQbhIeChpDT0RFQ19QRU1fTEFCRUxfUFVCTElDX0tFWRB4KnkKEkNvZGVjUGVtTGluZUVuZGluZxIlCiFDT0RFQ19QRU1fTElORV9FTkRJTkdfVU5TUEVDSUZJRUQQABIcChhDT0RFQ19QRU1fTElORV9FTkRJTkdfTEYQZBIeChpDT0RFQ19QRU1fTElORV9FTkRJTkdfQ1JMRhBuKuABChRDb2RlY0tleU1hdGVyaWFsS2luZBInCiNDT0RFQ19LRVlfTUFURVJJQUxfS0lORF9VTlNQRUNJRklFRBAAEiYKIkNPREVDX0tFWV9NQVRFUklBTF9LSU5EX1BVQkxJQ19LRVkQARInCiNDT0RFQ19LRVlfTUFURVJJQUxfS0lORF9QUklWQVRFX0tFWRACEikKJUNPREVDX0tFWV9NQVRFUklBTF9LSU5EX1NZTU1FVFJJQ19LRVkQAxIjCh9DT0RFQ19LRVlfTUFURVJJQUxfS0lORF9OT1RfS0VZEAQqlwEKCENvZGVjVGFnEhkKFUNPREVDX1RBR19VTlNQRUNJRklFRBAAEhgKFENPREVDX1RBR19FTkNSWVBUSU9OEAESEQoNQ09ERUNfVEFHX0tFWRACEhIKDkNPREVDX1RBR19IQVNIEAMSFwoTQ09ERUNfVEFHX01VTFRJSEFTSBAEEhYKEkNPREVDX1RBR19NVUxUSUtFWRAFKpILChBDb2RlY0Vycm9yUmVhc29uEiIKHkNPREVDX0VSUk9SX1JFQVNPTl9VTlNQRUNJRklFRBAAEi0KKUNPREVDX0VSUk9SX1JFQVNPTl9CQVNFX1VOU1VQUE9SVEVEX0NPREVDEGQSLAooQ09ERUNfRVJST1JfUkVBU09OX0JBU0VfSU5WQUxJRF9FTkNPRElORxBlEioKJkNPREVDX0VSUk9SX1JFQVNPTl9CQVNFX0lOVkFMSURfTEVOR1RIEGYSKwonQ09ERUNfRVJST1JfUkVBU09OX0JBU0VfSU5QVVRfVE9PX0xBUkdFEGcSLAooQ09ERUNfRVJST1JfUkVBU09OX0JBU0VfT1VUUFVUX1RPT19MQVJHRRBoEioKJkNPREVDX0VSUk9SX1JFQVNPTl9CQVNFX0lOVkFMSURfQkFTRTY0EG4SLQopQ09ERUNfRVJST1JfUkVBU09OX0JBU0VfSU5WQUxJRF9CQVNFNjRVUkwQbxInCiNDT0RFQ19FUlJPUl9SRUFTT05fQkFTRV9JTlZBTElEX0hFWBB4Ei0KKUNPREVDX0VSUk9SX1JFQVNPTl9CQVNFX05PTl9DQU5PTklDQUxfSEVYEHkSLAonQ09ERUNfRVJST1JfUkVBU09OX1BFTV9JTlZBTElEX0JPVU5EQVJZEMgBEioKJUNPREVDX0VSUk9SX1JFQVNPTl9QRU1fTEFCRUxfTUlTTUFUQ0gQyQESLQooQ09ERUNfRVJST1JfUkVBU09OX1BFTV9VTlNVUFBPUlRFRF9MQUJFTBDKARIoCiNDT0RFQ19FUlJPUl9SRUFTT05fUEVNX0lOVkFMSURfQk9EWRDLARIpCiRDT0RFQ19FUlJPUl9SRUFTT05fUEVNX0RFUl9UT09fTEFSR0UQzAESPAo3Q09ERUNfRVJST1JfUkVBU09OX01VTFRJRk9STUFUX0lOVkFMSURfTVVMVElCQVNFX1BSRUZJWBCsAhI9CjhDT0RFQ19FUlJPUl9SRUFTT05fTVVMVElGT1JNQVRfSU5WQUxJRF9NVUxUSUNPREVDX1BSRUZJWBCtAhI2CjFDT0RFQ19FUlJPUl9SRUFTT05fTVVMVElGT1JNQVRfVU5LTk9XTl9NVUxUSUNPREVDEK4CEjQKL0NPREVDX0VSUk9SX1JFQVNPTl9NVUxUSUZPUk1BVF9JTlZBTElEX01VTFRJS0VZEK8CEi4KKUNPREVDX0VSUk9SX1JFQVNPTl9DQU5PTklDQUxfSU5WQUxJRF9DQk9SEJADEjQKL0NPREVDX0VSUk9SX1JFQVNPTl9DQU5PTklDQUxfTk9OX0NBTk9OSUNBTF9DQk9SEJEDEi4KKUNPREVDX0VSUk9SX1JFQVNPTl9DQU5PTklDQUxfSU5WQUxJRF9KU09OEJIDEjQKL0NPREVDX0VSUk9SX1JFQVNPTl9DQU5PTklDQUxfTk9OX0NBTk9OSUNBTF9KU09OEJMDEioKJUNPREVDX0VSUk9SX1JFQVNPTl9DQU5PTklDQUxfSU5URVJOQUwQlAMSKAojQ09ERUNfRVJST1JfUkVBU09OX0JBQ0tFTkRfSU5URVJOQUwQ9AMSMwouQ09ERUNfRVJST1JfUkVBU09OX0JPVU5EQVJZX01BTEZPUk1FRF9QUk9UT0JVRhDYBBIvCipDT0RFQ19FUlJPUl9SRUFTT05fQk9VTkRBUllfTUFMRk9STUVEX0pTT04Q2QQSOAozQ09ERUNfRVJST1JfUkVBU09OX0JPVU5EQVJZX1JFU09VUkNFX0xJTUlUX0VYQ0VFREVEENoEEjIKLUNPREVDX0VSUk9SX1JFQVNPTl9CT1VOREFSWV9NSVNTSU5HX09QRVJBVElPThDbBCIECHAQcEImChJtZS5yZWFsbHkuY29kZWMudjFQAboCDVJlYWxseU1lUHJvdG9iBnByb3RvMw");
 
 /**
- * CodecError is the public, non-PII error envelope for codec boundary failures.
- * The oneof keeps base encoding, PEM, multiformat, and canonicalization
- * failures distinct while the shared CodecErrorReason enum provides stable
- * cross-language reason codes.
- *
  * @generated from message reallyme.codec.v1.CodecError
  */
 export type CodecError = Message<"reallyme.codec.v1.CodecError"> & {
@@ -65,6 +60,15 @@ export type CodecError = Message<"reallyme.codec.v1.CodecError"> & {
     value: CodecBoundaryError;
     case: "boundary";
   } | { case: undefined; value?: undefined };
+
+  /**
+   * Error origin is explicit so SDKs never infer caller-versus-provider
+   * attribution from branch-specific numeric reason ranges. Missing, unknown,
+   * or inconsistent origin values must fail closed as provider failures.
+   *
+   * @generated from field: reallyme.codec.v1.CodecErrorOrigin origin = 100;
+   */
+  origin: CodecErrorOrigin;
 };
 
 /**
@@ -73,31 +77,6 @@ export type CodecError = Message<"reallyme.codec.v1.CodecError"> & {
  */
 export const CodecErrorSchema: GenMessage<CodecError> = /*@__PURE__*/
   messageDesc(file_reallyme_codec_v1_codec, 0);
-
-/**
- * CodecProtoResultEnvelope is the single binary response shape for executable
- * protobuf and generated ProtoJSON requests.
- *
- * @generated from message reallyme.codec.v1.CodecProtoResultEnvelope
- */
-export type CodecProtoResultEnvelope = Message<"reallyme.codec.v1.CodecProtoResultEnvelope"> & {
-  /**
-   * @generated from field: reallyme.codec.v1.CodecProtoResultStatus status = 1;
-   */
-  status: CodecProtoResultStatus;
-
-  /**
-   * @generated from field: bytes payload = 2;
-   */
-  payload: Uint8Array;
-};
-
-/**
- * Describes the message reallyme.codec.v1.CodecProtoResultEnvelope.
- * Use `create(CodecProtoResultEnvelopeSchema)` to create a new message.
- */
-export const CodecProtoResultEnvelopeSchema: GenMessage<CodecProtoResultEnvelope> = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 1);
 
 /**
  * @generated from message reallyme.codec.v1.CodecMulticodecPrefixForNameRequest
@@ -114,7 +93,7 @@ export type CodecMulticodecPrefixForNameRequest = Message<"reallyme.codec.v1.Cod
  * Use `create(CodecMulticodecPrefixForNameRequestSchema)` to create a new message.
  */
 export const CodecMulticodecPrefixForNameRequestSchema: GenMessage<CodecMulticodecPrefixForNameRequest> = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 2);
+  messageDesc(file_reallyme_codec_v1_codec, 1);
 
 /**
  * @generated from message reallyme.codec.v1.CodecMulticodecLookupPrefixRequest
@@ -131,7 +110,7 @@ export type CodecMulticodecLookupPrefixRequest = Message<"reallyme.codec.v1.Code
  * Use `create(CodecMulticodecLookupPrefixRequestSchema)` to create a new message.
  */
 export const CodecMulticodecLookupPrefixRequestSchema: GenMessage<CodecMulticodecLookupPrefixRequest> = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 3);
+  messageDesc(file_reallyme_codec_v1_codec, 2);
 
 /**
  * @generated from message reallyme.codec.v1.CodecMulticodecTableRequest
@@ -144,7 +123,7 @@ export type CodecMulticodecTableRequest = Message<"reallyme.codec.v1.CodecMultic
  * Use `create(CodecMulticodecTableRequestSchema)` to create a new message.
  */
 export const CodecMulticodecTableRequestSchema: GenMessage<CodecMulticodecTableRequest> = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 4);
+  messageDesc(file_reallyme_codec_v1_codec, 3);
 
 /**
  * @generated from message reallyme.codec.v1.CodecMultikeyParseRequest
@@ -161,7 +140,7 @@ export type CodecMultikeyParseRequest = Message<"reallyme.codec.v1.CodecMultikey
  * Use `create(CodecMultikeyParseRequestSchema)` to create a new message.
  */
 export const CodecMultikeyParseRequestSchema: GenMessage<CodecMultikeyParseRequest> = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 5);
+  messageDesc(file_reallyme_codec_v1_codec, 4);
 
 /**
  * @generated from message reallyme.codec.v1.CodecDagCborVerifyCidRequest
@@ -183,10 +162,87 @@ export type CodecDagCborVerifyCidRequest = Message<"reallyme.codec.v1.CodecDagCb
  * Use `create(CodecDagCborVerifyCidRequestSchema)` to create a new message.
  */
 export const CodecDagCborVerifyCidRequestSchema: GenMessage<CodecDagCborVerifyCidRequest> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 5);
+
+/**
+ * CodecDagCborEncodeRequest is the typed recursive DAG-CBOR encode contract.
+ * DAG-CBOR map keys are restricted to text keys by
+ * the adapter even though the reusable recursive value schema can represent
+ * the wider deterministic-CBOR key domain.
+ *
+ * @generated from message reallyme.codec.v1.CodecDagCborEncodeRequest
+ */
+export type CodecDagCborEncodeRequest = Message<"reallyme.codec.v1.CodecDagCborEncodeRequest"> & {
+  /**
+   * @generated from field: reallyme.codec.v1.CodecDeterministicCborValue value = 1;
+   */
+  value?: CodecDeterministicCborValue | undefined;
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDagCborEncodeRequest.
+ * Use `create(CodecDagCborEncodeRequestSchema)` to create a new message.
+ */
+export const CodecDagCborEncodeRequestSchema: GenMessage<CodecDagCborEncodeRequest> = /*@__PURE__*/
   messageDesc(file_reallyme_codec_v1_codec, 6);
 
 /**
- * Zero limits select the audited codec defaults. An empty allowed-label list
+ * @generated from message reallyme.codec.v1.CodecDagCborEncodeResult
+ */
+export type CodecDagCborEncodeResult = Message<"reallyme.codec.v1.CodecDagCborEncodeResult"> & {
+  /**
+   * Encoded DAG-CBOR bytes may contain the complete sensitive document.
+   *
+   * @generated from field: bytes encoded = 1;
+   */
+  encoded: Uint8Array;
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDagCborEncodeResult.
+ * Use `create(CodecDagCborEncodeResultSchema)` to create a new message.
+ */
+export const CodecDagCborEncodeResultSchema: GenMessage<CodecDagCborEncodeResult> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 7);
+
+/**
+ * @generated from message reallyme.codec.v1.CodecDagCborDecodeRequest
+ */
+export type CodecDagCborDecodeRequest = Message<"reallyme.codec.v1.CodecDagCborDecodeRequest"> & {
+  /**
+   * Encoded DAG-CBOR bytes may contain the complete sensitive document.
+   *
+   * @generated from field: bytes encoded = 1;
+   */
+  encoded: Uint8Array;
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDagCborDecodeRequest.
+ * Use `create(CodecDagCborDecodeRequestSchema)` to create a new message.
+ */
+export const CodecDagCborDecodeRequestSchema: GenMessage<CodecDagCborDecodeRequest> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 8);
+
+/**
+ * @generated from message reallyme.codec.v1.CodecDagCborDecodeResult
+ */
+export type CodecDagCborDecodeResult = Message<"reallyme.codec.v1.CodecDagCborDecodeResult"> & {
+  /**
+   * @generated from field: reallyme.codec.v1.CodecDeterministicCborValue value = 1;
+   */
+  value?: CodecDeterministicCborValue | undefined;
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDagCborDecodeResult.
+ * Use `create(CodecDagCborDecodeResultSchema)` to create a new message.
+ */
+export const CodecDagCborDecodeResultSchema: GenMessage<CodecDagCborDecodeResult> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 9);
+
+/**
+ * Zero limits select the documented codec defaults. An empty allowed-label list
  * selects the default PRIVATE KEY, EC PRIVATE KEY, and PUBLIC KEY set.
  *
  * @generated from message reallyme.codec.v1.CodecPemDecodeOptions
@@ -213,7 +269,7 @@ export type CodecPemDecodeOptions = Message<"reallyme.codec.v1.CodecPemDecodeOpt
  * Use `create(CodecPemDecodeOptionsSchema)` to create a new message.
  */
 export const CodecPemDecodeOptionsSchema: GenMessage<CodecPemDecodeOptions> = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 7);
+  messageDesc(file_reallyme_codec_v1_codec, 10);
 
 /**
  * @generated from message reallyme.codec.v1.CodecPemDecodeRequest
@@ -238,7 +294,562 @@ export type CodecPemDecodeRequest = Message<"reallyme.codec.v1.CodecPemDecodeReq
  * Use `create(CodecPemDecodeRequestSchema)` to create a new message.
  */
 export const CodecPemDecodeRequestSchema: GenMessage<CodecPemDecodeRequest> = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 8);
+  messageDesc(file_reallyme_codec_v1_codec, 11);
+
+/**
+ * Zero values select the documented codec defaults.
+ *
+ * @generated from message reallyme.codec.v1.CodecPemEncodeOptions
+ */
+export type CodecPemEncodeOptions = Message<"reallyme.codec.v1.CodecPemEncodeOptions"> & {
+  /**
+   * @generated from field: uint32 max_der_len = 1;
+   */
+  maxDerLen: number;
+
+  /**
+   * @generated from field: uint32 line_width = 2;
+   */
+  lineWidth: number;
+
+  /**
+   * @generated from field: reallyme.codec.v1.CodecPemLineEnding line_ending = 3;
+   */
+  lineEnding: CodecPemLineEnding;
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecPemEncodeOptions.
+ * Use `create(CodecPemEncodeOptionsSchema)` to create a new message.
+ */
+export const CodecPemEncodeOptionsSchema: GenMessage<CodecPemEncodeOptions> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 12);
+
+/**
+ * @generated from message reallyme.codec.v1.CodecPemEncodeRequest
+ */
+export type CodecPemEncodeRequest = Message<"reallyme.codec.v1.CodecPemEncodeRequest"> & {
+  /**
+   * @generated from field: reallyme.codec.v1.CodecPemLabel label = 1;
+   */
+  label: CodecPemLabel;
+
+  /**
+   * DER may contain private-key material. Generated owners are hardened to
+   * wipe this field on every success and failure path.
+   *
+   * @generated from field: bytes der = 2;
+   */
+  der: Uint8Array;
+
+  /**
+   * @generated from field: reallyme.codec.v1.CodecPemEncodeOptions options = 3;
+   */
+  options?: CodecPemEncodeOptions | undefined;
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecPemEncodeRequest.
+ * Use `create(CodecPemEncodeRequestSchema)` to create a new message.
+ */
+export const CodecPemEncodeRequestSchema: GenMessage<CodecPemEncodeRequest> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 13);
+
+/**
+ * @generated from message reallyme.codec.v1.CodecPemEncodeResult
+ */
+export type CodecPemEncodeResult = Message<"reallyme.codec.v1.CodecPemEncodeResult"> & {
+  /**
+   * PEM armor may contain private-key material and remains byte-oriented so
+   * SDK callers can promptly wipe the returned owner.
+   *
+   * @generated from field: bytes pem = 1;
+   */
+  pem: Uint8Array;
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecPemEncodeResult.
+ * Use `create(CodecPemEncodeResultSchema)` to create a new message.
+ */
+export const CodecPemEncodeResultSchema: GenMessage<CodecPemEncodeResult> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 14);
+
+/**
+ * CodecDeterministicCborNull is the explicit null branch for the deterministic
+ * generic-CBOR value union.
+ *
+ * @generated from message reallyme.codec.v1.CodecDeterministicCborNull
+ */
+export type CodecDeterministicCborNull = Message<"reallyme.codec.v1.CodecDeterministicCborNull"> & {
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborNull.
+ * Use `create(CodecDeterministicCborNullSchema)` to create a new message.
+ */
+export const CodecDeterministicCborNullSchema: GenMessage<CodecDeterministicCborNull> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 15);
+
+/**
+ * @generated from message reallyme.codec.v1.CodecDeterministicCborBool
+ */
+export type CodecDeterministicCborBool = Message<"reallyme.codec.v1.CodecDeterministicCborBool"> & {
+  /**
+   * @generated from field: bool value = 1;
+   */
+  value: boolean;
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborBool.
+ * Use `create(CodecDeterministicCborBoolSchema)` to create a new message.
+ */
+export const CodecDeterministicCborBoolSchema: GenMessage<CodecDeterministicCborBool> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 16);
+
+/**
+ * @generated from message reallyme.codec.v1.CodecDeterministicCborUnsignedInteger
+ */
+export type CodecDeterministicCborUnsignedInteger = Message<"reallyme.codec.v1.CodecDeterministicCborUnsignedInteger"> & {
+  /**
+   * @generated from field: uint64 value = 1;
+   */
+  value: bigint;
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborUnsignedInteger.
+ * Use `create(CodecDeterministicCborUnsignedIntegerSchema)` to create a new message.
+ */
+export const CodecDeterministicCborUnsignedIntegerSchema: GenMessage<CodecDeterministicCborUnsignedInteger> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 17);
+
+/**
+ * @generated from message reallyme.codec.v1.CodecDeterministicCborNegativeInteger
+ */
+export type CodecDeterministicCborNegativeInteger = Message<"reallyme.codec.v1.CodecDeterministicCborNegativeInteger"> & {
+  /**
+   * @generated from field: sint64 value = 1;
+   */
+  value: bigint;
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborNegativeInteger.
+ * Use `create(CodecDeterministicCborNegativeIntegerSchema)` to create a new message.
+ */
+export const CodecDeterministicCborNegativeIntegerSchema: GenMessage<CodecDeterministicCborNegativeInteger> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 18);
+
+/**
+ * CodecDeterministicCborInteger is the exact integer representation supported
+ * by deterministic generic CBOR. Negative values are restricted to
+ * i64::MIN..=-1; zero and positive values must use unsigned_value.
+ *
+ * @generated from message reallyme.codec.v1.CodecDeterministicCborInteger
+ */
+export type CodecDeterministicCborInteger = Message<"reallyme.codec.v1.CodecDeterministicCborInteger"> & {
+  /**
+   * @generated from oneof reallyme.codec.v1.CodecDeterministicCborInteger.value
+   */
+  value: {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecDeterministicCborUnsignedInteger unsigned_value = 1;
+     */
+    value: CodecDeterministicCborUnsignedInteger;
+    case: "unsignedValue";
+  } | {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecDeterministicCborNegativeInteger negative_value = 2;
+     */
+    value: CodecDeterministicCborNegativeInteger;
+    case: "negativeValue";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborInteger.
+ * Use `create(CodecDeterministicCborIntegerSchema)` to create a new message.
+ */
+export const CodecDeterministicCborIntegerSchema: GenMessage<CodecDeterministicCborInteger> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 19);
+
+/**
+ * @generated from message reallyme.codec.v1.CodecDeterministicCborText
+ */
+export type CodecDeterministicCborText = Message<"reallyme.codec.v1.CodecDeterministicCborText"> & {
+  /**
+   * @generated from field: string value = 1;
+   */
+  value: string;
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborText.
+ * Use `create(CodecDeterministicCborTextSchema)` to create a new message.
+ */
+export const CodecDeterministicCborTextSchema: GenMessage<CodecDeterministicCborText> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 20);
+
+/**
+ * @generated from message reallyme.codec.v1.CodecDeterministicCborBytes
+ */
+export type CodecDeterministicCborBytes = Message<"reallyme.codec.v1.CodecDeterministicCborBytes"> & {
+  /**
+   * @generated from field: bytes value = 1;
+   */
+  value: Uint8Array;
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborBytes.
+ * Use `create(CodecDeterministicCborBytesSchema)` to create a new message.
+ */
+export const CodecDeterministicCborBytesSchema: GenMessage<CodecDeterministicCborBytes> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 21);
+
+/**
+ * CodecDeterministicCborMapKey is the closed map-key domain for deterministic
+ * generic CBOR. Protobuf map<> is intentionally not used because it cannot
+ * preserve mixed key types or duplicate entries for semantic rejection.
+ *
+ * @generated from message reallyme.codec.v1.CodecDeterministicCborMapKey
+ */
+export type CodecDeterministicCborMapKey = Message<"reallyme.codec.v1.CodecDeterministicCborMapKey"> & {
+  /**
+   * @generated from oneof reallyme.codec.v1.CodecDeterministicCborMapKey.key
+   */
+  key: {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecDeterministicCborInteger integer_key = 1;
+     */
+    value: CodecDeterministicCborInteger;
+    case: "integerKey";
+  } | {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecDeterministicCborText text_key = 2;
+     */
+    value: CodecDeterministicCborText;
+    case: "textKey";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborMapKey.
+ * Use `create(CodecDeterministicCborMapKeySchema)` to create a new message.
+ */
+export const CodecDeterministicCborMapKeySchema: GenMessage<CodecDeterministicCborMapKey> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 22);
+
+/**
+ * @generated from message reallyme.codec.v1.CodecDeterministicCborMapEntry
+ */
+export type CodecDeterministicCborMapEntry = Message<"reallyme.codec.v1.CodecDeterministicCborMapEntry"> & {
+  /**
+   * @generated from field: reallyme.codec.v1.CodecDeterministicCborMapKey key = 1;
+   */
+  key?: CodecDeterministicCborMapKey | undefined;
+
+  /**
+   * @generated from field: reallyme.codec.v1.CodecDeterministicCborValue value = 2;
+   */
+  value?: CodecDeterministicCborValue | undefined;
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborMapEntry.
+ * Use `create(CodecDeterministicCborMapEntrySchema)` to create a new message.
+ */
+export const CodecDeterministicCborMapEntrySchema: GenMessage<CodecDeterministicCborMapEntry> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 23);
+
+/**
+ * @generated from message reallyme.codec.v1.CodecDeterministicCborArray
+ */
+export type CodecDeterministicCborArray = Message<"reallyme.codec.v1.CodecDeterministicCborArray"> & {
+  /**
+   * @generated from field: repeated reallyme.codec.v1.CodecDeterministicCborValue values = 1;
+   */
+  values: CodecDeterministicCborValue[];
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborArray.
+ * Use `create(CodecDeterministicCborArraySchema)` to create a new message.
+ */
+export const CodecDeterministicCborArraySchema: GenMessage<CodecDeterministicCborArray> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 24);
+
+/**
+ * @generated from message reallyme.codec.v1.CodecDeterministicCborMap
+ */
+export type CodecDeterministicCborMap = Message<"reallyme.codec.v1.CodecDeterministicCborMap"> & {
+  /**
+   * @generated from field: repeated reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1;
+   */
+  entries: CodecDeterministicCborMapEntry[];
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborMap.
+ * Use `create(CodecDeterministicCborMapSchema)` to create a new message.
+ */
+export const CodecDeterministicCborMapSchema: GenMessage<CodecDeterministicCborMap> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 25);
+
+/**
+ * CodecDeterministicCborValue is the generated transport form of the
+ * deterministic generic-CBOR semantic tree. Text, bytes, and keys are treated
+ * as sensitive by generated hardening because this is a generic codec surface.
+ *
+ * @generated from message reallyme.codec.v1.CodecDeterministicCborValue
+ */
+export type CodecDeterministicCborValue = Message<"reallyme.codec.v1.CodecDeterministicCborValue"> & {
+  /**
+   * @generated from oneof reallyme.codec.v1.CodecDeterministicCborValue.value
+   */
+  value: {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecDeterministicCborNull null_value = 1;
+     */
+    value: CodecDeterministicCborNull;
+    case: "nullValue";
+  } | {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecDeterministicCborBool bool_value = 2;
+     */
+    value: CodecDeterministicCborBool;
+    case: "boolValue";
+  } | {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecDeterministicCborInteger integer_value = 3;
+     */
+    value: CodecDeterministicCborInteger;
+    case: "integerValue";
+  } | {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecDeterministicCborText text_value = 4;
+     */
+    value: CodecDeterministicCborText;
+    case: "textValue";
+  } | {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecDeterministicCborBytes bytes_value = 5;
+     */
+    value: CodecDeterministicCborBytes;
+    case: "bytesValue";
+  } | {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecDeterministicCborArray array_value = 6;
+     */
+    value: CodecDeterministicCborArray;
+    case: "arrayValue";
+  } | {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecDeterministicCborMap map_value = 7;
+     */
+    value: CodecDeterministicCborMap;
+    case: "mapValue";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborValue.
+ * Use `create(CodecDeterministicCborValueSchema)` to create a new message.
+ */
+export const CodecDeterministicCborValueSchema: GenMessage<CodecDeterministicCborValue> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 26);
+
+/**
+ * @generated from message reallyme.codec.v1.CodecDeterministicCborEncodeRequest
+ */
+export type CodecDeterministicCborEncodeRequest = Message<"reallyme.codec.v1.CodecDeterministicCborEncodeRequest"> & {
+  /**
+   * @generated from field: reallyme.codec.v1.CodecDeterministicCborValue value = 1;
+   */
+  value?: CodecDeterministicCborValue | undefined;
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborEncodeRequest.
+ * Use `create(CodecDeterministicCborEncodeRequestSchema)` to create a new message.
+ */
+export const CodecDeterministicCborEncodeRequestSchema: GenMessage<CodecDeterministicCborEncodeRequest> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 27);
+
+/**
+ * @generated from message reallyme.codec.v1.CodecDeterministicCborEncodeResult
+ */
+export type CodecDeterministicCborEncodeResult = Message<"reallyme.codec.v1.CodecDeterministicCborEncodeResult"> & {
+  /**
+   * Encoded CBOR bytes may contain the complete sensitive document.
+   *
+   * @generated from field: bytes encoded = 1;
+   */
+  encoded: Uint8Array;
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborEncodeResult.
+ * Use `create(CodecDeterministicCborEncodeResultSchema)` to create a new message.
+ */
+export const CodecDeterministicCborEncodeResultSchema: GenMessage<CodecDeterministicCborEncodeResult> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 28);
+
+/**
+ * @generated from message reallyme.codec.v1.CodecDeterministicCborDecodeRequest
+ */
+export type CodecDeterministicCborDecodeRequest = Message<"reallyme.codec.v1.CodecDeterministicCborDecodeRequest"> & {
+  /**
+   * Encoded CBOR bytes may contain the complete sensitive document.
+   *
+   * @generated from field: bytes encoded = 1;
+   */
+  encoded: Uint8Array;
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborDecodeRequest.
+ * Use `create(CodecDeterministicCborDecodeRequestSchema)` to create a new message.
+ */
+export const CodecDeterministicCborDecodeRequestSchema: GenMessage<CodecDeterministicCborDecodeRequest> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 29);
+
+/**
+ * @generated from message reallyme.codec.v1.CodecDeterministicCborDecodeResult
+ */
+export type CodecDeterministicCborDecodeResult = Message<"reallyme.codec.v1.CodecDeterministicCborDecodeResult"> & {
+  /**
+   * @generated from field: reallyme.codec.v1.CodecDeterministicCborValue value = 1;
+   */
+  value?: CodecDeterministicCborValue | undefined;
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborDecodeResult.
+ * Use `create(CodecDeterministicCborDecodeResultSchema)` to create a new message.
+ */
+export const CodecDeterministicCborDecodeResultSchema: GenMessage<CodecDeterministicCborDecodeResult> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 30);
+
+/**
+ * CodecOperationResult is the fully discriminated generated result contract for
+ * structured operations.
+ *
+ * @generated from message reallyme.codec.v1.CodecOperationResult
+ */
+export type CodecOperationResult = Message<"reallyme.codec.v1.CodecOperationResult"> & {
+  /**
+   * @generated from oneof reallyme.codec.v1.CodecOperationResult.result
+   */
+  result: {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecMulticodecSpec multicodec_prefix_for_name = 1000;
+     */
+    value: CodecMulticodecSpec;
+    case: "multicodecPrefixForName";
+  } | {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecMulticodecLookupResult multicodec_lookup_prefix = 1001;
+     */
+    value: CodecMulticodecLookupResult;
+    case: "multicodecLookupPrefix";
+  } | {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecMulticodecTableResult multicodec_table = 1002;
+     */
+    value: CodecMulticodecTableResult;
+    case: "multicodecTable";
+  } | {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecMultikeyParseResult multikey_parse = 2000;
+     */
+    value: CodecMultikeyParseResult;
+    case: "multikeyParse";
+  } | {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecDagCborVerifyCidResult dag_cbor_verify_cid = 3000;
+     */
+    value: CodecDagCborVerifyCidResult;
+    case: "dagCborVerifyCid";
+  } | {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecDagCborEncodeResult dag_cbor_encode = 3001;
+     */
+    value: CodecDagCborEncodeResult;
+    case: "dagCborEncode";
+  } | {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecDagCborDecodeResult dag_cbor_decode = 3002;
+     */
+    value: CodecDagCborDecodeResult;
+    case: "dagCborDecode";
+  } | {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecPemDecodeResult pem_decode = 4000;
+     */
+    value: CodecPemDecodeResult;
+    case: "pemDecode";
+  } | {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecPemEncodeResult pem_encode = 4001;
+     */
+    value: CodecPemEncodeResult;
+    case: "pemEncode";
+  } | {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecDeterministicCborEncodeResult deterministic_cbor_encode = 5000;
+     */
+    value: CodecDeterministicCborEncodeResult;
+    case: "deterministicCborEncode";
+  } | {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecDeterministicCborDecodeResult deterministic_cbor_decode = 5001;
+     */
+    value: CodecDeterministicCborDecodeResult;
+    case: "deterministicCborDecode";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecOperationResult.
+ * Use `create(CodecOperationResultSchema)` to create a new message.
+ */
+export const CodecOperationResultSchema: GenMessage<CodecOperationResult> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 31);
+
+/**
+ * CodecOperationResponse removes invalid status/payload combinations for new
+ * structured callers by making success and failure explicit generated variants.
+ *
+ * @generated from message reallyme.codec.v1.CodecOperationResponse
+ */
+export type CodecOperationResponse = Message<"reallyme.codec.v1.CodecOperationResponse"> & {
+  /**
+   * @generated from oneof reallyme.codec.v1.CodecOperationResponse.outcome
+   */
+  outcome: {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecOperationResult result = 1;
+     */
+    value: CodecOperationResult;
+    case: "result";
+  } | {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecError error = 2;
+     */
+    value: CodecError;
+    case: "error";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message reallyme.codec.v1.CodecOperationResponse.
+ * Use `create(CodecOperationResponseSchema)` to create a new message.
+ */
+export const CodecOperationResponseSchema: GenMessage<CodecOperationResponse> = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 32);
 
 /**
  * CodecOperationRequest is the single executable protobuf request. Native SDK
@@ -293,12 +904,44 @@ export type CodecOperationRequest = Message<"reallyme.codec.v1.CodecOperationReq
     case: "dagCborVerifyCid";
   } | {
     /**
+     * @generated from field: reallyme.codec.v1.CodecDagCborEncodeRequest dag_cbor_encode = 3001;
+     */
+    value: CodecDagCborEncodeRequest;
+    case: "dagCborEncode";
+  } | {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecDagCborDecodeRequest dag_cbor_decode = 3002;
+     */
+    value: CodecDagCborDecodeRequest;
+    case: "dagCborDecode";
+  } | {
+    /**
      * 4000-4999: PEM armor and DER envelope helpers.
      *
      * @generated from field: reallyme.codec.v1.CodecPemDecodeRequest pem_decode = 4000;
      */
     value: CodecPemDecodeRequest;
     case: "pemDecode";
+  } | {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecPemEncodeRequest pem_encode = 4001;
+     */
+    value: CodecPemEncodeRequest;
+    case: "pemEncode";
+  } | {
+    /**
+     * 5000-5999: deterministic generic-CBOR encode/decode.
+     *
+     * @generated from field: reallyme.codec.v1.CodecDeterministicCborEncodeRequest deterministic_cbor_encode = 5000;
+     */
+    value: CodecDeterministicCborEncodeRequest;
+    case: "deterministicCborEncode";
+  } | {
+    /**
+     * @generated from field: reallyme.codec.v1.CodecDeterministicCborDecodeRequest deterministic_cbor_decode = 5001;
+     */
+    value: CodecDeterministicCborDecodeRequest;
+    case: "deterministicCborDecode";
   } | { case: undefined; value?: undefined };
 };
 
@@ -307,7 +950,7 @@ export type CodecOperationRequest = Message<"reallyme.codec.v1.CodecOperationReq
  * Use `create(CodecOperationRequestSchema)` to create a new message.
  */
 export const CodecOperationRequestSchema: GenMessage<CodecOperationRequest> = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 9);
+  messageDesc(file_reallyme_codec_v1_codec, 33);
 
 /**
  * CodecMulticodecSpec is the protobuf form of a multicodec table entry.
@@ -369,7 +1012,7 @@ export type CodecMulticodecSpec = Message<"reallyme.codec.v1.CodecMulticodecSpec
  * Use `create(CodecMulticodecSpecSchema)` to create a new message.
  */
 export const CodecMulticodecSpecSchema: GenMessage<CodecMulticodecSpec> = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 10);
+  messageDesc(file_reallyme_codec_v1_codec, 34);
 
 /**
  * CodecMulticodecLookupResult is returned when bytes are matched against the
@@ -399,7 +1042,7 @@ export type CodecMulticodecLookupResult = Message<"reallyme.codec.v1.CodecMultic
  * Use `create(CodecMulticodecLookupResultSchema)` to create a new message.
  */
 export const CodecMulticodecLookupResultSchema: GenMessage<CodecMulticodecLookupResult> = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 11);
+  messageDesc(file_reallyme_codec_v1_codec, 35);
 
 /**
  * CodecMulticodecTableResult contains the supported multicodec entries.
@@ -418,7 +1061,7 @@ export type CodecMulticodecTableResult = Message<"reallyme.codec.v1.CodecMultico
  * Use `create(CodecMulticodecTableResultSchema)` to create a new message.
  */
 export const CodecMulticodecTableResultSchema: GenMessage<CodecMulticodecTableResult> = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 12);
+  messageDesc(file_reallyme_codec_v1_codec, 36);
 
 /**
  * CodecMultikeyParseResult is the binary/protobuf form of multikey parsing.
@@ -457,7 +1100,7 @@ export type CodecMultikeyParseResult = Message<"reallyme.codec.v1.CodecMultikeyP
  * Use `create(CodecMultikeyParseResultSchema)` to create a new message.
  */
 export const CodecMultikeyParseResultSchema: GenMessage<CodecMultikeyParseResult> = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 13);
+  messageDesc(file_reallyme_codec_v1_codec, 37);
 
 /**
  * CodecDagCborVerifyCidResult contains the deterministic CID verification
@@ -487,7 +1130,7 @@ export type CodecDagCborVerifyCidResult = Message<"reallyme.codec.v1.CodecDagCbo
  * Use `create(CodecDagCborVerifyCidResultSchema)` to create a new message.
  */
 export const CodecDagCborVerifyCidResultSchema: GenMessage<CodecDagCborVerifyCidResult> = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 14);
+  messageDesc(file_reallyme_codec_v1_codec, 38);
 
 /**
  * CodecPemDecodeResult is the binary/protobuf form of PEM armor decoding.
@@ -516,7 +1159,7 @@ export type CodecPemDecodeResult = Message<"reallyme.codec.v1.CodecPemDecodeResu
  * Use `create(CodecPemDecodeResultSchema)` to create a new message.
  */
 export const CodecPemDecodeResultSchema: GenMessage<CodecPemDecodeResult> = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 15);
+  messageDesc(file_reallyme_codec_v1_codec, 39);
 
 /**
  * CodecBaseEncodingError describes base64, base64url, hex, and generic byte
@@ -538,7 +1181,7 @@ export type CodecBaseEncodingError = Message<"reallyme.codec.v1.CodecBaseEncodin
  * Use `create(CodecBaseEncodingErrorSchema)` to create a new message.
  */
 export const CodecBaseEncodingErrorSchema: GenMessage<CodecBaseEncodingError> = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 16);
+  messageDesc(file_reallyme_codec_v1_codec, 40);
 
 /**
  * CodecPemError describes RFC 7468-style PEM armor boundary and body failures.
@@ -559,7 +1202,7 @@ export type CodecPemError = Message<"reallyme.codec.v1.CodecPemError"> & {
  * Use `create(CodecPemErrorSchema)` to create a new message.
  */
 export const CodecPemErrorSchema: GenMessage<CodecPemError> = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 17);
+  messageDesc(file_reallyme_codec_v1_codec, 41);
 
 /**
  * CodecMultiformatError describes multibase, multicodec, and multikey
@@ -581,7 +1224,7 @@ export type CodecMultiformatError = Message<"reallyme.codec.v1.CodecMultiformatE
  * Use `create(CodecMultiformatErrorSchema)` to create a new message.
  */
 export const CodecMultiformatErrorSchema: GenMessage<CodecMultiformatError> = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 18);
+  messageDesc(file_reallyme_codec_v1_codec, 42);
 
 /**
  * CodecCanonicalizationError describes CBOR, DAG-CBOR, JCS, and JSON
@@ -603,7 +1246,7 @@ export type CodecCanonicalizationError = Message<"reallyme.codec.v1.CodecCanonic
  * Use `create(CodecCanonicalizationErrorSchema)` to create a new message.
  */
 export const CodecCanonicalizationErrorSchema: GenMessage<CodecCanonicalizationError> = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 19);
+  messageDesc(file_reallyme_codec_v1_codec, 43);
 
 /**
  * CodecBackendError describes serialization, protobuf, dispatch, FFI, WASM,
@@ -625,7 +1268,7 @@ export type CodecBackendError = Message<"reallyme.codec.v1.CodecBackendError"> &
  * Use `create(CodecBackendErrorSchema)` to create a new message.
  */
 export const CodecBackendErrorSchema: GenMessage<CodecBackendError> = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 20);
+  messageDesc(file_reallyme_codec_v1_codec, 44);
 
 /**
  * CodecBoundaryError describes malformed, oversized, or incomplete caller
@@ -648,35 +1291,37 @@ export type CodecBoundaryError = Message<"reallyme.codec.v1.CodecBoundaryError">
  * Use `create(CodecBoundaryErrorSchema)` to create a new message.
  */
 export const CodecBoundaryErrorSchema: GenMessage<CodecBoundaryError> = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 21);
+  messageDesc(file_reallyme_codec_v1_codec, 45);
 
 /**
- * CodecProtoResultStatus identifies the protobuf message carried by the
- * result-envelope payload.
+ * CodecError is the public, non-PII error envelope for codec boundary failures.
+ * The oneof keeps base encoding, PEM, multiformat, and canonicalization
+ * failures distinct while the shared CodecErrorReason enum provides stable
+ * cross-language reason codes.
  *
- * @generated from enum reallyme.codec.v1.CodecProtoResultStatus
+ * @generated from enum reallyme.codec.v1.CodecErrorOrigin
  */
-export enum CodecProtoResultStatus {
+export enum CodecErrorOrigin {
   /**
-   * @generated from enum value: CODEC_PROTO_RESULT_STATUS_UNSPECIFIED = 0;
+   * @generated from enum value: CODEC_ERROR_ORIGIN_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: CODEC_PROTO_RESULT_STATUS_RESULT = 1;
+   * @generated from enum value: CODEC_ERROR_ORIGIN_CALLER = 1;
    */
-  RESULT = 1,
+  CALLER = 1,
 
   /**
-   * @generated from enum value: CODEC_PROTO_RESULT_STATUS_CODEC_ERROR = 2;
+   * @generated from enum value: CODEC_ERROR_ORIGIN_PROVIDER = 2;
    */
-  CODEC_ERROR = 2,
+  PROVIDER = 2,
 }
 
 /**
- * Describes the enum reallyme.codec.v1.CodecProtoResultStatus.
+ * Describes the enum reallyme.codec.v1.CodecErrorOrigin.
  */
-export const CodecProtoResultStatusSchema: GenEnum<CodecProtoResultStatus> = /*@__PURE__*/
+export const CodecErrorOriginSchema: GenEnum<CodecErrorOrigin> = /*@__PURE__*/
   enumDesc(file_reallyme_codec_v1_codec, 0);
 
 /**
@@ -712,6 +1357,32 @@ export enum CodecPemLabel {
  */
 export const CodecPemLabelSchema: GenEnum<CodecPemLabel> = /*@__PURE__*/
   enumDesc(file_reallyme_codec_v1_codec, 1);
+
+/**
+ * @generated from enum reallyme.codec.v1.CodecPemLineEnding
+ */
+export enum CodecPemLineEnding {
+  /**
+   * @generated from enum value: CODEC_PEM_LINE_ENDING_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: CODEC_PEM_LINE_ENDING_LF = 100;
+   */
+  LF = 100,
+
+  /**
+   * @generated from enum value: CODEC_PEM_LINE_ENDING_CRLF = 110;
+   */
+  CRLF = 110,
+}
+
+/**
+ * Describes the enum reallyme.codec.v1.CodecPemLineEnding.
+ */
+export const CodecPemLineEndingSchema: GenEnum<CodecPemLineEnding> = /*@__PURE__*/
+  enumDesc(file_reallyme_codec_v1_codec, 2);
 
 /**
  * CodecKeyMaterialKind classifies the material described by a multicodec
@@ -751,7 +1422,7 @@ export enum CodecKeyMaterialKind {
  * Describes the enum reallyme.codec.v1.CodecKeyMaterialKind.
  */
 export const CodecKeyMaterialKindSchema: GenEnum<CodecKeyMaterialKind> = /*@__PURE__*/
-  enumDesc(file_reallyme_codec_v1_codec, 2);
+  enumDesc(file_reallyme_codec_v1_codec, 3);
 
 /**
  * CodecTag classifies the protocol role of a multicodec table entry.
@@ -794,7 +1465,7 @@ export enum CodecTag {
  * Describes the enum reallyme.codec.v1.CodecTag.
  */
 export const CodecTagSchema: GenEnum<CodecTag> = /*@__PURE__*/
-  enumDesc(file_reallyme_codec_v1_codec, 3);
+  enumDesc(file_reallyme_codec_v1_codec, 4);
 
 /**
  * CodecErrorReason is the component-owned reason-code enum for reallyme/codec.
@@ -973,5 +1644,4 @@ export enum CodecErrorReason {
  * Describes the enum reallyme.codec.v1.CodecErrorReason.
  */
 export const CodecErrorReasonSchema: GenEnum<CodecErrorReason> = /*@__PURE__*/
-  enumDesc(file_reallyme_codec_v1_codec, 4);
-
+  enumDesc(file_reallyme_codec_v1_codec, 5);

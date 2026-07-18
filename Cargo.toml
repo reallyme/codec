@@ -5,19 +5,19 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/codec/base64",
-    "crates/codec/base64url",
-    "crates/codec/cbor",
-    "crates/codec/ffi",
-    "crates/codec/hex",
-    "crates/codec/jcs",
+    "crates/base64",
+    "crates/base64url",
+    "crates/cbor",
+    "crates/ffi",
+    "crates/hex",
+    "crates/jcs",
     "crates/codec",
-    "crates/codec/multibase",
-    "crates/codec/multicodec",
-    "crates/codec/multikey",
-    "crates/codec/pem",
-    "crates/codec/wasm-package",
-    "crates/proto/codec",
+    "crates/multibase",
+    "crates/multicodec",
+    "crates/multikey",
+    "crates/pem",
+    "crates/wasm",
+    "crates/proto",
 ]
 exclude = ["fuzz"]
 
@@ -36,17 +36,18 @@ publish = false
 [workspace.dependencies]
 base64 = "0.22"
 bs58 = "0.5"
-buffa = { version = "0.8.1", features = ["json"] }
+buffa = { version = "0.9.0", features = ["json"] }
 cid = "0.11.3"
 hex = "0.4"
 hex-literal = "1.1"
 jni = "0.22.4"
 js-sys = "0.3"
+itoa = "1"
 multihash = "0.19.5"
 multihash-codetable = "0.2.2"
 ryu-js = "1"
 serde = "1.0"
-serde_json = { version = "1.0", features = ["float_roundtrip"] }
+serde_json = { version = "1.0", features = ["float_roundtrip", "unbounded_depth"] }
 sha2 = "0.11"
 thiserror = "2.0"
 wasm-bindgen = "0.2"

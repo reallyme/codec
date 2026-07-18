@@ -7,20 +7,25 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { lstatSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 
-// This full commit, rather than a mutable branch or tag, is the release
-// authority. The digest independently binds the exact reviewed core bytes.
-const RELEASE_READINESS_COMMIT = "6ffa5d674649c96a62ff6123427247f9364921db";
+// This full commit, rather than a mutable branch or tag, identifies the public
+// upstream core. The local checker still carries repository policy, so this
+// runner verifies the fetched upstream bytes, compares them directly with the
+// vendored core, and separately pins the local checker bytes before executing.
+const RELEASE_READINESS_COMMIT = "f27973caf9d3a12847cac4032c361f5f553c97e9";
 const RELEASE_READINESS_CORE_SHA256 =
-  "b5fa43bfff1176a0b37612b3ec7435a010b31eaabfdfe0ca4fb2c26f1b931681";
+  "70cc78721738cf352024938e8fc86e73380e71b2cdf7a9a733687543167cbaae";
+const LOCAL_CHECKER_SHA256 =
+  "73e31fda0deb33f060f114f479e38c24498811370a764758d1464808e3374659";
 // The upstream pin authenticates the original release; the local pin covers
 // the company-name correction without changing that upstream authority.
 const LOCAL_CORE_SHA256 =
-  "f7f7a3acc85b3bf550f2d9b210cbf06a794693f2aefaf711d1611bf34c594204";
+  "e7f6ff5d1287aa3f7a5d880bc549d7c98cbb8e7f269b46b6839f4867e989f7d0";
 const RELEASE_READINESS_CORE_URL =
   `https://raw.githubusercontent.com/reallyme/release-readiness/${RELEASE_READINESS_COMMIT}/core.mjs`;
 const VENDORED_CORE_PATH = "scripts/release-readiness/core.mjs";
 const LOCAL_CHECKER_PATH = "scripts/check_release_readiness.mjs";
 const MAX_CORE_BYTES = 262_144;
+const MAX_CHECKER_BYTES = 524_288;
 const FETCH_TIMEOUT_MILLISECONDS = 30_000;
 
 const fail = (message) => {
@@ -35,12 +40,20 @@ const expectedLocalDigest = Buffer.from(LOCAL_CORE_SHA256, "hex");
 if (expectedDigest.length !== 32) {
   fail("configured core digest is invalid");
 }
+const expectedCheckerDigest = Buffer.from(LOCAL_CHECKER_SHA256, "hex");
+if (expectedCheckerDigest.length !== 32) {
+  fail("configured local checker digest is invalid");
+}
 
 let localCore;
+let localChecker;
 try {
   const checkerStatus = lstatSync(LOCAL_CHECKER_PATH);
   if (checkerStatus.isSymbolicLink() || !checkerStatus.isFile()) {
     fail("local checker must be a regular file");
+  }
+  if (checkerStatus.size === 0 || checkerStatus.size > MAX_CHECKER_BYTES) {
+    fail("local checker size is outside the accepted boundary");
   }
   const status = lstatSync(VENDORED_CORE_PATH);
   if (status.isSymbolicLink() || !status.isFile()) {
@@ -49,9 +62,13 @@ try {
   if (status.size === 0 || status.size > MAX_CORE_BYTES) {
     fail("vendored core size is outside the accepted boundary");
   }
+  localChecker = readFileSync(LOCAL_CHECKER_PATH);
   localCore = readFileSync(VENDORED_CORE_PATH);
 } catch {
-  fail("vendored core is missing or inaccessible");
+  fail("release readiness inputs are missing or inaccessible");
+}
+if (!timingSafeEqual(sha256(localChecker), expectedCheckerDigest)) {
+  fail("local checker does not match the reviewed repository policy pin");
 }
 if (!timingSafeEqual(sha256(localCore), expectedLocalDigest)) {
   fail("vendored core does not match its reviewed local pin");
@@ -109,6 +126,7 @@ const upstreamCore = Buffer.concat(chunks, totalLength);
 if (!timingSafeEqual(sha256(upstreamCore), expectedDigest)) {
   fail("pinned upstream core digest does not match the reviewed commit");
 }
+
 
 const checker = spawnSync(process.execPath, [LOCAL_CHECKER_PATH, ...process.argv.slice(2)], {
   env: process.env,

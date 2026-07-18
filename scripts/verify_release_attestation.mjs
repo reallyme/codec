@@ -8,10 +8,20 @@ import { fileURLToPath } from "node:url";
 
 const FULL_SHA_PATTERN = /^[0-9a-f]{40}$/u;
 const REPOSITORY_PATTERN = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u;
-const REQUIRED_WORKFLOWS = Object.freeze(["code-checks.yml", "release-preflight.yml"]);
+const VERSION_PATTERN = /^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)$/u;
+const CODE_CHECK_WORKFLOW = "code-checks.yml";
+const PREFLIGHT_WORKFLOW_TITLES = Object.freeze({
+  "crates-package-preflight.yml": "Crates package preflight",
+  "swift-package-preflight.yml": "Swift package preflight",
+  "kotlin-android-package-preflight.yml": "Kotlin Android package preflight",
+  "npm-package-preflight.yml": "npm package preflight",
+});
 const REQUIRED_EVENTS = Object.freeze({
-  "code-checks.yml": "push",
-  "release-preflight.yml": "workflow_dispatch",
+  [CODE_CHECK_WORKFLOW]: "push",
+  "crates-package-preflight.yml": "workflow_dispatch",
+  "swift-package-preflight.yml": "workflow_dispatch",
+  "kotlin-android-package-preflight.yml": "workflow_dispatch",
+  "npm-package-preflight.yml": "workflow_dispatch",
 });
 const MAX_COMMAND_OUTPUT_BYTES = 1_048_576;
 const MAX_WAIT_SECONDS = 7_200;
@@ -54,6 +64,24 @@ const sleepSeconds = (seconds) => {
   Atomics.wait(waitView, 0, 0, seconds * 1_000);
 };
 
+const parsePreflightWorkflow = (value) => {
+  if (typeof value !== "string" || value.length === 0) {
+    fail("missing-release-attestation-preflight-workflow");
+  }
+  if (!Object.hasOwn(PREFLIGHT_WORKFLOW_TITLES, value)) {
+    fail("unsupported-release-attestation-preflight-workflow");
+  }
+  return value;
+};
+
+const expectedDisplayTitle = (workflow, releaseVersion) => {
+  const preflightTitle = PREFLIGHT_WORKFLOW_TITLES[workflow];
+  if (preflightTitle === undefined) {
+    return null;
+  }
+  return `${preflightTitle} ${releaseVersion}`;
+};
+
 export const run = (command, arguments_, options = {}) => {
   const capturesStdout = options.capture !== false;
   const result = spawnSync(command, arguments_, {
@@ -79,12 +107,13 @@ const validateRun = (value, releaseSha) => {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     fail("invalid-workflow-run-response");
   }
-  const { attempt, conclusion, databaseId, event, headBranch, headSha, status } = value;
+  const { attempt, conclusion, databaseId, displayTitle, event, headBranch, headSha, status } = value;
   if (
     !Number.isSafeInteger(attempt) ||
     attempt < 1 ||
     !Number.isSafeInteger(databaseId) ||
     databaseId < 1 ||
+    typeof displayTitle !== "string" ||
     typeof event !== "string" ||
     typeof headBranch !== "string" ||
     headSha !== releaseSha ||
@@ -93,10 +122,10 @@ const validateRun = (value, releaseSha) => {
   ) {
     fail("invalid-workflow-run-response");
   }
-  return { attempt, conclusion, databaseId, event, headBranch, headSha, status };
+  return { attempt, conclusion, databaseId, displayTitle, event, headBranch, headSha, status };
 };
 
-export const requireLatestSuccessfulRun = (rawRuns, releaseSha, workflow) => {
+const selectLatestRun = (rawRuns, releaseSha, workflow, releaseVersion) => {
   if (!Array.isArray(rawRuns)) {
     fail("invalid-workflow-run-response");
   }
@@ -117,6 +146,15 @@ export const requireLatestSuccessfulRun = (rawRuns, releaseSha, workflow) => {
   if (latest === undefined) {
     fail(`missing-${workflow}-run`);
   }
+  const expectedTitle = expectedDisplayTitle(workflow, releaseVersion);
+  if (expectedTitle !== null && latest.displayTitle !== expectedTitle) {
+    fail("preflight-version-mismatch");
+  }
+  return latest;
+};
+
+export const requireLatestSuccessfulRun = (rawRuns, releaseSha, workflow, releaseVersion) => {
+  const latest = selectLatestRun(rawRuns, releaseSha, workflow, releaseVersion);
   // A newer queued, running, cancelled, or failed run invalidates an older
   // success. This prevents a stale successful attempt from authorizing a
   // release after the same checks have been re-run with a worse result.
@@ -145,7 +183,7 @@ const queryWorkflowRuns = ({ cwd, env, releaseSha, repository, workflow }) => {
       "--limit",
       "100",
       "--json",
-      "attempt,conclusion,databaseId,event,headBranch,headSha,status",
+      "attempt,conclusion,databaseId,displayTitle,event,headBranch,headSha,status",
     ],
     { cwd, env, errorCode: `query-${workflow}-failed` },
   );
@@ -160,6 +198,7 @@ const requireWorkflowWithOptionalWait = ({
   cwd,
   env,
   releaseSha,
+  releaseVersion,
   repository,
   workflow,
   waitSeconds,
@@ -169,7 +208,7 @@ const requireWorkflowWithOptionalWait = ({
   for (;;) {
     const rawRuns = queryWorkflowRuns({ cwd, env, releaseSha, repository, workflow });
     try {
-      requireLatestSuccessfulRun(rawRuns, releaseSha, workflow);
+      requireLatestSuccessfulRun(rawRuns, releaseSha, workflow, releaseVersion);
       return;
     } catch (error) {
       if (!isWaitableWorkflowFailure(error, workflow) || Date.now() >= deadlineMs) {
@@ -184,9 +223,13 @@ const requireWorkflowWithOptionalWait = ({
 
 export const verifyReleaseAttestation = ({ cwd = process.cwd(), env = process.env } = {}) => {
   const releaseSha = env.RELEASE_SHA;
+  const releaseVersion = env.RELEASE_VERSION;
   const repository = env.GITHUB_REPOSITORY;
   if (typeof releaseSha !== "string" || !FULL_SHA_PATTERN.test(releaseSha)) {
     fail("invalid-release-sha");
+  }
+  if (typeof releaseVersion !== "string" || !VERSION_PATTERN.test(releaseVersion)) {
+    fail("invalid-release-version");
   }
   if (typeof repository !== "string" || !REPOSITORY_PATTERN.test(repository)) {
     fail("invalid-github-repository");
@@ -206,6 +249,7 @@ export const verifyReleaseAttestation = ({ cwd = process.cwd(), env = process.en
     "invalid-release-attestation-poll-seconds",
     MAX_POLL_SECONDS,
   );
+  const preflightWorkflow = parsePreflightWorkflow(env.RELEASE_ATTESTATION_PREFLIGHT_WORKFLOW);
 
   const checkedOutSha = run("git", ["rev-parse", "HEAD"], {
     cwd,
@@ -230,11 +274,12 @@ export const verifyReleaseAttestation = ({ cwd = process.cwd(), env = process.en
     fail("release-sha-is-not-current-main");
   }
 
-  for (const workflow of REQUIRED_WORKFLOWS) {
+  for (const workflow of [CODE_CHECK_WORKFLOW, preflightWorkflow]) {
     requireWorkflowWithOptionalWait({
       cwd,
       env,
       releaseSha,
+      releaseVersion,
       repository,
       workflow,
       waitSeconds,

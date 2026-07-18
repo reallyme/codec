@@ -7,7 +7,7 @@ Swift codecs for Apple platforms.
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.1.22"
+    from: "0.2.0"
 )
 ```
 
@@ -38,8 +38,26 @@ let decoded = try codec.base64urlDecode(encoded)
 
 The Swift API includes base encodings, multiformats, DAG-CBOR, CID, PEM and JCS.
 
-PEM input, output, and decoded JSON use `[UInt8]` rather than `String` so
-callers can clear private-key armor promptly with their own memory policy.
+Deterministic generic CBOR and DAG-CBOR use typed value builders:
+
+```swift
+let value = ReallyMeDeterministicCbor.mapText([
+    ("b", ReallyMeDeterministicCbor.unsigned(2)),
+    ("a", ReallyMeDeterministicCbor.bytes(Data([0, 1, 2]))),
+])
+let encodedCbor = try codec.deterministicCborEncodeData(value)
+let decodedCbor = try codec.deterministicCborDecode(encodedCbor)
+let dagCbor = try codec.dagCborEncodeData(ReallyMeDagCbor.mapText([
+    ("payload", decodedCbor),
+]))
+```
+
+Encoding canonicalizes map ordering. Decoding rejects duplicate keys, non-canonical input, unsupported types and exceeded limits. DAG-CBOR accepts text map keys only.
+
+PEM input, output, and decoded DER use `[UInt8]` rather than `String` so
+callers can clear private-key material promptly with their own memory policy.
+Swift-only `Data` overloads are available for common byte boundaries, but
+`[UInt8]` remains the canonical cross-language API shape.
 
 Local development builds can still pass an explicit Rust ABI library:
 
@@ -56,7 +74,9 @@ let codec = try ReallyMeCodec(rustCAbiLibrary: codecAbi)
 
 ```sh
 cargo build --locked -p reallyme-codec-ffi
-REALLYME_CODEC_FFI_LIBRARY_PATH="$PWD/target/debug/libreallyme_codec_ffi.dylib" swift test
+REALLYME_CODEC_SWIFTPM_RUNTIME_FFI=1 \
+REALLYME_CODEC_FFI_LIBRARY_PATH="$PWD/target/debug/libreallyme_codec_ffi.dylib" \
+swift test
 ```
 
 Copyright © 2026 ReallyMe Technologies Limited. All rights reserved

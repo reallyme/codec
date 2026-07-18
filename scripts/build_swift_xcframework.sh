@@ -162,7 +162,9 @@ cat >"${HEADERS_DIR}/reallyme_codec_ffi.h" <<'HEADER'
 typedef int32_t rm_codec_status_t;
 
 uint32_t rm_codec_abi_version(void);
-size_t rm_codec_max_proto_result_envelope_bytes(void);
+size_t rm_codec_max_operation_response_bytes(void);
+size_t rm_codec_max_ffi_input_bytes(void);
+size_t rm_codec_max_ffi_output_bytes(void);
 
 rm_codec_status_t rm_codec_process(
     uint32_t operation,
@@ -176,14 +178,14 @@ rm_codec_status_t rm_codec_process(
     size_t out_capacity,
     size_t *len_out);
 
-rm_codec_status_t rm_codec_process_proto(
+rm_codec_status_t rm_codec_process_operation(
     const uint8_t *request_ptr,
     size_t request_len,
     uint8_t *out_ptr,
     size_t out_capacity,
     size_t *len_out);
 
-rm_codec_status_t rm_codec_process_proto_json(
+rm_codec_status_t rm_codec_process_operation_json(
     const uint8_t *request_ptr,
     size_t request_len,
     uint8_t *out_ptr,

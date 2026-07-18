@@ -15,7 +15,7 @@ const WASM_BINDGEN_COMMAND = "wasm-bindgen";
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const packageDirectory = resolve(scriptDirectory, "..");
 const repositoryDirectory = resolve(packageDirectory, "..", "..");
-const wasmCrateDirectory = resolve(repositoryDirectory, "crates", "codec", "wasm-package");
+const wasmCrateDirectory = resolve(repositoryDirectory, "crates", "wasm");
 const outputDirectory = resolve(packageDirectory, "dist", "wasm");
 
 function fail(message) {

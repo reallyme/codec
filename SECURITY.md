@@ -6,9 +6,14 @@ cross-language divergence as security-relevant.
 
 ## Reporting
 
-Please report vulnerabilities privately to ReallyMe Technologies Limited before public
-disclosure. Include the affected package, version, input shape, and the smallest
-reproduction you can share without exposing sensitive data.
+Please report vulnerabilities privately before public disclosure. Use
+[GitHub private vulnerability reporting](https://github.com/reallyme/codec/security/advisories/new)
+for this repository when available; otherwise use the security contact listed
+for ReallyMe Technologies Limited.
+
+Include the affected package, version, input shape, and the smallest
+reproduction you can share without exposing sensitive data. Do not attach
+private keys, production identity documents, or other secrets.
 
 ## Scope
 

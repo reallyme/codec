@@ -1,6 +1,6 @@
 {
   "name": "@reallyme/codec",
-  "version": "0.1.22",
+  "version": "0.2.0",
   "description": "TypeScript facade for the ReallyMe codec WASM package.",
   "license": "Apache-2.0",
   "sideEffects": false,
@@ -27,12 +27,14 @@
   "files": [
     "dist",
     "LICENSE",
+    "NOTICE",
     "README.md"
   ],
   "scripts": {
     "build": "node scripts/clean-dist.mjs && npm run build:wasm && tsc",
     "build:wasm": "node scripts/build-wasm.mjs",
     "prepack": "npm run build",
+    "test:browser": "npm run build && node scripts/browser-wasm-test.mjs",
     "typecheck": "tsc --noEmit",
     "test": "npm run build && node --test \"test/*.test.mjs\""
   },
@@ -40,6 +42,7 @@
     "@bufbuild/protobuf": "2.12.1"
   },
   "devDependencies": {
+    "fast-check": "3.23.2",
     "typescript": "5.8.3"
   },
   "engines": {

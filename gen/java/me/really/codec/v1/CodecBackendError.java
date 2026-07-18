@@ -19,6 +19,13 @@ public  final class CodecBackendError extends
         CodecBackendError, CodecBackendError.Builder> implements
     // @@protoc_insertion_point(message_implements:reallyme.codec.v1.CodecBackendError)
     CodecBackendErrorOrBuilder {
+  // Java Lite deliberately omits public unknown-field access. This generated
+  // boolean exposes no field content, but lets SDK adapters reject schema
+  // skew or corrupt-provider additions before mapping provider output.
+  public boolean reallyMeHasUnknownFieldsForValidation() {
+    return unknownFields != com.google.protobuf.UnknownFieldSetLite.getDefaultInstance();
+  }
+
   private CodecBackendError() {
   }
   public static final int REASON_FIELD_NUMBER = 1;

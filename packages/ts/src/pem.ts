@@ -3,28 +3,31 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { create } from "@bufbuild/protobuf";
+import type { Message } from "@bufbuild/protobuf";
 
-import { stringifyBoundaryJson } from "./boundary.js";
 import { ReallyMeCodecError } from "./errors.js";
 import {
   CodecOperationRequestSchema,
   CodecPemDecodeOptionsSchema,
   CodecPemDecodeRequestSchema,
+  CodecPemEncodeOptionsSchema,
+  CodecPemEncodeRequestSchema,
   CodecPemLabel,
+  CodecPemLineEnding,
+} from "./proto/generated/reallyme/codec/v1/codec_pb.js";
+import type {
+  CodecOperationRequest,
+  CodecPemEncodeRequest,
+  CodecPemDecodeResult,
 } from "./proto/generated/reallyme/codec/v1/codec_pb.js";
 import {
-  processGeneratedProtoRequest,
-  protoPayloadOrThrow,
-} from "./protoProcess.js";
+  clearGeneratedOperationResult,
+  processGeneratedOperationRequest,
+} from "./operationContract.js";
 import {
   ensureBytesInput,
-  readBytesOutput,
-  readBytesProperty,
-  readObjectOutput,
-  readStringProperty,
+  snapshotBoundedBytesInput,
 } from "./readOutput.js";
-import type { ReallyMeCodecProtoResult } from "./readOutput.js";
-import { requireReallyMeCodecWasmProvider } from "./wasmProvider.js";
 
 export type ReallyMePemLabel = "PRIVATE KEY" | "EC PRIVATE KEY" | "PUBLIC KEY";
 export type ReallyMePemLineEnding = "lf" | "crlf";
@@ -89,6 +92,12 @@ const readPemLabel = (label: string): ReallyMePemLabel => {
       return label;
     default:
       throw new ReallyMeCodecError("provider-failure");
+  }
+};
+
+const requireNoProviderUnknownFields = (message: Message): void => {
+  if (message.$unknown !== undefined && message.$unknown.length !== 0) {
+    throw new ReallyMeCodecError("provider-failure");
   }
 };
 
@@ -240,21 +249,21 @@ const protoPemLabel = (label: ReallyMePemLabel): CodecPemLabel => {
   }
 };
 
-const encodeOptions = (
-  options: ReallyMePemDecodePolicy | ReallyMePemEncodeOptions | undefined,
-): string => {
-  if (options === undefined) {
-    return "";
+const readPemDocument = (result: CodecPemDecodeResult): ReallyMePemDocument => {
+  try {
+    requireNoProviderUnknownFields(result);
+    return {
+      label: readPemLabel(result.label),
+      der: result.der.slice(),
+    };
+  } catch (error: unknown) {
+    if (error instanceof ReallyMeCodecError) {
+      throw error;
+    }
+    throw new ReallyMeCodecError("provider-failure");
+  } finally {
+    result.der.fill(0);
   }
-  return stringifyBoundaryJson(options);
-};
-
-const readPemDocument = (value: unknown): ReallyMePemDocument => {
-  const object = readObjectOutput(value);
-  return {
-    label: readPemLabel(readStringProperty(object, "label")),
-    der: readBytesProperty(object, "der"),
-  };
 };
 
 export const decodePem = (
@@ -262,23 +271,23 @@ export const decodePem = (
   policy?: ReallyMePemDecodePolicy,
 ): ReallyMePemDocument => {
   ensureBytesInput(input);
-  const snapshot = snapshotDecodePolicy(policy);
-  return readPemDocument(
-    requireReallyMeCodecWasmProvider().pemDecode(input, encodeOptions(snapshot)),
-  );
+  const request = pemDecodeRequest(input, policy);
+  try {
+    const operationResult = processGeneratedOperationRequest(request);
+    if (operationResult.result.case !== "pemDecode") {
+      clearGeneratedOperationResult(operationResult);
+      throw new ReallyMeCodecError("provider-failure");
+    }
+    return readPemDocument(operationResult.result.value);
+  } finally {
+    clearPemDecodeRequest(request);
+  }
 };
 
-export const decodePemProto = (
+const pemDecodeRequest = (
   input: Uint8Array,
   policy?: ReallyMePemDecodePolicy,
-): Uint8Array => {
-  return protoPayloadOrThrow(decodePemProtoResult(input, policy));
-};
-
-export const decodePemProtoResult = (
-  input: Uint8Array,
-  policy?: ReallyMePemDecodePolicy,
-): ReallyMeCodecProtoResult => {
+): CodecOperationRequest => {
   ensureBytesInput(input);
   const snapshot = snapshotDecodePolicy(policy);
   const allowedLabels: CodecPemLabel[] = [];
@@ -287,23 +296,35 @@ export const decodePemProtoResult = (
       allowedLabels.push(protoPemLabel(requirePemLabel(label)));
     }
   }
-  const request = create(CodecPemDecodeRequestSchema, { pem: input });
+  const options = snapshot === undefined
+    ? undefined
+    : create(CodecPemDecodeOptionsSchema, {
+      allowedLabels,
+      maxInputLen: requireProtoUint32(snapshot.maxInputLen),
+      maxDerLen: requireProtoUint32(snapshot.maxDerLen),
+    });
+  const pemSnapshot = snapshotBoundedBytesInput(input);
   try {
-    if (snapshot !== undefined) {
-      request.options = create(CodecPemDecodeOptionsSchema, {
-        allowedLabels,
-        maxInputLen: requireProtoUint32(snapshot.maxInputLen),
-        maxDerLen: requireProtoUint32(snapshot.maxDerLen),
-      });
+    const request = create(CodecPemDecodeRequestSchema, { pem: pemSnapshot });
+    if (options !== undefined) {
+      request.options = options;
     }
-    return processGeneratedProtoRequest(create(CodecOperationRequestSchema, {
+    return create(CodecOperationRequestSchema, {
       operation: {
         case: "pemDecode",
         value: request,
       },
-    }));
-  } finally {
-    request.pem = new Uint8Array(0);
+    });
+  } catch (error: unknown) {
+    pemSnapshot.fill(0);
+    throw error;
+  }
+};
+
+const clearPemDecodeRequest = (request: CodecOperationRequest): void => {
+  if (request.operation.case === "pemDecode") {
+    request.operation.value.pem.fill(0);
+    request.operation.value.pem = new Uint8Array(0);
   }
 };
 
@@ -315,7 +336,53 @@ export const encodePem = (
   requirePemLabel(label);
   ensureBytesInput(der);
   const snapshot = snapshotEncodeOptions(options);
-  return readBytesOutput(
-    requireReallyMeCodecWasmProvider().pemEncode(label, der, encodeOptions(snapshot)),
-  );
+  const protoOptions = snapshot === undefined
+    ? undefined
+    : create(CodecPemEncodeOptionsSchema, {
+      maxDerLen: requireProtoUint32(snapshot.maxDerLen),
+      lineWidth: requireProtoUint32(snapshot.lineWidth),
+      lineEnding: snapshot.lineEnding === "crlf"
+        ? CodecPemLineEnding.CRLF
+        : snapshot.lineEnding === "lf"
+          ? CodecPemLineEnding.LF
+          : CodecPemLineEnding.UNSPECIFIED,
+    });
+  const derSnapshot = snapshotBoundedBytesInput(der);
+  let request: CodecPemEncodeRequest;
+  let operationRequest: CodecOperationRequest;
+  try {
+    request = create(CodecPemEncodeRequestSchema, {
+      label: protoPemLabel(label),
+      der: derSnapshot,
+    });
+    if (protoOptions !== undefined) {
+      request.options = protoOptions;
+    }
+    operationRequest = create(CodecOperationRequestSchema, {
+      operation: {
+        case: "pemEncode",
+        value: request,
+      },
+    });
+  } catch (error: unknown) {
+    derSnapshot.fill(0);
+    throw error;
+  }
+  try {
+    const operationResult = processGeneratedOperationRequest(operationRequest);
+    if (operationResult.result.case !== "pemEncode") {
+      clearGeneratedOperationResult(operationResult);
+      throw new ReallyMeCodecError("provider-failure");
+    }
+    const result = operationResult.result.value;
+    try {
+      requireNoProviderUnknownFields(result);
+      return result.pem.slice();
+    } finally {
+      result.pem.fill(0);
+    }
+  } finally {
+    request.der.fill(0);
+    request.der = new Uint8Array(0);
+  }
 };

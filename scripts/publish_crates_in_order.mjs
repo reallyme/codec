@@ -269,8 +269,10 @@ function publishPackage(pkg) {
 
     const combined = `${result.stdout}\n${result.stderr}`;
     if (combined.includes("already uploaded") || combined.includes("already exists")) {
-      console.log(`${pkg.name} ${pkg.version} is already published; continuing.`);
-      return;
+      console.error(
+        `${pkg.name} ${pkg.version} is already published; refusing to treat a prior upload as this release's attested publish.`,
+      );
+      process.exit(result.status ?? 1);
     }
 
     const lowerCombined = combined.toLowerCase();

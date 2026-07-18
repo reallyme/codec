@@ -6,15 +6,17 @@ import org.gradle.api.publish.maven.tasks.PublishToMavenLocal
 import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
 import java.net.URI
 import java.security.MessageDigest
+import java.util.zip.ZipFile
 
 plugins {
     id("com.android.library") version "9.3.0"
+    id("com.android.application") version "9.3.0" apply false
     `maven-publish`
     signing
 }
 
 group = "me.really"
-version = "0.1.22"
+version = "0.2.0"
 
 dependencyLocking {
     lockAllConfigurations()
@@ -81,6 +83,43 @@ fun sha256Hex(bytes: ByteArray): String {
     return digest.joinToString(separator = "") { byte -> "%02x".format(byte) }
 }
 
+fun checkedOutCommitSha(): String {
+    val checkedOutSha = providers.exec {
+        workingDir = layout.projectDirectory.dir("../..").asFile
+        commandLine("git", "rev-parse", "HEAD")
+    }.standardOutput.asText.get().trim()
+    val fullSha = Regex("^[0-9a-f]{40}$")
+    if (!fullSha.matches(checkedOutSha)) {
+        throw GradleException("checked-out git commit SHA is not a lowercase full SHA")
+    }
+    val githubSha = providers.environmentVariable("GITHUB_SHA").orNull
+    if (githubSha != null) {
+        if (!fullSha.matches(githubSha)) {
+            throw GradleException("GITHUB_SHA is not a lowercase full SHA")
+        }
+        if (githubSha != checkedOutSha) {
+            throw GradleException("GITHUB_SHA does not match the checked-out source SHA")
+        }
+    }
+    return checkedOutSha
+}
+
+fun verifyAndroidNativeManifestEntry(
+    manifestText: String,
+    relativePath: String,
+    bytes: ByteArray,
+) {
+    val expectedDigest = sha256Hex(bytes)
+    val pattern = Regex(
+        """\{[^{}]*"path"\s*:\s*"${Regex.escape(relativePath)}"[^{}]*"sha256"\s*:\s*"$expectedDigest"[^{}]*"size"\s*:\s*${bytes.size}[^{}]*}""",
+    )
+    if (!pattern.containsMatchIn(manifestText)) {
+        throw GradleException(
+            "Android native manifest digest does not match $relativePath"
+        )
+    }
+}
+
 android {
     namespace = "me.really.codec"
     compileSdk = 36
@@ -110,6 +149,14 @@ android {
         }
     }
 
+    packaging {
+        jniLibs {
+            // The release workflows hash the staged libraries before building
+            // the AAR. Keep Gradle from mutating those bytes after attestation.
+            keepDebugSymbols.add("**/libreallyme_codec_ffi.so")
+        }
+    }
+
     publishing {
         singleVariant("release") {
             withSourcesJar()
@@ -125,8 +172,11 @@ dependencies {
 val generateAndroidNativeManifest = tasks.register("generateAndroidNativeManifest") {
     group = "build"
     description = "Generates the Android native checksum manifest for local AAR builds."
-    onlyIf { !configuredNativeAssetsDir.isPresent }
-    inputs.dir(jniLibsDir)
+    onlyIf {
+        !configuredNativeAssetsDir.isPresent &&
+            (requireJniLibs.get() || jniLibsDir.get().isDirectory)
+    }
+    inputs.dir(jniLibsDir).optional()
     outputs.file(nativeAssetsDir.map { it.resolve(requiredAndroidNativeManifest) })
     doLast {
         val root = jniLibsDir.get()
@@ -141,11 +191,7 @@ val generateAndroidNativeManifest = tasks.register("generateAndroidNativeManifes
             }
             file
         }
-        val commitSha = providers.environmentVariable("GITHUB_SHA").orNull
-            ?: providers.exec {
-                workingDir = layout.projectDirectory.dir("../..").asFile
-                commandLine("git", "rev-parse", "HEAD")
-            }.standardOutput.asText.get().trim()
+        val commitSha = checkedOutCommitSha()
         val entries = nativeFiles.map { file ->
             val relativePath = root.toPath().relativize(file.toPath()).toString().replace(File.separatorChar, '/')
             val bytes = file.readBytes()
@@ -183,6 +229,15 @@ val verifyAndroidJniLibs = tasks.register("verifyAndroidJniLibs") {
                 "missing ReallyMe codec Android native manifest: $requiredAndroidNativeManifest"
             )
         }
+        val manifestText = assetsRoot.resolve(requiredAndroidNativeManifest).readText()
+        for (relativePath in requiredAndroidJniLibs) {
+            val bytes = root.resolve(relativePath).readBytes()
+            try {
+                verifyAndroidNativeManifestEntry(manifestText, relativePath, bytes)
+            } finally {
+                bytes.fill(0)
+            }
+        }
     }
 }
 
@@ -204,24 +259,24 @@ tasks.register("verifyReleaseAarContainsJniLibs") {
                 "expected exactly one release AAR, found ${aarFiles.size}"
             )
         }
-        val aarFile = aarFiles.single()
-        val missing = requiredAndroidJniLibs.filter { relativePath ->
-            !zipTree(aarFile).matching {
-                include("jni/$relativePath")
-            }.files.any()
-        }
-        if (missing.isNotEmpty()) {
-            throw GradleException(
-                "release AAR is missing JNI entries: ${missing.joinToString(", ")}"
-            )
-        }
-        val hasNativeManifest = zipTree(aarFile).matching {
-            include("assets/$requiredAndroidNativeManifest")
-        }.files.any()
-        if (!hasNativeManifest) {
-            throw GradleException(
-                "release AAR is missing native manifest asset: $requiredAndroidNativeManifest"
-            )
+        ZipFile(aarFiles.single()).use { archive ->
+            val manifestEntry = archive.getEntry("assets/$requiredAndroidNativeManifest")
+                ?: throw GradleException(
+                    "release AAR is missing native manifest asset: $requiredAndroidNativeManifest"
+                )
+            val manifestText = archive.getInputStream(manifestEntry)
+                .bufferedReader()
+                .use { it.readText() }
+            for (relativePath in requiredAndroidJniLibs) {
+                val entry = archive.getEntry("jni/$relativePath")
+                    ?: throw GradleException("release AAR is missing JNI entry: $relativePath")
+                val bytes = archive.getInputStream(entry).use { it.readBytes() }
+                try {
+                    verifyAndroidNativeManifestEntry(manifestText, relativePath, bytes)
+                } finally {
+                    bytes.fill(0)
+                }
+            }
         }
     }
 }

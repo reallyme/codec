@@ -27,7 +27,7 @@ if (
   fail("expected an archive, checksum sidecar, Package.swift, and semantic version");
 }
 
-const readRegularFile = (path, maximumBytes, label) => {
+const assertRegularFile = (path, maximumBytes, label) => {
   let status;
   try {
     status = lstatSync(path);
@@ -37,6 +37,10 @@ const readRegularFile = (path, maximumBytes, label) => {
   if (status.isSymbolicLink() || !status.isFile() || status.size === 0 || status.size > maximumBytes) {
     fail(`${label} is not a bounded regular file`);
   }
+};
+
+const readRegularFile = (path, maximumBytes, label) => {
+  assertRegularFile(path, maximumBytes, label);
   try {
     return readFileSync(path);
   } catch {
@@ -44,7 +48,7 @@ const readRegularFile = (path, maximumBytes, label) => {
   }
 };
 
-readRegularFile(archivePath, MAX_ARCHIVE_BYTES, "xcframework archive");
+assertRegularFile(archivePath, MAX_ARCHIVE_BYTES, "xcframework archive");
 const sidecarText = readRegularFile(sidecarPath, 128, "checksum sidecar").toString("utf8");
 const sidecar = sidecarText.endsWith("\n") ? sidecarText.slice(0, -1) : "";
 const manifest = readRegularFile(manifestPath, MAX_MANIFEST_BYTES, "Swift package manifest").toString("utf8");
@@ -83,6 +87,19 @@ if (exactAssignment("ffiArtifactChecksum", "[0-9a-f]{64}") !== computedChecksum)
 }
 if (exactAssignment("ffiArtifactVersion", "(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)") !== expectedVersion) {
   fail("Package.swift version does not match the requested release");
+}
+if (exactAssignment("ffiArtifactLocalPathOverride", "") !== "") {
+  fail("Package.swift local artifact override must be empty for release verification");
+}
+if (
+  !manifest.includes(
+    'url: "https://github.com/reallyme/codec/releases/download/v\\(ffiArtifactVersion)/ReallyMeCodecFFI.xcframework.zip"',
+  )
+) {
+  fail("Package.swift binary target URL is not bound to ffiArtifactVersion");
+}
+if (!/^\s*checksum:\s*ffiArtifactChecksum\s*$/mu.test(manifest)) {
+  fail("Package.swift binary target checksum is not bound to ffiArtifactChecksum");
 }
 
 console.log("Swift release archive, sidecar, and Package.swift are byte-bound and consistent");

@@ -17,6 +17,8 @@ on:
       - "scripts/check_release_readiness.mjs"
       - "scripts/run_pinned_release_readiness.mjs"
       - "scripts/release-readiness/core.mjs"
+      - "scripts/release-readiness/source-policy.mjs"
+      - "scripts/codec_proto_sensitivity.mjs"
       - "scripts/redact_codec_proto_debug.mjs"
   push:
     branches:
@@ -31,13 +33,15 @@ on:
       - "scripts/check_release_readiness.mjs"
       - "scripts/run_pinned_release_readiness.mjs"
       - "scripts/release-readiness/core.mjs"
+      - "scripts/release-readiness/source-policy.mjs"
+      - "scripts/codec_proto_sensitivity.mjs"
       - "scripts/redact_codec_proto_debug.mjs"
 
 permissions:
   contents: read
 
 env:
-  BUFFA_VERSION: 0.8.1
+  BUFFA_VERSION: 0.9.0
   BUF_VERSION: 1.71.0
 
 jobs:

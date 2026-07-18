@@ -29,13 +29,15 @@ fileprivate nonisolated struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobu
   typealias Version = _2
 }
 
-/// CodecProtoResultStatus identifies the protobuf message carried by the
-/// result-envelope payload.
-public nonisolated enum ReallyMeProtoCodecProtoResultStatus: SwiftProtobuf.Enum, Swift.CaseIterable {
+/// CodecError is the public, non-PII error envelope for codec boundary failures.
+/// The oneof keeps base encoding, PEM, multiformat, and canonicalization
+/// failures distinct while the shared CodecErrorReason enum provides stable
+/// cross-language reason codes.
+public nonisolated enum ReallyMeProtoCodecErrorOrigin: SwiftProtobuf.Enum, Swift.CaseIterable {
   public typealias RawValue = Int
   case unspecified // = 0
-  case result // = 1
-  case codecError // = 2
+  case caller // = 1
+  case provider // = 2
   case UNRECOGNIZED(Int)
 
   public init() {
@@ -45,8 +47,8 @@ public nonisolated enum ReallyMeProtoCodecProtoResultStatus: SwiftProtobuf.Enum,
   public init?(rawValue: Int) {
     switch rawValue {
     case 0: self = .unspecified
-    case 1: self = .result
-    case 2: self = .codecError
+    case 1: self = .caller
+    case 2: self = .provider
     default: self = .UNRECOGNIZED(rawValue)
     }
   }
@@ -54,17 +56,17 @@ public nonisolated enum ReallyMeProtoCodecProtoResultStatus: SwiftProtobuf.Enum,
   public var rawValue: Int {
     switch self {
     case .unspecified: return 0
-    case .result: return 1
-    case .codecError: return 2
+    case .caller: return 1
+    case .provider: return 2
     case .UNRECOGNIZED(let i): return i
     }
   }
 
   // The compiler won't synthesize support with the UNRECOGNIZED case.
-  public static let allCases: [ReallyMeProtoCodecProtoResultStatus] = [
+  public static let allCases: [ReallyMeProtoCodecErrorOrigin] = [
     .unspecified,
-    .result,
-    .codecError,
+    .caller,
+    .provider,
   ]
 
 }
@@ -109,6 +111,44 @@ public nonisolated enum ReallyMeProtoCodecPemLabel: SwiftProtobuf.Enum, Swift.Ca
     .privateKey,
     .ecPrivateKey,
     .publicKey,
+  ]
+
+}
+
+public nonisolated enum ReallyMeProtoCodecPemLineEnding: SwiftProtobuf.Enum, Swift.CaseIterable {
+  public typealias RawValue = Int
+  case unspecified // = 0
+  case lf // = 100
+  case crlf // = 110
+  case UNRECOGNIZED(Int)
+
+  public init() {
+    self = .unspecified
+  }
+
+  public init?(rawValue: Int) {
+    switch rawValue {
+    case 0: self = .unspecified
+    case 100: self = .lf
+    case 110: self = .crlf
+    default: self = .UNRECOGNIZED(rawValue)
+    }
+  }
+
+  public var rawValue: Int {
+    switch self {
+    case .unspecified: return 0
+    case .lf: return 100
+    case .crlf: return 110
+    case .UNRECOGNIZED(let i): return i
+    }
+  }
+
+  // The compiler won't synthesize support with the UNRECOGNIZED case.
+  public static let allCases: [ReallyMeProtoCodecPemLineEnding] = [
+    .unspecified,
+    .lf,
+    .crlf,
   ]
 
 }
@@ -377,10 +417,6 @@ public nonisolated enum ReallyMeProtoCodecErrorReason: SwiftProtobuf.Enum, Swift
 
 }
 
-/// CodecError is the public, non-PII error envelope for codec boundary failures.
-/// The oneof keeps base encoding, PEM, multiformat, and canonicalization
-/// failures distinct while the shared CodecErrorReason enum provides stable
-/// cross-language reason codes.
 public nonisolated struct ReallyMeProtoCodecError: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -436,6 +472,11 @@ public nonisolated struct ReallyMeProtoCodecError: Sendable {
     set {error = .boundary(newValue)}
   }
 
+  /// Error origin is explicit so SDKs never infer caller-versus-provider
+  /// attribution from branch-specific numeric reason ranges. Missing, unknown,
+  /// or inconsistent origin values must fail closed as provider failures.
+  public var origin: ReallyMeProtoCodecErrorOrigin = .unspecified
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public nonisolated enum OneOf_Error: Equatable, Sendable {
@@ -447,37 +488,6 @@ public nonisolated struct ReallyMeProtoCodecError: Sendable {
     case boundary(ReallyMeProtoCodecBoundaryError)
 
   }
-
-  public init() {}
-}
-
-/// CodecProtoResultEnvelope is the single binary response shape for executable
-/// protobuf and generated ProtoJSON requests.
-public nonisolated struct ReallyMeProtoCodecProtoResultEnvelope: Sendable {
-  // Security post-processing: protobuf fields can contain secrets or PII.
-  public var debugDescription: String { "ReallyMeProtoCodecProtoResultEnvelope(<redacted>)" }
-
-  public func hash(into hasher: inout Hasher) {
-    hasher.combine("ReallyMeProtoCodecProtoResultEnvelope(<redacted>)")
-  }
-
-  // SwiftProtobuf's protocol-extension implementation traverses every
-  // field. Concrete sensitive messages shadow both public overloads so an
-  // explicit text-format call cannot bypass debug redaction.
-  public func textFormatString() -> String { "ReallyMeProtoCodecProtoResultEnvelope(<redacted>)" }
-
-  public func textFormatString(
-    options _: SwiftProtobuf.TextFormatEncodingOptions
-  ) -> String { "ReallyMeProtoCodecProtoResultEnvelope(<redacted>)" }
-  // SwiftProtobuf.Message conformance is added in an extension below. See the
-  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
-  // methods supported on all messages.
-
-  public var status: ReallyMeProtoCodecProtoResultStatus = .unspecified
-
-  public var payload: Data = Data()
-
-  public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
 }
@@ -587,7 +597,139 @@ public nonisolated struct ReallyMeProtoCodecDagCborVerifyCidRequest: Sendable {
   public init() {}
 }
 
-/// Zero limits select the audited codec defaults. An empty allowed-label list
+/// CodecDagCborEncodeRequest is the typed recursive DAG-CBOR encode contract.
+/// DAG-CBOR map keys are restricted to text keys by
+/// the adapter even though the reusable recursive value schema can represent
+/// the wider deterministic-CBOR key domain.
+public nonisolated struct ReallyMeProtoCodecDagCborEncodeRequest: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecDagCborEncodeRequest(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecDagCborEncodeRequest(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecDagCborEncodeRequest(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecDagCborEncodeRequest(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var value: ReallyMeProtoCodecDeterministicCborValue {
+    get {_value ?? ReallyMeProtoCodecDeterministicCborValue()}
+    set {_value = newValue}
+  }
+  /// Returns true if `value` has been explicitly set.
+  public var hasValue: Bool {self._value != nil}
+  /// Clears the value of `value`. Subsequent reads from it will return its default value.
+  public mutating func clearValue() {self._value = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _value: ReallyMeProtoCodecDeterministicCborValue? = nil
+}
+
+public nonisolated struct ReallyMeProtoCodecDagCborEncodeResult: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecDagCborEncodeResult(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecDagCborEncodeResult(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecDagCborEncodeResult(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecDagCborEncodeResult(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Encoded DAG-CBOR bytes may contain the complete sensitive document.
+  public var encoded: Data = Data()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct ReallyMeProtoCodecDagCborDecodeRequest: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecDagCborDecodeRequest(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecDagCborDecodeRequest(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecDagCborDecodeRequest(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecDagCborDecodeRequest(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Encoded DAG-CBOR bytes may contain the complete sensitive document.
+  public var encoded: Data = Data()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct ReallyMeProtoCodecDagCborDecodeResult: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecDagCborDecodeResult(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecDagCborDecodeResult(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecDagCborDecodeResult(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecDagCborDecodeResult(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var value: ReallyMeProtoCodecDeterministicCborValue {
+    get {_value ?? ReallyMeProtoCodecDeterministicCborValue()}
+    set {_value = newValue}
+  }
+  /// Returns true if `value` has been explicitly set.
+  public var hasValue: Bool {self._value != nil}
+  /// Clears the value of `value`. Subsequent reads from it will return its default value.
+  public mutating func clearValue() {self._value = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _value: ReallyMeProtoCodecDeterministicCborValue? = nil
+}
+
+/// Zero limits select the documented codec defaults. An empty allowed-label list
 /// selects the default PRIVATE KEY, EC PRIVATE KEY, and PUBLIC KEY set.
 public nonisolated struct ReallyMeProtoCodecPemDecodeOptions: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
@@ -643,6 +785,868 @@ public nonisolated struct ReallyMeProtoCodecPemDecodeRequest: Sendable {
   public init() {}
 
   fileprivate var _options: ReallyMeProtoCodecPemDecodeOptions? = nil
+}
+
+/// Zero values select the documented codec defaults.
+public nonisolated struct ReallyMeProtoCodecPemEncodeOptions: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var maxDerLen: UInt32 = 0
+
+  public var lineWidth: UInt32 = 0
+
+  public var lineEnding: ReallyMeProtoCodecPemLineEnding = .unspecified
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct ReallyMeProtoCodecPemEncodeRequest: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecPemEncodeRequest(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecPemEncodeRequest(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecPemEncodeRequest(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecPemEncodeRequest(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var label: ReallyMeProtoCodecPemLabel = .unspecified
+
+  /// DER may contain private-key material. Generated owners are hardened to
+  /// wipe this field on every success and failure path.
+  public var der: Data = Data()
+
+  public var options: ReallyMeProtoCodecPemEncodeOptions {
+    get {_options ?? ReallyMeProtoCodecPemEncodeOptions()}
+    set {_options = newValue}
+  }
+  /// Returns true if `options` has been explicitly set.
+  public var hasOptions: Bool {self._options != nil}
+  /// Clears the value of `options`. Subsequent reads from it will return its default value.
+  public mutating func clearOptions() {self._options = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _options: ReallyMeProtoCodecPemEncodeOptions? = nil
+}
+
+public nonisolated struct ReallyMeProtoCodecPemEncodeResult: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecPemEncodeResult(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecPemEncodeResult(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecPemEncodeResult(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecPemEncodeResult(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// PEM armor may contain private-key material and remains byte-oriented so
+  /// SDK callers can promptly wipe the returned owner.
+  public var pem: Data = Data()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// CodecDeterministicCborNull is the explicit null branch for the deterministic
+/// generic-CBOR value union.
+public nonisolated struct ReallyMeProtoCodecDeterministicCborNull: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecDeterministicCborNull(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecDeterministicCborNull(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecDeterministicCborNull(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecDeterministicCborNull(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct ReallyMeProtoCodecDeterministicCborBool: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecDeterministicCborBool(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecDeterministicCborBool(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecDeterministicCborBool(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecDeterministicCborBool(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var value: Bool = false
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct ReallyMeProtoCodecDeterministicCborUnsignedInteger: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecDeterministicCborUnsignedInteger(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecDeterministicCborUnsignedInteger(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecDeterministicCborUnsignedInteger(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecDeterministicCborUnsignedInteger(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var value: UInt64 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct ReallyMeProtoCodecDeterministicCborNegativeInteger: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecDeterministicCborNegativeInteger(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecDeterministicCborNegativeInteger(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecDeterministicCborNegativeInteger(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecDeterministicCborNegativeInteger(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var value: Int64 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// CodecDeterministicCborInteger is the exact integer representation supported
+/// by deterministic generic CBOR. Negative values are restricted to
+/// i64::MIN..=-1; zero and positive values must use unsigned_value.
+public nonisolated struct ReallyMeProtoCodecDeterministicCborInteger: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecDeterministicCborInteger(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecDeterministicCborInteger(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecDeterministicCborInteger(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecDeterministicCborInteger(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var value: ReallyMeProtoCodecDeterministicCborInteger.OneOf_Value? = nil
+
+  public var unsignedValue: ReallyMeProtoCodecDeterministicCborUnsignedInteger {
+    get {
+      if case .unsignedValue(let v)? = value {return v}
+      return ReallyMeProtoCodecDeterministicCborUnsignedInteger()
+    }
+    set {value = .unsignedValue(newValue)}
+  }
+
+  public var negativeValue: ReallyMeProtoCodecDeterministicCborNegativeInteger {
+    get {
+      if case .negativeValue(let v)? = value {return v}
+      return ReallyMeProtoCodecDeterministicCborNegativeInteger()
+    }
+    set {value = .negativeValue(newValue)}
+  }
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public nonisolated enum OneOf_Value: Equatable, Sendable {
+    case unsignedValue(ReallyMeProtoCodecDeterministicCborUnsignedInteger)
+    case negativeValue(ReallyMeProtoCodecDeterministicCborNegativeInteger)
+
+  }
+
+  public init() {}
+}
+
+public nonisolated struct ReallyMeProtoCodecDeterministicCborText: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecDeterministicCborText(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecDeterministicCborText(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecDeterministicCborText(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecDeterministicCborText(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var value: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct ReallyMeProtoCodecDeterministicCborBytes: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecDeterministicCborBytes(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecDeterministicCborBytes(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecDeterministicCborBytes(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecDeterministicCborBytes(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var value: Data = Data()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// CodecDeterministicCborMapKey is the closed map-key domain for deterministic
+/// generic CBOR. Protobuf map<> is intentionally not used because it cannot
+/// preserve mixed key types or duplicate entries for semantic rejection.
+public nonisolated struct ReallyMeProtoCodecDeterministicCborMapKey: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecDeterministicCborMapKey(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecDeterministicCborMapKey(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecDeterministicCborMapKey(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecDeterministicCborMapKey(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var key: ReallyMeProtoCodecDeterministicCborMapKey.OneOf_Key? = nil
+
+  public var integerKey: ReallyMeProtoCodecDeterministicCborInteger {
+    get {
+      if case .integerKey(let v)? = key {return v}
+      return ReallyMeProtoCodecDeterministicCborInteger()
+    }
+    set {key = .integerKey(newValue)}
+  }
+
+  public var textKey: ReallyMeProtoCodecDeterministicCborText {
+    get {
+      if case .textKey(let v)? = key {return v}
+      return ReallyMeProtoCodecDeterministicCborText()
+    }
+    set {key = .textKey(newValue)}
+  }
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public nonisolated enum OneOf_Key: Equatable, Sendable {
+    case integerKey(ReallyMeProtoCodecDeterministicCborInteger)
+    case textKey(ReallyMeProtoCodecDeterministicCborText)
+
+  }
+
+  public init() {}
+}
+
+public nonisolated struct ReallyMeProtoCodecDeterministicCborMapEntry: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecDeterministicCborMapEntry(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecDeterministicCborMapEntry(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecDeterministicCborMapEntry(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecDeterministicCborMapEntry(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var key: ReallyMeProtoCodecDeterministicCborMapKey {
+    get {_key ?? ReallyMeProtoCodecDeterministicCborMapKey()}
+    set {_key = newValue}
+  }
+  /// Returns true if `key` has been explicitly set.
+  public var hasKey: Bool {self._key != nil}
+  /// Clears the value of `key`. Subsequent reads from it will return its default value.
+  public mutating func clearKey() {self._key = nil}
+
+  public var value: ReallyMeProtoCodecDeterministicCborValue {
+    get {_value ?? ReallyMeProtoCodecDeterministicCborValue()}
+    set {_value = newValue}
+  }
+  /// Returns true if `value` has been explicitly set.
+  public var hasValue: Bool {self._value != nil}
+  /// Clears the value of `value`. Subsequent reads from it will return its default value.
+  public mutating func clearValue() {self._value = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _key: ReallyMeProtoCodecDeterministicCborMapKey? = nil
+  fileprivate var _value: ReallyMeProtoCodecDeterministicCborValue? = nil
+}
+
+public nonisolated struct ReallyMeProtoCodecDeterministicCborArray: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecDeterministicCborArray(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecDeterministicCborArray(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecDeterministicCborArray(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecDeterministicCborArray(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var values: [ReallyMeProtoCodecDeterministicCborValue] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct ReallyMeProtoCodecDeterministicCborMap: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecDeterministicCborMap(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecDeterministicCborMap(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecDeterministicCborMap(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecDeterministicCborMap(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var entries: [ReallyMeProtoCodecDeterministicCborMapEntry] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// CodecDeterministicCborValue is the generated transport form of the
+/// deterministic generic-CBOR semantic tree. Text, bytes, and keys are treated
+/// as sensitive by generated hardening because this is a generic codec surface.
+public nonisolated struct ReallyMeProtoCodecDeterministicCborValue: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecDeterministicCborValue(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecDeterministicCborValue(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecDeterministicCborValue(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecDeterministicCborValue(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var value: ReallyMeProtoCodecDeterministicCborValue.OneOf_Value? = nil
+
+  public var nullValue: ReallyMeProtoCodecDeterministicCborNull {
+    get {
+      if case .nullValue(let v)? = value {return v}
+      return ReallyMeProtoCodecDeterministicCborNull()
+    }
+    set {value = .nullValue(newValue)}
+  }
+
+  public var boolValue: ReallyMeProtoCodecDeterministicCborBool {
+    get {
+      if case .boolValue(let v)? = value {return v}
+      return ReallyMeProtoCodecDeterministicCborBool()
+    }
+    set {value = .boolValue(newValue)}
+  }
+
+  public var integerValue: ReallyMeProtoCodecDeterministicCborInteger {
+    get {
+      if case .integerValue(let v)? = value {return v}
+      return ReallyMeProtoCodecDeterministicCborInteger()
+    }
+    set {value = .integerValue(newValue)}
+  }
+
+  public var textValue: ReallyMeProtoCodecDeterministicCborText {
+    get {
+      if case .textValue(let v)? = value {return v}
+      return ReallyMeProtoCodecDeterministicCborText()
+    }
+    set {value = .textValue(newValue)}
+  }
+
+  public var bytesValue: ReallyMeProtoCodecDeterministicCborBytes {
+    get {
+      if case .bytesValue(let v)? = value {return v}
+      return ReallyMeProtoCodecDeterministicCborBytes()
+    }
+    set {value = .bytesValue(newValue)}
+  }
+
+  public var arrayValue: ReallyMeProtoCodecDeterministicCborArray {
+    get {
+      if case .arrayValue(let v)? = value {return v}
+      return ReallyMeProtoCodecDeterministicCborArray()
+    }
+    set {value = .arrayValue(newValue)}
+  }
+
+  public var mapValue: ReallyMeProtoCodecDeterministicCborMap {
+    get {
+      if case .mapValue(let v)? = value {return v}
+      return ReallyMeProtoCodecDeterministicCborMap()
+    }
+    set {value = .mapValue(newValue)}
+  }
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public nonisolated enum OneOf_Value: Equatable, Sendable {
+    case nullValue(ReallyMeProtoCodecDeterministicCborNull)
+    case boolValue(ReallyMeProtoCodecDeterministicCborBool)
+    case integerValue(ReallyMeProtoCodecDeterministicCborInteger)
+    case textValue(ReallyMeProtoCodecDeterministicCborText)
+    case bytesValue(ReallyMeProtoCodecDeterministicCborBytes)
+    case arrayValue(ReallyMeProtoCodecDeterministicCborArray)
+    case mapValue(ReallyMeProtoCodecDeterministicCborMap)
+
+  }
+
+  public init() {}
+}
+
+public nonisolated struct ReallyMeProtoCodecDeterministicCborEncodeRequest: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecDeterministicCborEncodeRequest(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecDeterministicCborEncodeRequest(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecDeterministicCborEncodeRequest(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecDeterministicCborEncodeRequest(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var value: ReallyMeProtoCodecDeterministicCborValue {
+    get {_value ?? ReallyMeProtoCodecDeterministicCborValue()}
+    set {_value = newValue}
+  }
+  /// Returns true if `value` has been explicitly set.
+  public var hasValue: Bool {self._value != nil}
+  /// Clears the value of `value`. Subsequent reads from it will return its default value.
+  public mutating func clearValue() {self._value = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _value: ReallyMeProtoCodecDeterministicCborValue? = nil
+}
+
+public nonisolated struct ReallyMeProtoCodecDeterministicCborEncodeResult: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecDeterministicCborEncodeResult(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecDeterministicCborEncodeResult(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecDeterministicCborEncodeResult(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecDeterministicCborEncodeResult(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Encoded CBOR bytes may contain the complete sensitive document.
+  public var encoded: Data = Data()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct ReallyMeProtoCodecDeterministicCborDecodeRequest: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecDeterministicCborDecodeRequest(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecDeterministicCborDecodeRequest(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecDeterministicCborDecodeRequest(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecDeterministicCborDecodeRequest(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Encoded CBOR bytes may contain the complete sensitive document.
+  public var encoded: Data = Data()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct ReallyMeProtoCodecDeterministicCborDecodeResult: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecDeterministicCborDecodeResult(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecDeterministicCborDecodeResult(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecDeterministicCborDecodeResult(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecDeterministicCborDecodeResult(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var value: ReallyMeProtoCodecDeterministicCborValue {
+    get {_value ?? ReallyMeProtoCodecDeterministicCborValue()}
+    set {_value = newValue}
+  }
+  /// Returns true if `value` has been explicitly set.
+  public var hasValue: Bool {self._value != nil}
+  /// Clears the value of `value`. Subsequent reads from it will return its default value.
+  public mutating func clearValue() {self._value = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _value: ReallyMeProtoCodecDeterministicCborValue? = nil
+}
+
+/// CodecOperationResult is the fully discriminated generated result contract for
+/// structured operations.
+public nonisolated struct ReallyMeProtoCodecOperationResult: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecOperationResult(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecOperationResult(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecOperationResult(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecOperationResult(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var result: ReallyMeProtoCodecOperationResult.OneOf_Result? = nil
+
+  public var multicodecPrefixForName: ReallyMeProtoCodecMulticodecSpec {
+    get {
+      if case .multicodecPrefixForName(let v)? = result {return v}
+      return ReallyMeProtoCodecMulticodecSpec()
+    }
+    set {result = .multicodecPrefixForName(newValue)}
+  }
+
+  public var multicodecLookupPrefix: ReallyMeProtoCodecMulticodecLookupResult {
+    get {
+      if case .multicodecLookupPrefix(let v)? = result {return v}
+      return ReallyMeProtoCodecMulticodecLookupResult()
+    }
+    set {result = .multicodecLookupPrefix(newValue)}
+  }
+
+  public var multicodecTable: ReallyMeProtoCodecMulticodecTableResult {
+    get {
+      if case .multicodecTable(let v)? = result {return v}
+      return ReallyMeProtoCodecMulticodecTableResult()
+    }
+    set {result = .multicodecTable(newValue)}
+  }
+
+  public var multikeyParse: ReallyMeProtoCodecMultikeyParseResult {
+    get {
+      if case .multikeyParse(let v)? = result {return v}
+      return ReallyMeProtoCodecMultikeyParseResult()
+    }
+    set {result = .multikeyParse(newValue)}
+  }
+
+  public var dagCborVerifyCid: ReallyMeProtoCodecDagCborVerifyCidResult {
+    get {
+      if case .dagCborVerifyCid(let v)? = result {return v}
+      return ReallyMeProtoCodecDagCborVerifyCidResult()
+    }
+    set {result = .dagCborVerifyCid(newValue)}
+  }
+
+  public var dagCborEncode: ReallyMeProtoCodecDagCborEncodeResult {
+    get {
+      if case .dagCborEncode(let v)? = result {return v}
+      return ReallyMeProtoCodecDagCborEncodeResult()
+    }
+    set {result = .dagCborEncode(newValue)}
+  }
+
+  public var dagCborDecode: ReallyMeProtoCodecDagCborDecodeResult {
+    get {
+      if case .dagCborDecode(let v)? = result {return v}
+      return ReallyMeProtoCodecDagCborDecodeResult()
+    }
+    set {result = .dagCborDecode(newValue)}
+  }
+
+  public var pemDecode: ReallyMeProtoCodecPemDecodeResult {
+    get {
+      if case .pemDecode(let v)? = result {return v}
+      return ReallyMeProtoCodecPemDecodeResult()
+    }
+    set {result = .pemDecode(newValue)}
+  }
+
+  public var pemEncode: ReallyMeProtoCodecPemEncodeResult {
+    get {
+      if case .pemEncode(let v)? = result {return v}
+      return ReallyMeProtoCodecPemEncodeResult()
+    }
+    set {result = .pemEncode(newValue)}
+  }
+
+  public var deterministicCborEncode: ReallyMeProtoCodecDeterministicCborEncodeResult {
+    get {
+      if case .deterministicCborEncode(let v)? = result {return v}
+      return ReallyMeProtoCodecDeterministicCborEncodeResult()
+    }
+    set {result = .deterministicCborEncode(newValue)}
+  }
+
+  public var deterministicCborDecode: ReallyMeProtoCodecDeterministicCborDecodeResult {
+    get {
+      if case .deterministicCborDecode(let v)? = result {return v}
+      return ReallyMeProtoCodecDeterministicCborDecodeResult()
+    }
+    set {result = .deterministicCborDecode(newValue)}
+  }
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public nonisolated enum OneOf_Result: Equatable, Sendable {
+    case multicodecPrefixForName(ReallyMeProtoCodecMulticodecSpec)
+    case multicodecLookupPrefix(ReallyMeProtoCodecMulticodecLookupResult)
+    case multicodecTable(ReallyMeProtoCodecMulticodecTableResult)
+    case multikeyParse(ReallyMeProtoCodecMultikeyParseResult)
+    case dagCborVerifyCid(ReallyMeProtoCodecDagCborVerifyCidResult)
+    case dagCborEncode(ReallyMeProtoCodecDagCborEncodeResult)
+    case dagCborDecode(ReallyMeProtoCodecDagCborDecodeResult)
+    case pemDecode(ReallyMeProtoCodecPemDecodeResult)
+    case pemEncode(ReallyMeProtoCodecPemEncodeResult)
+    case deterministicCborEncode(ReallyMeProtoCodecDeterministicCborEncodeResult)
+    case deterministicCborDecode(ReallyMeProtoCodecDeterministicCborDecodeResult)
+
+  }
+
+  public init() {}
+}
+
+/// CodecOperationResponse removes invalid status/payload combinations for new
+/// structured callers by making success and failure explicit generated variants.
+public nonisolated struct ReallyMeProtoCodecOperationResponse: Sendable {
+  // Security post-processing: protobuf fields can contain secrets or PII.
+  public var debugDescription: String { "ReallyMeProtoCodecOperationResponse(<redacted>)" }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine("ReallyMeProtoCodecOperationResponse(<redacted>)")
+  }
+
+  // SwiftProtobuf's protocol-extension implementation traverses every
+  // field. Concrete sensitive messages shadow both public overloads so an
+  // explicit text-format call cannot bypass debug redaction.
+  public func textFormatString() -> String { "ReallyMeProtoCodecOperationResponse(<redacted>)" }
+
+  public func textFormatString(
+    options _: SwiftProtobuf.TextFormatEncodingOptions
+  ) -> String { "ReallyMeProtoCodecOperationResponse(<redacted>)" }
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var outcome: ReallyMeProtoCodecOperationResponse.OneOf_Outcome? = nil
+
+  public var result: ReallyMeProtoCodecOperationResult {
+    get {
+      if case .result(let v)? = outcome {return v}
+      return ReallyMeProtoCodecOperationResult()
+    }
+    set {outcome = .result(newValue)}
+  }
+
+  public var error: ReallyMeProtoCodecError {
+    get {
+      if case .error(let v)? = outcome {return v}
+      return ReallyMeProtoCodecError()
+    }
+    set {outcome = .error(newValue)}
+  }
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public nonisolated enum OneOf_Outcome: Equatable, Sendable {
+    case result(ReallyMeProtoCodecOperationResult)
+    case error(ReallyMeProtoCodecError)
+
+  }
+
+  public init() {}
 }
 
 /// CodecOperationRequest is the single executable protobuf request. Native SDK
@@ -717,6 +1721,22 @@ public nonisolated struct ReallyMeProtoCodecOperationRequest: Sendable {
     set {operation = .dagCborVerifyCid(newValue)}
   }
 
+  public var dagCborEncode: ReallyMeProtoCodecDagCborEncodeRequest {
+    get {
+      if case .dagCborEncode(let v)? = operation {return v}
+      return ReallyMeProtoCodecDagCborEncodeRequest()
+    }
+    set {operation = .dagCborEncode(newValue)}
+  }
+
+  public var dagCborDecode: ReallyMeProtoCodecDagCborDecodeRequest {
+    get {
+      if case .dagCborDecode(let v)? = operation {return v}
+      return ReallyMeProtoCodecDagCborDecodeRequest()
+    }
+    set {operation = .dagCborDecode(newValue)}
+  }
+
   /// 4000-4999: PEM armor and DER envelope helpers.
   public var pemDecode: ReallyMeProtoCodecPemDecodeRequest {
     get {
@@ -724,6 +1744,31 @@ public nonisolated struct ReallyMeProtoCodecOperationRequest: Sendable {
       return ReallyMeProtoCodecPemDecodeRequest()
     }
     set {operation = .pemDecode(newValue)}
+  }
+
+  public var pemEncode: ReallyMeProtoCodecPemEncodeRequest {
+    get {
+      if case .pemEncode(let v)? = operation {return v}
+      return ReallyMeProtoCodecPemEncodeRequest()
+    }
+    set {operation = .pemEncode(newValue)}
+  }
+
+  /// 5000-5999: deterministic generic-CBOR encode/decode.
+  public var deterministicCborEncode: ReallyMeProtoCodecDeterministicCborEncodeRequest {
+    get {
+      if case .deterministicCborEncode(let v)? = operation {return v}
+      return ReallyMeProtoCodecDeterministicCborEncodeRequest()
+    }
+    set {operation = .deterministicCborEncode(newValue)}
+  }
+
+  public var deterministicCborDecode: ReallyMeProtoCodecDeterministicCborDecodeRequest {
+    get {
+      if case .deterministicCborDecode(let v)? = operation {return v}
+      return ReallyMeProtoCodecDeterministicCborDecodeRequest()
+    }
+    set {operation = .deterministicCborDecode(newValue)}
   }
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -739,8 +1784,14 @@ public nonisolated struct ReallyMeProtoCodecOperationRequest: Sendable {
     case multikeyParse(ReallyMeProtoCodecMultikeyParseRequest)
     /// 3000-3999: DAG-CBOR and content-addressed canonicalization helpers.
     case dagCborVerifyCid(ReallyMeProtoCodecDagCborVerifyCidRequest)
+    case dagCborEncode(ReallyMeProtoCodecDagCborEncodeRequest)
+    case dagCborDecode(ReallyMeProtoCodecDagCborDecodeRequest)
     /// 4000-4999: PEM armor and DER envelope helpers.
     case pemDecode(ReallyMeProtoCodecPemDecodeRequest)
+    case pemEncode(ReallyMeProtoCodecPemEncodeRequest)
+    /// 5000-5999: deterministic generic-CBOR encode/decode.
+    case deterministicCborEncode(ReallyMeProtoCodecDeterministicCborEncodeRequest)
+    case deterministicCborDecode(ReallyMeProtoCodecDeterministicCborDecodeRequest)
 
   }
 
@@ -1002,12 +2053,16 @@ public nonisolated struct ReallyMeProtoCodecBoundaryError: Sendable {
 
 fileprivate nonisolated let _protobuf_package = "reallyme.codec.v1"
 
-nonisolated extension ReallyMeProtoCodecProtoResultStatus: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0CODEC_PROTO_RESULT_STATUS_UNSPECIFIED\0\u{1}CODEC_PROTO_RESULT_STATUS_RESULT\0\u{1}CODEC_PROTO_RESULT_STATUS_CODEC_ERROR\0")
+nonisolated extension ReallyMeProtoCodecErrorOrigin: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0CODEC_ERROR_ORIGIN_UNSPECIFIED\0\u{1}CODEC_ERROR_ORIGIN_CALLER\0\u{1}CODEC_ERROR_ORIGIN_PROVIDER\0")
 }
 
 nonisolated extension ReallyMeProtoCodecPemLabel: SwiftProtobuf._ProtoNameProviding {
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0CODEC_PEM_LABEL_UNSPECIFIED\0\u{2}d\u{1}CODEC_PEM_LABEL_PRIVATE_KEY\0\u{2}\u{a}CODEC_PEM_LABEL_EC_PRIVATE_KEY\0\u{2}\u{a}CODEC_PEM_LABEL_PUBLIC_KEY\0")
+}
+
+nonisolated extension ReallyMeProtoCodecPemLineEnding: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0CODEC_PEM_LINE_ENDING_UNSPECIFIED\0\u{2}d\u{1}CODEC_PEM_LINE_ENDING_LF\0\u{2}\u{a}CODEC_PEM_LINE_ENDING_CRLF\0")
 }
 
 nonisolated extension ReallyMeProtoCodecKeyMaterialKind: SwiftProtobuf._ProtoNameProviding {
@@ -1024,7 +2079,7 @@ nonisolated extension ReallyMeProtoCodecErrorReason: SwiftProtobuf._ProtoNamePro
 
 nonisolated extension ReallyMeProtoCodecError: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".CodecError"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}base_encoding\0\u{1}pem\0\u{1}multiformat\0\u{1}canonicalization\0\u{1}backend\0\u{1}boundary\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}base_encoding\0\u{1}pem\0\u{1}multiformat\0\u{1}canonicalization\0\u{1}backend\0\u{1}boundary\0\u{2}^\u{1}origin\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1110,6 +2165,7 @@ nonisolated extension ReallyMeProtoCodecError: SwiftProtobuf.Message, SwiftProto
           self.error = .boundary(v)
         }
       }()
+      case 100: try { try decoder.decodeSingularEnumField(value: &self.origin) }()
       default: break
       }
     }
@@ -1147,46 +2203,15 @@ nonisolated extension ReallyMeProtoCodecError: SwiftProtobuf.Message, SwiftProto
     }()
     case nil: break
     }
+    if self.origin != .unspecified {
+      try visitor.visitSingularEnumField(value: self.origin, fieldNumber: 100)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: ReallyMeProtoCodecError, rhs: ReallyMeProtoCodecError) -> Bool {
     if lhs.error != rhs.error {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-nonisolated extension ReallyMeProtoCodecProtoResultEnvelope: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".CodecProtoResultEnvelope"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}status\0\u{1}payload\0")
-
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularEnumField(value: &self.status) }()
-      case 2: try { try decoder.decodeSingularBytesField(value: &self.payload) }()
-      default: break
-      }
-    }
-  }
-
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if self.status != .unspecified {
-      try visitor.visitSingularEnumField(value: self.status, fieldNumber: 1)
-    }
-    if !self.payload.isEmpty {
-      try visitor.visitSingularBytesField(value: self.payload, fieldNumber: 2)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  public static func ==(lhs: ReallyMeProtoCodecProtoResultEnvelope, rhs: ReallyMeProtoCodecProtoResultEnvelope) -> Bool {
-    if lhs.status != rhs.status {return false}
-    if lhs.payload != rhs.payload {return false}
+    if lhs.origin != rhs.origin {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -1336,6 +2361,134 @@ nonisolated extension ReallyMeProtoCodecDagCborVerifyCidRequest: SwiftProtobuf.M
   }
 }
 
+nonisolated extension ReallyMeProtoCodecDagCborEncodeRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecDagCborEncodeRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}value\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._value) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._value {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecDagCborEncodeRequest, rhs: ReallyMeProtoCodecDagCborEncodeRequest) -> Bool {
+    if lhs._value != rhs._value {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecDagCborEncodeResult: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecDagCborEncodeResult"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}encoded\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBytesField(value: &self.encoded) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.encoded.isEmpty {
+      try visitor.visitSingularBytesField(value: self.encoded, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecDagCborEncodeResult, rhs: ReallyMeProtoCodecDagCborEncodeResult) -> Bool {
+    if lhs.encoded != rhs.encoded {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecDagCborDecodeRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecDagCborDecodeRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}encoded\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBytesField(value: &self.encoded) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.encoded.isEmpty {
+      try visitor.visitSingularBytesField(value: self.encoded, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecDagCborDecodeRequest, rhs: ReallyMeProtoCodecDagCborDecodeRequest) -> Bool {
+    if lhs.encoded != rhs.encoded {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecDagCborDecodeResult: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecDagCborDecodeResult"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}value\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._value) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._value {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecDagCborDecodeResult, rhs: ReallyMeProtoCodecDagCborDecodeResult) -> Bool {
+    if lhs._value != rhs._value {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
 nonisolated extension ReallyMeProtoCodecPemDecodeOptions: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".CodecPemDecodeOptions"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}allowed_labels\0\u{3}max_input_len\0\u{3}max_der_len\0")
@@ -1415,9 +2568,1092 @@ nonisolated extension ReallyMeProtoCodecPemDecodeRequest: SwiftProtobuf.Message,
   }
 }
 
+nonisolated extension ReallyMeProtoCodecPemEncodeOptions: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecPemEncodeOptions"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}max_der_len\0\u{3}line_width\0\u{3}line_ending\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt32Field(value: &self.maxDerLen) }()
+      case 2: try { try decoder.decodeSingularUInt32Field(value: &self.lineWidth) }()
+      case 3: try { try decoder.decodeSingularEnumField(value: &self.lineEnding) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.maxDerLen != 0 {
+      try visitor.visitSingularUInt32Field(value: self.maxDerLen, fieldNumber: 1)
+    }
+    if self.lineWidth != 0 {
+      try visitor.visitSingularUInt32Field(value: self.lineWidth, fieldNumber: 2)
+    }
+    if self.lineEnding != .unspecified {
+      try visitor.visitSingularEnumField(value: self.lineEnding, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecPemEncodeOptions, rhs: ReallyMeProtoCodecPemEncodeOptions) -> Bool {
+    if lhs.maxDerLen != rhs.maxDerLen {return false}
+    if lhs.lineWidth != rhs.lineWidth {return false}
+    if lhs.lineEnding != rhs.lineEnding {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecPemEncodeRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecPemEncodeRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}label\0\u{1}der\0\u{1}options\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.label) }()
+      case 2: try { try decoder.decodeSingularBytesField(value: &self.der) }()
+      case 3: try { try decoder.decodeSingularMessageField(value: &self._options) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if self.label != .unspecified {
+      try visitor.visitSingularEnumField(value: self.label, fieldNumber: 1)
+    }
+    if !self.der.isEmpty {
+      try visitor.visitSingularBytesField(value: self.der, fieldNumber: 2)
+    }
+    try { if let v = self._options {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecPemEncodeRequest, rhs: ReallyMeProtoCodecPemEncodeRequest) -> Bool {
+    if lhs.label != rhs.label {return false}
+    if lhs.der != rhs.der {return false}
+    if lhs._options != rhs._options {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecPemEncodeResult: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecPemEncodeResult"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}pem\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBytesField(value: &self.pem) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.pem.isEmpty {
+      try visitor.visitSingularBytesField(value: self.pem, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecPemEncodeResult, rhs: ReallyMeProtoCodecPemEncodeResult) -> Bool {
+    if lhs.pem != rhs.pem {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecDeterministicCborNull: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecDeterministicCborNull"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap()
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    // Load everything into unknown fields
+    while try decoder.nextFieldNumber() != nil {}
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecDeterministicCborNull, rhs: ReallyMeProtoCodecDeterministicCborNull) -> Bool {
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecDeterministicCborBool: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecDeterministicCborBool"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}value\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBoolField(value: &self.value) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.value != false {
+      try visitor.visitSingularBoolField(value: self.value, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecDeterministicCborBool, rhs: ReallyMeProtoCodecDeterministicCborBool) -> Bool {
+    if lhs.value != rhs.value {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecDeterministicCborUnsignedInteger: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecDeterministicCborUnsignedInteger"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}value\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt64Field(value: &self.value) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.value != 0 {
+      try visitor.visitSingularUInt64Field(value: self.value, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecDeterministicCborUnsignedInteger, rhs: ReallyMeProtoCodecDeterministicCborUnsignedInteger) -> Bool {
+    if lhs.value != rhs.value {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecDeterministicCborNegativeInteger: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecDeterministicCborNegativeInteger"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}value\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularSInt64Field(value: &self.value) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.value != 0 {
+      try visitor.visitSingularSInt64Field(value: self.value, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecDeterministicCborNegativeInteger, rhs: ReallyMeProtoCodecDeterministicCborNegativeInteger) -> Bool {
+    if lhs.value != rhs.value {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecDeterministicCborInteger: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecDeterministicCborInteger"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}unsigned_value\0\u{3}negative_value\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try {
+        var v: ReallyMeProtoCodecDeterministicCborUnsignedInteger?
+        var hadOneofValue = false
+        if let current = self.value {
+          hadOneofValue = true
+          if case .unsignedValue(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.value = .unsignedValue(v)
+        }
+      }()
+      case 2: try {
+        var v: ReallyMeProtoCodecDeterministicCborNegativeInteger?
+        var hadOneofValue = false
+        if let current = self.value {
+          hadOneofValue = true
+          if case .negativeValue(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.value = .negativeValue(v)
+        }
+      }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    switch self.value {
+    case .unsignedValue?: try {
+      guard case .unsignedValue(let v)? = self.value else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    }()
+    case .negativeValue?: try {
+      guard case .negativeValue(let v)? = self.value else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    }()
+    case nil: break
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecDeterministicCborInteger, rhs: ReallyMeProtoCodecDeterministicCborInteger) -> Bool {
+    if lhs.value != rhs.value {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecDeterministicCborText: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecDeterministicCborText"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}value\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.value) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.value.isEmpty {
+      try visitor.visitSingularStringField(value: self.value, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecDeterministicCborText, rhs: ReallyMeProtoCodecDeterministicCborText) -> Bool {
+    if lhs.value != rhs.value {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecDeterministicCborBytes: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecDeterministicCborBytes"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}value\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBytesField(value: &self.value) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.value.isEmpty {
+      try visitor.visitSingularBytesField(value: self.value, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecDeterministicCborBytes, rhs: ReallyMeProtoCodecDeterministicCborBytes) -> Bool {
+    if lhs.value != rhs.value {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecDeterministicCborMapKey: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecDeterministicCborMapKey"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}integer_key\0\u{3}text_key\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try {
+        var v: ReallyMeProtoCodecDeterministicCborInteger?
+        var hadOneofValue = false
+        if let current = self.key {
+          hadOneofValue = true
+          if case .integerKey(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.key = .integerKey(v)
+        }
+      }()
+      case 2: try {
+        var v: ReallyMeProtoCodecDeterministicCborText?
+        var hadOneofValue = false
+        if let current = self.key {
+          hadOneofValue = true
+          if case .textKey(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.key = .textKey(v)
+        }
+      }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    switch self.key {
+    case .integerKey?: try {
+      guard case .integerKey(let v)? = self.key else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    }()
+    case .textKey?: try {
+      guard case .textKey(let v)? = self.key else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    }()
+    case nil: break
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecDeterministicCborMapKey, rhs: ReallyMeProtoCodecDeterministicCborMapKey) -> Bool {
+    if lhs.key != rhs.key {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecDeterministicCborMapEntry: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecDeterministicCborMapEntry"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}key\0\u{1}value\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._key) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._value) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._key {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._value {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecDeterministicCborMapEntry, rhs: ReallyMeProtoCodecDeterministicCborMapEntry) -> Bool {
+    if lhs._key != rhs._key {return false}
+    if lhs._value != rhs._value {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecDeterministicCborArray: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecDeterministicCborArray"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}values\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedMessageField(value: &self.values) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.values.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.values, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecDeterministicCborArray, rhs: ReallyMeProtoCodecDeterministicCborArray) -> Bool {
+    if lhs.values != rhs.values {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecDeterministicCborMap: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecDeterministicCborMap"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}entries\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedMessageField(value: &self.entries) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.entries.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.entries, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecDeterministicCborMap, rhs: ReallyMeProtoCodecDeterministicCborMap) -> Bool {
+    if lhs.entries != rhs.entries {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecDeterministicCborValue: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecDeterministicCborValue"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}null_value\0\u{3}bool_value\0\u{3}integer_value\0\u{3}text_value\0\u{3}bytes_value\0\u{3}array_value\0\u{3}map_value\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try {
+        var v: ReallyMeProtoCodecDeterministicCborNull?
+        var hadOneofValue = false
+        if let current = self.value {
+          hadOneofValue = true
+          if case .nullValue(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.value = .nullValue(v)
+        }
+      }()
+      case 2: try {
+        var v: ReallyMeProtoCodecDeterministicCborBool?
+        var hadOneofValue = false
+        if let current = self.value {
+          hadOneofValue = true
+          if case .boolValue(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.value = .boolValue(v)
+        }
+      }()
+      case 3: try {
+        var v: ReallyMeProtoCodecDeterministicCborInteger?
+        var hadOneofValue = false
+        if let current = self.value {
+          hadOneofValue = true
+          if case .integerValue(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.value = .integerValue(v)
+        }
+      }()
+      case 4: try {
+        var v: ReallyMeProtoCodecDeterministicCborText?
+        var hadOneofValue = false
+        if let current = self.value {
+          hadOneofValue = true
+          if case .textValue(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.value = .textValue(v)
+        }
+      }()
+      case 5: try {
+        var v: ReallyMeProtoCodecDeterministicCborBytes?
+        var hadOneofValue = false
+        if let current = self.value {
+          hadOneofValue = true
+          if case .bytesValue(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.value = .bytesValue(v)
+        }
+      }()
+      case 6: try {
+        var v: ReallyMeProtoCodecDeterministicCborArray?
+        var hadOneofValue = false
+        if let current = self.value {
+          hadOneofValue = true
+          if case .arrayValue(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.value = .arrayValue(v)
+        }
+      }()
+      case 7: try {
+        var v: ReallyMeProtoCodecDeterministicCborMap?
+        var hadOneofValue = false
+        if let current = self.value {
+          hadOneofValue = true
+          if case .mapValue(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.value = .mapValue(v)
+        }
+      }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    switch self.value {
+    case .nullValue?: try {
+      guard case .nullValue(let v)? = self.value else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    }()
+    case .boolValue?: try {
+      guard case .boolValue(let v)? = self.value else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    }()
+    case .integerValue?: try {
+      guard case .integerValue(let v)? = self.value else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    }()
+    case .textValue?: try {
+      guard case .textValue(let v)? = self.value else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
+    }()
+    case .bytesValue?: try {
+      guard case .bytesValue(let v)? = self.value else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 5)
+    }()
+    case .arrayValue?: try {
+      guard case .arrayValue(let v)? = self.value else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
+    }()
+    case .mapValue?: try {
+      guard case .mapValue(let v)? = self.value else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
+    }()
+    case nil: break
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecDeterministicCborValue, rhs: ReallyMeProtoCodecDeterministicCborValue) -> Bool {
+    if lhs.value != rhs.value {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecDeterministicCborEncodeRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecDeterministicCborEncodeRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}value\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._value) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._value {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecDeterministicCborEncodeRequest, rhs: ReallyMeProtoCodecDeterministicCborEncodeRequest) -> Bool {
+    if lhs._value != rhs._value {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecDeterministicCborEncodeResult: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecDeterministicCborEncodeResult"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}encoded\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBytesField(value: &self.encoded) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.encoded.isEmpty {
+      try visitor.visitSingularBytesField(value: self.encoded, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecDeterministicCborEncodeResult, rhs: ReallyMeProtoCodecDeterministicCborEncodeResult) -> Bool {
+    if lhs.encoded != rhs.encoded {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecDeterministicCborDecodeRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecDeterministicCborDecodeRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}encoded\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBytesField(value: &self.encoded) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.encoded.isEmpty {
+      try visitor.visitSingularBytesField(value: self.encoded, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecDeterministicCborDecodeRequest, rhs: ReallyMeProtoCodecDeterministicCborDecodeRequest) -> Bool {
+    if lhs.encoded != rhs.encoded {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecDeterministicCborDecodeResult: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecDeterministicCborDecodeResult"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}value\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._value) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._value {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecDeterministicCborDecodeResult, rhs: ReallyMeProtoCodecDeterministicCborDecodeResult) -> Bool {
+    if lhs._value != rhs._value {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecOperationResult: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecOperationResult"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{4}h\u{f}multicodec_prefix_for_name\0\u{3}multicodec_lookup_prefix\0\u{3}multicodec_table\0\u{4}f\u{f}multikey_parse\0\u{4}h\u{f}dag_cbor_verify_cid\0\u{3}dag_cbor_encode\0\u{3}dag_cbor_decode\0\u{4}f\u{f}pem_decode\0\u{3}pem_encode\0\u{4}g\u{f}deterministic_cbor_encode\0\u{3}deterministic_cbor_decode\0\u{c}\u{1}g\u{f}")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1000: try {
+        var v: ReallyMeProtoCodecMulticodecSpec?
+        var hadOneofValue = false
+        if let current = self.result {
+          hadOneofValue = true
+          if case .multicodecPrefixForName(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.result = .multicodecPrefixForName(v)
+        }
+      }()
+      case 1001: try {
+        var v: ReallyMeProtoCodecMulticodecLookupResult?
+        var hadOneofValue = false
+        if let current = self.result {
+          hadOneofValue = true
+          if case .multicodecLookupPrefix(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.result = .multicodecLookupPrefix(v)
+        }
+      }()
+      case 1002: try {
+        var v: ReallyMeProtoCodecMulticodecTableResult?
+        var hadOneofValue = false
+        if let current = self.result {
+          hadOneofValue = true
+          if case .multicodecTable(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.result = .multicodecTable(v)
+        }
+      }()
+      case 2000: try {
+        var v: ReallyMeProtoCodecMultikeyParseResult?
+        var hadOneofValue = false
+        if let current = self.result {
+          hadOneofValue = true
+          if case .multikeyParse(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.result = .multikeyParse(v)
+        }
+      }()
+      case 3000: try {
+        var v: ReallyMeProtoCodecDagCborVerifyCidResult?
+        var hadOneofValue = false
+        if let current = self.result {
+          hadOneofValue = true
+          if case .dagCborVerifyCid(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.result = .dagCborVerifyCid(v)
+        }
+      }()
+      case 3001: try {
+        var v: ReallyMeProtoCodecDagCborEncodeResult?
+        var hadOneofValue = false
+        if let current = self.result {
+          hadOneofValue = true
+          if case .dagCborEncode(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.result = .dagCborEncode(v)
+        }
+      }()
+      case 3002: try {
+        var v: ReallyMeProtoCodecDagCborDecodeResult?
+        var hadOneofValue = false
+        if let current = self.result {
+          hadOneofValue = true
+          if case .dagCborDecode(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.result = .dagCborDecode(v)
+        }
+      }()
+      case 4000: try {
+        var v: ReallyMeProtoCodecPemDecodeResult?
+        var hadOneofValue = false
+        if let current = self.result {
+          hadOneofValue = true
+          if case .pemDecode(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.result = .pemDecode(v)
+        }
+      }()
+      case 4001: try {
+        var v: ReallyMeProtoCodecPemEncodeResult?
+        var hadOneofValue = false
+        if let current = self.result {
+          hadOneofValue = true
+          if case .pemEncode(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.result = .pemEncode(v)
+        }
+      }()
+      case 5000: try {
+        var v: ReallyMeProtoCodecDeterministicCborEncodeResult?
+        var hadOneofValue = false
+        if let current = self.result {
+          hadOneofValue = true
+          if case .deterministicCborEncode(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.result = .deterministicCborEncode(v)
+        }
+      }()
+      case 5001: try {
+        var v: ReallyMeProtoCodecDeterministicCborDecodeResult?
+        var hadOneofValue = false
+        if let current = self.result {
+          hadOneofValue = true
+          if case .deterministicCborDecode(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.result = .deterministicCborDecode(v)
+        }
+      }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    switch self.result {
+    case .multicodecPrefixForName?: try {
+      guard case .multicodecPrefixForName(let v)? = self.result else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1000)
+    }()
+    case .multicodecLookupPrefix?: try {
+      guard case .multicodecLookupPrefix(let v)? = self.result else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1001)
+    }()
+    case .multicodecTable?: try {
+      guard case .multicodecTable(let v)? = self.result else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1002)
+    }()
+    case .multikeyParse?: try {
+      guard case .multikeyParse(let v)? = self.result else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2000)
+    }()
+    case .dagCborVerifyCid?: try {
+      guard case .dagCborVerifyCid(let v)? = self.result else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3000)
+    }()
+    case .dagCborEncode?: try {
+      guard case .dagCborEncode(let v)? = self.result else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3001)
+    }()
+    case .dagCborDecode?: try {
+      guard case .dagCborDecode(let v)? = self.result else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3002)
+    }()
+    case .pemDecode?: try {
+      guard case .pemDecode(let v)? = self.result else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 4000)
+    }()
+    case .pemEncode?: try {
+      guard case .pemEncode(let v)? = self.result else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 4001)
+    }()
+    case .deterministicCborEncode?: try {
+      guard case .deterministicCborEncode(let v)? = self.result else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 5000)
+    }()
+    case .deterministicCborDecode?: try {
+      guard case .deterministicCborDecode(let v)? = self.result else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 5001)
+    }()
+    case nil: break
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecOperationResult, rhs: ReallyMeProtoCodecOperationResult) -> Bool {
+    if lhs.result != rhs.result {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension ReallyMeProtoCodecOperationResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CodecOperationResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}result\0\u{1}error\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try {
+        var v: ReallyMeProtoCodecOperationResult?
+        var hadOneofValue = false
+        if let current = self.outcome {
+          hadOneofValue = true
+          if case .result(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.outcome = .result(v)
+        }
+      }()
+      case 2: try {
+        var v: ReallyMeProtoCodecError?
+        var hadOneofValue = false
+        if let current = self.outcome {
+          hadOneofValue = true
+          if case .error(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.outcome = .error(v)
+        }
+      }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    switch self.outcome {
+    case .result?: try {
+      guard case .result(let v)? = self.outcome else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    }()
+    case .error?: try {
+      guard case .error(let v)? = self.outcome else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    }()
+    case nil: break
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: ReallyMeProtoCodecOperationResponse, rhs: ReallyMeProtoCodecOperationResponse) -> Bool {
+    if lhs.outcome != rhs.outcome {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
 nonisolated extension ReallyMeProtoCodecOperationRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".CodecOperationRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{4}h\u{f}multicodec_prefix_for_name\0\u{3}multicodec_lookup_prefix\0\u{3}multicodec_table\0\u{4}f\u{f}multikey_parse\0\u{4}h\u{f}dag_cbor_verify_cid\0\u{4}h\u{f}pem_decode\0\u{c}\u{1}g\u{f}")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{4}h\u{f}multicodec_prefix_for_name\0\u{3}multicodec_lookup_prefix\0\u{3}multicodec_table\0\u{4}f\u{f}multikey_parse\0\u{4}h\u{f}dag_cbor_verify_cid\0\u{3}dag_cbor_encode\0\u{3}dag_cbor_decode\0\u{4}f\u{f}pem_decode\0\u{3}pem_encode\0\u{4}g\u{f}deterministic_cbor_encode\0\u{3}deterministic_cbor_decode\0\u{c}\u{1}g\u{f}")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1490,6 +3726,32 @@ nonisolated extension ReallyMeProtoCodecOperationRequest: SwiftProtobuf.Message,
           self.operation = .dagCborVerifyCid(v)
         }
       }()
+      case 3001: try {
+        var v: ReallyMeProtoCodecDagCborEncodeRequest?
+        var hadOneofValue = false
+        if let current = self.operation {
+          hadOneofValue = true
+          if case .dagCborEncode(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.operation = .dagCborEncode(v)
+        }
+      }()
+      case 3002: try {
+        var v: ReallyMeProtoCodecDagCborDecodeRequest?
+        var hadOneofValue = false
+        if let current = self.operation {
+          hadOneofValue = true
+          if case .dagCborDecode(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.operation = .dagCborDecode(v)
+        }
+      }()
       case 4000: try {
         var v: ReallyMeProtoCodecPemDecodeRequest?
         var hadOneofValue = false
@@ -1501,6 +3763,45 @@ nonisolated extension ReallyMeProtoCodecOperationRequest: SwiftProtobuf.Message,
         if let v = v {
           if hadOneofValue {try decoder.handleConflictingOneOf()}
           self.operation = .pemDecode(v)
+        }
+      }()
+      case 4001: try {
+        var v: ReallyMeProtoCodecPemEncodeRequest?
+        var hadOneofValue = false
+        if let current = self.operation {
+          hadOneofValue = true
+          if case .pemEncode(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.operation = .pemEncode(v)
+        }
+      }()
+      case 5000: try {
+        var v: ReallyMeProtoCodecDeterministicCborEncodeRequest?
+        var hadOneofValue = false
+        if let current = self.operation {
+          hadOneofValue = true
+          if case .deterministicCborEncode(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.operation = .deterministicCborEncode(v)
+        }
+      }()
+      case 5001: try {
+        var v: ReallyMeProtoCodecDeterministicCborDecodeRequest?
+        var hadOneofValue = false
+        if let current = self.operation {
+          hadOneofValue = true
+          if case .deterministicCborDecode(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.operation = .deterministicCborDecode(v)
         }
       }()
       default: break
@@ -1534,9 +3835,29 @@ nonisolated extension ReallyMeProtoCodecOperationRequest: SwiftProtobuf.Message,
       guard case .dagCborVerifyCid(let v)? = self.operation else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 3000)
     }()
+    case .dagCborEncode?: try {
+      guard case .dagCborEncode(let v)? = self.operation else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3001)
+    }()
+    case .dagCborDecode?: try {
+      guard case .dagCborDecode(let v)? = self.operation else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3002)
+    }()
     case .pemDecode?: try {
       guard case .pemDecode(let v)? = self.operation else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 4000)
+    }()
+    case .pemEncode?: try {
+      guard case .pemEncode(let v)? = self.operation else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 4001)
+    }()
+    case .deterministicCborEncode?: try {
+      guard case .deterministicCborEncode(let v)? = self.operation else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 5000)
+    }()
+    case .deterministicCborDecode?: try {
+      guard case .deterministicCborDecode(let v)? = self.operation else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 5001)
     }()
     case nil: break
     }

@@ -17,11 +17,40 @@ const workflowRun = (overrides = {}) => ({
   attempt: 1,
   conclusion: "success",
   databaseId: 100,
+  displayTitle: "Code Checks",
   event: "push",
   headBranch: "main",
   headSha: releaseSha,
   status: "completed",
   ...overrides,
+});
+
+test("package preflight attestation is bound to the requested version", () => {
+  assert.doesNotThrow(() => {
+    requireLatestSuccessfulRun(
+      [workflowRun({ displayTitle: "Swift package preflight 0.2.0", event: "workflow_dispatch" })],
+      releaseSha,
+      "swift-package-preflight.yml",
+      "0.2.0",
+    );
+  });
+  assert.throws(
+    () => {
+      requireLatestSuccessfulRun(
+        [
+          workflowRun({
+            displayTitle: "Kotlin Android package preflight 0.2.0",
+            event: "workflow_dispatch",
+          }),
+        ],
+        releaseSha,
+        "kotlin-android-package-preflight.yml",
+        "0.3.0",
+      );
+    },
+    (error) =>
+      error instanceof ReleaseAttestationError && error.code === "preflight-version-mismatch",
+  );
 });
 
 test("latest successful workflow attempt authorizes release", () => {
@@ -54,21 +83,27 @@ test("newer in-progress run invalidates an older success", () => {
     () => {
       requireLatestSuccessfulRun(
         [
-          workflowRun({ databaseId: 100, event: "workflow_dispatch" }),
+          workflowRun({
+            databaseId: 100,
+            displayTitle: "npm package preflight 0.2.0",
+            event: "workflow_dispatch",
+          }),
           workflowRun({
             conclusion: null,
             databaseId: 101,
+            displayTitle: "npm package preflight 0.2.0",
             event: "workflow_dispatch",
             status: "in_progress",
           }),
         ],
         releaseSha,
-        "release-preflight.yml",
+        "npm-package-preflight.yml",
+        "0.2.0",
       );
     },
     (error) =>
       error instanceof ReleaseAttestationError &&
-      error.code === "latest-release-preflight.yml-run-not-successful",
+      error.code === "latest-npm-package-preflight.yml-run-not-successful",
   );
 });
 

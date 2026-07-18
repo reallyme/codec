@@ -1,6 +1,6 @@
 # reallyme-codec
 
-Rust byte-format and multiformat codecs.
+Rust codecs for base encodings, multiformats, CBOR, CID, JCS and PEM.
 
 Use the public APIs below for encoding and parsing. Cryptographic signing and verification are outside this crate.
 
@@ -8,7 +8,7 @@ Use the public APIs below for encoding and parsing. Cryptographic signing and ve
 
 ```toml
 [dependencies]
-reallyme-codec = "0.1.22"
+reallyme-codec = "0.2.0"
 ```
 
 The default feature set enables every codec family. Consumers that need a
@@ -16,7 +16,7 @@ smaller dependency surface can select only the families they use:
 
 ```toml
 [dependencies]
-reallyme-codec = { version = "0.1.22", default-features = false, features = ["base64url", "multikey"] }
+reallyme-codec = { version = "0.2.0", default-features = false, features = ["base64url", "multikey"] }
 ```
 
 ## Quick Start
