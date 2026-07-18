@@ -10,7 +10,11 @@ readonly ANDROID_HOME_VALUE="${ANDROID_HOME:-"$HOME/Library/Android/sdk"}"
 readonly ANDROID_NDK_HOME_VALUE="${ANDROID_NDK_HOME:-"$ANDROID_HOME_VALUE/ndk/29.0.14206865"}"
 readonly ADB="${ADB:-"$ANDROID_HOME_VALUE/platform-tools/adb"}"
 readonly EMULATOR="${EMULATOR:-"$ANDROID_HOME_VALUE/emulator/emulator"}"
+readonly SDKMANAGER="${SDKMANAGER:-"$ANDROID_HOME_VALUE/cmdline-tools/latest/bin/sdkmanager"}"
+readonly AVDMANAGER="${AVDMANAGER:-"$ANDROID_HOME_VALUE/cmdline-tools/latest/bin/avdmanager"}"
 readonly AVD_NAME="${REALLYME_CODEC_ANDROID_AVD:-}"
+readonly ANDROID_R8_PLATFORM="platforms;android-36"
+readonly ANDROID_R8_SYSTEM_IMAGE="system-images;android-36;google_apis;x86_64"
 readonly APP_ID="me.really.codec.consumer.r8"
 readonly ACTIVITY="me.really.codec.consumer.r8.ConsumerR8RuntimeActivity"
 readonly LOG_TAG="ReallyMeCodecR8Gate"
@@ -39,11 +43,31 @@ fail() {
     exit 1
 }
 
+ensure_avd_exists() {
+    local avd_exists="false"
+    while IFS= read -r existing_avd; do
+        if [[ "$existing_avd" == "$AVD_NAME" ]]; then
+            avd_exists="true"
+            break
+        fi
+    done < <("$EMULATOR" -list-avds)
+
+    if [[ "$avd_exists" == "true" ]]; then
+        return
+    fi
+
+    [[ -x "$SDKMANAGER" ]] || fail "Android sdkmanager is required at $SDKMANAGER"
+    [[ -x "$AVDMANAGER" ]] || fail "Android avdmanager is required at $AVDMANAGER"
+    yes | "$SDKMANAGER" "emulator" "$ANDROID_R8_PLATFORM" "$ANDROID_R8_SYSTEM_IMAGE" >/dev/null
+    echo "no" | "$AVDMANAGER" create avd --force -n "$AVD_NAME" -k "$ANDROID_R8_SYSTEM_IMAGE" --device "pixel" >/dev/null
+}
+
 [[ -x "$ADB" ]] || fail "adb is required at $ADB"
 [[ -d "$ANDROID_NDK_HOME_VALUE" ]] || fail "ANDROID_NDK_HOME is required at $ANDROID_NDK_HOME_VALUE"
 
 if [[ -n "$AVD_NAME" ]]; then
     [[ -x "$EMULATOR" ]] || fail "Android emulator is required at $EMULATOR"
+    ensure_avd_exists
     "$EMULATOR" -avd "$AVD_NAME" -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect >/tmp/reallyme-codec-r8-emulator.log 2>&1 &
     emulator_pid="$!"
 fi
