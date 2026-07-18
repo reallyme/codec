@@ -51,7 +51,7 @@ ensure_avd_exists() {
     [[ -x "$AVDMANAGER" ]] || fail "Android avdmanager is required at $AVDMANAGER"
 
     if [[ ! -x "$EMULATOR" ]]; then
-        { yes || true; } | "$SDKMANAGER" "emulator" >/dev/null
+        { yes 2>/dev/null || true; } | "$SDKMANAGER" "emulator" >/dev/null
     fi
     [[ -x "$EMULATOR" ]] || fail "Android emulator is required at $EMULATOR"
 
@@ -67,7 +67,7 @@ ensure_avd_exists() {
         return
     fi
 
-    { yes || true; } | "$SDKMANAGER" "emulator" "$ANDROID_R8_PLATFORM" "$ANDROID_R8_SYSTEM_IMAGE" >/dev/null
+    { yes 2>/dev/null || true; } | "$SDKMANAGER" "emulator" "$ANDROID_R8_PLATFORM" "$ANDROID_R8_SYSTEM_IMAGE" >/dev/null
     printf 'no\n' | "$AVDMANAGER" create avd --force -n "$AVD_NAME" -k "$ANDROID_R8_SYSTEM_IMAGE" --device "pixel" >/tmp/reallyme-codec-r8-avdmanager.log
 
     while IFS= read -r existing_avd; do

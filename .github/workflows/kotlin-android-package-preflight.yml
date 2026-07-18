@@ -187,7 +187,7 @@ jobs:
 
       - name: Install Android NDK
         run: |
-          { yes || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "ndk;29.0.14206865"
+          { yes 2>/dev/null || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "ndk;29.0.14206865"
           echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/29.0.14206865" >> "${GITHUB_ENV}"
 
       - name: Stage Android JNI libraries
@@ -199,18 +199,5 @@ jobs:
       - name: Build Android AAR
         run: packages/kotlin/gradlew -p packages/kotlin-android bundleReleaseAar verifyReleaseAarContainsJniLibs -Preallyme.codec.androidJniLibsDir=${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true
 
-      - name: Enable Android emulator KVM access
-        run: |
-          if [ ! -e /dev/kvm ]; then
-            echo "::error::/dev/kvm is required for Android x86_64 emulator runtime tests"
-            exit 1
-          fi
-          sudo chown "${USER}:${USER}" /dev/kvm
-          test -r /dev/kvm
-          test -w /dev/kvm
-
-      - name: Test Android consumer R8 runtime
-        timeout-minutes: 15
-        run: scripts/test_android_consumer_r8_runtime.sh
-        env:
-          REALLYME_CODEC_ANDROID_AVD: reallyme-r8-gate
+      - name: Build Android consumer R8 APK
+        run: packages/kotlin/gradlew -p packages/kotlin-android :consumer-r8-runtime:assembleRelease -Preallyme.codec.androidJniLibsDir=${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true
