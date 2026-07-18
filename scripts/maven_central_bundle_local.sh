@@ -9,7 +9,7 @@ IFS=$'\n\t'
 # Usage:
 #   MAVEN_SIGNING_KEY_ID=<long-gpg-key-id-or-fingerprint> \
 #   MAVEN_SIGNING_PASSWORD="..." \
-#   KOTLIN_NATIVE_RESOURCES_DIR=/path/to/full/jvm-native-resources \
+#   KOTLIN_NATIVE_RESOURCES_DIR=/path/to/full/kotlin-native-resources \
 #   ANDROID_NDK_HOME=/path/to/android-ndk \
 #   ./scripts/maven_central_bundle_local.sh
 #
@@ -29,7 +29,7 @@ ANDROID_JNI_LIBS_DIR_WAS_SET="${ANDROID_JNI_LIBS_DIR+x}"
 ANDROID_JNI_LIBS_DIR="${ANDROID_JNI_LIBS_DIR:-${WORK_DIR}/android-jniLibs}"
 ANDROID_NATIVE_ASSETS_DIR="${ANDROID_NATIVE_ASSETS_DIR:-${WORK_DIR}/android-native-assets}"
 ANDROID_NDK_VERSION="${ANDROID_NDK_VERSION:-29.0.14206865}"
-NATIVE_RESOURCE_WORKFLOW="${MAVEN_NATIVE_RESOURCE_WORKFLOW:-jvm-native-resources.yml}"
+NATIVE_RESOURCE_WORKFLOW="${MAVEN_NATIVE_RESOURCE_WORKFLOW:-kotlin-android-package-preflight.yml}"
 NATIVE_RESOURCE_ARTIFACT_PATTERN="${MAVEN_NATIVE_RESOURCE_ARTIFACT_PATTERN:-kotlin-native-*}"
 NATIVE_RESOURCE_DOWNLOAD_DIR="${MAVEN_NATIVE_RESOURCE_DOWNLOAD_DIR:-${WORK_DIR}/kotlin-native-artifacts}"
 NATIVE_RESOURCE_WORKFLOW_TIMEOUT_SECONDS="${MAVEN_NATIVE_RESOURCE_WORKFLOW_TIMEOUT_SECONDS:-3600}"
@@ -212,7 +212,7 @@ ensure_kotlin_native_resources() {
   if [ -z "$run_id" ]; then
     info "No successful or running ${NATIVE_RESOURCE_WORKFLOW} native-resource run found for ${head_sha}"
     info "Dispatching ${NATIVE_RESOURCE_WORKFLOW} on ${git_ref} to build cross-platform JVM native resources"
-    gh workflow run "$NATIVE_RESOURCE_WORKFLOW" --ref "$git_ref"
+    gh workflow run "$NATIVE_RESOURCE_WORKFLOW" --ref "$git_ref" -f "version=${VERSION}"
     run_id="$(wait_for_native_resource_run_id "$head_sha" "$stale_run_id")"
     gh run watch "$run_id" --exit-status
   fi
