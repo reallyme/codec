@@ -58,7 +58,7 @@ ensure_avd_exists() {
 
     [[ -x "$SDKMANAGER" ]] || fail "Android sdkmanager is required at $SDKMANAGER"
     [[ -x "$AVDMANAGER" ]] || fail "Android avdmanager is required at $AVDMANAGER"
-    yes | "$SDKMANAGER" "emulator" "$ANDROID_R8_PLATFORM" "$ANDROID_R8_SYSTEM_IMAGE" >/dev/null
+    { yes || true; } | "$SDKMANAGER" "emulator" "$ANDROID_R8_PLATFORM" "$ANDROID_R8_SYSTEM_IMAGE" >/dev/null
     echo "no" | "$AVDMANAGER" create avd --force -n "$AVD_NAME" -k "$ANDROID_R8_SYSTEM_IMAGE" --device "pixel" >/dev/null
 }
 
