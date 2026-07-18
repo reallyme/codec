@@ -2619,6 +2619,7 @@ assertContains("scripts/test_android_consumer_r8_runtime.sh", ":consumer-r8-runt
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "logcat");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "ensure_avd_exists");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "$EMULATOR\" -list-avds");
+assertContains("scripts/test_android_consumer_r8_runtime.sh", "{ yes || true; } | \"$SDKMANAGER\"");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "$AVDMANAGER\" create avd --force");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android consumer R8 runtime gate passed");
 assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.2.0");
