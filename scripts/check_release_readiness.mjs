@@ -2617,6 +2617,9 @@ assertContains("packages/kotlin-android/consumer-r8-runtime/src/main/java/me/rea
 assertContains("packages/kotlin-android/consumer-r8-runtime/src/main/java/me/really/codec/consumer/r8/ConsumerR8RuntimeActivity.java", "ReallyMeCodec.deterministicCborDecode");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", ":consumer-r8-runtime:assembleRelease");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "logcat");
+assertContains("scripts/test_android_consumer_r8_runtime.sh", "ensure_avd_exists");
+assertContains("scripts/test_android_consumer_r8_runtime.sh", "$EMULATOR\" -list-avds");
+assertContains("scripts/test_android_consumer_r8_runtime.sh", "$AVDMANAGER\" create avd --force");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android consumer R8 runtime gate passed");
 assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.2.0");
 assertContains("packages/kotlin-android/README.md", "never sourced from the Git worktree");
