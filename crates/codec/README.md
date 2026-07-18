@@ -6,8 +6,8 @@ SPDX-License-Identifier: Apache-2.0
 
 # reallyme-codec
 
-`reallyme-codec` is the codec-only Rust package from the ReallyMe Codec
-workspace. It provides stable byte-format utilities without pulling in
+`reallyme-codec` is the recommended Rust entry point for the ReallyMe Codec
+workspace. It provides identity encoding utilities without pulling in
 signature, AEAD, KEM, or password-hashing implementations.
 
 Use this crate when a resolver, service, or tool needs key and content
@@ -20,7 +20,7 @@ Canonicalization Scheme helpers.
 
 ```toml
 [dependencies]
-reallyme-codec = "0.1.22"
+reallyme-codec = "0.2.0"
 ```
 
 The default feature set enables every codec family. Consumers that need a
@@ -28,7 +28,7 @@ smaller dependency surface can select only the families they use:
 
 ```toml
 [dependencies]
-reallyme-codec = { version = "0.1.22", default-features = false, features = ["base64url", "multikey"] }
+reallyme-codec = { version = "0.2.0", default-features = false, features = ["base64url", "multikey"] }
 ```
 
 ## Quick Start
@@ -65,8 +65,13 @@ DTOs that carry byte fields as unpadded base64url strings can enable the
 - `pem`
 - `serde`
 
-## Contract
+## Package Contract
 
-The supported public entry points are the umbrella exports from
-`reallyme-codec`; individual workspace crates are implementation details unless
-their documentation says otherwise.
+ReallyMe Codec is one cross-language codec contract for identity data. The
+publishable Rust leaf crates exist for dependency hygiene, implementation
+modularity, and crates.io dependency resolution. They are support crates
+released in lockstep with `reallyme-codec`.
+
+Rust consumers should usually depend on this umbrella crate. Direct use of a
+leaf crate is appropriate only when the consumer deliberately needs a smaller
+primitive surface and accepts the same lockstep ReallyMe Codec release line.

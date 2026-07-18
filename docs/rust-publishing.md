@@ -9,6 +9,12 @@ SPDX-License-Identifier: Apache-2.0
 Publishable crates in this repository are codec crates only. The root workspace
 is virtual and is not published.
 
+`reallyme-codec` is the recommended public Rust entry point. The publishable
+leaf crates support dependency hygiene, implementation modularity, and
+crates.io dependency resolution. They are released in lockstep
+with `reallyme-codec`; they are not separately marketed products with
+independent compatibility promises.
+
 Use the release script to inspect or publish crates in dependency order:
 
 ```sh

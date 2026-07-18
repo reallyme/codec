@@ -14,8 +14,6 @@ target/
 *.profraw
 *.d
 
-refactor-0.2.0.md
-
 # OS/editor noise
 .DS_Store
 **/.DS_Store
@@ -34,7 +32,6 @@ refactor-0.2.0.md
 /AGENTS.md
 /.claude/
 /.codex/
-/maven-central-bundle.local.sh
 
 # Generated artifacts
 /coverage/
@@ -47,8 +44,8 @@ proptest-regressions/
 **/generated/**
 **/src/generated
 **/src/generated/**
-!crates/proto/codec/src/generated/
-!crates/proto/codec/src/generated/**
+!crates/proto/src/generated/
+!crates/proto/src/generated/**
 !packages/ts/src/proto/generated/
 !packages/ts/src/proto/generated/**
 **/src/pb

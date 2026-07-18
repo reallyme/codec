@@ -94,6 +94,28 @@ public interface CodecOperationRequestOrBuilder extends
   me.really.codec.v1.CodecDagCborVerifyCidRequest getDagCborVerifyCid();
 
   /**
+   * <code>.reallyme.codec.v1.CodecDagCborEncodeRequest dag_cbor_encode = 3001 [json_name = "dagCborEncode"];</code>
+   * @return Whether the dagCborEncode field is set.
+   */
+  boolean hasDagCborEncode();
+  /**
+   * <code>.reallyme.codec.v1.CodecDagCborEncodeRequest dag_cbor_encode = 3001 [json_name = "dagCborEncode"];</code>
+   * @return The dagCborEncode.
+   */
+  me.really.codec.v1.CodecDagCborEncodeRequest getDagCborEncode();
+
+  /**
+   * <code>.reallyme.codec.v1.CodecDagCborDecodeRequest dag_cbor_decode = 3002 [json_name = "dagCborDecode"];</code>
+   * @return Whether the dagCborDecode field is set.
+   */
+  boolean hasDagCborDecode();
+  /**
+   * <code>.reallyme.codec.v1.CodecDagCborDecodeRequest dag_cbor_decode = 3002 [json_name = "dagCborDecode"];</code>
+   * @return The dagCborDecode.
+   */
+  me.really.codec.v1.CodecDagCborDecodeRequest getDagCborDecode();
+
+  /**
    * <pre>
    * 4000-4999: PEM armor and DER envelope helpers.
    * </pre>
@@ -111,6 +133,47 @@ public interface CodecOperationRequestOrBuilder extends
    * @return The pemDecode.
    */
   me.really.codec.v1.CodecPemDecodeRequest getPemDecode();
+
+  /**
+   * <code>.reallyme.codec.v1.CodecPemEncodeRequest pem_encode = 4001 [json_name = "pemEncode"];</code>
+   * @return Whether the pemEncode field is set.
+   */
+  boolean hasPemEncode();
+  /**
+   * <code>.reallyme.codec.v1.CodecPemEncodeRequest pem_encode = 4001 [json_name = "pemEncode"];</code>
+   * @return The pemEncode.
+   */
+  me.really.codec.v1.CodecPemEncodeRequest getPemEncode();
+
+  /**
+   * <pre>
+   * 5000-5999: deterministic generic-CBOR encode/decode.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecDeterministicCborEncodeRequest deterministic_cbor_encode = 5000 [json_name = "deterministicCborEncode"];</code>
+   * @return Whether the deterministicCborEncode field is set.
+   */
+  boolean hasDeterministicCborEncode();
+  /**
+   * <pre>
+   * 5000-5999: deterministic generic-CBOR encode/decode.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecDeterministicCborEncodeRequest deterministic_cbor_encode = 5000 [json_name = "deterministicCborEncode"];</code>
+   * @return The deterministicCborEncode.
+   */
+  me.really.codec.v1.CodecDeterministicCborEncodeRequest getDeterministicCborEncode();
+
+  /**
+   * <code>.reallyme.codec.v1.CodecDeterministicCborDecodeRequest deterministic_cbor_decode = 5001 [json_name = "deterministicCborDecode"];</code>
+   * @return Whether the deterministicCborDecode field is set.
+   */
+  boolean hasDeterministicCborDecode();
+  /**
+   * <code>.reallyme.codec.v1.CodecDeterministicCborDecodeRequest deterministic_cbor_decode = 5001 [json_name = "deterministicCborDecode"];</code>
+   * @return The deterministicCborDecode.
+   */
+  me.really.codec.v1.CodecDeterministicCborDecodeRequest getDeterministicCborDecode();
 
   public me.really.codec.v1.CodecOperationRequest.OperationCase getOperationCase();
 }

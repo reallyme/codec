@@ -11,12 +11,13 @@ SDK facades for Swift, Kotlin, and TypeScript.
 
 ## Owned Surfaces
 
-- `crates/codec/**` contains the Rust source of truth for codec behavior.
-- `crates/codec/ffi` exposes the native C ABI and JNI boundary used by Swift
+- `crates/codec/**` contains the Rust implementation that defines codec
+  behavior.
+- `crates/ffi` exposes the native C ABI and JNI boundary used by Swift
   and Kotlin.
-- `crates/codec/wasm-package` exposes the WASM boundary used by
+- `crates/wasm` exposes the WASM boundary used by
   `@reallyme/codec`.
-- `crates/proto/codec` owns the publishable protobuf crate, generated bindings,
+- `crates/proto` owns the publishable protobuf crate, generated bindings,
   and source schema for the cross-language codec wire contract.
 - `packages/ts`, `packages/swift`, `packages/kotlin`, and
   `packages/kotlin-android` are thin TypeScript, Swift, Java/Kotlin, and

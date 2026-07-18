@@ -34,7 +34,9 @@ import java.util.Locale
 public object ReallyMeCodecRustNativeProvider {
     private const val RESOURCE_ROOT: String = "/me/really/codec/native"
     private const val ANDROID_LIBRARY_NAME: String = "reallyme_codec_ffi"
+    private const val EXPECTED_CODEC_ABI_VERSION: Int = 5
     private const val MAX_NATIVE_LIBRARY_BYTES: Long = 134_217_728L
+    private const val MAX_MANAGED_FFI_LIMIT_BYTES: Long = Int.MAX_VALUE.toLong()
     private const val DIGEST_BYTE_LENGTH: Int = 32
     private const val DIGEST_METADATA_MAX_BYTES: Int = 96
     private const val COPY_BUFFER_BYTES: Int = 8_192
@@ -48,6 +50,15 @@ public object ReallyMeCodecRustNativeProvider {
 
     @Volatile
     private var loaded: Boolean = false
+
+    @Volatile
+    private var maxFfiInputBytes: Int = 0
+
+    @Volatile
+    private var maxFfiOutputBytes: Int = 0
+
+    @Volatile
+    private var maxOperationResponseBytes: Int = 0
 
     @JvmStatic
     @Synchronized
@@ -64,7 +75,7 @@ public object ReallyMeCodecRustNativeProvider {
         }
         try {
             System.load(library.absolutePath)
-            if (ReallyMeCodecNative.probeNative() != 1) {
+            if (!validateLoadedNativeContract()) {
                 throw ReallyMeCodecException.ProviderFailure()
             }
             loaded = true
@@ -95,7 +106,7 @@ public object ReallyMeCodecRustNativeProvider {
             // classpath resources, so the JVM resource extraction path cannot
             // see them; the platform loader must resolve them by library name.
             System.loadLibrary(ANDROID_LIBRARY_NAME)
-            if (ReallyMeCodecNative.probeNative() != 1) {
+            if (!validateLoadedNativeContract()) {
                 false
             } else {
                 loaded = true
@@ -470,7 +481,7 @@ public object ReallyMeCodecRustNativeProvider {
     private fun loadExtractedLibrary(path: File): Boolean {
         return try {
             System.load(path.absolutePath)
-            if (ReallyMeCodecNative.probeNative() != 1) {
+            if (!validateLoadedNativeContract()) {
                 false
             } else {
                 loaded = true
@@ -540,6 +551,51 @@ public object ReallyMeCodecRustNativeProvider {
             "windows" -> "reallyme_codec_ffi.dll"
             else -> "libreallyme_codec_ffi.so"
         }
+
+    internal fun ffiInputLimit(): Int {
+        requireLoaded()
+        return maxFfiInputBytes
+    }
+
+    internal fun ffiOutputLimit(): Int {
+        requireLoaded()
+        return maxFfiOutputBytes
+    }
+
+    internal fun operationResponseLimit(): Int {
+        requireLoaded()
+        return maxOperationResponseBytes
+    }
+
+    internal fun isCompatibleAbiVersion(actualVersion: Int): Boolean =
+        actualVersion == EXPECTED_CODEC_ABI_VERSION
+
+    internal fun isValidNativeLimit(limit: Long): Boolean =
+        limit in 1..MAX_MANAGED_FFI_LIMIT_BYTES
+
+    private fun validateLoadedNativeContract(): Boolean {
+        if (ReallyMeCodecNative.probeNative() != 1) {
+            return false
+        }
+        if (!isCompatibleAbiVersion(ReallyMeCodecNative.abiVersionNative())) {
+            return false
+        }
+        val inputLimit = ReallyMeCodecNative.maxFfiInputBytesNative()
+        val outputLimit = ReallyMeCodecNative.maxFfiOutputBytesNative()
+        val operationLimit = ReallyMeCodecNative.maxOperationResponseBytesNative()
+        if (
+            !isValidNativeLimit(inputLimit) ||
+            !isValidNativeLimit(outputLimit) ||
+            !isValidNativeLimit(operationLimit) ||
+            operationLimit > outputLimit
+        ) {
+            return false
+        }
+        maxFfiInputBytes = inputLimit.toInt()
+        maxFfiOutputBytes = outputLimit.toInt()
+        maxOperationResponseBytes = operationLimit.toInt()
+        return true
+    }
 
     internal data class NativeResource(
         val fileName: String,

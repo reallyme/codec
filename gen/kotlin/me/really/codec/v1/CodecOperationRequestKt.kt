@@ -200,6 +200,54 @@ public object CodecOperationRequestKt {
     }
 
     /**
+     * `.reallyme.codec.v1.CodecDagCborEncodeRequest dag_cbor_encode = 3001 [json_name = "dagCborEncode"];`
+     */
+    public var dagCborEncode: me.really.codec.v1.CodecDagCborEncodeRequest
+      @kotlin.jvm.JvmName("getDagCborEncode")
+        get() = _builder.dagCborEncode
+      @kotlin.jvm.JvmName("setDagCborEncode")
+        set(value) {
+        _builder.dagCborEncode = value
+      }
+    /**
+     * `.reallyme.codec.v1.CodecDagCborEncodeRequest dag_cbor_encode = 3001 [json_name = "dagCborEncode"];`
+     */
+    public fun clearDagCborEncode() {
+      _builder.clearDagCborEncode()
+    }
+    /**
+     * `.reallyme.codec.v1.CodecDagCborEncodeRequest dag_cbor_encode = 3001 [json_name = "dagCborEncode"];`
+     * @return Whether the dagCborEncode field is set.
+     */
+    public fun hasDagCborEncode(): kotlin.Boolean {
+      return _builder.hasDagCborEncode()
+    }
+
+    /**
+     * `.reallyme.codec.v1.CodecDagCborDecodeRequest dag_cbor_decode = 3002 [json_name = "dagCborDecode"];`
+     */
+    public var dagCborDecode: me.really.codec.v1.CodecDagCborDecodeRequest
+      @kotlin.jvm.JvmName("getDagCborDecode")
+        get() = _builder.dagCborDecode
+      @kotlin.jvm.JvmName("setDagCborDecode")
+        set(value) {
+        _builder.dagCborDecode = value
+      }
+    /**
+     * `.reallyme.codec.v1.CodecDagCborDecodeRequest dag_cbor_decode = 3002 [json_name = "dagCborDecode"];`
+     */
+    public fun clearDagCborDecode() {
+      _builder.clearDagCborDecode()
+    }
+    /**
+     * `.reallyme.codec.v1.CodecDagCborDecodeRequest dag_cbor_decode = 3002 [json_name = "dagCborDecode"];`
+     * @return Whether the dagCborDecode field is set.
+     */
+    public fun hasDagCborDecode(): kotlin.Boolean {
+      return _builder.hasDagCborDecode()
+    }
+
+    /**
      * ```
      * 4000-4999: PEM armor and DER envelope helpers.
      * ```
@@ -234,6 +282,90 @@ public object CodecOperationRequestKt {
     public fun hasPemDecode(): kotlin.Boolean {
       return _builder.hasPemDecode()
     }
+
+    /**
+     * `.reallyme.codec.v1.CodecPemEncodeRequest pem_encode = 4001 [json_name = "pemEncode"];`
+     */
+    public var pemEncode: me.really.codec.v1.CodecPemEncodeRequest
+      @kotlin.jvm.JvmName("getPemEncode")
+        get() = _builder.pemEncode
+      @kotlin.jvm.JvmName("setPemEncode")
+        set(value) {
+        _builder.pemEncode = value
+      }
+    /**
+     * `.reallyme.codec.v1.CodecPemEncodeRequest pem_encode = 4001 [json_name = "pemEncode"];`
+     */
+    public fun clearPemEncode() {
+      _builder.clearPemEncode()
+    }
+    /**
+     * `.reallyme.codec.v1.CodecPemEncodeRequest pem_encode = 4001 [json_name = "pemEncode"];`
+     * @return Whether the pemEncode field is set.
+     */
+    public fun hasPemEncode(): kotlin.Boolean {
+      return _builder.hasPemEncode()
+    }
+
+    /**
+     * ```
+     * 5000-5999: deterministic generic-CBOR encode/decode.
+     * ```
+     *
+     * `.reallyme.codec.v1.CodecDeterministicCborEncodeRequest deterministic_cbor_encode = 5000 [json_name = "deterministicCborEncode"];`
+     */
+    public var deterministicCborEncode: me.really.codec.v1.CodecDeterministicCborEncodeRequest
+      @kotlin.jvm.JvmName("getDeterministicCborEncode")
+        get() = _builder.deterministicCborEncode
+      @kotlin.jvm.JvmName("setDeterministicCborEncode")
+        set(value) {
+        _builder.deterministicCborEncode = value
+      }
+    /**
+     * ```
+     * 5000-5999: deterministic generic-CBOR encode/decode.
+     * ```
+     *
+     * `.reallyme.codec.v1.CodecDeterministicCborEncodeRequest deterministic_cbor_encode = 5000 [json_name = "deterministicCborEncode"];`
+     */
+    public fun clearDeterministicCborEncode() {
+      _builder.clearDeterministicCborEncode()
+    }
+    /**
+     * ```
+     * 5000-5999: deterministic generic-CBOR encode/decode.
+     * ```
+     *
+     * `.reallyme.codec.v1.CodecDeterministicCborEncodeRequest deterministic_cbor_encode = 5000 [json_name = "deterministicCborEncode"];`
+     * @return Whether the deterministicCborEncode field is set.
+     */
+    public fun hasDeterministicCborEncode(): kotlin.Boolean {
+      return _builder.hasDeterministicCborEncode()
+    }
+
+    /**
+     * `.reallyme.codec.v1.CodecDeterministicCborDecodeRequest deterministic_cbor_decode = 5001 [json_name = "deterministicCborDecode"];`
+     */
+    public var deterministicCborDecode: me.really.codec.v1.CodecDeterministicCborDecodeRequest
+      @kotlin.jvm.JvmName("getDeterministicCborDecode")
+        get() = _builder.deterministicCborDecode
+      @kotlin.jvm.JvmName("setDeterministicCborDecode")
+        set(value) {
+        _builder.deterministicCborDecode = value
+      }
+    /**
+     * `.reallyme.codec.v1.CodecDeterministicCborDecodeRequest deterministic_cbor_decode = 5001 [json_name = "deterministicCborDecode"];`
+     */
+    public fun clearDeterministicCborDecode() {
+      _builder.clearDeterministicCborDecode()
+    }
+    /**
+     * `.reallyme.codec.v1.CodecDeterministicCborDecodeRequest deterministic_cbor_decode = 5001 [json_name = "deterministicCborDecode"];`
+     * @return Whether the deterministicCborDecode field is set.
+     */
+    public fun hasDeterministicCborDecode(): kotlin.Boolean {
+      return _builder.hasDeterministicCborDecode()
+    }
     public val operationCase: me.really.codec.v1.CodecOperationRequest.OperationCase
     @kotlin.jvm.JvmName("getOperationCase")
       get() = _builder.operationCase
@@ -261,5 +393,20 @@ public val me.really.codec.v1.CodecOperationRequestOrBuilder.multikeyParseOrNull
 public val me.really.codec.v1.CodecOperationRequestOrBuilder.dagCborVerifyCidOrNull: me.really.codec.v1.CodecDagCborVerifyCidRequest?
   get() = if (hasDagCborVerifyCid()) getDagCborVerifyCid() else null
 
+public val me.really.codec.v1.CodecOperationRequestOrBuilder.dagCborEncodeOrNull: me.really.codec.v1.CodecDagCborEncodeRequest?
+  get() = if (hasDagCborEncode()) getDagCborEncode() else null
+
+public val me.really.codec.v1.CodecOperationRequestOrBuilder.dagCborDecodeOrNull: me.really.codec.v1.CodecDagCborDecodeRequest?
+  get() = if (hasDagCborDecode()) getDagCborDecode() else null
+
 public val me.really.codec.v1.CodecOperationRequestOrBuilder.pemDecodeOrNull: me.really.codec.v1.CodecPemDecodeRequest?
   get() = if (hasPemDecode()) getPemDecode() else null
+
+public val me.really.codec.v1.CodecOperationRequestOrBuilder.pemEncodeOrNull: me.really.codec.v1.CodecPemEncodeRequest?
+  get() = if (hasPemEncode()) getPemEncode() else null
+
+public val me.really.codec.v1.CodecOperationRequestOrBuilder.deterministicCborEncodeOrNull: me.really.codec.v1.CodecDeterministicCborEncodeRequest?
+  get() = if (hasDeterministicCborEncode()) getDeterministicCborEncode() else null
+
+public val me.really.codec.v1.CodecOperationRequestOrBuilder.deterministicCborDecodeOrNull: me.really.codec.v1.CodecDeterministicCborDecodeRequest?
+  get() = if (hasDeterministicCborDecode()) getDeterministicCborDecode() else null

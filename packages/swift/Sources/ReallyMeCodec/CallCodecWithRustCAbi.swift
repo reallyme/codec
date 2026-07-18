@@ -5,10 +5,10 @@
 import Foundation
 import ReallyMeCodecProto
 
-private let expectedCodecAbiVersion: UInt32 = 2
+private let expectedCodecAbiVersion: UInt32 = 5
 
 private typealias CodecAbiVersionFunction = @convention(c) () -> UInt32
-private typealias CodecProtoResultLimitFunction = @convention(c) () -> Int
+private typealias CodecSizeLimitFunction = @convention(c) () -> UInt
 
 private typealias CodecProcessFunction = @convention(c) (
     UInt32,
@@ -44,8 +44,14 @@ private typealias CodecBoolFunction = @convention(c) (
 @_silgen_name("rm_codec_abi_version")
 private func rmCodecAbiVersionLinked() -> UInt32
 
-@_silgen_name("rm_codec_max_proto_result_envelope_bytes")
-private func rmCodecMaxProtoResultEnvelopeBytesLinked() -> Int
+@_silgen_name("rm_codec_max_operation_response_bytes")
+private func rmCodecMaxOperationResponseBytesLinked() -> UInt
+
+@_silgen_name("rm_codec_max_ffi_input_bytes")
+private func rmCodecMaxFfiInputBytesLinked() -> UInt
+
+@_silgen_name("rm_codec_max_ffi_output_bytes")
+private func rmCodecMaxFfiOutputBytesLinked() -> UInt
 
 @_silgen_name("rm_codec_process")
 private func rmCodecProcessLinked(
@@ -61,8 +67,8 @@ private func rmCodecProcessLinked(
     _ producedLength: UnsafeMutablePointer<Int>?
 ) -> Int32
 
-@_silgen_name("rm_codec_process_proto")
-private func rmCodecProcessProtoLinked(
+@_silgen_name("rm_codec_process_operation_json")
+private func rmCodecProcessOperationJsonLinked(
     _ requestPointer: UnsafePointer<UInt8>?,
     _ requestLength: Int,
     _ outputPointer: UnsafeMutablePointer<UInt8>?,
@@ -70,8 +76,8 @@ private func rmCodecProcessProtoLinked(
     _ producedLength: UnsafeMutablePointer<Int>?
 ) -> Int32
 
-@_silgen_name("rm_codec_process_proto_json")
-private func rmCodecProcessProtoJsonLinked(
+@_silgen_name("rm_codec_process_operation")
+private func rmCodecProcessOperationLinked(
     _ requestPointer: UnsafePointer<UInt8>?,
     _ requestLength: Int,
     _ outputPointer: UnsafeMutablePointer<UInt8>?,
@@ -91,28 +97,30 @@ private func rmCodecProcessBoolLinked(
 #endif
 
 struct ReallyMeCodecRustCAbiProvider: Sendable {
-    private static let maxFfiInputLength = 1_048_576
-    private static let maxFfiOutputLength = 67_108_864
-
     // Keep the dlopen handle alive for as long as the dlsym function pointers
     // can be called; dropping it would let deinit dlclose the loaded image.
     private let library: ReallyMeCodecRustCAbiLibrary?
     private let processFunction: CodecProcessFunction
-    private let processProtoFunction: CodecProcessProtoFunction
-    private let processProtoJsonFunction: CodecProcessProtoFunction
+    private let processOperationFunction: CodecProcessProtoFunction
+    private let processOperationJsonFunction: CodecProcessProtoFunction
     private let boolFunction: CodecBoolFunction
-    private let maxProtoResultEnvelopeLength: Int
+    private let maxFfiInputLength: Int
+    private let maxFfiOutputLength: Int
+    private let maxOperationResponseLength: Int
 
     #if REALLYME_CODEC_LINKED_FFI
     init() throws {
         try Self.requireCompatibleAbiVersion(rmCodecAbiVersionLinked())
-        maxProtoResultEnvelopeLength = try Self.requireValidProtoResultEnvelopeLimit(
-            rmCodecMaxProtoResultEnvelopeBytesLinked()
+        maxFfiInputLength = try Self.requireValidFfiLimit(rmCodecMaxFfiInputBytesLinked())
+        maxFfiOutputLength = try Self.requireValidFfiLimit(rmCodecMaxFfiOutputBytesLinked())
+        maxOperationResponseLength = try Self.requireValidOperationResponseLimit(
+            rmCodecMaxOperationResponseBytesLinked(),
+            maxFfiOutputLength: maxFfiOutputLength
         )
         library = nil
         processFunction = rmCodecProcessLinked
-        processProtoFunction = rmCodecProcessProtoLinked
-        processProtoJsonFunction = rmCodecProcessProtoJsonLinked
+        processOperationFunction = rmCodecProcessOperationLinked
+        processOperationJsonFunction = rmCodecProcessOperationJsonLinked
         boolFunction = rmCodecProcessBoolLinked
     }
     #endif
@@ -124,17 +132,31 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
             as: CodecAbiVersionFunction.self
         )
         try Self.requireCompatibleAbiVersion(abiVersionFunction())
-        let protoResultLimitFunction = try library.loadFunction(
-            "rm_codec_max_proto_result_envelope_bytes",
-            as: CodecProtoResultLimitFunction.self
+        let inputLimitFunction = try library.loadFunction(
+            "rm_codec_max_ffi_input_bytes",
+            as: CodecSizeLimitFunction.self
         )
-        maxProtoResultEnvelopeLength = try Self.requireValidProtoResultEnvelopeLimit(
-            protoResultLimitFunction()
+        let outputLimitFunction = try library.loadFunction(
+            "rm_codec_max_ffi_output_bytes",
+            as: CodecSizeLimitFunction.self
+        )
+        maxFfiInputLength = try Self.requireValidFfiLimit(inputLimitFunction())
+        maxFfiOutputLength = try Self.requireValidFfiLimit(outputLimitFunction())
+        let operationResponseLimitFunction = try library.loadFunction(
+            "rm_codec_max_operation_response_bytes",
+            as: CodecSizeLimitFunction.self
+        )
+        maxOperationResponseLength = try Self.requireValidOperationResponseLimit(
+            operationResponseLimitFunction(),
+            maxFfiOutputLength: maxFfiOutputLength
         )
         processFunction = try library.loadFunction("rm_codec_process", as: CodecProcessFunction.self)
-        processProtoFunction = try library.loadFunction("rm_codec_process_proto", as: CodecProcessProtoFunction.self)
-        processProtoJsonFunction = try library.loadFunction(
-            "rm_codec_process_proto_json",
+        processOperationFunction = try library.loadFunction(
+            "rm_codec_process_operation",
+            as: CodecProcessProtoFunction.self
+        )
+        processOperationJsonFunction = try library.loadFunction(
+            "rm_codec_process_operation_json",
             as: CodecProcessProtoFunction.self
         )
         boolFunction = try library.loadFunction("rm_codec_process_bool", as: CodecBoolFunction.self)
@@ -146,11 +168,20 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
         }
     }
 
-    static func requireValidProtoResultEnvelopeLimit(_ limit: Int) throws -> Int {
-        guard limit > 0, limit <= maxFfiOutputLength else {
+    static func requireValidFfiLimit(_ limit: UInt) throws -> Int {
+        guard let converted = Int(exactly: limit), converted > 0 else {
             throw ReallyMeCodecError.providerFailure
         }
-        return limit
+        return converted
+    }
+
+    static func requireValidOperationResponseLimit(_ limit: UInt, maxFfiOutputLength: Int) throws -> Int {
+        guard let converted = Int(exactly: limit),
+              converted > 0,
+              converted <= maxFfiOutputLength else {
+            throw ReallyMeCodecError.providerFailure
+        }
+        return converted
     }
 
     func process(operation: UInt32, first: [UInt8], second: [UInt8] = [], third: [UInt8] = []) throws -> [UInt8] {
@@ -163,93 +194,71 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
         )
     }
 
-    func processProto(request: [UInt8]) throws -> [UInt8] {
-        var output = try processProtoResult(request: request)
-        if output.status == .codecError {
-            let error = Self.errorForCodecErrorPayload(output.bytes)
-            ReallyMeCodecMemory.clearOwned(&output.bytes)
-            throw error
-        }
-        return output.bytes
+    var ffiInputLimit: Int {
+        maxFfiInputLength
     }
 
-    static func errorForCodecErrorPayload(_ bytes: [UInt8]) -> ReallyMeCodecError {
-        let codecError: ReallyMeProtoCodecError
-        do {
-            codecError = try ReallyMeProtoCodecError(serializedBytes: bytes)
-        } catch {
+    func processOperation(request: [UInt8]) throws -> [UInt8] {
+        try processOperationResponse(
+            request: request,
+            function: processOperationFunction
+        )
+    }
+
+    func processOperationJson(request: [UInt8]) throws -> [UInt8] {
+        try processOperationResponse(
+            request: request,
+            function: processOperationJsonFunction
+        )
+    }
+
+    static func errorForCodecError(_ codecError: ReallyMeProtoCodecError) -> ReallyMeCodecError {
+        guard codecError.unknownFields.data.isEmpty else {
             return .providerFailure
         }
+        let expectedOrigin: ReallyMeProtoCodecErrorOrigin
         switch codecError.error {
         case .baseEncoding(let error):
-            return Self.inputErrorOrProviderFailure(error.reason, range: 100...199)
+            guard error.unknownFields.data.isEmpty,
+                  Self.isKnownReason(error.reason, range: 100...199) else { return .providerFailure }
+            expectedOrigin = .caller
         case .pem(let error):
-            return Self.inputErrorOrProviderFailure(error.reason, range: 200...299)
+            guard error.unknownFields.data.isEmpty,
+                  Self.isKnownReason(error.reason, range: 200...299) else { return .providerFailure }
+            expectedOrigin = .caller
         case .multiformat(let error):
-            return Self.inputErrorOrProviderFailure(error.reason, range: 300...399)
+            guard error.unknownFields.data.isEmpty,
+                  Self.isKnownReason(error.reason, range: 300...399) else { return .providerFailure }
+            expectedOrigin = .caller
         case .canonicalization(let error):
-            guard error.reason != .canonicalInternal else {
-                return .providerFailure
-            }
-            return Self.inputErrorOrProviderFailure(error.reason, range: 400...499)
-        case .backend:
-            return .providerFailure
+            guard error.unknownFields.data.isEmpty,
+                  Self.isKnownReason(error.reason, range: 400...499) else { return .providerFailure }
+            expectedOrigin = error.reason == .canonicalInternal ? .provider : .caller
+        case .backend(let error):
+            guard error.unknownFields.data.isEmpty,
+                  Self.isKnownReason(error.reason, range: 500...599) else { return .providerFailure }
+            expectedOrigin = .provider
         case .boundary(let error):
-            // Resource exhaustion is produced locally for oversized caller
-            // values. Other boundary errors cannot come from a generated SDK
-            // request and therefore indicate provider corruption or ABI skew.
-            return error.reason == .boundaryResourceLimitExceeded
-                ? .invalidInput
-                : .providerFailure
+            guard error.unknownFields.data.isEmpty,
+                  Self.isKnownReason(error.reason, range: 600...699) else { return .providerFailure }
+            expectedOrigin = .caller
         case nil:
             return .providerFailure
         }
-    }
-
-    private static func inputErrorOrProviderFailure(
-        _ reason: ReallyMeProtoCodecErrorReason,
-        range: ClosedRange<Int>
-    ) -> ReallyMeCodecError {
-        if case .UNRECOGNIZED = reason {
+        guard codecError.origin == expectedOrigin else {
             return .providerFailure
         }
-        return range.contains(reason.rawValue) ? .invalidInput : .providerFailure
+        return expectedOrigin == .caller ? .invalidInput : .providerFailure
     }
 
-    func processProtoResult(request: [UInt8]) throws -> ReallyMeCodecProtoResult {
-        let output = try processProtoEnvelope(request: request)
-        return try Self.decodeProtoResultEnvelope(output)
-    }
-
-    static func decodeProtoResultEnvelope(
-        _ output: consuming [UInt8]
-    ) throws -> ReallyMeCodecProtoResult {
-        var ownedOutput = consume output
-        defer {
-            ReallyMeCodecMemory.clearOwned(&ownedOutput)
+    private static func isKnownReason(
+        _ reason: ReallyMeProtoCodecErrorReason,
+        range: ClosedRange<Int>
+    ) -> Bool {
+        if case .UNRECOGNIZED = reason {
+            return false
         }
-        var envelope: ReallyMeProtoCodecProtoResultEnvelope
-        do {
-            envelope = try ReallyMeProtoCodecProtoResultEnvelope(serializedBytes: ownedOutput)
-        } catch {
-            throw ReallyMeCodecError.providerFailure
-        }
-        defer {
-            ReallyMeCodecMemory.clearOwned(&envelope.payload)
-        }
-        let status: ReallyMeCodecProtoStatus
-        switch envelope.status {
-        case .result:
-            status = .result
-        case .codecError:
-            status = .codecError
-        case .unspecified, .UNRECOGNIZED:
-            throw ReallyMeCodecError.providerFailure
-        }
-        return ReallyMeCodecProtoResult(
-            status: status,
-            bytes: Array(envelope.payload)
-        )
+        return range.contains(reason.rawValue)
     }
 
     private func processWithFunction(
@@ -275,7 +284,7 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
         second: [UInt8],
         third: [UInt8]
     ) throws -> (status: Int32, bytes: [UInt8]) {
-        try Self.validateAggregateInputLengths([first.count, second.count, third.count])
+        try validateAggregateInputLengths([first.count, second.count, third.count])
         var producedLength = 0
         let firstStatus = first.withUnsafeBufferPointer { firstBuffer in
             second.withUnsafeBufferPointer { secondBuffer in
@@ -301,7 +310,7 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
         }
         let validEmptyProbe = firstStatus == ReallyMeCodecRustCAbiStatus.ok && producedLength == 0
         let validNonEmptyProbe = firstStatus == ReallyMeCodecRustCAbiStatus.bufferTooSmall &&
-            producedLength > 0 && producedLength <= Self.maxFfiOutputLength
+            producedLength > 0 && producedLength <= maxFfiOutputLength
         guard validEmptyProbe || validNonEmptyProbe else {
             throw ReallyMeCodecError.providerFailure
         }
@@ -344,21 +353,7 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
         return (status, output)
     }
 
-    func processProtoEnvelope(request: [UInt8]) throws -> [UInt8] {
-        try processProtoEnvelope(
-            request: request,
-            function: processProtoFunction
-        )
-    }
-
-    func processProtoJsonEnvelope(requestJson: [UInt8]) throws -> [UInt8] {
-        try processProtoEnvelope(
-            request: requestJson,
-            function: processProtoJsonFunction
-        )
-    }
-
-    private func processProtoEnvelope(
+    private func processOperationResponse(
         request: [UInt8],
         function: CodecProcessProtoFunction
     ) throws -> [UInt8] {
@@ -376,7 +371,7 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
             try ReallyMeCodecRustCAbiStatus.throwIfError(firstStatus)
             throw ReallyMeCodecError.providerFailure
         }
-        guard producedLength > 0, producedLength <= maxProtoResultEnvelopeLength else {
+        guard producedLength > 0, producedLength <= maxOperationResponseLength else {
             throw ReallyMeCodecError.providerFailure
         }
 
@@ -407,7 +402,7 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
     }
 
     func processBool(operation: UInt32, first: [UInt8], second: [UInt8] = []) throws -> Bool {
-        try Self.validateAggregateInputLengths([first.count, second.count])
+        try validateAggregateInputLengths([first.count, second.count])
         var result: Int32 = 0
         let status = first.withUnsafeBufferPointer { firstBuffer in
             second.withUnsafeBufferPointer { secondBuffer in
@@ -432,7 +427,7 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
         }
     }
 
-    private static func validateAggregateInputLengths(_ lengths: [Int]) throws {
+    private func validateAggregateInputLengths(_ lengths: [Int]) throws {
         var aggregate = 0
         for length in lengths {
             let (next, overflow) = aggregate.addingReportingOverflow(length)

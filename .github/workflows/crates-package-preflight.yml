@@ -1,0 +1,103 @@
+# SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Crates Package Preflight
+
+run-name: Crates package preflight ${{ inputs.version }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Optional exact main commit SHA to certify. Leave blank to use current origin/main.
+        required: false
+        type: string
+        default: ""
+      version:
+        description: Release version without leading v
+        required: true
+        type: string
+        default: 0.2.0
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crates-package-preflight-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  verify-source-sha:
+    name: verify source SHA
+    runs-on: ubuntu-latest
+    outputs:
+      release_sha: ${{ steps.resolve-release-sha.outputs.release_sha }}
+    steps:
+      - name: Checkout main for release SHA resolution
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Resolve release SHA
+        id: resolve-release-sha
+        env:
+          RELEASE_SHA_INPUT: ${{ inputs.release_sha }}
+        run: |
+          git fetch --no-tags origin main
+          if [ -n "${RELEASE_SHA_INPUT}" ]; then
+            if [[ ! "${RELEASE_SHA_INPUT}" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::release_sha must be blank or a lowercase 40-character commit SHA"
+              exit 1
+            fi
+            release_sha="${RELEASE_SHA_INPUT}"
+          else
+            release_sha="$(git rev-parse origin/main)"
+          fi
+          if [ "$(git rev-parse origin/main)" != "${release_sha}" ]; then
+            echo "::error::resolved release SHA is not the current origin/main tip"
+            exit 1
+          fi
+          git checkout --detach "${release_sha}"
+          echo "release_sha=${release_sha}" >> "${GITHUB_OUTPUT}"
+          echo "Using release SHA ${release_sha}"
+
+  crates-package:
+    name: crates.io package preflight
+    needs: verify-source-sha
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ needs.verify-source-sha.outputs.release_sha }}
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88 # master
+        with:
+          toolchain: 1.96.0
+
+      - name: Install Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+
+      - name: Check workspace metadata
+        run: cargo metadata --format-version 1 --no-deps
+
+      - name: Check release version matches crate metadata
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          release_version="$(sed -n 's/^version = "\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\)"$/\1/p' crates/codec/Cargo.toml | head -n 1)"
+          if [ "${release_version}" != "${RELEASE_VERSION}" ]; then
+            echo "::error::release version input does not match crates/codec/Cargo.toml"
+            exit 1
+          fi
+
+      - name: Inspect publishable crate tarballs
+        run: node scripts/publish_crates_in_order.mjs inspect
+
+      - name: Check release readiness contract
+        run: node scripts/run_pinned_release_readiness.mjs

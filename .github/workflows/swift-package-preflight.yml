@@ -1,0 +1,122 @@
+# SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Swift Package Preflight
+
+run-name: Swift package preflight ${{ inputs.version }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Optional exact main commit SHA to certify. Leave blank to use current origin/main.
+        required: false
+        type: string
+        default: ""
+      version:
+        description: Release version without leading v
+        required: true
+        type: string
+        default: 0.2.0
+
+permissions:
+  contents: read
+
+concurrency:
+  group: swift-package-preflight-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  verify-source-sha:
+    name: verify source SHA
+    runs-on: ubuntu-latest
+    outputs:
+      release_sha: ${{ steps.resolve-release-sha.outputs.release_sha }}
+    steps:
+      - name: Checkout main for release SHA resolution
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Resolve release SHA
+        id: resolve-release-sha
+        env:
+          RELEASE_SHA_INPUT: ${{ inputs.release_sha }}
+        run: |
+          git fetch --no-tags origin main
+          if [ -n "${RELEASE_SHA_INPUT}" ]; then
+            if [[ ! "${RELEASE_SHA_INPUT}" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::release_sha must be blank or a lowercase 40-character commit SHA"
+              exit 1
+            fi
+            release_sha="${RELEASE_SHA_INPUT}"
+          else
+            release_sha="$(git rev-parse origin/main)"
+          fi
+          if [ "$(git rev-parse origin/main)" != "${release_sha}" ]; then
+            echo "::error::resolved release SHA is not the current origin/main tip"
+            exit 1
+          fi
+          git checkout --detach "${release_sha}"
+          echo "release_sha=${release_sha}" >> "${GITHUB_OUTPUT}"
+          echo "Using release SHA ${release_sha}"
+
+  swift-package:
+    name: swift package preflight
+    needs: verify-source-sha
+    runs-on: macos-26
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ needs.verify-source-sha.outputs.release_sha }}
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88 # master
+        with:
+          toolchain: 1.96.0
+
+      - name: Install Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+
+      - name: Select Xcode 26.4
+        run: |
+          sudo xcode-select -s /Applications/Xcode_26.4.app
+          swift --version
+
+      - name: Build codec FFI dylib
+        run: cargo build --locked -p reallyme-codec-ffi
+
+      - name: Test Swift package
+        run: swift test
+        env:
+          REALLYME_CODEC_FFI_LIBRARY_PATH: ${{ github.workspace }}/target/debug/libreallyme_codec_ffi.dylib
+          REALLYME_CODEC_SWIFTPM_RUNTIME_FFI: "1"
+
+      - name: Build SwiftPM binary artifact
+        run: scripts/build_swift_xcframework.sh
+
+      - name: Verify SwiftPM binary manifest wiring
+        run: |
+          checksum="$(cat build/swift/ReallyMeCodecFFI.xcframework.checksum)"
+          node scripts/prepare_swift_binary_manifest.mjs "${RELEASE_VERSION}" "${checksum}"
+          node scripts/run_pinned_release_readiness.mjs --release-packages
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+
+      - name: Prepare local SwiftPM binary manifest
+        run: |
+          checksum="$(cat build/swift/ReallyMeCodecFFI.xcframework.checksum)"
+          node scripts/prepare_swift_binary_manifest.mjs "${RELEASE_VERSION}" "${checksum}" --local-artifact-path build/swift/ReallyMeCodecFFI.xcframework
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+
+      - name: Reset SwiftPM package state
+        run: swift package reset
+
+      - name: Test Swift package with linked binary target
+        run: swift test

@@ -5,8 +5,10 @@
 import org.gradle.api.publish.maven.tasks.PublishToMavenLocal
 import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
 import org.gradle.external.javadoc.StandardJavadocDocletOptions
+import org.gradle.jvm.tasks.Jar
 import java.net.URI
 import java.security.MessageDigest
+import java.util.zip.ZipFile
 
 plugins {
     kotlin("jvm") version "2.4.0"
@@ -16,7 +18,7 @@ plugins {
 }
 
 group = "me.really"
-version = "0.1.22"
+version = "0.2.0"
 
 dependencyLocking {
     lockAllConfigurations()
@@ -102,6 +104,42 @@ val ffiRustFlags = listOfNotNull(
     "-C panic=unwind",
 ).joinToString(" ")
 
+fun sha256Hex(file: File): String {
+    val digest = MessageDigest.getInstance("SHA-256")
+    file.inputStream().use { input ->
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        try {
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) {
+                    break
+                }
+                if (read > 0) {
+                    digest.update(buffer, 0, read)
+                }
+            }
+        } finally {
+            buffer.fill(0)
+        }
+    }
+    return digest.digest().joinToString(separator = "") { byte ->
+        "%02x".format(byte)
+    }
+}
+
+fun sha256Hex(bytes: ByteArray): String {
+    val digest = MessageDigest.getInstance("SHA-256").digest(bytes)
+    return digest.joinToString(separator = "") { byte ->
+        "%02x".format(byte)
+    }
+}
+
+fun expectedNativeDigestMetadata(file: File): String =
+    "${sha256Hex(file)} ${file.length()}\n"
+
+fun expectedNativeDigestMetadata(bytes: ByteArray): String =
+    "${sha256Hex(bytes)} ${bytes.size}\n"
+
 kotlin {
     jvmToolchain(21)
     sourceSets {
@@ -154,35 +192,16 @@ val writeHostNativeDigest = tasks.register("writeHostNativeDigest") {
     outputs.file(sidecar)
     doLast {
         val libraryFile = library.get()
-        val digest = MessageDigest.getInstance("SHA-256")
-        libraryFile.inputStream().use { input ->
-            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-            try {
-                while (true) {
-                    val read = input.read(buffer)
-                    if (read < 0) {
-                        break
-                    }
-                    if (read > 0) {
-                        digest.update(buffer, 0, read)
-                    }
-                }
-            } finally {
-                buffer.fill(0)
-            }
-        }
-        val hex = digest.digest().joinToString(separator = "") { byte ->
-            "%02x".format(byte)
-        }
         val sidecarFile = sidecar.get()
         sidecarFile.parentFile.mkdirs()
-        sidecarFile.writeText("$hex ${libraryFile.length()}\n")
+        sidecarFile.writeText(expectedNativeDigestMetadata(libraryFile))
     }
 }
 
 dependencies {
     api("com.google.protobuf:protobuf-javalite:4.35.1")
     api("com.google.protobuf:protobuf-kotlin-lite:4.35.1")
+    testImplementation("com.google.code.gson:gson:2.11.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.11.4")
     testImplementation(kotlin("test"))
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.11.4")
@@ -222,6 +241,16 @@ val verifyBundledNativeResources = tasks.register("verifyBundledNativeResources"
                 "missing ReallyMe codec native resources: ${missing.joinToString(", ")}"
             )
         }
+        for (relativePath in requiredNativeResources.filter { it.endsWith(".so") || it.endsWith(".dylib") || it.endsWith(".dll") }) {
+            val library = root.resolve(relativePath)
+            val sidecar = root.resolve("$relativePath.sha256")
+            val expected = expectedNativeDigestMetadata(library)
+            if (sidecar.readText() != expected) {
+                throw GradleException(
+                    "ReallyMe codec native digest does not match $relativePath"
+                )
+            }
+        }
     }
 }
 
@@ -242,18 +271,72 @@ val verifyHostBundledNativeResource = tasks.register("verifyHostBundledNativeRes
                 "missing ReallyMe codec host native digest: $requiredHostNativeDigest"
             )
         }
+        if (
+            root.resolve(requiredHostNativeDigest).readText() !=
+            expectedNativeDigestMetadata(root.resolve(requiredHostNativeResource))
+        ) {
+            throw GradleException(
+                "ReallyMe codec host native digest does not match $requiredHostNativeResource"
+            )
+        }
+    }
+}
+
+val verifyJarContainsNativeResources = tasks.register("verifyJarContainsNativeResources") {
+    group = "verification"
+    description = "Verifies that the packaged JVM JAR contains native resources with matching digests."
+    val jarTask = tasks.named<Jar>("jar")
+    dependsOn(jarTask)
+    if (requireFullNativeResources.get()) {
+        dependsOn(verifyBundledNativeResources)
+    } else {
+        dependsOn(verifyHostBundledNativeResource)
+    }
+    inputs.file(jarTask.flatMap { it.archiveFile })
+    doLast {
+        val requiredResources = if (requireFullNativeResources.get()) {
+            requiredNativeResources
+        } else {
+            listOf(requiredHostNativeResource, requiredHostNativeDigest)
+        }
+        ZipFile(jarTask.get().archiveFile.get().asFile).use { archive ->
+            for (relativePath in requiredResources) {
+                archive.getEntry(relativePath)
+                    ?: throw GradleException("JVM JAR is missing native resource: $relativePath")
+            }
+            val nativeLibraries = requiredResources.filter {
+                it.endsWith(".so") || it.endsWith(".dylib") || it.endsWith(".dll")
+            }
+            for (relativePath in nativeLibraries) {
+                val libraryEntry = archive.getEntry(relativePath)
+                    ?: throw GradleException("JVM JAR is missing native library: $relativePath")
+                val sidecarEntry = archive.getEntry("$relativePath.sha256")
+                    ?: throw GradleException("JVM JAR is missing native digest: $relativePath.sha256")
+                val bytes = archive.getInputStream(libraryEntry).use { it.readBytes() }
+                try {
+                    val sidecarText = archive.getInputStream(sidecarEntry)
+                        .bufferedReader(Charsets.US_ASCII)
+                        .use { it.readText() }
+                    if (sidecarText != expectedNativeDigestMetadata(bytes)) {
+                        throw GradleException("JVM JAR native digest does not match $relativePath")
+                    }
+                } finally {
+                    bytes.fill(0)
+                }
+            }
+        }
     }
 }
 
 tasks.withType<PublishToMavenLocal>().configureEach {
-    dependsOn(verifyHostBundledNativeResource)
+    dependsOn(verifyJarContainsNativeResources)
     if (requireFullNativeResources.get()) {
         dependsOn(verifyBundledNativeResources)
     }
 }
 
 tasks.withType<PublishToMavenRepository>().configureEach {
-    dependsOn(verifyBundledNativeResources)
+    dependsOn(verifyBundledNativeResources, verifyJarContainsNativeResources)
 }
 
 val verifyRemoteMavenPublishingConfigured = tasks.register("verifyRemoteMavenPublishingConfigured") {

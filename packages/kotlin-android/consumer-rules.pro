@@ -6,8 +6,8 @@
 -keep class me.really.codec.ReallyMeCodecException { *; }
 -keep class me.really.codec.ReallyMeCodecException$* { *; }
 
-# Rust resolves these names and members directly through JNI. Renaming either
-# type, the enum fields, or the result constructor would make every protobuf
-# result operation fail at runtime in an optimized consumer application.
--keep class me.really.codec.ReallyMeCodecProtoStatus { *; }
--keep class me.really.codec.ReallyMeCodecProtoResult { *; }
+# Protobuf Lite reflects on generated backing-field names from the encoded
+# schema metadata at runtime. Consumer R8 must not rename these generated
+# message classes or members, or optimized apps fail while constructing or
+# parsing codec operation envelopes.
+-keep class me.really.codec.v1.** { *; }

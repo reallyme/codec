@@ -1,0 +1,113 @@
+# SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: npm Package Preflight
+
+run-name: npm package preflight ${{ inputs.version }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Optional exact main commit SHA to certify. Leave blank to use current origin/main.
+        required: false
+        type: string
+        default: ""
+      version:
+        description: Release version without leading v
+        required: true
+        type: string
+        default: 0.2.0
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-package-preflight-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  verify-source-sha:
+    name: verify source SHA
+    runs-on: ubuntu-latest
+    outputs:
+      release_sha: ${{ steps.resolve-release-sha.outputs.release_sha }}
+    steps:
+      - name: Checkout main for release SHA resolution
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Resolve release SHA
+        id: resolve-release-sha
+        env:
+          RELEASE_SHA_INPUT: ${{ inputs.release_sha }}
+        run: |
+          git fetch --no-tags origin main
+          if [ -n "${RELEASE_SHA_INPUT}" ]; then
+            if [[ ! "${RELEASE_SHA_INPUT}" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::release_sha must be blank or a lowercase 40-character commit SHA"
+              exit 1
+            fi
+            release_sha="${RELEASE_SHA_INPUT}"
+          else
+            release_sha="$(git rev-parse origin/main)"
+          fi
+          if [ "$(git rev-parse origin/main)" != "${release_sha}" ]; then
+            echo "::error::resolved release SHA is not the current origin/main tip"
+            exit 1
+          fi
+          git checkout --detach "${release_sha}"
+          echo "release_sha=${release_sha}" >> "${GITHUB_OUTPUT}"
+          echo "Using release SHA ${release_sha}"
+
+  npm-package:
+    name: npm package preflight
+    needs: verify-source-sha
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ needs.verify-source-sha.outputs.release_sha }}
+
+      - name: Install Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: packages/ts/package-lock.json
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88 # master
+        with:
+          toolchain: 1.96.0
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@c61310c7f42caf5b425e349b6742d93ca197327c # wasm-pack
+        with:
+          tool: wasm-pack@0.15.0
+
+      - name: Install wasm-bindgen-cli
+        uses: taiki-e/install-action@c61310c7f42caf5b425e349b6742d93ca197327c # wasm-bindgen-cli
+        with:
+          tool: wasm-bindgen-cli@0.2.126
+
+      - name: Install TypeScript codec package dependencies
+        run: npm ci
+        working-directory: packages/ts
+
+      - name: Test TypeScript codec package
+        run: npm test
+        working-directory: packages/ts
+
+      - name: Test TypeScript codec package in browser
+        run: npm run test:browser
+        working-directory: packages/ts
+
+      - name: Build codec npm tarball dry run
+        run: npm pack --dry-run
+        working-directory: packages/ts

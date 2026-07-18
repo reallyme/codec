@@ -25,6 +25,13 @@ public  final class CodecDagCborVerifyCidRequest extends
     return 0x524d;
   }
 
+  // Java Lite deliberately omits public unknown-field access. This generated
+  // boolean exposes no field content, but lets SDK adapters reject schema
+  // skew or corrupt-provider additions before copying a sensitive owner tree.
+  public boolean reallyMeHasUnknownFieldsForValidation() {
+    return unknownFields != com.google.protobuf.UnknownFieldSetLite.getDefaultInstance();
+  }
+
   private CodecDagCborVerifyCidRequest() {
     cid_ = "";
     payload_ = com.google.protobuf.ByteString.EMPTY;

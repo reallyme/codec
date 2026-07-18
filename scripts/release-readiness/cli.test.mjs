@@ -4,6 +4,7 @@
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import test from "node:test";
@@ -11,6 +12,10 @@ import test from "node:test";
 const testDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(testDirectory, "../..");
 const readinessScript = "scripts/check_release_readiness.mjs";
+const readinessSource = readFileSync(
+  resolve(repositoryRoot, readinessScript),
+  "utf8",
+);
 
 const runReadiness = (arguments_) =>
   spawnSync(process.execPath, [readinessScript, ...arguments_], {
@@ -44,4 +49,51 @@ test("release readiness rejects duplicate arguments", () => {
     result.stderr,
     /release readiness check failed: argument --generated-freshness was specified more than once/u,
   );
+});
+
+test("repository-local source policy is verified before it executes", () => {
+  const policyPath = "scripts/release-readiness/source-policy.mjs";
+  const trackedCheck = readinessSource.indexOf(`requireTracked("${policyPath}")`);
+  const dynamicImport = readinessSource.indexOf(
+    'await import("./release-readiness/source-policy.mjs")',
+  );
+
+  assert.equal(
+    readinessSource.includes('from "./release-readiness/source-policy.mjs"'),
+    false,
+  );
+  assert.ok(trackedCheck >= 0);
+  assert.ok(dynamicImport > trackedCheck);
+});
+
+test("tracked-mode file listing rejects missing directories", () => {
+  const result = spawnSync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "-e",
+      `
+        import { pathToFileURL } from "node:url";
+        import { createReleaseReadinessContext } from "./scripts/release-readiness/core.mjs";
+
+        const { listFiles } = createReleaseReadinessContext({
+          scriptUrl: pathToFileURL(\`\${process.cwd()}/README.md\`).href,
+          repoRoot: ".",
+          requireTrackedFiles: true,
+        });
+        listFiles("release-readiness-definitely-missing-directory");
+      `,
+    ],
+    {
+      cwd: repositoryRoot,
+      encoding: "utf8",
+      stdio: "pipe",
+    },
+  );
+
+  assert.equal(result.error, undefined);
+  assert.equal(result.status, 1);
+  assert.equal(result.stdout, "");
+  assert.match(result.stderr, /release readiness check failed:/u);
+  assert.doesNotMatch(result.stderr, /has no tracked files/u);
 });

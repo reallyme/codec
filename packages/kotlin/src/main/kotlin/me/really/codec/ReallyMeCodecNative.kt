@@ -7,6 +7,14 @@ package me.really.codec
 internal object ReallyMeCodecNative {
     external fun probeNative(): Int
 
+    external fun abiVersionNative(): Int
+
+    external fun maxFfiInputBytesNative(): Long
+
+    external fun maxFfiOutputBytesNative(): Long
+
+    external fun maxOperationResponseBytesNative(): Long
+
     external fun processNative(
         operation: Int,
         first: ByteArray,
@@ -14,15 +22,13 @@ internal object ReallyMeCodecNative {
         third: ByteArray,
     ): ByteArray
 
-    external fun processProtoNative(request: ByteArray): ByteArray
+    external fun processOperationNative(request: ByteArray): ByteArray
 
-    external fun processProtoJsonNative(requestJson: ByteArray): ByteArray
+    external fun processOperationJsonNative(requestJson: ByteArray): ByteArray
 
     external fun processBoolNative(
         operation: Int,
         first: ByteArray,
         second: ByteArray,
     ): Int
-
-    external fun processProtoResultNative(request: ByteArray): ReallyMeCodecProtoResult
 }

@@ -12,7 +12,7 @@ import { enumDesc, fileDesc, messageDesc, tsEnum } from "@bufbuild/protobuf/code
  * Describes the file reallyme/codec/v1/codec.proto.
  */
 export const file_reallyme_codec_v1_codec = /*@__PURE__*/
-  fileDesc("Ch1yZWFsbHltZS9jb2RlYy92MS9jb2RlYy5wcm90bxIRcmVhbGx5bWUuY29kZWMudjEiigMKCkNvZGVjRXJyb3ISQgoNYmFzZV9lbmNvZGluZxgBIAEoCzIpLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjQmFzZUVuY29kaW5nRXJyb3JIABIvCgNwZW0YAiABKAsyIC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY1BlbUVycm9ySAASPwoLbXVsdGlmb3JtYXQYAyABKAsyKC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY011bHRpZm9ybWF0RXJyb3JIABJJChBjYW5vbmljYWxpemF0aW9uGAQgASgLMi0ucmVhbGx5bWUuY29kZWMudjEuQ29kZWNDYW5vbmljYWxpemF0aW9uRXJyb3JIABI3CgdiYWNrZW5kGAUgASgLMiQucmVhbGx5bWUuY29kZWMudjEuQ29kZWNCYWNrZW5kRXJyb3JIABI5Cghib3VuZGFyeRgGIAEoCzIlLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjQm91bmRhcnlFcnJvckgAQgcKBWVycm9yImYKGENvZGVjUHJvdG9SZXN1bHRFbnZlbG9wZRI5CgZzdGF0dXMYASABKA4yKS5yZWFsbHltZS5jb2RlYy52MS5Db2RlY1Byb3RvUmVzdWx0U3RhdHVzEg8KB3BheWxvYWQYAiABKAwiMwojQ29kZWNNdWx0aWNvZGVjUHJlZml4Rm9yTmFtZVJlcXVlc3QSDAoEbmFtZRgBIAEoCSIzCiJDb2RlY011bHRpY29kZWNMb29rdXBQcmVmaXhSZXF1ZXN0Eg0KBXZhbHVlGAEgASgMIh0KG0NvZGVjTXVsdGljb2RlY1RhYmxlUmVxdWVzdCItChlDb2RlY011bHRpa2V5UGFyc2VSZXF1ZXN0EhAKCG11bHRpa2V5GAEgASgJIjwKHENvZGVjRGFnQ2JvclZlcmlmeUNpZFJlcXVlc3QSCwoDY2lkGAEgASgJEg8KB3BheWxvYWQYAiABKAwifQoVQ29kZWNQZW1EZWNvZGVPcHRpb25zEjgKDmFsbG93ZWRfbGFiZWxzGAEgAygOMiAucmVhbGx5bWUuY29kZWMudjEuQ29kZWNQZW1MYWJlbBIVCg1tYXhfaW5wdXRfbGVuGAIgASgNEhMKC21heF9kZXJfbGVuGAMgASgNIl8KFUNvZGVjUGVtRGVjb2RlUmVxdWVzdBILCgNwZW0YASABKAwSOQoHb3B0aW9ucxgCIAEoCzIoLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjUGVtRGVjb2RlT3B0aW9ucyKOBAoVQ29kZWNPcGVyYXRpb25SZXF1ZXN0El0KGm11bHRpY29kZWNfcHJlZml4X2Zvcl9uYW1lGOgHIAEoCzI2LnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjTXVsdGljb2RlY1ByZWZpeEZvck5hbWVSZXF1ZXN0SAASWgoYbXVsdGljb2RlY19sb29rdXBfcHJlZml4GOkHIAEoCzI1LnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjTXVsdGljb2RlY0xvb2t1cFByZWZpeFJlcXVlc3RIABJLChBtdWx0aWNvZGVjX3RhYmxlGOoHIAEoCzIuLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjTXVsdGljb2RlY1RhYmxlUmVxdWVzdEgAEkcKDm11bHRpa2V5X3BhcnNlGNAPIAEoCzIsLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjTXVsdGlrZXlQYXJzZVJlcXVlc3RIABJPChNkYWdfY2Jvcl92ZXJpZnlfY2lkGLgXIAEoCzIvLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRGFnQ2JvclZlcmlmeUNpZFJlcXVlc3RIABI/CgpwZW1fZGVjb2RlGKAfIAEoCzIoLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjUGVtRGVjb2RlUmVxdWVzdEgAQgsKCW9wZXJhdGlvbkoFCAEQ6Aci9gEKE0NvZGVjTXVsdGljb2RlY1NwZWMSDAoEbmFtZRgBIAEoCRIMCgRjb2RlGAIgASgMEg4KBnByZWZpeBgDIAEoDBIoCgN0YWcYBCABKA4yGy5yZWFsbHltZS5jb2RlYy52MS5Db2RlY1RhZxJCChFrZXlfbWF0ZXJpYWxfa2luZBgFIAEoDjInLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjS2V5TWF0ZXJpYWxLaW5kEhQKDGZpeGVkX2xlbmd0aBgGIAEoDRIXCg92YXJpYWJsZV9sZW5ndGgYByABKAgSFgoOYWxnb3JpdGhtX25hbWUYCCABKAkifAobQ29kZWNNdWx0aWNvZGVjTG9va3VwUmVzdWx0EgwKBG5hbWUYASABKAkSFQoNcHJlZml4X2xlbmd0aBgCIAEoDRI4CghtZXRhZGF0YRgDIAEoCzImLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjTXVsdGljb2RlY1NwZWMiVQoaQ29kZWNNdWx0aWNvZGVjVGFibGVSZXN1bHQSNwoHZW50cmllcxgBIAMoCzImLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjTXVsdGljb2RlY1NwZWMiogEKGENvZGVjTXVsdGlrZXlQYXJzZVJlc3VsdBISCgpjb2RlY19uYW1lGAEgASgJEhYKDmFsZ29yaXRobV9uYW1lGAIgASgJEhIKCnB1YmxpY19rZXkYAyABKAwSIgoaZXhwZWN0ZWRfcHVibGljX2tleV9sZW5ndGgYBCABKA0SIgoadmFyaWFibGVfcHVibGljX2tleV9sZW5ndGgYBSABKAgiVgobQ29kZWNEYWdDYm9yVmVyaWZ5Q2lkUmVzdWx0Eg0KBXZhbGlkGAEgASgIEhQKDGV4cGVjdGVkX2NpZBgCIAEoCRISCgphY3R1YWxfY2lkGAMgASgJIjIKFENvZGVjUGVtRGVjb2RlUmVzdWx0Eg0KBWxhYmVsGAEgASgJEgsKA2RlchgCIAEoDCJNChZDb2RlY0Jhc2VFbmNvZGluZ0Vycm9yEjMKBnJlYXNvbhgBIAEoDjIjLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRXJyb3JSZWFzb24iRAoNQ29kZWNQZW1FcnJvchIzCgZyZWFzb24YASABKA4yIy5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0Vycm9yUmVhc29uIkwKFUNvZGVjTXVsdGlmb3JtYXRFcnJvchIzCgZyZWFzb24YASABKA4yIy5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0Vycm9yUmVhc29uIlEKGkNvZGVjQ2Fub25pY2FsaXphdGlvbkVycm9yEjMKBnJlYXNvbhgBIAEoDjIjLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRXJyb3JSZWFzb24iSAoRQ29kZWNCYWNrZW5kRXJyb3ISMwoGcmVhc29uGAEgASgOMiMucmVhbGx5bWUuY29kZWMudjEuQ29kZWNFcnJvclJlYXNvbiJJChJDb2RlY0JvdW5kYXJ5RXJyb3ISMwoGcmVhc29uGAEgASgOMiMucmVhbGx5bWUuY29kZWMudjEuQ29kZWNFcnJvclJlYXNvbiqUAQoWQ29kZWNQcm90b1Jlc3VsdFN0YXR1cxIpCiVDT0RFQ19QUk9UT19SRVNVTFRfU1RBVFVTX1VOU1BFQ0lGSUVEEAASJAogQ09ERUNfUFJPVE9fUkVTVUxUX1NUQVRVU19SRVNVTFQQARIpCiVDT0RFQ19QUk9UT19SRVNVTFRfU1RBVFVTX0NPREVDX0VSUk9SEAIqlQEKDUNvZGVjUGVtTGFiZWwSHwobQ09ERUNfUEVNX0xBQkVMX1VOU1BFQ0lGSUVEEAASHwobQ09ERUNfUEVNX0xBQkVMX1BSSVZBVEVfS0VZEGQSIgoeQ09ERUNfUEVNX0xBQkVMX0VDX1BSSVZBVEVfS0VZEG4SHgoaQ09ERUNfUEVNX0xBQkVMX1BVQkxJQ19LRVkQeCrgAQoUQ29kZWNLZXlNYXRlcmlhbEtpbmQSJwojQ09ERUNfS0VZX01BVEVSSUFMX0tJTkRfVU5TUEVDSUZJRUQQABImCiJDT0RFQ19LRVlfTUFURVJJQUxfS0lORF9QVUJMSUNfS0VZEAESJwojQ09ERUNfS0VZX01BVEVSSUFMX0tJTkRfUFJJVkFURV9LRVkQAhIpCiVDT0RFQ19LRVlfTUFURVJJQUxfS0lORF9TWU1NRVRSSUNfS0VZEAMSIwofQ09ERUNfS0VZX01BVEVSSUFMX0tJTkRfTk9UX0tFWRAEKpcBCghDb2RlY1RhZxIZChVDT0RFQ19UQUdfVU5TUEVDSUZJRUQQABIYChRDT0RFQ19UQUdfRU5DUllQVElPThABEhEKDUNPREVDX1RBR19LRVkQAhISCg5DT0RFQ19UQUdfSEFTSBADEhcKE0NPREVDX1RBR19NVUxUSUhBU0gQBBIWChJDT0RFQ19UQUdfTVVMVElLRVkQBSqSCwoQQ29kZWNFcnJvclJlYXNvbhIiCh5DT0RFQ19FUlJPUl9SRUFTT05fVU5TUEVDSUZJRUQQABItCilDT0RFQ19FUlJPUl9SRUFTT05fQkFTRV9VTlNVUFBPUlRFRF9DT0RFQxBkEiwKKENPREVDX0VSUk9SX1JFQVNPTl9CQVNFX0lOVkFMSURfRU5DT0RJTkcQZRIqCiZDT0RFQ19FUlJPUl9SRUFTT05fQkFTRV9JTlZBTElEX0xFTkdUSBBmEisKJ0NPREVDX0VSUk9SX1JFQVNPTl9CQVNFX0lOUFVUX1RPT19MQVJHRRBnEiwKKENPREVDX0VSUk9SX1JFQVNPTl9CQVNFX09VVFBVVF9UT09fTEFSR0UQaBIqCiZDT0RFQ19FUlJPUl9SRUFTT05fQkFTRV9JTlZBTElEX0JBU0U2NBBuEi0KKUNPREVDX0VSUk9SX1JFQVNPTl9CQVNFX0lOVkFMSURfQkFTRTY0VVJMEG8SJwojQ09ERUNfRVJST1JfUkVBU09OX0JBU0VfSU5WQUxJRF9IRVgQeBItCilDT0RFQ19FUlJPUl9SRUFTT05fQkFTRV9OT05fQ0FOT05JQ0FMX0hFWBB5EiwKJ0NPREVDX0VSUk9SX1JFQVNPTl9QRU1fSU5WQUxJRF9CT1VOREFSWRDIARIqCiVDT0RFQ19FUlJPUl9SRUFTT05fUEVNX0xBQkVMX01JU01BVENIEMkBEi0KKENPREVDX0VSUk9SX1JFQVNPTl9QRU1fVU5TVVBQT1JURURfTEFCRUwQygESKAojQ09ERUNfRVJST1JfUkVBU09OX1BFTV9JTlZBTElEX0JPRFkQywESKQokQ09ERUNfRVJST1JfUkVBU09OX1BFTV9ERVJfVE9PX0xBUkdFEMwBEjwKN0NPREVDX0VSUk9SX1JFQVNPTl9NVUxUSUZPUk1BVF9JTlZBTElEX01VTFRJQkFTRV9QUkVGSVgQrAISPQo4Q09ERUNfRVJST1JfUkVBU09OX01VTFRJRk9STUFUX0lOVkFMSURfTVVMVElDT0RFQ19QUkVGSVgQrQISNgoxQ09ERUNfRVJST1JfUkVBU09OX01VTFRJRk9STUFUX1VOS05PV05fTVVMVElDT0RFQxCuAhI0Ci9DT0RFQ19FUlJPUl9SRUFTT05fTVVMVElGT1JNQVRfSU5WQUxJRF9NVUxUSUtFWRCvAhIuCilDT0RFQ19FUlJPUl9SRUFTT05fQ0FOT05JQ0FMX0lOVkFMSURfQ0JPUhCQAxI0Ci9DT0RFQ19FUlJPUl9SRUFTT05fQ0FOT05JQ0FMX05PTl9DQU5PTklDQUxfQ0JPUhCRAxIuCilDT0RFQ19FUlJPUl9SRUFTT05fQ0FOT05JQ0FMX0lOVkFMSURfSlNPThCSAxI0Ci9DT0RFQ19FUlJPUl9SRUFTT05fQ0FOT05JQ0FMX05PTl9DQU5PTklDQUxfSlNPThCTAxIqCiVDT0RFQ19FUlJPUl9SRUFTT05fQ0FOT05JQ0FMX0lOVEVSTkFMEJQDEigKI0NPREVDX0VSUk9SX1JFQVNPTl9CQUNLRU5EX0lOVEVSTkFMEPQDEjMKLkNPREVDX0VSUk9SX1JFQVNPTl9CT1VOREFSWV9NQUxGT1JNRURfUFJPVE9CVUYQ2AQSLwoqQ09ERUNfRVJST1JfUkVBU09OX0JPVU5EQVJZX01BTEZPUk1FRF9KU09OENkEEjgKM0NPREVDX0VSUk9SX1JFQVNPTl9CT1VOREFSWV9SRVNPVVJDRV9MSU1JVF9FWENFRURFRBDaBBIyCi1DT0RFQ19FUlJPUl9SRUFTT05fQk9VTkRBUllfTUlTU0lOR19PUEVSQVRJT04Q2wQiBAhwEHBCJgoSbWUucmVhbGx5LmNvZGVjLnYxUAG6Ag1SZWFsbHlNZVByb3RvYgZwcm90bzM");
+  fileDesc("Ch1yZWFsbHltZS9jb2RlYy92MS9jb2RlYy5wcm90bxIRcmVhbGx5bWUuY29kZWMudjEivwMKCkNvZGVjRXJyb3ISQgoNYmFzZV9lbmNvZGluZxgBIAEoCzIpLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjQmFzZUVuY29kaW5nRXJyb3JIABIvCgNwZW0YAiABKAsyIC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY1BlbUVycm9ySAASPwoLbXVsdGlmb3JtYXQYAyABKAsyKC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY011bHRpZm9ybWF0RXJyb3JIABJJChBjYW5vbmljYWxpemF0aW9uGAQgASgLMi0ucmVhbGx5bWUuY29kZWMudjEuQ29kZWNDYW5vbmljYWxpemF0aW9uRXJyb3JIABI3CgdiYWNrZW5kGAUgASgLMiQucmVhbGx5bWUuY29kZWMudjEuQ29kZWNCYWNrZW5kRXJyb3JIABI5Cghib3VuZGFyeRgGIAEoCzIlLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjQm91bmRhcnlFcnJvckgAEjMKBm9yaWdpbhhkIAEoDjIjLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRXJyb3JPcmlnaW5CBwoFZXJyb3IiMwojQ29kZWNNdWx0aWNvZGVjUHJlZml4Rm9yTmFtZVJlcXVlc3QSDAoEbmFtZRgBIAEoCSIzCiJDb2RlY011bHRpY29kZWNMb29rdXBQcmVmaXhSZXF1ZXN0Eg0KBXZhbHVlGAEgASgMIh0KG0NvZGVjTXVsdGljb2RlY1RhYmxlUmVxdWVzdCItChlDb2RlY011bHRpa2V5UGFyc2VSZXF1ZXN0EhAKCG11bHRpa2V5GAEgASgJIjwKHENvZGVjRGFnQ2JvclZlcmlmeUNpZFJlcXVlc3QSCwoDY2lkGAEgASgJEg8KB3BheWxvYWQYAiABKAwiWgoZQ29kZWNEYWdDYm9yRW5jb2RlUmVxdWVzdBI9CgV2YWx1ZRgBIAEoCzIuLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRGV0ZXJtaW5pc3RpY0Nib3JWYWx1ZSIrChhDb2RlY0RhZ0Nib3JFbmNvZGVSZXN1bHQSDwoHZW5jb2RlZBgBIAEoDCIsChlDb2RlY0RhZ0Nib3JEZWNvZGVSZXF1ZXN0Eg8KB2VuY29kZWQYASABKAwiWQoYQ29kZWNEYWdDYm9yRGVjb2RlUmVzdWx0Ej0KBXZhbHVlGAEgASgLMi4ucmVhbGx5bWUuY29kZWMudjEuQ29kZWNEZXRlcm1pbmlzdGljQ2JvclZhbHVlIn0KFUNvZGVjUGVtRGVjb2RlT3B0aW9ucxI4Cg5hbGxvd2VkX2xhYmVscxgBIAMoDjIgLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjUGVtTGFiZWwSFQoNbWF4X2lucHV0X2xlbhgCIAEoDRITCgttYXhfZGVyX2xlbhgDIAEoDSJfChVDb2RlY1BlbURlY29kZVJlcXVlc3QSCwoDcGVtGAEgASgMEjkKB29wdGlvbnMYAiABKAsyKC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY1BlbURlY29kZU9wdGlvbnMifAoVQ29kZWNQZW1FbmNvZGVPcHRpb25zEhMKC21heF9kZXJfbGVuGAEgASgNEhIKCmxpbmVfd2lkdGgYAiABKA0SOgoLbGluZV9lbmRpbmcYAyABKA4yJS5yZWFsbHltZS5jb2RlYy52MS5Db2RlY1BlbUxpbmVFbmRpbmcikAEKFUNvZGVjUGVtRW5jb2RlUmVxdWVzdBIvCgVsYWJlbBgBIAEoDjIgLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjUGVtTGFiZWwSCwoDZGVyGAIgASgMEjkKB29wdGlvbnMYAyABKAsyKC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY1BlbUVuY29kZU9wdGlvbnMiIwoUQ29kZWNQZW1FbmNvZGVSZXN1bHQSCwoDcGVtGAEgASgMIhwKGkNvZGVjRGV0ZXJtaW5pc3RpY0Nib3JOdWxsIisKGkNvZGVjRGV0ZXJtaW5pc3RpY0Nib3JCb29sEg0KBXZhbHVlGAEgASgIIjYKJUNvZGVjRGV0ZXJtaW5pc3RpY0Nib3JVbnNpZ25lZEludGVnZXISDQoFdmFsdWUYASABKAQiNgolQ29kZWNEZXRlcm1pbmlzdGljQ2Jvck5lZ2F0aXZlSW50ZWdlchINCgV2YWx1ZRgBIAEoEiLQAQodQ29kZWNEZXRlcm1pbmlzdGljQ2JvckludGVnZXISUgoOdW5zaWduZWRfdmFsdWUYASABKAsyOC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9yVW5zaWduZWRJbnRlZ2VySAASUgoObmVnYXRpdmVfdmFsdWUYAiABKAsyOC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9yTmVnYXRpdmVJbnRlZ2VySABCBwoFdmFsdWUiKwoaQ29kZWNEZXRlcm1pbmlzdGljQ2JvclRleHQSDQoFdmFsdWUYASABKAkiLAobQ29kZWNEZXRlcm1pbmlzdGljQ2JvckJ5dGVzEg0KBXZhbHVlGAEgASgMIrEBChxDb2RlY0RldGVybWluaXN0aWNDYm9yTWFwS2V5EkcKC2ludGVnZXJfa2V5GAEgASgLMjAucmVhbGx5bWUuY29kZWMudjEuQ29kZWNEZXRlcm1pbmlzdGljQ2JvckludGVnZXJIABJBCgh0ZXh0X2tleRgCIAEoCzItLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRGV0ZXJtaW5pc3RpY0Nib3JUZXh0SABCBQoDa2V5Ip0BCh5Db2RlY0RldGVybWluaXN0aWNDYm9yTWFwRW50cnkSPAoDa2V5GAEgASgLMi8ucmVhbGx5bWUuY29kZWMudjEuQ29kZWNEZXRlcm1pbmlzdGljQ2Jvck1hcEtleRI9CgV2YWx1ZRgCIAEoCzIuLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRGV0ZXJtaW5pc3RpY0Nib3JWYWx1ZSJdChtDb2RlY0RldGVybWluaXN0aWNDYm9yQXJyYXkSPgoGdmFsdWVzGAEgAygLMi4ucmVhbGx5bWUuY29kZWMudjEuQ29kZWNEZXRlcm1pbmlzdGljQ2JvclZhbHVlIl8KGUNvZGVjRGV0ZXJtaW5pc3RpY0Nib3JNYXASQgoHZW50cmllcxgBIAMoCzIxLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRGV0ZXJtaW5pc3RpY0Nib3JNYXBFbnRyeSKRBAobQ29kZWNEZXRlcm1pbmlzdGljQ2JvclZhbHVlEkMKCm51bGxfdmFsdWUYASABKAsyLS5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9yTnVsbEgAEkMKCmJvb2xfdmFsdWUYAiABKAsyLS5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9yQm9vbEgAEkkKDWludGVnZXJfdmFsdWUYAyABKAsyMC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9ySW50ZWdlckgAEkMKCnRleHRfdmFsdWUYBCABKAsyLS5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9yVGV4dEgAEkUKC2J5dGVzX3ZhbHVlGAUgASgLMi4ucmVhbGx5bWUuY29kZWMudjEuQ29kZWNEZXRlcm1pbmlzdGljQ2JvckJ5dGVzSAASRQoLYXJyYXlfdmFsdWUYBiABKAsyLi5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9yQXJyYXlIABJBCgltYXBfdmFsdWUYByABKAsyLC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9yTWFwSABCBwoFdmFsdWUiZAojQ29kZWNEZXRlcm1pbmlzdGljQ2JvckVuY29kZVJlcXVlc3QSPQoFdmFsdWUYASABKAsyLi5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9yVmFsdWUiNQoiQ29kZWNEZXRlcm1pbmlzdGljQ2JvckVuY29kZVJlc3VsdBIPCgdlbmNvZGVkGAEgASgMIjYKI0NvZGVjRGV0ZXJtaW5pc3RpY0Nib3JEZWNvZGVSZXF1ZXN0Eg8KB2VuY29kZWQYASABKAwiYwoiQ29kZWNEZXRlcm1pbmlzdGljQ2JvckRlY29kZVJlc3VsdBI9CgV2YWx1ZRgBIAEoCzIuLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRGV0ZXJtaW5pc3RpY0Nib3JWYWx1ZSL7BgoUQ29kZWNPcGVyYXRpb25SZXN1bHQSTQoabXVsdGljb2RlY19wcmVmaXhfZm9yX25hbWUY6AcgASgLMiYucmVhbGx5bWUuY29kZWMudjEuQ29kZWNNdWx0aWNvZGVjU3BlY0gAElMKGG11bHRpY29kZWNfbG9va3VwX3ByZWZpeBjpByABKAsyLi5yZWFsbHltZS5jb2RlYy52MS5Db2RlY011bHRpY29kZWNMb29rdXBSZXN1bHRIABJKChBtdWx0aWNvZGVjX3RhYmxlGOoHIAEoCzItLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjTXVsdGljb2RlY1RhYmxlUmVzdWx0SAASRgoObXVsdGlrZXlfcGFyc2UY0A8gASgLMisucmVhbGx5bWUuY29kZWMudjEuQ29kZWNNdWx0aWtleVBhcnNlUmVzdWx0SAASTgoTZGFnX2Nib3JfdmVyaWZ5X2NpZBi4FyABKAsyLi5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RhZ0Nib3JWZXJpZnlDaWRSZXN1bHRIABJHCg9kYWdfY2Jvcl9lbmNvZGUYuRcgASgLMisucmVhbGx5bWUuY29kZWMudjEuQ29kZWNEYWdDYm9yRW5jb2RlUmVzdWx0SAASRwoPZGFnX2Nib3JfZGVjb2RlGLoXIAEoCzIrLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRGFnQ2JvckRlY29kZVJlc3VsdEgAEj4KCnBlbV9kZWNvZGUYoB8gASgLMicucmVhbGx5bWUuY29kZWMudjEuQ29kZWNQZW1EZWNvZGVSZXN1bHRIABI+CgpwZW1fZW5jb2RlGKEfIAEoCzInLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjUGVtRW5jb2RlUmVzdWx0SAASWwoZZGV0ZXJtaW5pc3RpY19jYm9yX2VuY29kZRiIJyABKAsyNS5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9yRW5jb2RlUmVzdWx0SAASWwoZZGV0ZXJtaW5pc3RpY19jYm9yX2RlY29kZRiJJyABKAsyNS5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9yRGVjb2RlUmVzdWx0SABCCAoGcmVzdWx0SgUIARDoByKOAQoWQ29kZWNPcGVyYXRpb25SZXNwb25zZRI5CgZyZXN1bHQYASABKAsyJy5yZWFsbHltZS5jb2RlYy52MS5Db2RlY09wZXJhdGlvblJlc3VsdEgAEi4KBWVycm9yGAIgASgLMh0ucmVhbGx5bWUuY29kZWMudjEuQ29kZWNFcnJvckgAQgkKB291dGNvbWUinwcKFUNvZGVjT3BlcmF0aW9uUmVxdWVzdBJdChptdWx0aWNvZGVjX3ByZWZpeF9mb3JfbmFtZRjoByABKAsyNi5yZWFsbHltZS5jb2RlYy52MS5Db2RlY011bHRpY29kZWNQcmVmaXhGb3JOYW1lUmVxdWVzdEgAEloKGG11bHRpY29kZWNfbG9va3VwX3ByZWZpeBjpByABKAsyNS5yZWFsbHltZS5jb2RlYy52MS5Db2RlY011bHRpY29kZWNMb29rdXBQcmVmaXhSZXF1ZXN0SAASSwoQbXVsdGljb2RlY190YWJsZRjqByABKAsyLi5yZWFsbHltZS5jb2RlYy52MS5Db2RlY011bHRpY29kZWNUYWJsZVJlcXVlc3RIABJHCg5tdWx0aWtleV9wYXJzZRjQDyABKAsyLC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY011bHRpa2V5UGFyc2VSZXF1ZXN0SAASTwoTZGFnX2Nib3JfdmVyaWZ5X2NpZBi4FyABKAsyLy5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RhZ0Nib3JWZXJpZnlDaWRSZXF1ZXN0SAASSAoPZGFnX2Nib3JfZW5jb2RlGLkXIAEoCzIsLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRGFnQ2JvckVuY29kZVJlcXVlc3RIABJICg9kYWdfY2Jvcl9kZWNvZGUYuhcgASgLMiwucmVhbGx5bWUuY29kZWMudjEuQ29kZWNEYWdDYm9yRGVjb2RlUmVxdWVzdEgAEj8KCnBlbV9kZWNvZGUYoB8gASgLMigucmVhbGx5bWUuY29kZWMudjEuQ29kZWNQZW1EZWNvZGVSZXF1ZXN0SAASPwoKcGVtX2VuY29kZRihHyABKAsyKC5yZWFsbHltZS5jb2RlYy52MS5Db2RlY1BlbUVuY29kZVJlcXVlc3RIABJcChlkZXRlcm1pbmlzdGljX2Nib3JfZW5jb2RlGIgnIAEoCzI2LnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRGV0ZXJtaW5pc3RpY0Nib3JFbmNvZGVSZXF1ZXN0SAASXAoZZGV0ZXJtaW5pc3RpY19jYm9yX2RlY29kZRiJJyABKAsyNi5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0RldGVybWluaXN0aWNDYm9yRGVjb2RlUmVxdWVzdEgAQgsKCW9wZXJhdGlvbkoFCAEQ6Aci9gEKE0NvZGVjTXVsdGljb2RlY1NwZWMSDAoEbmFtZRgBIAEoCRIMCgRjb2RlGAIgASgMEg4KBnByZWZpeBgDIAEoDBIoCgN0YWcYBCABKA4yGy5yZWFsbHltZS5jb2RlYy52MS5Db2RlY1RhZxJCChFrZXlfbWF0ZXJpYWxfa2luZBgFIAEoDjInLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjS2V5TWF0ZXJpYWxLaW5kEhQKDGZpeGVkX2xlbmd0aBgGIAEoDRIXCg92YXJpYWJsZV9sZW5ndGgYByABKAgSFgoOYWxnb3JpdGhtX25hbWUYCCABKAkifAobQ29kZWNNdWx0aWNvZGVjTG9va3VwUmVzdWx0EgwKBG5hbWUYASABKAkSFQoNcHJlZml4X2xlbmd0aBgCIAEoDRI4CghtZXRhZGF0YRgDIAEoCzImLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjTXVsdGljb2RlY1NwZWMiVQoaQ29kZWNNdWx0aWNvZGVjVGFibGVSZXN1bHQSNwoHZW50cmllcxgBIAMoCzImLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjTXVsdGljb2RlY1NwZWMiogEKGENvZGVjTXVsdGlrZXlQYXJzZVJlc3VsdBISCgpjb2RlY19uYW1lGAEgASgJEhYKDmFsZ29yaXRobV9uYW1lGAIgASgJEhIKCnB1YmxpY19rZXkYAyABKAwSIgoaZXhwZWN0ZWRfcHVibGljX2tleV9sZW5ndGgYBCABKA0SIgoadmFyaWFibGVfcHVibGljX2tleV9sZW5ndGgYBSABKAgiVgobQ29kZWNEYWdDYm9yVmVyaWZ5Q2lkUmVzdWx0Eg0KBXZhbGlkGAEgASgIEhQKDGV4cGVjdGVkX2NpZBgCIAEoCRISCgphY3R1YWxfY2lkGAMgASgJIjIKFENvZGVjUGVtRGVjb2RlUmVzdWx0Eg0KBWxhYmVsGAEgASgJEgsKA2RlchgCIAEoDCJNChZDb2RlY0Jhc2VFbmNvZGluZ0Vycm9yEjMKBnJlYXNvbhgBIAEoDjIjLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRXJyb3JSZWFzb24iRAoNQ29kZWNQZW1FcnJvchIzCgZyZWFzb24YASABKA4yIy5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0Vycm9yUmVhc29uIkwKFUNvZGVjTXVsdGlmb3JtYXRFcnJvchIzCgZyZWFzb24YASABKA4yIy5yZWFsbHltZS5jb2RlYy52MS5Db2RlY0Vycm9yUmVhc29uIlEKGkNvZGVjQ2Fub25pY2FsaXphdGlvbkVycm9yEjMKBnJlYXNvbhgBIAEoDjIjLnJlYWxseW1lLmNvZGVjLnYxLkNvZGVjRXJyb3JSZWFzb24iSAoRQ29kZWNCYWNrZW5kRXJyb3ISMwoGcmVhc29uGAEgASgOMiMucmVhbGx5bWUuY29kZWMudjEuQ29kZWNFcnJvclJlYXNvbiJJChJDb2RlY0JvdW5kYXJ5RXJyb3ISMwoGcmVhc29uGAEgASgOMiMucmVhbGx5bWUuY29kZWMudjEuQ29kZWNFcnJvclJlYXNvbip2ChBDb2RlY0Vycm9yT3JpZ2luEiIKHkNPREVDX0VSUk9SX09SSUdJTl9VTlNQRUNJRklFRBAAEh0KGUNPREVDX0VSUk9SX09SSUdJTl9DQUxMRVIQARIfChtDT0RFQ19FUlJPUl9PUklHSU5fUFJPVklERVIQAiqVAQoNQ29kZWNQZW1MYWJlbBIfChtDT0RFQ19QRU1fTEFCRUxfVU5TUEVDSUZJRUQQABIfChtDT0RFQ19QRU1fTEFCRUxfUFJJVkFURV9LRVkQZBIiCh5DT0RFQ19QRU1fTEFCRUxfRUNfUFJJVkFURV9LRVkQbhIeChpDT0RFQ19QRU1fTEFCRUxfUFVCTElDX0tFWRB4KnkKEkNvZGVjUGVtTGluZUVuZGluZxIlCiFDT0RFQ19QRU1fTElORV9FTkRJTkdfVU5TUEVDSUZJRUQQABIcChhDT0RFQ19QRU1fTElORV9FTkRJTkdfTEYQZBIeChpDT0RFQ19QRU1fTElORV9FTkRJTkdfQ1JMRhBuKuABChRDb2RlY0tleU1hdGVyaWFsS2luZBInCiNDT0RFQ19LRVlfTUFURVJJQUxfS0lORF9VTlNQRUNJRklFRBAAEiYKIkNPREVDX0tFWV9NQVRFUklBTF9LSU5EX1BVQkxJQ19LRVkQARInCiNDT0RFQ19LRVlfTUFURVJJQUxfS0lORF9QUklWQVRFX0tFWRACEikKJUNPREVDX0tFWV9NQVRFUklBTF9LSU5EX1NZTU1FVFJJQ19LRVkQAxIjCh9DT0RFQ19LRVlfTUFURVJJQUxfS0lORF9OT1RfS0VZEAQqlwEKCENvZGVjVGFnEhkKFUNPREVDX1RBR19VTlNQRUNJRklFRBAAEhgKFENPREVDX1RBR19FTkNSWVBUSU9OEAESEQoNQ09ERUNfVEFHX0tFWRACEhIKDkNPREVDX1RBR19IQVNIEAMSFwoTQ09ERUNfVEFHX01VTFRJSEFTSBAEEhYKEkNPREVDX1RBR19NVUxUSUtFWRAFKpILChBDb2RlY0Vycm9yUmVhc29uEiIKHkNPREVDX0VSUk9SX1JFQVNPTl9VTlNQRUNJRklFRBAAEi0KKUNPREVDX0VSUk9SX1JFQVNPTl9CQVNFX1VOU1VQUE9SVEVEX0NPREVDEGQSLAooQ09ERUNfRVJST1JfUkVBU09OX0JBU0VfSU5WQUxJRF9FTkNPRElORxBlEioKJkNPREVDX0VSUk9SX1JFQVNPTl9CQVNFX0lOVkFMSURfTEVOR1RIEGYSKwonQ09ERUNfRVJST1JfUkVBU09OX0JBU0VfSU5QVVRfVE9PX0xBUkdFEGcSLAooQ09ERUNfRVJST1JfUkVBU09OX0JBU0VfT1VUUFVUX1RPT19MQVJHRRBoEioKJkNPREVDX0VSUk9SX1JFQVNPTl9CQVNFX0lOVkFMSURfQkFTRTY0EG4SLQopQ09ERUNfRVJST1JfUkVBU09OX0JBU0VfSU5WQUxJRF9CQVNFNjRVUkwQbxInCiNDT0RFQ19FUlJPUl9SRUFTT05fQkFTRV9JTlZBTElEX0hFWBB4Ei0KKUNPREVDX0VSUk9SX1JFQVNPTl9CQVNFX05PTl9DQU5PTklDQUxfSEVYEHkSLAonQ09ERUNfRVJST1JfUkVBU09OX1BFTV9JTlZBTElEX0JPVU5EQVJZEMgBEioKJUNPREVDX0VSUk9SX1JFQVNPTl9QRU1fTEFCRUxfTUlTTUFUQ0gQyQESLQooQ09ERUNfRVJST1JfUkVBU09OX1BFTV9VTlNVUFBPUlRFRF9MQUJFTBDKARIoCiNDT0RFQ19FUlJPUl9SRUFTT05fUEVNX0lOVkFMSURfQk9EWRDLARIpCiRDT0RFQ19FUlJPUl9SRUFTT05fUEVNX0RFUl9UT09fTEFSR0UQzAESPAo3Q09ERUNfRVJST1JfUkVBU09OX01VTFRJRk9STUFUX0lOVkFMSURfTVVMVElCQVNFX1BSRUZJWBCsAhI9CjhDT0RFQ19FUlJPUl9SRUFTT05fTVVMVElGT1JNQVRfSU5WQUxJRF9NVUxUSUNPREVDX1BSRUZJWBCtAhI2CjFDT0RFQ19FUlJPUl9SRUFTT05fTVVMVElGT1JNQVRfVU5LTk9XTl9NVUxUSUNPREVDEK4CEjQKL0NPREVDX0VSUk9SX1JFQVNPTl9NVUxUSUZPUk1BVF9JTlZBTElEX01VTFRJS0VZEK8CEi4KKUNPREVDX0VSUk9SX1JFQVNPTl9DQU5PTklDQUxfSU5WQUxJRF9DQk9SEJADEjQKL0NPREVDX0VSUk9SX1JFQVNPTl9DQU5PTklDQUxfTk9OX0NBTk9OSUNBTF9DQk9SEJEDEi4KKUNPREVDX0VSUk9SX1JFQVNPTl9DQU5PTklDQUxfSU5WQUxJRF9KU09OEJIDEjQKL0NPREVDX0VSUk9SX1JFQVNPTl9DQU5PTklDQUxfTk9OX0NBTk9OSUNBTF9KU09OEJMDEioKJUNPREVDX0VSUk9SX1JFQVNPTl9DQU5PTklDQUxfSU5URVJOQUwQlAMSKAojQ09ERUNfRVJST1JfUkVBU09OX0JBQ0tFTkRfSU5URVJOQUwQ9AMSMwouQ09ERUNfRVJST1JfUkVBU09OX0JPVU5EQVJZX01BTEZPUk1FRF9QUk9UT0JVRhDYBBIvCipDT0RFQ19FUlJPUl9SRUFTT05fQk9VTkRBUllfTUFMRk9STUVEX0pTT04Q2QQSOAozQ09ERUNfRVJST1JfUkVBU09OX0JPVU5EQVJZX1JFU09VUkNFX0xJTUlUX0VYQ0VFREVEENoEEjIKLUNPREVDX0VSUk9SX1JFQVNPTl9CT1VOREFSWV9NSVNTSU5HX09QRVJBVElPThDbBCIECHAQcEImChJtZS5yZWFsbHkuY29kZWMudjFQAboCDVJlYWxseU1lUHJvdG9iBnByb3RvMw");
 
 /**
  * Describes the message reallyme.codec.v1.CodecError.
@@ -22,166 +22,336 @@ export const CodecErrorSchema = /*@__PURE__*/
   messageDesc(file_reallyme_codec_v1_codec, 0);
 
 /**
- * Describes the message reallyme.codec.v1.CodecProtoResultEnvelope.
- * Use `create(CodecProtoResultEnvelopeSchema)` to create a new message.
- */
-export const CodecProtoResultEnvelopeSchema = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 1);
-
-/**
  * Describes the message reallyme.codec.v1.CodecMulticodecPrefixForNameRequest.
  * Use `create(CodecMulticodecPrefixForNameRequestSchema)` to create a new message.
  */
 export const CodecMulticodecPrefixForNameRequestSchema = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 2);
+  messageDesc(file_reallyme_codec_v1_codec, 1);
 
 /**
  * Describes the message reallyme.codec.v1.CodecMulticodecLookupPrefixRequest.
  * Use `create(CodecMulticodecLookupPrefixRequestSchema)` to create a new message.
  */
 export const CodecMulticodecLookupPrefixRequestSchema = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 3);
+  messageDesc(file_reallyme_codec_v1_codec, 2);
 
 /**
  * Describes the message reallyme.codec.v1.CodecMulticodecTableRequest.
  * Use `create(CodecMulticodecTableRequestSchema)` to create a new message.
  */
 export const CodecMulticodecTableRequestSchema = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 4);
+  messageDesc(file_reallyme_codec_v1_codec, 3);
 
 /**
  * Describes the message reallyme.codec.v1.CodecMultikeyParseRequest.
  * Use `create(CodecMultikeyParseRequestSchema)` to create a new message.
  */
 export const CodecMultikeyParseRequestSchema = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 5);
+  messageDesc(file_reallyme_codec_v1_codec, 4);
 
 /**
  * Describes the message reallyme.codec.v1.CodecDagCborVerifyCidRequest.
  * Use `create(CodecDagCborVerifyCidRequestSchema)` to create a new message.
  */
 export const CodecDagCborVerifyCidRequestSchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 5);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDagCborEncodeRequest.
+ * Use `create(CodecDagCborEncodeRequestSchema)` to create a new message.
+ */
+export const CodecDagCborEncodeRequestSchema = /*@__PURE__*/
   messageDesc(file_reallyme_codec_v1_codec, 6);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDagCborEncodeResult.
+ * Use `create(CodecDagCborEncodeResultSchema)` to create a new message.
+ */
+export const CodecDagCborEncodeResultSchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 7);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDagCborDecodeRequest.
+ * Use `create(CodecDagCborDecodeRequestSchema)` to create a new message.
+ */
+export const CodecDagCborDecodeRequestSchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 8);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDagCborDecodeResult.
+ * Use `create(CodecDagCborDecodeResultSchema)` to create a new message.
+ */
+export const CodecDagCborDecodeResultSchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 9);
 
 /**
  * Describes the message reallyme.codec.v1.CodecPemDecodeOptions.
  * Use `create(CodecPemDecodeOptionsSchema)` to create a new message.
  */
 export const CodecPemDecodeOptionsSchema = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 7);
+  messageDesc(file_reallyme_codec_v1_codec, 10);
 
 /**
  * Describes the message reallyme.codec.v1.CodecPemDecodeRequest.
  * Use `create(CodecPemDecodeRequestSchema)` to create a new message.
  */
 export const CodecPemDecodeRequestSchema = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 8);
+  messageDesc(file_reallyme_codec_v1_codec, 11);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecPemEncodeOptions.
+ * Use `create(CodecPemEncodeOptionsSchema)` to create a new message.
+ */
+export const CodecPemEncodeOptionsSchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 12);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecPemEncodeRequest.
+ * Use `create(CodecPemEncodeRequestSchema)` to create a new message.
+ */
+export const CodecPemEncodeRequestSchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 13);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecPemEncodeResult.
+ * Use `create(CodecPemEncodeResultSchema)` to create a new message.
+ */
+export const CodecPemEncodeResultSchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 14);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborNull.
+ * Use `create(CodecDeterministicCborNullSchema)` to create a new message.
+ */
+export const CodecDeterministicCborNullSchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 15);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborBool.
+ * Use `create(CodecDeterministicCborBoolSchema)` to create a new message.
+ */
+export const CodecDeterministicCborBoolSchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 16);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborUnsignedInteger.
+ * Use `create(CodecDeterministicCborUnsignedIntegerSchema)` to create a new message.
+ */
+export const CodecDeterministicCborUnsignedIntegerSchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 17);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborNegativeInteger.
+ * Use `create(CodecDeterministicCborNegativeIntegerSchema)` to create a new message.
+ */
+export const CodecDeterministicCborNegativeIntegerSchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 18);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborInteger.
+ * Use `create(CodecDeterministicCborIntegerSchema)` to create a new message.
+ */
+export const CodecDeterministicCborIntegerSchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 19);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborText.
+ * Use `create(CodecDeterministicCborTextSchema)` to create a new message.
+ */
+export const CodecDeterministicCborTextSchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 20);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborBytes.
+ * Use `create(CodecDeterministicCborBytesSchema)` to create a new message.
+ */
+export const CodecDeterministicCborBytesSchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 21);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborMapKey.
+ * Use `create(CodecDeterministicCborMapKeySchema)` to create a new message.
+ */
+export const CodecDeterministicCborMapKeySchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 22);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborMapEntry.
+ * Use `create(CodecDeterministicCborMapEntrySchema)` to create a new message.
+ */
+export const CodecDeterministicCborMapEntrySchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 23);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborArray.
+ * Use `create(CodecDeterministicCborArraySchema)` to create a new message.
+ */
+export const CodecDeterministicCborArraySchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 24);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborMap.
+ * Use `create(CodecDeterministicCborMapSchema)` to create a new message.
+ */
+export const CodecDeterministicCborMapSchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 25);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborValue.
+ * Use `create(CodecDeterministicCborValueSchema)` to create a new message.
+ */
+export const CodecDeterministicCborValueSchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 26);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborEncodeRequest.
+ * Use `create(CodecDeterministicCborEncodeRequestSchema)` to create a new message.
+ */
+export const CodecDeterministicCborEncodeRequestSchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 27);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborEncodeResult.
+ * Use `create(CodecDeterministicCborEncodeResultSchema)` to create a new message.
+ */
+export const CodecDeterministicCborEncodeResultSchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 28);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborDecodeRequest.
+ * Use `create(CodecDeterministicCborDecodeRequestSchema)` to create a new message.
+ */
+export const CodecDeterministicCborDecodeRequestSchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 29);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecDeterministicCborDecodeResult.
+ * Use `create(CodecDeterministicCborDecodeResultSchema)` to create a new message.
+ */
+export const CodecDeterministicCborDecodeResultSchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 30);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecOperationResult.
+ * Use `create(CodecOperationResultSchema)` to create a new message.
+ */
+export const CodecOperationResultSchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 31);
+
+/**
+ * Describes the message reallyme.codec.v1.CodecOperationResponse.
+ * Use `create(CodecOperationResponseSchema)` to create a new message.
+ */
+export const CodecOperationResponseSchema = /*@__PURE__*/
+  messageDesc(file_reallyme_codec_v1_codec, 32);
 
 /**
  * Describes the message reallyme.codec.v1.CodecOperationRequest.
  * Use `create(CodecOperationRequestSchema)` to create a new message.
  */
 export const CodecOperationRequestSchema = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 9);
+  messageDesc(file_reallyme_codec_v1_codec, 33);
 
 /**
  * Describes the message reallyme.codec.v1.CodecMulticodecSpec.
  * Use `create(CodecMulticodecSpecSchema)` to create a new message.
  */
 export const CodecMulticodecSpecSchema = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 10);
+  messageDesc(file_reallyme_codec_v1_codec, 34);
 
 /**
  * Describes the message reallyme.codec.v1.CodecMulticodecLookupResult.
  * Use `create(CodecMulticodecLookupResultSchema)` to create a new message.
  */
 export const CodecMulticodecLookupResultSchema = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 11);
+  messageDesc(file_reallyme_codec_v1_codec, 35);
 
 /**
  * Describes the message reallyme.codec.v1.CodecMulticodecTableResult.
  * Use `create(CodecMulticodecTableResultSchema)` to create a new message.
  */
 export const CodecMulticodecTableResultSchema = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 12);
+  messageDesc(file_reallyme_codec_v1_codec, 36);
 
 /**
  * Describes the message reallyme.codec.v1.CodecMultikeyParseResult.
  * Use `create(CodecMultikeyParseResultSchema)` to create a new message.
  */
 export const CodecMultikeyParseResultSchema = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 13);
+  messageDesc(file_reallyme_codec_v1_codec, 37);
 
 /**
  * Describes the message reallyme.codec.v1.CodecDagCborVerifyCidResult.
  * Use `create(CodecDagCborVerifyCidResultSchema)` to create a new message.
  */
 export const CodecDagCborVerifyCidResultSchema = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 14);
+  messageDesc(file_reallyme_codec_v1_codec, 38);
 
 /**
  * Describes the message reallyme.codec.v1.CodecPemDecodeResult.
  * Use `create(CodecPemDecodeResultSchema)` to create a new message.
  */
 export const CodecPemDecodeResultSchema = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 15);
+  messageDesc(file_reallyme_codec_v1_codec, 39);
 
 /**
  * Describes the message reallyme.codec.v1.CodecBaseEncodingError.
  * Use `create(CodecBaseEncodingErrorSchema)` to create a new message.
  */
 export const CodecBaseEncodingErrorSchema = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 16);
+  messageDesc(file_reallyme_codec_v1_codec, 40);
 
 /**
  * Describes the message reallyme.codec.v1.CodecPemError.
  * Use `create(CodecPemErrorSchema)` to create a new message.
  */
 export const CodecPemErrorSchema = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 17);
+  messageDesc(file_reallyme_codec_v1_codec, 41);
 
 /**
  * Describes the message reallyme.codec.v1.CodecMultiformatError.
  * Use `create(CodecMultiformatErrorSchema)` to create a new message.
  */
 export const CodecMultiformatErrorSchema = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 18);
+  messageDesc(file_reallyme_codec_v1_codec, 42);
 
 /**
  * Describes the message reallyme.codec.v1.CodecCanonicalizationError.
  * Use `create(CodecCanonicalizationErrorSchema)` to create a new message.
  */
 export const CodecCanonicalizationErrorSchema = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 19);
+  messageDesc(file_reallyme_codec_v1_codec, 43);
 
 /**
  * Describes the message reallyme.codec.v1.CodecBackendError.
  * Use `create(CodecBackendErrorSchema)` to create a new message.
  */
 export const CodecBackendErrorSchema = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 20);
+  messageDesc(file_reallyme_codec_v1_codec, 44);
 
 /**
  * Describes the message reallyme.codec.v1.CodecBoundaryError.
  * Use `create(CodecBoundaryErrorSchema)` to create a new message.
  */
 export const CodecBoundaryErrorSchema = /*@__PURE__*/
-  messageDesc(file_reallyme_codec_v1_codec, 21);
+  messageDesc(file_reallyme_codec_v1_codec, 45);
 
 /**
- * Describes the enum reallyme.codec.v1.CodecProtoResultStatus.
+ * Describes the enum reallyme.codec.v1.CodecErrorOrigin.
  */
-export const CodecProtoResultStatusSchema = /*@__PURE__*/
+export const CodecErrorOriginSchema = /*@__PURE__*/
   enumDesc(file_reallyme_codec_v1_codec, 0);
 
 /**
- * CodecProtoResultStatus identifies the protobuf message carried by the
- * result-envelope payload.
+ * CodecError is the public, non-PII error envelope for codec boundary failures.
+ * The oneof keeps base encoding, PEM, multiformat, and canonicalization
+ * failures distinct while the shared CodecErrorReason enum provides stable
+ * cross-language reason codes.
  *
- * @generated from enum reallyme.codec.v1.CodecProtoResultStatus
+ * @generated from enum reallyme.codec.v1.CodecErrorOrigin
  */
-export const CodecProtoResultStatus = /*@__PURE__*/
-  tsEnum(CodecProtoResultStatusSchema);
+export const CodecErrorOrigin = /*@__PURE__*/
+  tsEnum(CodecErrorOriginSchema);
 
 /**
  * Describes the enum reallyme.codec.v1.CodecPemLabel.
@@ -199,10 +369,22 @@ export const CodecPemLabel = /*@__PURE__*/
   tsEnum(CodecPemLabelSchema);
 
 /**
+ * Describes the enum reallyme.codec.v1.CodecPemLineEnding.
+ */
+export const CodecPemLineEndingSchema = /*@__PURE__*/
+  enumDesc(file_reallyme_codec_v1_codec, 2);
+
+/**
+ * @generated from enum reallyme.codec.v1.CodecPemLineEnding
+ */
+export const CodecPemLineEnding = /*@__PURE__*/
+  tsEnum(CodecPemLineEndingSchema);
+
+/**
  * Describes the enum reallyme.codec.v1.CodecKeyMaterialKind.
  */
 export const CodecKeyMaterialKindSchema = /*@__PURE__*/
-  enumDesc(file_reallyme_codec_v1_codec, 2);
+  enumDesc(file_reallyme_codec_v1_codec, 3);
 
 /**
  * CodecKeyMaterialKind classifies the material described by a multicodec
@@ -218,7 +400,7 @@ export const CodecKeyMaterialKind = /*@__PURE__*/
  * Describes the enum reallyme.codec.v1.CodecTag.
  */
 export const CodecTagSchema = /*@__PURE__*/
-  enumDesc(file_reallyme_codec_v1_codec, 3);
+  enumDesc(file_reallyme_codec_v1_codec, 4);
 
 /**
  * CodecTag classifies the protocol role of a multicodec table entry.
@@ -232,7 +414,7 @@ export const CodecTag = /*@__PURE__*/
  * Describes the enum reallyme.codec.v1.CodecErrorReason.
  */
 export const CodecErrorReasonSchema = /*@__PURE__*/
-  enumDesc(file_reallyme_codec_v1_codec, 4);
+  enumDesc(file_reallyme_codec_v1_codec, 5);
 
 /**
  * CodecErrorReason is the component-owned reason-code enum for reallyme/codec.

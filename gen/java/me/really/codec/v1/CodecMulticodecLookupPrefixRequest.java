@@ -25,6 +25,13 @@ public  final class CodecMulticodecLookupPrefixRequest extends
     return 0x524d;
   }
 
+  // Java Lite deliberately omits public unknown-field access. This generated
+  // boolean exposes no field content, but lets SDK adapters reject schema
+  // skew or corrupt-provider additions before copying a sensitive owner tree.
+  public boolean reallyMeHasUnknownFieldsForValidation() {
+    return unknownFields != com.google.protobuf.UnknownFieldSetLite.getDefaultInstance();
+  }
+
   private CodecMulticodecLookupPrefixRequest() {
     value_ = com.google.protobuf.ByteString.EMPTY;
   }

@@ -12,7 +12,7 @@ public inline fun codecPemDecodeOptions(block: me.really.codec.v1.CodecPemDecode
   me.really.codec.v1.CodecPemDecodeOptionsKt.Dsl._create(me.really.codec.v1.CodecPemDecodeOptions.newBuilder()).apply { block() }._build()
 /**
  * ```
- * Zero limits select the audited codec defaults. An empty allowed-label list
+ * Zero limits select the documented codec defaults. An empty allowed-label list
  * selects the default PRIVATE KEY, EC PRIVATE KEY, and PUBLIC KEY set.
  * ```
  *

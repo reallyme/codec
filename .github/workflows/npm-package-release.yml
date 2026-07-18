@@ -1,0 +1,161 @@
+# SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: npm Package Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Optional exact main commit SHA. Leave blank to use the current origin/main SHA.
+        required: false
+        type: string
+        default: ""
+      version:
+        description: Release version without leading v
+        required: true
+        type: string
+        default: 0.2.0
+      publish:
+        description: Publish the TypeScript package to npm
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-package-release-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  verify-release-sha:
+    name: Verify reviewed release SHA
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      release_sha: ${{ steps.resolve-release-sha.outputs.release_sha }}
+    steps:
+      - name: Checkout main for release SHA resolution
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Resolve release SHA
+        id: resolve-release-sha
+        env:
+          RELEASE_SHA_INPUT: ${{ inputs.release_sha }}
+        run: |
+          git fetch --no-tags origin main
+          if [ -n "${RELEASE_SHA_INPUT}" ]; then
+            if [[ ! "${RELEASE_SHA_INPUT}" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::release_sha must be blank or a lowercase 40-character commit SHA"
+              exit 1
+            fi
+            release_sha="${RELEASE_SHA_INPUT}"
+          else
+            release_sha="$(git rev-parse origin/main)"
+          fi
+          if [ "$(git rev-parse origin/main)" != "${release_sha}" ]; then
+            echo "::error::resolved release SHA is not the current origin/main tip"
+            exit 1
+          fi
+          git checkout --detach "${release_sha}"
+          echo "release_sha=${release_sha}" >> "${GITHUB_OUTPUT}"
+          echo "RELEASE_SHA=${release_sha}" >> "${GITHUB_ENV}"
+          echo "Using release SHA ${release_sha}"
+
+      - name: Install Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+
+      - name: Require current main and successful npm package checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_SHA: ${{ steps.resolve-release-sha.outputs.release_sha }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_ATTESTATION_PREFLIGHT_WORKFLOW: npm-package-preflight.yml
+          RELEASE_ATTESTATION_WAIT_SECONDS: "3600"
+          RELEASE_ATTESTATION_POLL_SECONDS: "20"
+        run: node scripts/verify_release_attestation.mjs
+
+  npm-package:
+    name: npm package
+    needs: verify-release-sha
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ needs.verify-release-sha.outputs.release_sha }}
+
+      - name: Install Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: packages/ts/package-lock.json
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88 # master
+        with:
+          toolchain: 1.96.0
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@c61310c7f42caf5b425e349b6742d93ca197327c # wasm-pack
+        with:
+          tool: wasm-pack@0.15.0
+
+      - name: Install wasm-bindgen-cli
+        uses: taiki-e/install-action@c61310c7f42caf5b425e349b6742d93ca197327c # wasm-bindgen-cli
+        with:
+          tool: wasm-bindgen-cli@0.2.126
+
+      - name: Install TypeScript codec package dependencies
+        run: npm ci
+        working-directory: packages/ts
+
+      - name: Test TypeScript codec package
+        run: npm test
+        working-directory: packages/ts
+
+      - name: Test TypeScript codec package in browser
+        run: npm run test:browser
+        working-directory: packages/ts
+
+      - name: Build codec npm tarball dry run
+        run: npm pack --dry-run
+        working-directory: packages/ts
+
+      - name: Publish npm package
+        if: inputs.publish == true
+        run: |
+          if [ -z "${NODE_AUTH_TOKEN}" ]; then
+            echo "::error::NPM_TOKEN is required"
+            exit 1
+          fi
+          node ../../scripts/verify_release_attestation.mjs
+          npm publish --provenance --access public
+        working-directory: packages/ts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_SHA: ${{ needs.verify-release-sha.outputs.release_sha }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_ATTESTATION_PREFLIGHT_WORKFLOW: npm-package-preflight.yml
+          RELEASE_ATTESTATION_WAIT_SECONDS: "3600"
+          RELEASE_ATTESTATION_POLL_SECONDS: "20"
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

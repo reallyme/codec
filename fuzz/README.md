@@ -25,7 +25,8 @@ own empty `[workspace]` so it does not inherit lint settings that libFuzzer's
 | `multikey` | multikey (multibase+multicodec+binding) | `codec_multikey::parse_multikey` |
 | `base64url` | unpadded base64url decode | `codec_base64url::base64url_to_bytes` |
 | `dag_cbor` | DAG-CBOR decode + CID parse/verify | `codec_cbor::{decode_dag_cbor, try_parse_cid, verify_dag_cbor_cid}` |
-| `proto_process` | executable protobuf + generated ProtoJSON dispatch | `reallyme_codec::proto_process::{process_proto, process_proto_json}` |
+| `deterministic_cbor` | generic deterministic-CBOR decode + canonical re-encode | `codec_cbor::{decode_deterministic_cbor, encode_deterministic_cbor}` |
+| `operation_contract` | executable protobuf + generated ProtoJSON dispatch | `reallyme_codec::operation_contract::{process_operation_response, process_operation_response_json}` |
 | `jcs_text` | strict JSON parsing + RFC 8785 canonicalization | `codec_jcs::canonicalize_json_text` |
 
 ## Running
@@ -38,6 +39,7 @@ cargo install --git https://github.com/rust-fuzz/cargo-fuzz.git --rev 984c861c8d
 
 # From the repository root:
 cargo +nightly-2026-07-01 fuzz run multibase
+cargo +nightly-2026-07-01 fuzz run deterministic_cbor -- -max_total_time=60  # time-boxed
 cargo +nightly-2026-07-01 fuzz run jcs_text -- -max_total_time=60  # time-boxed
 cargo +nightly-2026-07-01 fuzz list                              # all targets
 ```

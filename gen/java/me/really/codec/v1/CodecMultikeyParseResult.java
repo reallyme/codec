@@ -29,6 +29,13 @@ public  final class CodecMultikeyParseResult extends
     return 0x524d;
   }
 
+  // Java Lite deliberately omits public unknown-field access. This generated
+  // boolean exposes no field content, but lets SDK adapters reject schema
+  // skew or corrupt-provider additions before copying a sensitive owner tree.
+  public boolean reallyMeHasUnknownFieldsForValidation() {
+    return unknownFields != com.google.protobuf.UnknownFieldSetLite.getDefaultInstance();
+  }
+
   private CodecMultikeyParseResult() {
     codecName_ = "";
     algorithmName_ = "";

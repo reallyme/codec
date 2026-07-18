@@ -6,9 +6,21 @@ import { ReallyMeCodecError } from "./errors.js";
 
 export const MAX_CODEC_FFI_INPUT_BYTES = 1_048_576;
 export const MAX_CODEC_FFI_OUTPUT_BYTES = 67_108_864;
-export const MAX_CODEC_PROTO_MESSAGE_BYTES = 1_048_576;
-export const MAX_CODEC_PROTO_JSON_BYTES = 1_572_864;
-
+const MAX_CODEC_PROTO_SENSITIVE_PAYLOAD_BYTES = 2_097_152;
+const MAX_CODEC_PROTO_SEMANTIC_NODES = 65_536;
+const MAX_CODEC_PROTO_STRUCTURAL_BYTES_PER_NODE = 128;
+const MAX_CODEC_PROTO_FIXED_OPERATION_BYTES = 4_096;
+const MAX_CODEC_PROTO_JSON_TEXT_BYTES = 6_291_456;
+const MAX_CODEC_PROTO_JSON_BYTE_STRING_BYTES = 1_398_104;
+export const MAX_CODEC_PROTO_MESSAGE_BYTES =
+  MAX_CODEC_PROTO_SENSITIVE_PAYLOAD_BYTES +
+  MAX_CODEC_PROTO_SEMANTIC_NODES * MAX_CODEC_PROTO_STRUCTURAL_BYTES_PER_NODE +
+  MAX_CODEC_PROTO_FIXED_OPERATION_BYTES;
+export const MAX_CODEC_PROTO_JSON_BYTES =
+  MAX_CODEC_PROTO_JSON_TEXT_BYTES +
+  MAX_CODEC_PROTO_JSON_BYTE_STRING_BYTES +
+  MAX_CODEC_PROTO_SEMANTIC_NODES * MAX_CODEC_PROTO_STRUCTURAL_BYTES_PER_NODE +
+  MAX_CODEC_PROTO_FIXED_OPERATION_BYTES;
 // Every JSON node needs at least one serialized byte. Deriving this traversal
 // guard from the wire limit prevents hostile in-memory graphs from causing
 // unbounded work without rejecting a document the byte-bounded Rust lane accepts.
@@ -53,8 +65,10 @@ export const requireBoundaryAggregate = (
   }
 };
 
-/** Returns UTF-8 length without allocating an encoded copy. */
-export const utf8ByteLength = (value: string): number => {
+const utf8ByteLengthWithPolicy = (
+  value: string,
+  rejectUnpairedSurrogates: boolean,
+): number => {
   if (typeof value !== "string") {
     invalidInput();
   }
@@ -76,8 +90,16 @@ export const utf8ByteLength = (value: string): number => {
         increment = 4;
         index += 1;
       } else {
+        if (rejectUnpairedSurrogates) {
+          invalidInput();
+        }
         increment = 3;
       }
+    } else if (codeUnit >= 0xd800 && codeUnit <= 0xdfff) {
+      if (rejectUnpairedSurrogates) {
+        invalidInput();
+      }
+      increment = 3;
     } else {
       increment = 3;
     }
@@ -88,6 +110,18 @@ export const utf8ByteLength = (value: string): number => {
   }
   return length;
 };
+
+/** Returns UTF-8 length without allocating an encoded copy. */
+export const utf8ByteLength = (value: string): number =>
+  utf8ByteLengthWithPolicy(value, false);
+
+/**
+ * Returns UTF-8 length while rejecting strings that cannot be represented as
+ * Unicode scalar values. TextEncoder and protobuf runtimes otherwise replace
+ * lone UTF-16 surrogates, silently changing deterministic-CBOR semantics.
+ */
+export const strictUtf8ByteLength = (value: string): number =>
+  utf8ByteLengthWithPolicy(value, true);
 
 export const requireBoundaryUtf8String = (
   value: string,

@@ -6,7 +6,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-JNI_LIBS_ROOT="${1:-${ROOT_DIR}/packages/kotlin-android/src/main/jniLibs}"
+JNI_LIBS_ROOT="${1:-${ROOT_DIR}/packages/kotlin-android/build/generated/android-jniLibs}"
 ANDROID_API="${ANDROID_API:-24}"
 FFI_RUSTFLAGS="${RUSTFLAGS:+${RUSTFLAGS} }-C panic=unwind"
 
@@ -48,8 +48,10 @@ build_android_target() {
     cargo build --locked -p reallyme-codec-ffi --release --target "${rust_target}"
 
   mkdir -p "${JNI_LIBS_ROOT}/${abi}"
+  local staged_library="${JNI_LIBS_ROOT}/${abi}/libreallyme_codec_ffi.so"
   cp "${ROOT_DIR}/target/${rust_target}/release/libreallyme_codec_ffi.so" \
-    "${JNI_LIBS_ROOT}/${abi}/libreallyme_codec_ffi.so"
+    "${staged_library}"
+  "${TOOLCHAIN_BIN}/llvm-strip" --strip-debug "${staged_library}"
 }
 
 build_android_target \

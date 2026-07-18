@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "reallyme-codec-wasm"
+version = "0.2.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+license.workspace = true
+repository.workspace = true
+description = "WASM bindings for the ReallyMe TypeScript codec package."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+codec-proto = { package = "reallyme-codec-proto", version = "0.2.0", path = "../proto", default-features = false, features = ["generated"] }
+codec-core = { package = "reallyme-codec", version = "0.2.0", path = "../codec", default-features = false, features = ["operation-contract"] }
+js-sys = { workspace = true }
+wasm-bindgen = { workspace = true }
+zeroize = { workspace = true }
+
+[lints]
+workspace = true

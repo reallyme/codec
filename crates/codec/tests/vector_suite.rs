@@ -6,30 +6,20 @@
 #![allow(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
 
 use reallyme_codec::{
-    base64::{base64_to_bytes, bytes_to_base64},
-    base64url::{base64url_to_bytes, bytes_to_base64url},
+    base64::base64_to_bytes,
     cbor::{
-        compute_cid_dag_cbor, dag_cbor_multihash, decode_dag_cbor, encode_dag_cbor,
-        is_valid_cid_string, sha2_256_content_hash, try_parse_cid, verify_dag_cbor_cid, CborValue,
-        DAG_CBOR_CODEC,
+        decode_deterministic_cbor, encode_deterministic_cbor, sha2_256_content_hash, CborValue,
+        DeterministicCborError, DeterministicCborInteger, DeterministicCborMapEntry,
+        DeterministicCborMapKey, DeterministicCborValue,
     },
     hex::{bytes_to_lower_hex, lower_hex_to_bytes},
-    jcs::canonicalize_json_text,
-    multibase::{
-        base58btc_decode, base58btc_encode, bytes_to_multibase58btc, bytes_to_multibase_base64url,
-        multibase_to_bytes,
-    },
-    multicodec::{lookup_codec_prefix, strip_codec_prefix, MULTICODEC_TABLE},
-    multikey::{
-        binding_type_matches_codec, encode_multikey, parse_multikey, validate_key_binding,
-        KeyBindingInput,
-    },
-    pem::{decode_pem, encode_pem, PemDecodePolicy, PemEncodeOptions, PemLabel},
-    proto_process::{process_proto, process_proto_json},
 };
 use serde_json::Value;
 
-const VECTORS_JSON: &str = include_str!("../../../test-vectors/codec-vectors.json");
+const VECTORS_JSON: &str = include_str!("../../../vectors/codec-vectors.json");
+
+#[path = "vector_suite/core_methods.rs"]
+mod core_methods;
 
 #[derive(Debug)]
 struct Vectors {
@@ -55,6 +45,13 @@ impl Vectors {
             .as_u64()
             .unwrap_or_else(|| panic!("missing integer vector key {key}"))
     }
+
+    fn deterministic_cbor_array(&self, key: &str) -> &[Value] {
+        self.value["deterministicCbor"][key]
+            .as_array()
+            .map(Vec::as_slice)
+            .unwrap_or_else(|| panic!("missing deterministic CBOR vector array {key}"))
+    }
 }
 
 fn decode_hex(value: &str) -> Vec<u8> {
@@ -65,221 +62,405 @@ fn encode_hex(value: &[u8]) -> String {
     bytes_to_lower_hex(value)
 }
 
-fn tagged_json_to_cbor(value: &Value) -> CborValue {
-    match value["type"].as_str().expect("tagged value has type") {
-        "null" => CborValue::Null,
-        "bool" => CborValue::Bool(value["value"].as_bool().expect("bool value")),
-        "int" => CborValue::Int(value["value"].as_i64().expect("int value")),
-        "string" => CborValue::String(value["value"].as_str().expect("string value").to_owned()),
-        "bytes" => CborValue::Bytes(
-            base64_to_bytes(value["value"].as_str().expect("bytes value")).unwrap(),
-        ),
-        "array" => CborValue::Array(
-            value["value"]
-                .as_array()
-                .expect("array value")
-                .iter()
-                .map(tagged_json_to_cbor)
-                .collect(),
-        ),
-        "map" => CborValue::Map(
-            value["value"]
-                .as_array()
-                .expect("map entries")
-                .iter()
-                .map(|entry| {
-                    (
-                        entry["key"].as_str().expect("map key").to_owned(),
-                        tagged_json_to_cbor(&entry["value"]),
-                    )
-                })
-                .collect(),
-        ),
-        other => panic!("unsupported tagged CBOR type {other}"),
+fn find_named_vector<'a>(vectors: &'a [Value], name: &str) -> &'a Value {
+    vectors
+        .iter()
+        .find(|vector| vector["name"].as_str() == Some(name))
+        .unwrap_or_else(|| panic!("missing named vector {name}"))
+}
+
+fn find_named_hex<'a>(vectors: &'a [Value], name: &str) -> &'a str {
+    find_named_vector(vectors, name)["hex"]
+        .as_str()
+        .unwrap_or_else(|| panic!("missing named hex vector {name}"))
+}
+
+fn dag_cbor_vector_value() -> CborValue {
+    CborValue::Map(vec![
+        ("b".to_owned(), CborValue::Int(2)),
+        ("a".to_owned(), CborValue::String("one".to_owned())),
+        ("bytes".to_owned(), CborValue::Bytes(vec![0, 1, 2])),
+    ])
+}
+
+fn vector_integer(value: &Value) -> DeterministicCborInteger {
+    if let Some(unsigned) = value["unsigned"].as_str() {
+        return DeterministicCborInteger::unsigned(
+            unsigned
+                .parse::<u64>()
+                .expect("unsigned integer vector parses"),
+        );
+    }
+    let negative = value["negative"]
+        .as_str()
+        .expect("deterministic integer vector has signed variant")
+        .parse::<i64>()
+        .expect("negative integer vector parses");
+    DeterministicCborInteger::negative(negative).expect("negative vector is valid")
+}
+
+fn vector_map_key(value: &Value) -> DeterministicCborMapKey {
+    if let Some(text) = value["text"].as_str() {
+        return DeterministicCborMapKey::text(text.to_owned());
+    }
+    DeterministicCborMapKey::Integer(vector_integer(&value["integer"]))
+}
+
+fn vector_deterministic_value(value: &Value) -> DeterministicCborValue {
+    if value.get("null").and_then(Value::as_bool) == Some(true) {
+        return DeterministicCborValue::Null;
+    }
+    if let Some(boolean) = value["bool"].as_bool() {
+        return DeterministicCborValue::Bool(boolean);
+    }
+    if value.get("unsigned").is_some() || value.get("negative").is_some() {
+        return DeterministicCborValue::Integer(vector_integer(value));
+    }
+    if let Some(text) = value["text"].as_str() {
+        return DeterministicCborValue::Text(text.to_owned());
+    }
+    if let Some(bytes) = value["bytes"].as_str() {
+        return DeterministicCborValue::Bytes(base64_to_bytes(bytes).unwrap());
+    }
+    if let Some(array) = value["array"].as_array() {
+        return DeterministicCborValue::Array(
+            array.iter().map(vector_deterministic_value).collect(),
+        );
+    }
+    vector_deterministic_map_entries(&value["map"])
+}
+
+fn vector_deterministic_map_entries(value: &Value) -> DeterministicCborValue {
+    let entries = value
+        .as_array()
+        .expect("deterministic map fixture has an entry array");
+    DeterministicCborValue::Map(
+        entries
+            .iter()
+            .map(|entry| {
+                DeterministicCborMapEntry::new(
+                    vector_map_key(&entry["key"]),
+                    vector_deterministic_value(&entry["value"]),
+                )
+            })
+            .collect(),
+    )
+}
+
+fn resource_count(recipe: &Value, field: &str) -> usize {
+    usize::try_from(
+        recipe["construction"][field]
+            .as_u64()
+            .unwrap_or_else(|| panic!("resource recipe is missing integer field {field}")),
+    )
+    .expect("resource recipe count fits usize")
+}
+
+fn balanced_array_tree(branching: usize, levels: usize) -> DeterministicCborValue {
+    if levels == 0 {
+        return DeterministicCborValue::Null;
+    }
+    DeterministicCborValue::Array(
+        (0..branching)
+            .map(|_| balanced_array_tree(branching, levels - 1))
+            .collect(),
+    )
+}
+
+#[test]
+fn shared_vectors_include_deterministic_cbor_literals() {
+    let vectors = Vectors::load();
+    assert_eq!(
+        vectors.value["deterministicCbor"]["profile"].as_str(),
+        Some("rfc8949-core-deterministic-reallyme-0.2.0")
+    );
+    let golden_vectors = vectors.deterministic_cbor_array("positive");
+
+    for vector in golden_vectors {
+        let hex = vector["hex"].as_str().expect("deterministic CBOR hex");
+        let bytes = decode_hex(hex);
+        assert!(!bytes.is_empty());
+        assert!(
+            vector.get("value").is_some(),
+            "positive deterministic CBOR vector must declare an independent semantic value"
+        );
+    }
+
+    assert_eq!(
+        find_named_hex(golden_vectors, "unsigned-2pow53-minus-1"),
+        "1b001fffffffffffff"
+    );
+    assert_eq!(
+        find_named_hex(golden_vectors, "unsigned-2pow53"),
+        "1b0020000000000000"
+    );
+    assert_eq!(
+        find_named_hex(golden_vectors, "unsigned-i64-max"),
+        "1b7fffffffffffffff"
+    );
+    assert_eq!(
+        find_named_hex(golden_vectors, "unsigned-u64-max"),
+        "1bffffffffffffffff"
+    );
+    assert_eq!(
+        find_named_hex(golden_vectors, "negative-i64-min"),
+        "3b7fffffffffffffff"
+    );
+    assert_eq!(
+        find_named_hex(golden_vectors, "mixed-integer-text-key-map"),
+        "a2016b696e74656765722d6b6579616168746578742d6b6579"
+    );
+
+    assert_eq!(
+        find_named_hex(golden_vectors, "text-multibyte-u-umlaut"),
+        "62c3bc"
+    );
+    assert_eq!(find_named_hex(golden_vectors, "nested-array"), "8201820203");
+    assert_eq!(
+        find_named_hex(golden_vectors, "text-key-map"),
+        "a2616101616202"
+    );
+
+    let rejection_vectors = vectors.deterministic_cbor_array("negative");
+    for vector in rejection_vectors {
+        assert!(vector["name"].as_str().is_some());
+        assert!(vector["reason"].as_str().is_some());
+        assert!(!decode_hex(vector["hex"].as_str().expect("rejection hex")).is_empty());
+    }
+    assert_eq!(
+        find_named_hex(rejection_vectors, "duplicate-integer-key"),
+        "a201010102"
+    );
+    assert_eq!(
+        find_named_hex(rejection_vectors, "non-minimal-unsigned-zero"),
+        "1800"
+    );
+    assert_eq!(
+        find_named_hex(rejection_vectors, "non-minimal-negative-minus-one"),
+        "3800"
+    );
+
+    let equivalent_inputs = vectors.deterministic_cbor_array("equivalentInputOrders");
+    let fixture_classes = vectors.value["deterministicCbor"]["fixtureClasses"]
+        .as_object()
+        .expect("deterministic CBOR fixture classes");
+    assert_eq!(fixture_classes["positive"].as_str(), Some("golden"));
+    assert_eq!(
+        fixture_classes["negative"].as_str(),
+        Some("rejection-fixture")
+    );
+    assert_eq!(
+        fixture_classes["equivalentInputOrders"].as_str(),
+        Some("golden")
+    );
+    assert_eq!(
+        fixture_classes["resourceRejections"].as_str(),
+        Some("construction-recipe")
+    );
+    assert_eq!(
+        fixture_classes["interoperability"].as_str(),
+        Some("interop-fixture")
+    );
+    let equivalent = find_named_vector(equivalent_inputs, "mixed-key-map-order-independent");
+    let input_orders = equivalent["inputs"]
+        .as_array()
+        .expect("equivalent deterministic CBOR input orders");
+    assert_eq!(input_orders.len(), 2);
+    assert_ne!(input_orders[0], input_orders[1]);
+    assert_eq!(equivalent["hex"].as_str(), Some("a301616961316174616202"));
+
+    let resource_rejections = vectors.deterministic_cbor_array("resourceRejections");
+    assert_eq!(resource_rejections.len(), 5);
+    for vector in resource_rejections {
+        assert!(vector["name"].as_str().is_some());
+        assert!(vector["construction"]["kind"].as_str().is_some());
+        assert!(vector["reason"].as_str().is_some());
+    }
+    let input_limit = find_named_vector(resource_rejections, "input-byte-limit-plus-one");
+    assert_eq!(
+        input_limit["construction"]["count"].as_u64(),
+        Some(1_048_577)
+    );
+    assert_eq!(
+        input_limit["construction"]["fillByteHex"].as_str(),
+        Some("00")
+    );
+    let output_limit = find_named_vector(resource_rejections, "output-byte-limit-plus-header");
+    assert_eq!(
+        output_limit["construction"]["count"].as_u64(),
+        Some(1_048_576)
+    );
+    let node_limit = find_named_vector(resource_rejections, "node-limit-exceeded-balanced-tree");
+    assert_eq!(node_limit["construction"]["branching"].as_u64(), Some(256));
+    assert_eq!(node_limit["construction"]["levels"].as_u64(), Some(2));
+    let container_limit = find_named_vector(resource_rejections, "container-entry-limit-plus-one");
+    assert_eq!(
+        container_limit["construction"]["count"].as_u64(),
+        Some(16_385)
+    );
+    let depth_limit = find_named_vector(resource_rejections, "nesting-depth-limit-plus-one");
+    assert_eq!(depth_limit["construction"]["depth"].as_u64(), Some(65));
+
+    let interoperability = vectors.deterministic_cbor_array("interoperability");
+    assert!(
+        find_named_vector(interoperability, "idkit-ios-synthetic-passport-claims-v1").is_object()
+    );
+    assert!(find_named_vector(
+        interoperability,
+        "idkit-ios-synthetic-passport-claims-null-place-of-birth-v1"
+    )
+    .is_object());
+    assert!(
+        find_named_vector(interoperability, "idkit-ios-synthetic-fingerprint-map-v1").is_object()
+    );
+    assert!(find_named_vector(
+        interoperability,
+        "idkit-ios-synthetic-mixed-integer-claim-tags-v1"
+    )
+    .is_object());
+    for fixture in interoperability {
+        assert_eq!(fixture["fixtureKind"].as_str(), Some("synthetic"));
+        assert_eq!(fixture["sourceRepo"].as_str(), Some("reallyme/idkit-ios"));
+        assert_eq!(
+            fixture["sourceCommit"].as_str(),
+            Some("content-hash-pinned")
+        );
+        assert!(fixture["source"].as_str().is_some());
+        assert!(fixture["explanation"].as_str().is_some());
+        let source_files = fixture["sourceFiles"]
+            .as_array()
+            .expect("interoperability fixture pins source files");
+        assert!(!source_files.is_empty());
+        for source_file in source_files {
+            assert!(source_file["path"].as_str().is_some());
+            assert_eq!(
+                source_file["sha256"].as_str().map(str::len),
+                Some(64),
+                "source file digest must be a lowercase SHA-256 hex string"
+            );
+            assert!(source_file["sha256"]
+                .as_str()
+                .expect("source file digest")
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte)));
+        }
+        let fixture_bytes = decode_hex(
+            fixture["hex"]
+                .as_str()
+                .expect("interoperability fixture hex"),
+        );
+        assert_eq!(
+            u64::try_from(fixture_bytes.len()).expect("fixture length fits u64"),
+            fixture["byteLength"]
+                .as_u64()
+                .expect("interoperability fixture byte length")
+        );
+        assert_eq!(
+            encode_hex(&sha2_256_content_hash(&fixture_bytes)),
+            fixture["sha256"]
+                .as_str()
+                .expect("interoperability fixture digest")
+        );
     }
 }
 
 #[test]
-fn shared_vector_suite_covers_core_codec_methods() {
+fn deterministic_cbor_semantics_consume_literal_vectors() {
     let vectors = Vectors::load();
-    let base_input = decode_hex(vectors.string("baseInputHex"));
+    for vector in vectors.deterministic_cbor_array("positive") {
+        let bytes = decode_hex(vector["hex"].as_str().expect("positive vector hex"));
+        let declared_value = vector_deterministic_value(&vector["value"]);
+        assert_eq!(
+            encode_deterministic_cbor(&declared_value)
+                .expect("declared positive vector value encodes")
+                .as_slice(),
+            bytes.as_slice()
+        );
+        let decoded = decode_deterministic_cbor(&bytes).expect("positive vector decodes");
+        assert_eq!(
+            encode_deterministic_cbor(&decoded).unwrap().as_slice(),
+            bytes.as_slice()
+        );
+    }
 
-    assert_eq!(bytes_to_base64(&base_input), vectors.string("base64Padded"));
-    assert_eq!(
-        base64_to_bytes(vectors.string("base64Padded")).unwrap(),
-        base_input
-    );
-    assert_eq!(
-        bytes_to_base64url(&base_input),
-        vectors.string("base64urlUnpadded")
-    );
-    assert_eq!(
-        base64url_to_bytes(vectors.string("base64urlUnpadded")).unwrap(),
-        base_input
-    );
-    assert_eq!(bytes_to_lower_hex(&base_input), vectors.string("lowerHex"));
-    assert_eq!(
-        lower_hex_to_bytes(vectors.string("lowerHex")).unwrap(),
-        base_input
-    );
-    assert_eq!(
-        base58btc_encode(&base_input).unwrap(),
-        vectors.string("base58btcEncoded")
-    );
-    assert_eq!(
-        base58btc_decode(vectors.string("base58btcEncoded")).unwrap(),
-        base_input
-    );
+    for vector in vectors.deterministic_cbor_array("negative") {
+        let bytes = decode_hex(vector["hex"].as_str().expect("negative vector hex"));
+        assert!(decode_deterministic_cbor(&bytes).is_err());
+    }
 
-    let public_key = decode_hex(vectors.string("publicKeyHex"));
-    let prefixed_public_key = decode_hex(vectors.string("ed25519PrefixedPublicKeyHex"));
-    assert_eq!(
-        base58btc_encode(&public_key).unwrap(),
-        vectors.string("publicKeyBase58btc")
-    );
-    assert_eq!(
-        bytes_to_multibase58btc(&public_key).unwrap(),
-        vectors.string("publicKeyMultibaseBase58btc")
-    );
-    assert_eq!(
-        bytes_to_multibase_base64url(&public_key),
-        vectors.string("publicKeyMultibaseBase64url")
-    );
-    assert_eq!(
-        multibase_to_bytes(vectors.string("publicKeyMultibaseBase58btc")).unwrap(),
-        public_key
-    );
-    assert_eq!(
-        multibase_to_bytes(vectors.string("publicKeyMultibaseBase64url")).unwrap(),
-        public_key
-    );
-
-    let multicodec = lookup_codec_prefix(&prefixed_public_key).expect("ed25519 prefix resolves");
-    assert_eq!(multicodec.name, vectors.string("ed25519CodecName"));
-    assert_eq!(multicodec.alg, vectors.string("ed25519AlgorithmName"));
-    assert_eq!(
-        encode_hex(multicodec.codec),
-        vectors.string("ed25519PrefixHex")
-    );
-    assert_eq!(
-        multicodec.key_length,
-        usize::try_from(vectors.u64("ed25519ExpectedKeyLength")).unwrap()
-    );
-    assert_eq!(
-        strip_codec_prefix(&prefixed_public_key),
-        public_key.as_slice()
-    );
-    assert!(MULTICODEC_TABLE
-        .iter()
-        .any(|(name, _)| *name == vectors.string("multicodecTableRequiredName")));
-
-    let multikey = encode_multikey(vectors.string("ed25519CodecName"), &public_key).unwrap();
-    assert_eq!(multikey, vectors.string("ed25519Multikey"));
-    let parsed = parse_multikey(vectors.string("ed25519Multikey")).unwrap();
-    assert_eq!(parsed.codec_name, vectors.string("ed25519CodecName"));
-    assert_eq!(parsed.alg, vectors.string("ed25519AlgorithmName"));
-    assert_eq!(parsed.public_key, public_key);
-    assert_eq!(
-        parsed.key_length,
-        usize::try_from(vectors.u64("ed25519ExpectedKeyLength")).unwrap()
-    );
-    assert!(binding_type_matches_codec(
-        vectors.string("multikeyBindingType"),
-        parsed.codec_name
-    ));
-    validate_key_binding(
-        KeyBindingInput {
-            binding_type: vectors.string("multikeyBindingType"),
-            algorithm: None,
-        },
-        &parsed,
-    )
-    .unwrap();
-    assert!(validate_key_binding(
-        KeyBindingInput {
-            binding_type: vectors.string("mismatchedBindingType"),
-            algorithm: Some(vectors.string("mismatchedBindingAlgorithm")),
-        },
-        &parsed
-    )
-    .is_err());
-
-    let tagged_json: Value =
-        serde_json::from_str(vectors.string("dagCborTaggedJson")).expect("tagged DAG-CBOR JSON");
-    let canonical_tagged_json: Value =
-        serde_json::from_str(vectors.string("dagCborCanonicalTaggedJson"))
-            .expect("canonical tagged DAG-CBOR JSON");
-    let cbor_value = tagged_json_to_cbor(&tagged_json);
-    let canonical_cbor_value = tagged_json_to_cbor(&canonical_tagged_json);
-    let encoded = encode_dag_cbor(&cbor_value).unwrap();
-    assert_eq!(encode_hex(&encoded), vectors.string("dagCborEncodedHex"));
-    assert_eq!(decode_dag_cbor(&encoded).unwrap(), canonical_cbor_value);
-    assert_eq!(compute_cid_dag_cbor(&encoded), vectors.string("dagCborCid"));
-    assert_eq!(
-        encode_hex(&sha2_256_content_hash(&encoded)),
-        vectors.string("dagCborSha256Hex")
-    );
-    assert_eq!(
-        encode_hex(&dag_cbor_multihash(&encoded).to_bytes()),
-        vectors.string("dagCborMultihashHex")
-    );
-    assert_eq!(DAG_CBOR_CODEC, vectors.u64("dagCborCodecCode"));
-    assert!(is_valid_cid_string(vectors.string("dagCborCid")));
-    assert_eq!(
-        try_parse_cid(vectors.string("dagCborCid")).map(|cid| cid.to_string()),
-        Some(vectors.string("dagCborCid").to_owned())
-    );
-    assert!(!is_valid_cid_string(vectors.string("invalidCid")));
-    assert_eq!(try_parse_cid(vectors.string("invalidCid")), None);
-    let (valid, expected, actual) = verify_dag_cbor_cid(vectors.string("dagCborCid"), &encoded);
-    assert!(valid);
-    assert_eq!(expected, vectors.string("dagCborCid"));
-    assert_eq!(actual, vectors.string("dagCborCid"));
-
-    assert_eq!(
-        canonicalize_json_text(vectors.string("jcsObjectInputJson")).unwrap(),
-        vectors.string("jcsObjectCanonicalJson")
-    );
-    assert_eq!(
-        canonicalize_json_text(vectors.string("jcsNumberInputJson")).unwrap(),
-        vectors.string("jcsNumberCanonicalJson")
-    );
-
-    let private_der = decode_hex(vectors.string("pemPrivateDerHex"));
-    let pem = encode_pem(
-        PemLabel::PrivateKey,
-        &private_der,
-        PemEncodeOptions::default(),
-    )
-    .unwrap();
-    assert_eq!(pem.as_str(), vectors.string("pemPrivatePem"));
-    let decoded = decode_pem(vectors.string("pemPrivatePem"), PemDecodePolicy::default()).unwrap();
-    assert_eq!(decoded.label, PemLabel::PrivateKey);
-    assert_eq!(decoded.der.as_slice(), private_der.as_slice());
-
-    let proto_envelope = process_proto(&decode_hex(
-        vectors.string("protoMulticodecTableRequestHex"),
-    ));
-    let proto_json_envelope =
-        process_proto_json(vectors.string("protoMulticodecTableRequestJson").as_bytes());
-    assert!(!proto_envelope.is_empty());
-    assert_eq!(proto_envelope.as_slice(), proto_json_envelope.as_slice());
+    for vector in vectors.deterministic_cbor_array("equivalentInputOrders") {
+        let expected = decode_hex(vector["hex"].as_str().expect("equivalent vector hex"));
+        let inputs = vector["inputs"]
+            .as_array()
+            .expect("equivalent vector inputs");
+        for input in inputs {
+            let value = vector_deterministic_map_entries(input);
+            assert_eq!(
+                encode_deterministic_cbor(&value).unwrap().as_slice(),
+                expected.as_slice()
+            );
+        }
+    }
 }
 
 #[test]
-fn shared_vector_suite_rejects_non_canonical_inputs() {
+fn deterministic_cbor_semantics_execute_shared_resource_recipes() {
     let vectors = Vectors::load();
-
-    assert!(base64_to_bytes(vectors.string("base64MissingPadding")).is_err());
-    assert!(base64_to_bytes(vectors.string("base64NonCanonicalTrailingBits")).is_err());
-    assert!(base64url_to_bytes(vectors.string("base64urlPadded")).is_err());
-    assert!(base64url_to_bytes(vectors.string("base64urlNonCanonicalTrailingBits")).is_err());
-    assert!(multibase_to_bytes(vectors.string("unsupportedMultibase")).is_err());
-    assert!(parse_multikey(vectors.string("nonCanonicalBase64urlMultikey")).is_err());
-    assert!(decode_dag_cbor(&decode_hex(vectors.string("dagCborNonCanonicalIntegerHex"))).is_err());
-    assert!(decode_dag_cbor(&decode_hex(vectors.string("dagCborDuplicateKeyHex"))).is_err());
-    assert!(decode_dag_cbor(&decode_hex(vectors.string("dagCborOutOfOrderKeyHex"))).is_err());
-    assert!(canonicalize_json_text(vectors.string("jcsDuplicateMemberJson")).is_err());
-    assert!(canonicalize_json_text(vectors.string("jcsNonInteroperableIntegerJson")).is_err());
-    assert!(canonicalize_json_text(vectors.string("jcsLoneSurrogateJson")).is_err());
+    for recipe in vectors.deterministic_cbor_array("resourceRejections") {
+        let kind = recipe["construction"]["kind"]
+            .as_str()
+            .expect("resource recipe has a construction kind");
+        let expected_reason = recipe["reason"]
+            .as_str()
+            .expect("resource recipe has a reason");
+        let actual = match kind {
+            "encoded-byte-count" => {
+                let fill = decode_hex(
+                    recipe["construction"]["fillByteHex"]
+                        .as_str()
+                        .expect("encoded-byte-count recipe has a fill byte"),
+                );
+                assert_eq!(fill.len(), 1);
+                decode_deterministic_cbor(&vec![fill[0]; resource_count(recipe, "count")])
+                    .expect_err("resource recipe must be rejected")
+            }
+            "byte-string-length" => {
+                encode_deterministic_cbor(&DeterministicCborValue::Bytes(vec![
+                    0;
+                    resource_count(
+                        recipe, "count"
+                    )
+                ]))
+                .expect_err("resource recipe must be rejected")
+            }
+            "balanced-array-tree" => encode_deterministic_cbor(&balanced_array_tree(
+                resource_count(recipe, "branching"),
+                resource_count(recipe, "levels"),
+            ))
+            .expect_err("resource recipe must be rejected"),
+            "array-of-null" => encode_deterministic_cbor(&DeterministicCborValue::Array(
+                (0..resource_count(recipe, "count"))
+                    .map(|_| DeterministicCborValue::Null)
+                    .collect(),
+            ))
+            .expect_err("resource recipe must be rejected"),
+            "nested-singleton-arrays" => {
+                let mut value = DeterministicCborValue::Null;
+                for _ in 0..resource_count(recipe, "depth") {
+                    value = DeterministicCborValue::Array(vec![value]);
+                }
+                encode_deterministic_cbor(&value).expect_err("resource recipe must be rejected")
+            }
+            other => panic!("unsupported deterministic-CBOR resource recipe {other}"),
+        };
+        let actual_reason = match actual {
+            DeterministicCborError::InputTooLarge => "input-too-large",
+            DeterministicCborError::OutputTooLarge => "output-too-large",
+            DeterministicCborError::NodeLimitExceeded => "node-limit-exceeded",
+            DeterministicCborError::ContainerEntriesExceeded => "container-entries-exceeded",
+            DeterministicCborError::DepthExceeded => "depth-exceeded",
+            other => panic!("unexpected resource recipe error {other:?}"),
+        };
+        assert_eq!(actual_reason, expected_reason);
+    }
 }

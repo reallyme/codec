@@ -18,6 +18,13 @@ public  final class CodecMulticodecSpec extends
         CodecMulticodecSpec, CodecMulticodecSpec.Builder> implements
     // @@protoc_insertion_point(message_implements:reallyme.codec.v1.CodecMulticodecSpec)
     CodecMulticodecSpecOrBuilder {
+  // Java Lite deliberately omits public unknown-field access. This generated
+  // boolean exposes no field content, but lets SDK adapters reject schema
+  // skew or corrupt-provider additions before mapping provider output.
+  public boolean reallyMeHasUnknownFieldsForValidation() {
+    return unknownFields != com.google.protobuf.UnknownFieldSetLite.getDefaultInstance();
+  }
+
   private CodecMulticodecSpec() {
     name_ = "";
     code_ = com.google.protobuf.ByteString.EMPTY;

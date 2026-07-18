@@ -33,6 +33,13 @@ public  final class CodecOperationRequest extends
     return 0x524d;
   }
 
+  // Java Lite deliberately omits public unknown-field access. This generated
+  // boolean exposes no field content, but lets SDK adapters reject schema
+  // skew or corrupt-provider additions before copying a sensitive owner tree.
+  public boolean reallyMeHasUnknownFieldsForValidation() {
+    return unknownFields != com.google.protobuf.UnknownFieldSetLite.getDefaultInstance();
+  }
+
   private CodecOperationRequest() {
   }
   private int operationCase_ = 0;
@@ -44,7 +51,12 @@ public  final class CodecOperationRequest extends
     MULTICODEC_TABLE(1002),
     MULTIKEY_PARSE(2000),
     DAG_CBOR_VERIFY_CID(3000),
+    DAG_CBOR_ENCODE(3001),
+    DAG_CBOR_DECODE(3002),
     PEM_DECODE(4000),
+    PEM_ENCODE(4001),
+    DETERMINISTIC_CBOR_ENCODE(5000),
+    DETERMINISTIC_CBOR_DECODE(5001),
     OPERATION_NOT_SET(0);
     private final int value;
     private OperationCase(int value) {
@@ -65,7 +77,12 @@ public  final class CodecOperationRequest extends
         case 1002: return MULTICODEC_TABLE;
         case 2000: return MULTIKEY_PARSE;
         case 3000: return DAG_CBOR_VERIFY_CID;
+        case 3001: return DAG_CBOR_ENCODE;
+        case 3002: return DAG_CBOR_DECODE;
         case 4000: return PEM_DECODE;
+        case 4001: return PEM_ENCODE;
+        case 5000: return DETERMINISTIC_CBOR_ENCODE;
+        case 5001: return DETERMINISTIC_CBOR_DECODE;
         case 0: return OPERATION_NOT_SET;
         default: return null;
       }
@@ -417,6 +434,110 @@ public  final class CodecOperationRequest extends
     }
   }
 
+  public static final int DAG_CBOR_ENCODE_FIELD_NUMBER = 3001;
+  /**
+   * <code>.reallyme.codec.v1.CodecDagCborEncodeRequest dag_cbor_encode = 3001 [json_name = "dagCborEncode"];</code>
+   */
+  @java.lang.Override
+  public boolean hasDagCborEncode() {
+    return operationCase_ == 3001;
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecDagCborEncodeRequest dag_cbor_encode = 3001 [json_name = "dagCborEncode"];</code>
+   */
+  @java.lang.Override
+  public me.really.codec.v1.CodecDagCborEncodeRequest getDagCborEncode() {
+    if (operationCase_ == 3001) {
+       return (me.really.codec.v1.CodecDagCborEncodeRequest) operation_;
+    }
+    return me.really.codec.v1.CodecDagCborEncodeRequest.getDefaultInstance();
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecDagCborEncodeRequest dag_cbor_encode = 3001 [json_name = "dagCborEncode"];</code>
+   */
+  @java.lang.SuppressWarnings("ReturnValueIgnored")
+  private void setDagCborEncode(me.really.codec.v1.CodecDagCborEncodeRequest value) {
+    value.getClass();  // minimal bytecode null check
+    operation_ = value;
+    operationCase_ = 3001;
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecDagCborEncodeRequest dag_cbor_encode = 3001 [json_name = "dagCborEncode"];</code>
+   */
+  @java.lang.SuppressWarnings("ReturnValueIgnored")
+  private void mergeDagCborEncode(me.really.codec.v1.CodecDagCborEncodeRequest value) {
+    value.getClass();  // minimal bytecode null check
+    if (operationCase_ == 3001 &&
+        operation_ != me.really.codec.v1.CodecDagCborEncodeRequest.getDefaultInstance()) {
+      operation_ = me.really.codec.v1.CodecDagCborEncodeRequest.newBuilder((me.really.codec.v1.CodecDagCborEncodeRequest) operation_)
+          .mergeFrom(value).buildPartial();
+    } else {
+      operation_ = value;
+    }
+    operationCase_ = 3001;
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecDagCborEncodeRequest dag_cbor_encode = 3001 [json_name = "dagCborEncode"];</code>
+   */
+  private void clearDagCborEncode() {
+    if (operationCase_ == 3001) {
+      operationCase_ = 0;
+      operation_ = null;
+    }
+  }
+
+  public static final int DAG_CBOR_DECODE_FIELD_NUMBER = 3002;
+  /**
+   * <code>.reallyme.codec.v1.CodecDagCborDecodeRequest dag_cbor_decode = 3002 [json_name = "dagCborDecode"];</code>
+   */
+  @java.lang.Override
+  public boolean hasDagCborDecode() {
+    return operationCase_ == 3002;
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecDagCborDecodeRequest dag_cbor_decode = 3002 [json_name = "dagCborDecode"];</code>
+   */
+  @java.lang.Override
+  public me.really.codec.v1.CodecDagCborDecodeRequest getDagCborDecode() {
+    if (operationCase_ == 3002) {
+       return (me.really.codec.v1.CodecDagCborDecodeRequest) operation_;
+    }
+    return me.really.codec.v1.CodecDagCborDecodeRequest.getDefaultInstance();
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecDagCborDecodeRequest dag_cbor_decode = 3002 [json_name = "dagCborDecode"];</code>
+   */
+  @java.lang.SuppressWarnings("ReturnValueIgnored")
+  private void setDagCborDecode(me.really.codec.v1.CodecDagCborDecodeRequest value) {
+    value.getClass();  // minimal bytecode null check
+    operation_ = value;
+    operationCase_ = 3002;
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecDagCborDecodeRequest dag_cbor_decode = 3002 [json_name = "dagCborDecode"];</code>
+   */
+  @java.lang.SuppressWarnings("ReturnValueIgnored")
+  private void mergeDagCborDecode(me.really.codec.v1.CodecDagCborDecodeRequest value) {
+    value.getClass();  // minimal bytecode null check
+    if (operationCase_ == 3002 &&
+        operation_ != me.really.codec.v1.CodecDagCborDecodeRequest.getDefaultInstance()) {
+      operation_ = me.really.codec.v1.CodecDagCborDecodeRequest.newBuilder((me.really.codec.v1.CodecDagCborDecodeRequest) operation_)
+          .mergeFrom(value).buildPartial();
+    } else {
+      operation_ = value;
+    }
+    operationCase_ = 3002;
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecDagCborDecodeRequest dag_cbor_decode = 3002 [json_name = "dagCborDecode"];</code>
+   */
+  private void clearDagCborDecode() {
+    if (operationCase_ == 3002) {
+      operationCase_ = 0;
+      operation_ = null;
+    }
+  }
+
   public static final int PEM_DECODE_FIELD_NUMBER = 4000;
   /**
    * <pre>
@@ -484,6 +605,182 @@ public  final class CodecOperationRequest extends
    */
   private void clearPemDecode() {
     if (operationCase_ == 4000) {
+      operationCase_ = 0;
+      operation_ = null;
+    }
+  }
+
+  public static final int PEM_ENCODE_FIELD_NUMBER = 4001;
+  /**
+   * <code>.reallyme.codec.v1.CodecPemEncodeRequest pem_encode = 4001 [json_name = "pemEncode"];</code>
+   */
+  @java.lang.Override
+  public boolean hasPemEncode() {
+    return operationCase_ == 4001;
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecPemEncodeRequest pem_encode = 4001 [json_name = "pemEncode"];</code>
+   */
+  @java.lang.Override
+  public me.really.codec.v1.CodecPemEncodeRequest getPemEncode() {
+    if (operationCase_ == 4001) {
+       return (me.really.codec.v1.CodecPemEncodeRequest) operation_;
+    }
+    return me.really.codec.v1.CodecPemEncodeRequest.getDefaultInstance();
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecPemEncodeRequest pem_encode = 4001 [json_name = "pemEncode"];</code>
+   */
+  @java.lang.SuppressWarnings("ReturnValueIgnored")
+  private void setPemEncode(me.really.codec.v1.CodecPemEncodeRequest value) {
+    value.getClass();  // minimal bytecode null check
+    operation_ = value;
+    operationCase_ = 4001;
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecPemEncodeRequest pem_encode = 4001 [json_name = "pemEncode"];</code>
+   */
+  @java.lang.SuppressWarnings("ReturnValueIgnored")
+  private void mergePemEncode(me.really.codec.v1.CodecPemEncodeRequest value) {
+    value.getClass();  // minimal bytecode null check
+    if (operationCase_ == 4001 &&
+        operation_ != me.really.codec.v1.CodecPemEncodeRequest.getDefaultInstance()) {
+      operation_ = me.really.codec.v1.CodecPemEncodeRequest.newBuilder((me.really.codec.v1.CodecPemEncodeRequest) operation_)
+          .mergeFrom(value).buildPartial();
+    } else {
+      operation_ = value;
+    }
+    operationCase_ = 4001;
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecPemEncodeRequest pem_encode = 4001 [json_name = "pemEncode"];</code>
+   */
+  private void clearPemEncode() {
+    if (operationCase_ == 4001) {
+      operationCase_ = 0;
+      operation_ = null;
+    }
+  }
+
+  public static final int DETERMINISTIC_CBOR_ENCODE_FIELD_NUMBER = 5000;
+  /**
+   * <pre>
+   * 5000-5999: deterministic generic-CBOR encode/decode.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecDeterministicCborEncodeRequest deterministic_cbor_encode = 5000 [json_name = "deterministicCborEncode"];</code>
+   */
+  @java.lang.Override
+  public boolean hasDeterministicCborEncode() {
+    return operationCase_ == 5000;
+  }
+  /**
+   * <pre>
+   * 5000-5999: deterministic generic-CBOR encode/decode.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecDeterministicCborEncodeRequest deterministic_cbor_encode = 5000 [json_name = "deterministicCborEncode"];</code>
+   */
+  @java.lang.Override
+  public me.really.codec.v1.CodecDeterministicCborEncodeRequest getDeterministicCborEncode() {
+    if (operationCase_ == 5000) {
+       return (me.really.codec.v1.CodecDeterministicCborEncodeRequest) operation_;
+    }
+    return me.really.codec.v1.CodecDeterministicCborEncodeRequest.getDefaultInstance();
+  }
+  /**
+   * <pre>
+   * 5000-5999: deterministic generic-CBOR encode/decode.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecDeterministicCborEncodeRequest deterministic_cbor_encode = 5000 [json_name = "deterministicCborEncode"];</code>
+   */
+  @java.lang.SuppressWarnings("ReturnValueIgnored")
+  private void setDeterministicCborEncode(me.really.codec.v1.CodecDeterministicCborEncodeRequest value) {
+    value.getClass();  // minimal bytecode null check
+    operation_ = value;
+    operationCase_ = 5000;
+  }
+  /**
+   * <pre>
+   * 5000-5999: deterministic generic-CBOR encode/decode.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecDeterministicCborEncodeRequest deterministic_cbor_encode = 5000 [json_name = "deterministicCborEncode"];</code>
+   */
+  @java.lang.SuppressWarnings("ReturnValueIgnored")
+  private void mergeDeterministicCborEncode(me.really.codec.v1.CodecDeterministicCborEncodeRequest value) {
+    value.getClass();  // minimal bytecode null check
+    if (operationCase_ == 5000 &&
+        operation_ != me.really.codec.v1.CodecDeterministicCborEncodeRequest.getDefaultInstance()) {
+      operation_ = me.really.codec.v1.CodecDeterministicCborEncodeRequest.newBuilder((me.really.codec.v1.CodecDeterministicCborEncodeRequest) operation_)
+          .mergeFrom(value).buildPartial();
+    } else {
+      operation_ = value;
+    }
+    operationCase_ = 5000;
+  }
+  /**
+   * <pre>
+   * 5000-5999: deterministic generic-CBOR encode/decode.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecDeterministicCborEncodeRequest deterministic_cbor_encode = 5000 [json_name = "deterministicCborEncode"];</code>
+   */
+  private void clearDeterministicCborEncode() {
+    if (operationCase_ == 5000) {
+      operationCase_ = 0;
+      operation_ = null;
+    }
+  }
+
+  public static final int DETERMINISTIC_CBOR_DECODE_FIELD_NUMBER = 5001;
+  /**
+   * <code>.reallyme.codec.v1.CodecDeterministicCborDecodeRequest deterministic_cbor_decode = 5001 [json_name = "deterministicCborDecode"];</code>
+   */
+  @java.lang.Override
+  public boolean hasDeterministicCborDecode() {
+    return operationCase_ == 5001;
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecDeterministicCborDecodeRequest deterministic_cbor_decode = 5001 [json_name = "deterministicCborDecode"];</code>
+   */
+  @java.lang.Override
+  public me.really.codec.v1.CodecDeterministicCborDecodeRequest getDeterministicCborDecode() {
+    if (operationCase_ == 5001) {
+       return (me.really.codec.v1.CodecDeterministicCborDecodeRequest) operation_;
+    }
+    return me.really.codec.v1.CodecDeterministicCborDecodeRequest.getDefaultInstance();
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecDeterministicCborDecodeRequest deterministic_cbor_decode = 5001 [json_name = "deterministicCborDecode"];</code>
+   */
+  @java.lang.SuppressWarnings("ReturnValueIgnored")
+  private void setDeterministicCborDecode(me.really.codec.v1.CodecDeterministicCborDecodeRequest value) {
+    value.getClass();  // minimal bytecode null check
+    operation_ = value;
+    operationCase_ = 5001;
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecDeterministicCborDecodeRequest deterministic_cbor_decode = 5001 [json_name = "deterministicCborDecode"];</code>
+   */
+  @java.lang.SuppressWarnings("ReturnValueIgnored")
+  private void mergeDeterministicCborDecode(me.really.codec.v1.CodecDeterministicCborDecodeRequest value) {
+    value.getClass();  // minimal bytecode null check
+    if (operationCase_ == 5001 &&
+        operation_ != me.really.codec.v1.CodecDeterministicCborDecodeRequest.getDefaultInstance()) {
+      operation_ = me.really.codec.v1.CodecDeterministicCborDecodeRequest.newBuilder((me.really.codec.v1.CodecDeterministicCborDecodeRequest) operation_)
+          .mergeFrom(value).buildPartial();
+    } else {
+      operation_ = value;
+    }
+    operationCase_ = 5001;
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecDeterministicCborDecodeRequest deterministic_cbor_decode = 5001 [json_name = "deterministicCborDecode"];</code>
+   */
+  private void clearDeterministicCborDecode() {
+    if (operationCase_ == 5001) {
       operationCase_ = 0;
       operation_ = null;
     }
@@ -931,6 +1228,102 @@ public  final class CodecOperationRequest extends
     }
 
     /**
+     * <code>.reallyme.codec.v1.CodecDagCborEncodeRequest dag_cbor_encode = 3001 [json_name = "dagCborEncode"];</code>
+     */
+    @java.lang.Override
+    public boolean hasDagCborEncode() {
+      return instance.hasDagCborEncode();
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecDagCborEncodeRequest dag_cbor_encode = 3001 [json_name = "dagCborEncode"];</code>
+     */
+    @java.lang.Override
+    public me.really.codec.v1.CodecDagCborEncodeRequest getDagCborEncode() {
+      return instance.getDagCborEncode();
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecDagCborEncodeRequest dag_cbor_encode = 3001 [json_name = "dagCborEncode"];</code>
+     */
+    public Builder setDagCborEncode(me.really.codec.v1.CodecDagCborEncodeRequest value) {
+      copyOnWrite();
+      instance.setDagCborEncode(value);
+      return this;
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecDagCborEncodeRequest dag_cbor_encode = 3001 [json_name = "dagCborEncode"];</code>
+     */
+    public Builder setDagCborEncode(
+        me.really.codec.v1.CodecDagCborEncodeRequest.Builder builderForValue) {
+      copyOnWrite();
+      instance.setDagCborEncode(builderForValue.build());
+      return this;
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecDagCborEncodeRequest dag_cbor_encode = 3001 [json_name = "dagCborEncode"];</code>
+     */
+    public Builder mergeDagCborEncode(me.really.codec.v1.CodecDagCborEncodeRequest value) {
+      copyOnWrite();
+      instance.mergeDagCborEncode(value);
+      return this;
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecDagCborEncodeRequest dag_cbor_encode = 3001 [json_name = "dagCborEncode"];</code>
+     */
+    public Builder clearDagCborEncode() {
+      copyOnWrite();
+      instance.clearDagCborEncode();
+      return this;
+    }
+
+    /**
+     * <code>.reallyme.codec.v1.CodecDagCborDecodeRequest dag_cbor_decode = 3002 [json_name = "dagCborDecode"];</code>
+     */
+    @java.lang.Override
+    public boolean hasDagCborDecode() {
+      return instance.hasDagCborDecode();
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecDagCborDecodeRequest dag_cbor_decode = 3002 [json_name = "dagCborDecode"];</code>
+     */
+    @java.lang.Override
+    public me.really.codec.v1.CodecDagCborDecodeRequest getDagCborDecode() {
+      return instance.getDagCborDecode();
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecDagCborDecodeRequest dag_cbor_decode = 3002 [json_name = "dagCborDecode"];</code>
+     */
+    public Builder setDagCborDecode(me.really.codec.v1.CodecDagCborDecodeRequest value) {
+      copyOnWrite();
+      instance.setDagCborDecode(value);
+      return this;
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecDagCborDecodeRequest dag_cbor_decode = 3002 [json_name = "dagCborDecode"];</code>
+     */
+    public Builder setDagCborDecode(
+        me.really.codec.v1.CodecDagCborDecodeRequest.Builder builderForValue) {
+      copyOnWrite();
+      instance.setDagCborDecode(builderForValue.build());
+      return this;
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecDagCborDecodeRequest dag_cbor_decode = 3002 [json_name = "dagCborDecode"];</code>
+     */
+    public Builder mergeDagCborDecode(me.really.codec.v1.CodecDagCborDecodeRequest value) {
+      copyOnWrite();
+      instance.mergeDagCborDecode(value);
+      return this;
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecDagCborDecodeRequest dag_cbor_decode = 3002 [json_name = "dagCborDecode"];</code>
+     */
+    public Builder clearDagCborDecode() {
+      copyOnWrite();
+      instance.clearDagCborDecode();
+      return this;
+    }
+
+    /**
      * <pre>
      * 4000-4999: PEM armor and DER envelope helpers.
      * </pre>
@@ -1002,6 +1395,174 @@ public  final class CodecOperationRequest extends
       return this;
     }
 
+    /**
+     * <code>.reallyme.codec.v1.CodecPemEncodeRequest pem_encode = 4001 [json_name = "pemEncode"];</code>
+     */
+    @java.lang.Override
+    public boolean hasPemEncode() {
+      return instance.hasPemEncode();
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecPemEncodeRequest pem_encode = 4001 [json_name = "pemEncode"];</code>
+     */
+    @java.lang.Override
+    public me.really.codec.v1.CodecPemEncodeRequest getPemEncode() {
+      return instance.getPemEncode();
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecPemEncodeRequest pem_encode = 4001 [json_name = "pemEncode"];</code>
+     */
+    public Builder setPemEncode(me.really.codec.v1.CodecPemEncodeRequest value) {
+      copyOnWrite();
+      instance.setPemEncode(value);
+      return this;
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecPemEncodeRequest pem_encode = 4001 [json_name = "pemEncode"];</code>
+     */
+    public Builder setPemEncode(
+        me.really.codec.v1.CodecPemEncodeRequest.Builder builderForValue) {
+      copyOnWrite();
+      instance.setPemEncode(builderForValue.build());
+      return this;
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecPemEncodeRequest pem_encode = 4001 [json_name = "pemEncode"];</code>
+     */
+    public Builder mergePemEncode(me.really.codec.v1.CodecPemEncodeRequest value) {
+      copyOnWrite();
+      instance.mergePemEncode(value);
+      return this;
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecPemEncodeRequest pem_encode = 4001 [json_name = "pemEncode"];</code>
+     */
+    public Builder clearPemEncode() {
+      copyOnWrite();
+      instance.clearPemEncode();
+      return this;
+    }
+
+    /**
+     * <pre>
+     * 5000-5999: deterministic generic-CBOR encode/decode.
+     * </pre>
+     *
+     * <code>.reallyme.codec.v1.CodecDeterministicCborEncodeRequest deterministic_cbor_encode = 5000 [json_name = "deterministicCborEncode"];</code>
+     */
+    @java.lang.Override
+    public boolean hasDeterministicCborEncode() {
+      return instance.hasDeterministicCborEncode();
+    }
+    /**
+     * <pre>
+     * 5000-5999: deterministic generic-CBOR encode/decode.
+     * </pre>
+     *
+     * <code>.reallyme.codec.v1.CodecDeterministicCborEncodeRequest deterministic_cbor_encode = 5000 [json_name = "deterministicCborEncode"];</code>
+     */
+    @java.lang.Override
+    public me.really.codec.v1.CodecDeterministicCborEncodeRequest getDeterministicCborEncode() {
+      return instance.getDeterministicCborEncode();
+    }
+    /**
+     * <pre>
+     * 5000-5999: deterministic generic-CBOR encode/decode.
+     * </pre>
+     *
+     * <code>.reallyme.codec.v1.CodecDeterministicCborEncodeRequest deterministic_cbor_encode = 5000 [json_name = "deterministicCborEncode"];</code>
+     */
+    public Builder setDeterministicCborEncode(me.really.codec.v1.CodecDeterministicCborEncodeRequest value) {
+      copyOnWrite();
+      instance.setDeterministicCborEncode(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * 5000-5999: deterministic generic-CBOR encode/decode.
+     * </pre>
+     *
+     * <code>.reallyme.codec.v1.CodecDeterministicCborEncodeRequest deterministic_cbor_encode = 5000 [json_name = "deterministicCborEncode"];</code>
+     */
+    public Builder setDeterministicCborEncode(
+        me.really.codec.v1.CodecDeterministicCborEncodeRequest.Builder builderForValue) {
+      copyOnWrite();
+      instance.setDeterministicCborEncode(builderForValue.build());
+      return this;
+    }
+    /**
+     * <pre>
+     * 5000-5999: deterministic generic-CBOR encode/decode.
+     * </pre>
+     *
+     * <code>.reallyme.codec.v1.CodecDeterministicCborEncodeRequest deterministic_cbor_encode = 5000 [json_name = "deterministicCborEncode"];</code>
+     */
+    public Builder mergeDeterministicCborEncode(me.really.codec.v1.CodecDeterministicCborEncodeRequest value) {
+      copyOnWrite();
+      instance.mergeDeterministicCborEncode(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * 5000-5999: deterministic generic-CBOR encode/decode.
+     * </pre>
+     *
+     * <code>.reallyme.codec.v1.CodecDeterministicCborEncodeRequest deterministic_cbor_encode = 5000 [json_name = "deterministicCborEncode"];</code>
+     */
+    public Builder clearDeterministicCborEncode() {
+      copyOnWrite();
+      instance.clearDeterministicCborEncode();
+      return this;
+    }
+
+    /**
+     * <code>.reallyme.codec.v1.CodecDeterministicCborDecodeRequest deterministic_cbor_decode = 5001 [json_name = "deterministicCborDecode"];</code>
+     */
+    @java.lang.Override
+    public boolean hasDeterministicCborDecode() {
+      return instance.hasDeterministicCborDecode();
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecDeterministicCborDecodeRequest deterministic_cbor_decode = 5001 [json_name = "deterministicCborDecode"];</code>
+     */
+    @java.lang.Override
+    public me.really.codec.v1.CodecDeterministicCborDecodeRequest getDeterministicCborDecode() {
+      return instance.getDeterministicCborDecode();
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecDeterministicCborDecodeRequest deterministic_cbor_decode = 5001 [json_name = "deterministicCborDecode"];</code>
+     */
+    public Builder setDeterministicCborDecode(me.really.codec.v1.CodecDeterministicCborDecodeRequest value) {
+      copyOnWrite();
+      instance.setDeterministicCborDecode(value);
+      return this;
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecDeterministicCborDecodeRequest deterministic_cbor_decode = 5001 [json_name = "deterministicCborDecode"];</code>
+     */
+    public Builder setDeterministicCborDecode(
+        me.really.codec.v1.CodecDeterministicCborDecodeRequest.Builder builderForValue) {
+      copyOnWrite();
+      instance.setDeterministicCborDecode(builderForValue.build());
+      return this;
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecDeterministicCborDecodeRequest deterministic_cbor_decode = 5001 [json_name = "deterministicCborDecode"];</code>
+     */
+    public Builder mergeDeterministicCborDecode(me.really.codec.v1.CodecDeterministicCborDecodeRequest value) {
+      copyOnWrite();
+      instance.mergeDeterministicCborDecode(value);
+      return this;
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecDeterministicCborDecodeRequest deterministic_cbor_decode = 5001 [json_name = "deterministicCborDecode"];</code>
+     */
+    public Builder clearDeterministicCborDecode() {
+      copyOnWrite();
+      instance.clearDeterministicCborDecode();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:reallyme.codec.v1.CodecOperationRequest)
   }
   @java.lang.Override
@@ -1025,11 +1586,17 @@ public  final class CodecOperationRequest extends
             me.really.codec.v1.CodecMulticodecTableRequest.class,
             me.really.codec.v1.CodecMultikeyParseRequest.class,
             me.really.codec.v1.CodecDagCborVerifyCidRequest.class,
+            me.really.codec.v1.CodecDagCborEncodeRequest.class,
+            me.really.codec.v1.CodecDagCborDecodeRequest.class,
             me.really.codec.v1.CodecPemDecodeRequest.class,
+            me.really.codec.v1.CodecPemEncodeRequest.class,
+            me.really.codec.v1.CodecDeterministicCborEncodeRequest.class,
+            me.really.codec.v1.CodecDeterministicCborDecodeRequest.class,
           };
           java.lang.String info =
-              "\u0000\u0006\u0001\u0000\u03e8\u0fa0\u0006\u0000\u0000\u0000\u03e8<\u0000\u03e9<" +
-              "\u0000\u03ea<\u0000\u07d0<\u0000\u0bb8<\u0000\u0fa0<\u0000";
+              "\u0000\u000b\u0001\u0000\u03e8\u1389\u000b\u0000\u0000\u0000\u03e8<\u0000\u03e9<" +
+              "\u0000\u03ea<\u0000\u07d0<\u0000\u0bb8<\u0000\u0bb9<\u0000\u0bba<\u0000\u0fa0<\u0000" +
+              "\u0fa1<\u0000\u1388<\u0000\u1389<\u0000";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "reallyme-codec-multicodec"
+version = "0.2.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = true
+description = "Multicodec identifiers used by ReallyMe Codec."
+include = ["/src/**/*.rs", "/tests/**/*.rs", "/Cargo.toml", "/LICENSE", "/NOTICE"]
+
+
+[lib]
+name = "codec_multicodec"
+
+[dependencies]
+
+[lints]
+workspace = true

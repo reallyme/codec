@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "reallyme-codec-ffi"
+version = "0.2.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+description = "ReallyMe native C ABI and JNI surface for Rust-backed codec operations."
+
+[lib]
+crate-type = ["rlib", "staticlib", "cdylib"]
+
+[dependencies]
+codec-proto = { package = "reallyme-codec-proto", version = "0.2.0", path = "../proto", features = ["generated"] }
+codec-runtime = { package = "reallyme-codec", version = "0.2.0", path = "../codec", default-features = false, features = ["operation-contract"] }
+jni = { workspace = true }
+zeroize = { workspace = true }
+
+[dev-dependencies]
+buffa = { workspace = true }
+
+[lints]
+workspace = true

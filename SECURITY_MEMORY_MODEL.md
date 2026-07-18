@@ -12,8 +12,8 @@ This document defines the baseline memory-safety and boundary model for the
 ## Scope
 
 - Codec crates under `crates/codec/`
-- Codec C ABI and JNI adapters under `crates/codec/ffi`
-- Codec WASM adapters under `crates/codec/wasm-package`
+- Codec C ABI and JNI adapters under `crates/ffi`
+- Codec WASM adapters under `crates/wasm`
 - SDK packages under `packages/swift`, `packages/kotlin`, and
   `packages/ts`
 

@@ -19,3 +19,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "reallyme-codec-android"
+
+include(":consumer-r8-runtime")

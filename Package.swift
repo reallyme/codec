@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.3
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -8,7 +8,7 @@
 // SwiftPM and Xcode only read `Package.swift` at the repository root when a
 // package is consumed by URL, e.g.
 //
-//     .package(url: "https://github.com/reallyme/codec", from: "0.1.22")
+//     .package(url: "https://github.com/reallyme/codec", from: "0.2.0")
 //     .product(name: "ReallyMeCodec", package: "codec")
 //
 // The Swift sources live under `packages/swift/` to keep symmetry with the
@@ -20,8 +20,8 @@ import Foundation
 
 let ffiArtifactChecksumPlaceholder =
     "0000000000000000000000000000000000000000000000000000000000000000"
-let ffiArtifactChecksum = "dafc2728499f1073a5c184e227f1330b2540de4da3dc140f1c1792bbcdba6020"
-let ffiArtifactVersion = "0.1.22"
+let ffiArtifactChecksum = "657241b42a453b9c81eeb192a497d49caa9018d9180e970c28908a534429f489"
+let ffiArtifactVersion = "0.2.0"
 let ffiArtifactLocalPathOverride = ""
 let hasReleasedFfiArtifact = ffiArtifactChecksum != ffiArtifactChecksumPlaceholder
 let useRuntimeFfiProvider =

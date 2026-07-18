@@ -104,9 +104,9 @@ dependencies = [
 
 [[package]]
 name = "buffa"
-version = "0.8.1"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33f29a40702df4b86ccd84211bfde8cee0bce6d0811450ade4a86a7d0958a23a"
+checksum = "b97ce1f34252b8e2516042e1002d56c160908a7ff8a1c9d47e97836558d1c83a"
 dependencies = [
  "base64",
  "bytes",
@@ -324,7 +324,7 @@ dependencies = [
 
 [[package]]
 name = "keccak"
-version = "0.1.22"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e24a010dd405bd7ed803e5253182815b41bf2e6a80cc3bfc066658e03a198aa"
 dependencies = [
@@ -468,22 +468,34 @@ checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
 
 [[package]]
 name = "reallyme-codec"
-version = "0.1.22"
+version = "0.2.0"
 dependencies = [
  "buffa",
+ "reallyme-codec-base64",
  "reallyme-codec-base64url",
  "reallyme-codec-cbor",
+ "reallyme-codec-hex",
+ "reallyme-codec-jcs",
  "reallyme-codec-multibase",
  "reallyme-codec-multicodec",
  "reallyme-codec-multikey",
  "reallyme-codec-pem",
  "reallyme-codec-proto",
+ "thiserror",
  "zeroize",
 ]
 
 [[package]]
+name = "reallyme-codec-base64"
+version = "0.2.0"
+dependencies = [
+ "base64",
+ "thiserror",
+]
+
+[[package]]
 name = "reallyme-codec-base64url"
-version = "0.1.22"
+version = "0.2.0"
 dependencies = [
  "base64",
  "thiserror",
@@ -491,41 +503,53 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-cbor"
-version = "0.1.22"
+version = "0.2.0"
 dependencies = [
  "cid",
  "multihash",
  "multihash-codetable",
  "sha2",
  "thiserror",
+ "zeroize",
+]
+
+[[package]]
+name = "reallyme-codec-hex"
+version = "0.2.0"
+dependencies = [
+ "thiserror",
 ]
 
 [[package]]
 name = "reallyme-codec-jcs"
-version = "0.1.22"
+version = "0.2.0"
 dependencies = [
+ "itoa",
  "ryu-js",
  "serde",
  "serde_json",
  "thiserror",
+ "zeroize",
 ]
 
 [[package]]
 name = "reallyme-codec-multibase"
-version = "0.1.22"
+version = "0.2.0"
 dependencies = [
+ "base64",
  "bs58",
  "reallyme-codec-base64url",
  "thiserror",
+ "zeroize",
 ]
 
 [[package]]
 name = "reallyme-codec-multicodec"
-version = "0.1.22"
+version = "0.2.0"
 
 [[package]]
 name = "reallyme-codec-multikey"
-version = "0.1.22"
+version = "0.2.0"
 dependencies = [
  "reallyme-codec-multibase",
  "reallyme-codec-multicodec",
@@ -534,7 +558,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-pem"
-version = "0.1.22"
+version = "0.2.0"
 dependencies = [
  "base64",
  "thiserror",
@@ -543,8 +567,9 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-proto"
-version = "0.1.22"
+version = "0.2.0"
 dependencies = [
+ "base64",
  "buffa",
  "serde",
  "serde_json",
@@ -554,7 +579,7 @@ dependencies = [
 
 [[package]]
 name = "ripemd"
-version = "0.1.22"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4dd4211456b4172d7e44261920c25acf07367c4f04bb5f5d54fc21b090d9b159"
 dependencies = [
@@ -662,9 +687,9 @@ checksum = "e3a9fe34e3e7a50316060351f37187a3f546bce95496156754b601a5fa71b76e"
 
 [[package]]
 name = "smoothutf8"
-version = "0.1.1"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36358427d32ecdb1624616deed99eccfef0a167fe5bf40ddb51efe6980bc1ec8"
+checksum = "6b4ec95892483d6d94284caccfddb9b77111a4dcac33ed25d624248def0fa5f1"
 dependencies = [
  "simdutf8",
 ]

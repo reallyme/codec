@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "reallyme-codec-multibase"
+version = "0.2.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = true
+description = "Multibase encoding and decoding support for ReallyMe Codec."
+include = ["/src/**/*.rs", "/tests/**/*.rs", "/Cargo.toml", "/LICENSE", "/NOTICE"]
+
+
+[lib]
+name = "codec_multibase"
+
+[dependencies]
+base64 = { workspace = true }
+bs58 = { workspace = true }
+codec-base64url = { package = "reallyme-codec-base64url", version = "0.2.0", path = "../base64url" }
+thiserror = { workspace = true }
+zeroize = { workspace = true }
+
+[lints]
+workspace = true

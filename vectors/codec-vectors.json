@@ -1,0 +1,284 @@
+{
+  "schemaVersion": 2,
+  "sources": [
+    {
+      "name": "RFC 4648",
+      "url": "https://www.rfc-editor.org/rfc/rfc4648",
+      "provenance": "official",
+      "covers": ["base64", "base64url", "base16"]
+    },
+    {
+      "name": "RFC 8785",
+      "url": "https://www.rfc-editor.org/rfc/rfc8785",
+      "provenance": "official",
+      "covers": ["jcs"]
+    },
+    {
+      "name": "RFC 8949",
+      "url": "https://www.rfc-editor.org/rfc/rfc8949",
+      "provenance": "official",
+      "covers": ["deterministic-cbor"]
+    },
+    {
+      "name": "IPLD DAG-CBOR specification",
+      "url": "https://ipld.io/specs/codecs/dag-cbor/spec/",
+      "provenance": "trusted-upstream",
+      "covers": ["dag-cbor"]
+    },
+    {
+      "name": "Multiformats multicodec table",
+      "url": "https://github.com/multiformats/multicodec",
+      "provenance": "trusted-upstream",
+      "covers": ["multicodec", "multibase", "multikey"]
+    },
+    {
+      "name": "ReallyMe pinned SDK parity vectors",
+      "url": "https://github.com/reallyme/codec",
+      "provenance": "reallyme-pinned",
+      "covers": ["selected-inputs", "canonical-rejections", "pem", "proto-entrypoints", "deterministic-cbor"]
+    },
+    {
+      "name": "ReallyMe idkit-ios synthetic passport fixture",
+      "url": "https://github.com/reallyme/idkit-ios",
+      "provenance": "reallyme-pinned",
+      "covers": ["deterministic-cbor-interoperability"]
+    }
+  ],
+  "vectors": {
+    "baseInputHex": "000102fbff",
+    "base64Padded": "AAEC+/8=",
+    "base64MissingPadding": "Zg",
+    "base64NonCanonicalTrailingBits": "Zh==",
+    "base64Whitespace": "AAEC+/8=\n",
+    "base64urlUnpadded": "AAEC-_8",
+    "base64urlPadded": "AA==",
+    "base64urlNonCanonicalTrailingBits": "AB",
+    "base64urlInvalidLength": "A",
+    "base64urlWhitespace": "AAEC-_8\n",
+    "lowerHex": "000102fbff",
+    "base58btcEncoded": "12VzRU",
+    "publicKeyHex": "0000000000000000000000000000000000000000000000000000000000000007",
+    "ed25519CodecName": "ed25519-pub",
+    "ed25519AlgorithmName": "Ed25519",
+    "ed25519Tag": "key",
+    "ed25519KeyMaterial": "public-key",
+    "ed25519ExpectedKeyLength": 32,
+    "ed25519PrefixHex": "ed01",
+    "ed25519PrefixedPublicKeyHex": "ed010000000000000000000000000000000000000000000000000000000000000007",
+    "publicKeyBase58btc": "11111111111111111111111111111118",
+    "publicKeyMultibaseBase58btc": "z11111111111111111111111111111118",
+    "publicKeyMultibaseBase64url": "uAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAc",
+    "unsupportedMultibase": "xdata",
+    "multibaseMultibytePrefix": "\u20aczzz",
+    "ed25519Multikey": "z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnW",
+    "nonCanonicalBase64urlMultikey": "u7QEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABw",
+    "multikeyBindingType": "Multikey",
+    "mismatchedBindingType": "P256Key2024",
+    "mismatchedBindingAlgorithm": "P-256",
+    "multicodecTableRequiredName": "mlkem-1024-pub",
+    "dagCborEncodedHex": "a36161636f6e6561620265627974657343000102",
+    "dagCborNonCanonicalIntegerHex": "1800",
+    "dagCborDuplicateKeyHex": "a2616101616102",
+    "dagCborOutOfOrderKeyHex": "a2616201616102",
+    "dagCborCid": "bafyreicj4zalmwir73njfcoq6l2vb4ycqlle32tiw6fcmfmn6pmce4cu2a",
+    "dagCborSha256Hex": "49e640b65911feda9289d0f2f550f30282d64dea68b78a26158df3d8227054d0",
+    "dagCborMultihashHex": "122049e640b65911feda9289d0f2f550f30282d64dea68b78a26158df3d8227054d0",
+    "dagCborCodecCode": 113,
+    "invalidCid": "not-a-cid",
+    "jcsObjectInputJson": "{\"b\":2,\"a\":1}",
+    "jcsObjectCanonicalJson": "{\"a\":1,\"b\":2}",
+    "jcsNumberInputJson": "333333333.33333329",
+    "jcsNumberCanonicalJson": "333333333.3333333",
+    "jcsUtf16KeyOrderInputJson": "{\"\ufb00\":1,\"\ud83d\ude00\":2}",
+    "jcsUtf16KeyOrderCanonicalJson": "{\"\ud83d\ude00\":2,\"\ufb00\":1}",
+    "jcsDuplicateMemberJson": "{\"a\":1,\"a\":2}",
+    "jcsNonInteroperableIntegerJson": "9007199254740992",
+    "jcsLoneSurrogateJson": "\"\\ud800\"",
+    "pemPrivateLabel": "PRIVATE KEY",
+    "pemPrivateDerHex": "3003020101",
+    "pemPrivatePem": "-----BEGIN PRIVATE KEY-----\nMAMCAQE=\n-----END PRIVATE KEY-----\n",
+    "pemPublicLabel": "PUBLIC KEY",
+    "pemWrappedDerText": "not real der",
+    "pemWrappedPem": "-----BEGIN PUBLIC KEY-----\nbm90\nIHJl\nYWwg\nZGVy\n-----END PUBLIC KEY-----\n",
+    "pemLineWidthOptionsJson": "{\"lineWidth\":4}",
+    "pemPublicOnlyDecodeOptionsJson": "{\"allowedLabels\":[\"PUBLIC KEY\"]}",
+    "protoMulticodecTableRequestHex": "d23e00",
+    "protoMulticodecTableRequestJson": "{\"multicodecTable\":{}}"
+  },
+  "deterministicCbor": {
+    "profile": "rfc8949-core-deterministic-reallyme-0.2.0",
+    "fixtureClasses": {
+      "positive": "golden",
+      "negative": "rejection-fixture",
+      "equivalentInputOrders": "golden",
+      "resourceRejections": "construction-recipe",
+      "interoperability": "interop-fixture"
+    },
+    "positive": [
+      {"name": "unsigned-0", "value": {"unsigned": "0"}, "hex": "00"},
+      {"name": "unsigned-23", "value": {"unsigned": "23"}, "hex": "17"},
+      {"name": "unsigned-24", "value": {"unsigned": "24"}, "hex": "1818"},
+      {"name": "unsigned-255", "value": {"unsigned": "255"}, "hex": "18ff"},
+      {"name": "unsigned-256", "value": {"unsigned": "256"}, "hex": "190100"},
+      {"name": "unsigned-65535", "value": {"unsigned": "65535"}, "hex": "19ffff"},
+      {"name": "unsigned-65536", "value": {"unsigned": "65536"}, "hex": "1a00010000"},
+      {"name": "unsigned-4294967295", "value": {"unsigned": "4294967295"}, "hex": "1affffffff"},
+      {"name": "unsigned-4294967296", "value": {"unsigned": "4294967296"}, "hex": "1b0000000100000000"},
+      {"name": "unsigned-2pow53-minus-1", "value": {"unsigned": "9007199254740991"}, "hex": "1b001fffffffffffff"},
+      {"name": "unsigned-2pow53", "value": {"unsigned": "9007199254740992"}, "hex": "1b0020000000000000"},
+      {"name": "unsigned-i64-max", "value": {"unsigned": "9223372036854775807"}, "hex": "1b7fffffffffffffff"},
+      {"name": "unsigned-u64-max", "value": {"unsigned": "18446744073709551615"}, "hex": "1bffffffffffffffff"},
+      {"name": "negative-minus-1", "value": {"negative": "-1"}, "hex": "20"},
+      {"name": "negative-minus-24", "value": {"negative": "-24"}, "hex": "37"},
+      {"name": "negative-minus-25", "value": {"negative": "-25"}, "hex": "3818"},
+      {"name": "negative-minus-256", "value": {"negative": "-256"}, "hex": "38ff"},
+      {"name": "negative-minus-257", "value": {"negative": "-257"}, "hex": "390100"},
+      {"name": "negative-minus-65536", "value": {"negative": "-65536"}, "hex": "39ffff"},
+      {"name": "negative-minus-65537", "value": {"negative": "-65537"}, "hex": "3a00010000"},
+      {"name": "negative-minus-4294967296", "value": {"negative": "-4294967296"}, "hex": "3affffffff"},
+      {"name": "negative-minus-4294967297", "value": {"negative": "-4294967297"}, "hex": "3b0000000100000000"},
+      {"name": "negative-i64-min", "value": {"negative": "-9223372036854775808"}, "hex": "3b7fffffffffffffff"},
+      {"name": "bytes-000102", "value": {"bytes": "AAEC"}, "hex": "43000102"},
+      {"name": "text-hi", "value": {"text": "hi"}, "hex": "626869"},
+      {"name": "text-multibyte-u-umlaut", "value": {"text": "ü"}, "hex": "62c3bc"},
+      {"name": "false", "value": {"bool": false}, "hex": "f4"},
+      {"name": "true", "value": {"bool": true}, "hex": "f5"},
+      {"name": "null", "value": {"null": true}, "hex": "f6"},
+      {"name": "empty-array", "value": {"array": []}, "hex": "80"},
+      {"name": "nested-array", "value": {"array": [{"unsigned": "1"}, {"array": [{"unsigned": "2"}, {"unsigned": "3"}]}]}, "hex": "8201820203"},
+      {"name": "empty-map", "value": {"map": []}, "hex": "a0"},
+      {"name": "nested-integer-key-map", "value": {"map": [{"key": {"integer": {"unsigned": "1"}}, "value": {"map": [{"key": {"integer": {"unsigned": "2"}}, "value": {"text": "x"}}]}}]}, "hex": "a101a1026178"},
+      {"name": "text-key-map", "value": {"map": [{"key": {"text": "a"}, "value": {"unsigned": "1"}}, {"key": {"text": "b"}, "value": {"unsigned": "2"}}]}, "hex": "a2616101616202"},
+      {"name": "mixed-integer-text-key-map", "value": {"map": [{"key": {"integer": {"unsigned": "1"}}, "value": {"text": "integer-key"}}, {"key": {"text": "a"}, "value": {"text": "text-key"}}]}, "hex": "a2016b696e74656765722d6b6579616168746578742d6b6579"},
+      {"name": "integer-and-text-key-distinct-map", "value": {"map": [{"key": {"integer": {"unsigned": "1"}}, "value": {"text": "i"}}, {"key": {"text": "1"}, "value": {"text": "t"}}]}, "hex": "a201616961316174"}
+    ],
+    "negative": [
+      {"name": "duplicate-integer-key", "hex": "a201010102", "reason": "duplicate-key"},
+      {"name": "duplicate-text-key", "hex": "a2616101616102", "reason": "duplicate-key"},
+      {"name": "non-minimal-unsigned-zero", "hex": "1800", "reason": "non-minimal-integer"},
+      {"name": "non-minimal-negative-minus-one", "hex": "3800", "reason": "non-minimal-integer"},
+      {"name": "negative-outside-profile", "hex": "3b8000000000000000", "reason": "unsupported-integer"},
+      {"name": "non-minimal-byte-string-length", "hex": "580100", "reason": "non-minimal-length"},
+      {"name": "non-minimal-text-length", "hex": "780161", "reason": "non-minimal-length"},
+      {"name": "out-of-order-integer-keys", "hex": "a202000100", "reason": "map-key-order"},
+      {"name": "indefinite-array", "hex": "9f01ff", "reason": "indefinite-length"},
+      {"name": "indefinite-map", "hex": "bf616100ff", "reason": "indefinite-length"},
+      {"name": "indefinite-byte-string", "hex": "5f4000ff", "reason": "indefinite-length"},
+      {"name": "indefinite-text-string", "hex": "7f6061ff", "reason": "indefinite-length"},
+      {"name": "trailing-byte", "hex": "0000", "reason": "trailing-data"},
+      {"name": "invalid-utf8", "hex": "61ff", "reason": "invalid-utf8"},
+      {"name": "unsupported-tag", "hex": "c000", "reason": "unsupported-type"},
+      {"name": "unsupported-float", "hex": "f90000", "reason": "unsupported-type"},
+      {"name": "unsupported-simple-value", "hex": "f0", "reason": "unsupported-type"}
+    ],
+    "equivalentInputOrders": [
+      {
+        "name": "mixed-key-map-order-independent",
+        "inputs": [
+          [
+            {"key": {"text": "b"}, "value": {"unsigned": "2"}},
+            {"key": {"integer": {"unsigned": "1"}}, "value": {"text": "i"}},
+            {"key": {"text": "1"}, "value": {"text": "t"}}
+          ],
+          [
+            {"key": {"text": "1"}, "value": {"text": "t"}},
+            {"key": {"text": "b"}, "value": {"unsigned": "2"}},
+            {"key": {"integer": {"unsigned": "1"}}, "value": {"text": "i"}}
+          ]
+        ],
+        "hex": "a301616961316174616202"
+      }
+    ],
+    "resourceRejections": [
+      {
+        "name": "input-byte-limit-plus-one",
+        "construction": {"kind": "encoded-byte-count", "count": 1048577, "fillByteHex": "00"},
+        "reason": "input-too-large"
+      },
+      {
+        "name": "output-byte-limit-plus-header",
+        "construction": {"kind": "byte-string-length", "count": 1048576},
+        "reason": "output-too-large"
+      },
+      {
+        "name": "node-limit-exceeded-balanced-tree",
+        "construction": {"kind": "balanced-array-tree", "branching": 256, "levels": 2},
+        "reason": "node-limit-exceeded"
+      },
+      {
+        "name": "container-entry-limit-plus-one",
+        "construction": {"kind": "array-of-null", "count": 16385},
+        "reason": "container-entries-exceeded"
+      },
+      {
+        "name": "nesting-depth-limit-plus-one",
+        "construction": {"kind": "nested-singleton-arrays", "depth": 65},
+        "reason": "depth-exceeded"
+      }
+    ],
+    "interoperability": [
+      {
+        "name": "idkit-ios-synthetic-passport-claims-v1",
+        "fixtureKind": "synthetic",
+        "sourceRepo": "reallyme/idkit-ios",
+        "sourceCommit": "content-hash-pinned",
+        "source": "reallyme/idkit-ios demoTests PassportCBORParser fixture",
+        "explanation": "Passport claims happy-path shape generated from the idkit-ios parser contract and pinned as deterministic-CBOR bytes.",
+        "sourceFiles": [
+          {"path": "demoTests/demoTests.swift", "sha256": "e3554bb31e7e886b9d22b501a97ef5a7584d823bc399e3925ce4b25e3943e0b3"},
+          {"path": "demo/PassportCBORParser.swift", "sha256": "849f8ad2a0c74e287717a554c1a1ded65ed7dbcb668fcd397f58cb96fd10b3a7"}
+        ],
+        "entryCount": 34,
+        "byteLength": 591,
+        "hex": "b82201684a4f484e20444f4502644a4f484e0363444f45046a323030302d30312d303205614d0663555341076355534108684e455720594f524b0961500a693132333435363738390b6a323032302d30312d30320c6a323033302d30312d303114f515f516f517f51818f51819f5186558200505050505050505050505050505050505050505050505050505050505050505186658200101010101010101010101010101010101010101010101010101010101010101186758200202020202020202020202020202020202020202020202020202020202020202186858200303030303030303030303030303030303030303030303030303030303030303186958200404040404040404040404040404040404040404040404040404040404040404186a5820d00adaa91edaf159278b67c8dc2198ff92009312591dbc9994081385df9eb2a0186bf5186c58200dd47bd509dfb0a917a5d438b8c540e8a2d101ea942bf714b11ab7dd6eac8a5f186d582015e2b0d3c33891ebb0f1ef609ec419420c20e320ce94c65fbc8c3312448eb225186e58200b72ee239072babb6c83d052865d230ba5f9cf1f4e7c7c085002a37cb21d148818c8782368747470733a2f2f6578616d706c652e636f6d2f626c6f622f6467322f61626331323318c96b4145532d3235362d47434d18ca6d6b7265665f746573745f31323318cb58209720c60423a52993494c8c1ea66ea2f738a655707e2ab6fb6dcc147312eea68218cc6a696d6167652f6a70656718cd58205a6d4f8605ddf0c2ff162b3b381ccb1c3f1921534dcebd303edf0a025506beeb",
+        "sha256": "9dceeb2858541c0c65cf0aab43ae4b7f7e21db8e123f64d292ab8da9446084e0"
+      },
+      {
+        "name": "idkit-ios-synthetic-passport-claims-null-place-of-birth-v1",
+        "fixtureKind": "synthetic",
+        "sourceRepo": "reallyme/idkit-ios",
+        "sourceCommit": "content-hash-pinned",
+        "source": "reallyme/idkit-ios buildBaseClaims optional placeOfBirth null fixture",
+        "explanation": "Passport claims optionality variant with placeOfBirth encoded as null to pin the consumer-visible CBOR shape.",
+        "sourceFiles": [
+          {"path": "demoTests/demoTests.swift", "sha256": "e3554bb31e7e886b9d22b501a97ef5a7584d823bc399e3925ce4b25e3943e0b3"},
+          {"path": "demo/PassportCBORParser.swift", "sha256": "849f8ad2a0c74e287717a554c1a1ded65ed7dbcb668fcd397f58cb96fd10b3a7"}
+        ],
+        "entryCount": 34,
+        "byteLength": 583,
+        "hex": "b82201684a4f484e20444f4502644a4f484e0363444f45046a323030302d30312d303205614d0663555341076355534108f60961500a693132333435363738390b6a323032302d30312d30320c6a323033302d30312d303114f515f516f517f51818f51819f5186558200505050505050505050505050505050505050505050505050505050505050505186658200101010101010101010101010101010101010101010101010101010101010101186758200202020202020202020202020202020202020202020202020202020202020202186858200303030303030303030303030303030303030303030303030303030303030303186958200404040404040404040404040404040404040404040404040404040404040404186a5820d00adaa91edaf159278b67c8dc2198ff92009312591dbc9994081385df9eb2a0186bf5186c58203cabc4b82093bc7caa0a5c59900c7d7468d1bb5d09169cfa780038937f108428186d582015e2b0d3c33891ebb0f1ef609ec419420c20e320ce94c65fbc8c3312448eb225186e58200b72ee239072babb6c83d052865d230ba5f9cf1f4e7c7c085002a37cb21d148818c8782368747470733a2f2f6578616d706c652e636f6d2f626c6f622f6467732f61626331323318c96b4145532d3235362d47434d18ca6d6b7265665f746573745f31323318cb58209720c60423a52993494c8c1ea66ea2f738a655707e2ab6fb6dcc147312eea68218cc6a696d6167652f6a70656718cd5820de4eba3600336695d4b1132526234fd254b4d7baf624560a5e50305c21f61436",
+        "sha256": "e51c64544faff5f607a48588bc03b470c5e63a175ab332e24f020ffe65edc874"
+      },
+      {
+        "name": "idkit-ios-synthetic-fingerprint-map-v1",
+        "fixtureKind": "synthetic",
+        "sourceRepo": "reallyme/idkit-ios",
+        "sourceCommit": "content-hash-pinned",
+        "source": "reallyme/idkit-ios PassportCBORParser fingerprintMap fixture",
+        "explanation": "Standalone fingerprint map shape used by the idkit-ios contract, pinned separately from full passport claims.",
+        "sourceFiles": [
+          {"path": "demo/PassportCBORParser.swift", "sha256": "849f8ad2a0c74e287717a554c1a1ded65ed7dbcb668fcd397f58cb96fd10b3a7"}
+        ],
+        "entryCount": 7,
+        "byteLength": 291,
+        "hex": "a767636869705f696458200505050505050505050505050505050505050505050505050505050505050505686467315f6861736858200101010101010101010101010101010101010101010101010101010101010101686467325f686173685820020202020202020202020202020202020202020202020202020202020202020269646731315f686173685820030303030303030303030303030303030303030303030303030303030303030369646731325f686173685820040404040404040404040404040404040404040404040404040404040404040472646f635f636f6d706f736974655f686173685820d00adaa91edaf159278b67c8dc2198ff92009312591dbc9994081385df9eb2a073736f645f7369676e61747572655f76616c6964f5",
+        "sha256": "0b72ee239072babb6c83d052865d230ba5f9cf1f4e7c7c085002a37cb21d1488"
+      },
+      {
+        "name": "idkit-ios-synthetic-mixed-integer-claim-tags-v1",
+        "fixtureKind": "synthetic",
+        "sourceRepo": "reallyme/idkit-ios",
+        "sourceCommit": "content-hash-pinned",
+        "source": "reallyme/idkit-ios ClaimTag ordering fixture",
+        "explanation": "Mixed integer-key claim-tag fixture documenting canonical ordering across low tags, age tags, and 100+/200+ tags.",
+        "sourceFiles": [
+          {"path": "demo/PassportCBORParser.swift", "sha256": "849f8ad2a0c74e287717a554c1a1ded65ed7dbcb668fcd397f58cb96fd10b3a7"}
+        ],
+        "entryCount": 11,
+        "byteLength": 217,
+        "hex": "ab01684a4f484e20444f4508f614f515f41819f4186558200505050505050505050505050505050505050505050505050505050505050505186c58203cabc4b82093bc7caa0a5c59900c7d7468d1bb5d09169cfa780038937f108428186e58200b72ee239072babb6c83d052865d230ba5f9cf1f4e7c7c085002a37cb21d148818c8782368747470733a2f2f6578616d706c652e636f6d2f626c6f622f6467732f61626331323318c96b4145532d3235362d47434d18cd5820de4eba3600336695d4b1132526234fd254b4d7baf624560a5e50305c21f61436",
+        "sha256": "430354b83471df3531b60501767d57b0db99fac4aadb0eeb022127b0a9a02a44"
+      }
+    ]
+  }
+}

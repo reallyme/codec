@@ -25,13 +25,13 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "0.4"
 
-codec-base64url = { package = "reallyme-codec-base64url", path = "../crates/codec/base64url" }
-codec-multibase = { package = "reallyme-codec-multibase", path = "../crates/codec/multibase" }
-codec-multicodec = { package = "reallyme-codec-multicodec", path = "../crates/codec/multicodec" }
-codec-multikey = { package = "reallyme-codec-multikey", path = "../crates/codec/multikey" }
-codec-cbor = { package = "reallyme-codec-cbor", path = "../crates/codec/cbor" }
-codec-jcs = { package = "reallyme-codec-jcs", path = "../crates/codec/jcs" }
-reallyme-codec = { path = "../crates/codec", default-features = false, features = ["proto-process"] }
+codec-base64url = { package = "reallyme-codec-base64url", path = "../crates/base64url" }
+codec-multibase = { package = "reallyme-codec-multibase", path = "../crates/multibase" }
+codec-multicodec = { package = "reallyme-codec-multicodec", path = "../crates/multicodec" }
+codec-multikey = { package = "reallyme-codec-multikey", path = "../crates/multikey" }
+codec-cbor = { package = "reallyme-codec-cbor", path = "../crates/cbor" }
+codec-jcs = { package = "reallyme-codec-jcs", path = "../crates/jcs" }
+reallyme-codec = { path = "../crates/codec", default-features = false, features = ["operation-contract"] }
 
 [[bin]]
 name = "multibase"
@@ -69,8 +69,15 @@ doc = false
 bench = false
 
 [[bin]]
-name = "proto_process"
-path = "fuzz_targets/proto_process.rs"
+name = "deterministic_cbor"
+path = "fuzz_targets/deterministic_cbor.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "operation_contract"
+path = "fuzz_targets/operation_contract.rs"
 test = false
 doc = false
 bench = false

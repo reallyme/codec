@@ -6,8 +6,8 @@ SPDX-License-Identifier: Apache-2.0
 
 # Protobuf
 
-The codec protobuf contract lives in the publishable proto crate at
-[`../crates/proto/codec/proto/reallyme/codec/v1/codec.proto`](../crates/proto/codec/proto/reallyme/codec/v1/codec.proto).
+The codec protobuf operation contract lives in the publishable proto crate at
+[`../crates/proto/proto/reallyme/codec/v1/codec.proto`](../crates/proto/proto/reallyme/codec/v1/codec.proto).
 Use it when another protocol needs stable codec error envelopes, fixed-shape
 codec results, codec-owned configuration values, or the single executable
 `CodecOperationRequest` boundary.
@@ -16,7 +16,7 @@ The proto crate defines messages only and intentionally declares no service.
 Executable dispatch is owned by the main `reallyme-codec` crate so native Rust
 APIs remain typed and ergonomic rather than being forced through serialization.
 For cross-language boundaries, the generated protobuf messages are the
-canonical request, response, and error contract. Do not add parallel Rust,
+canonical request, response, and error operation contract. Do not add parallel Rust,
 Swift, Kotlin, or TypeScript DTOs for those wire shapes unless the protobuf
 schema is updated first and the adapter type is only a thin generated-type
 facade.
@@ -53,10 +53,11 @@ secrets, or backend exception text.
 All transport adapters converge on the same model:
 
 1. Encode exactly one generated `CodecOperationRequest`.
-2. Call `process_proto` (or generated ProtoJSON `process_proto_json`).
-3. Decode exactly one binary `CodecProtoResultEnvelope`.
-4. Interpret `payload` as either the operation result message or `CodecError`
-   according to the typed envelope status.
+2. Call the binary operation boundary (or its generated ProtoJSON request
+   adapter).
+3. Decode exactly one binary `CodecOperationResponse`.
+4. Match its generated outcome oneof, then match the operation-specific result
+   oneof or consume the typed `CodecError` directly.
 
 There is no out-of-band operation selector and no JSON result envelope.
 Operation-specific SDK helpers are conveniences that construct the generated
@@ -64,27 +65,23 @@ request before entering this same boundary:
 
 | SDK | Generic binary request | Generic generated ProtoJSON request |
 |---|---|---|
-| Rust | `process_proto` | `process_proto_json` |
-| TypeScript | `processProto` | `processProtoJson` |
-| Swift | `processProto(_:)` | `processProtoJson(_:)` |
-| Kotlin / Java | `processProto(byte[])` | `processProtoJson(byte[])` |
+| Rust | `process_operation_response` | `process_operation_response_json` |
+| TypeScript | `processOperation` | `processOperationJson` |
+| Swift | `processOperation(_:)` | `processOperationJson(_:)` |
+| Kotlin / Java | `processOperation(byte[])` | `processOperationJson(byte[])` |
 
-| Result | Method family |
-|---|---|
-| Multicodec metadata and tables | `multicodec*Proto` |
-| Multikey parse result | `multikeyParseProto` |
-| DAG-CBOR CID verification | `dagCborVerifyCidProto` |
-| PEM decode metadata and DER | TypeScript `decodePemProto`; generic `processProto` in every SDK |
+Every typed SDK method constructs the corresponding generated request and
+requires the exact generated result variant. No operation-specific `*Proto`
+facade or opaque payload decoder is retained.
 
 The JSON transport is only the generated ProtoJSON view of
 `CodecOperationRequest`. Unknown fields, malformed JSON, invalid enum values,
 oversized JSON, and decoded messages that exceed the protobuf cap fail inside a
-typed boundary-error envelope. Ordinary SDK JSON conveniences such as native
-PEM option JSON are not transport models and do not participate in protobuf
-dispatch.
+typed `CodecOperationResponse` error outcome. There are no SDK-specific JSON
+option DTOs or parallel structured JSON dispatch paths.
 
 Generation is intentionally checked in. After installing `protoc-gen-buffa`
-version `0.8.1`, regenerate and harden the artifacts with the complete enforced
+version `0.9.0`, regenerate and harden the artifacts with the complete enforced
 pipeline:
 
 ```sh

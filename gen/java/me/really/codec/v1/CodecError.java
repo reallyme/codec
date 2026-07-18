@@ -6,13 +6,6 @@
 package me.really.codec.v1;
 
 /**
- * <pre>
- * CodecError is the public, non-PII error envelope for codec boundary failures.
- * The oneof keeps base encoding, PEM, multiformat, and canonicalization
- * failures distinct while the shared CodecErrorReason enum provides stable
- * cross-language reason codes.
- * </pre>
- *
  * Protobuf type {@code reallyme.codec.v1.CodecError}
  */
 @com.google.protobuf.Generated
@@ -21,6 +14,13 @@ public  final class CodecError extends
         CodecError, CodecError.Builder> implements
     // @@protoc_insertion_point(message_implements:reallyme.codec.v1.CodecError)
     CodecErrorOrBuilder {
+  // Java Lite deliberately omits public unknown-field access. This generated
+  // boolean exposes no field content, but lets SDK adapters reject schema
+  // skew or corrupt-provider additions before mapping provider output.
+  public boolean reallyMeHasUnknownFieldsForValidation() {
+    return unknownFields != com.google.protobuf.UnknownFieldSetLite.getDefaultInstance();
+  }
+
   private CodecError() {
   }
   private int errorCase_ = 0;
@@ -387,6 +387,79 @@ public  final class CodecError extends
     }
   }
 
+  public static final int ORIGIN_FIELD_NUMBER = 100;
+  private int origin_;
+  /**
+   * <pre>
+   * Error origin is explicit so SDKs never infer caller-versus-provider
+   * attribution from branch-specific numeric reason ranges. Missing, unknown,
+   * or inconsistent origin values must fail closed as provider failures.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecErrorOrigin origin = 100 [json_name = "origin"];</code>
+   * @return The enum numeric value on the wire for origin.
+   */
+  @java.lang.Override
+  public int getOriginValue() {
+    return origin_;
+  }
+  /**
+   * <pre>
+   * Error origin is explicit so SDKs never infer caller-versus-provider
+   * attribution from branch-specific numeric reason ranges. Missing, unknown,
+   * or inconsistent origin values must fail closed as provider failures.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecErrorOrigin origin = 100 [json_name = "origin"];</code>
+   * @return The origin.
+   */
+  @java.lang.Override
+  public me.really.codec.v1.CodecErrorOrigin getOrigin() {
+    me.really.codec.v1.CodecErrorOrigin result = me.really.codec.v1.CodecErrorOrigin.forNumber(origin_);
+    return result == null ? me.really.codec.v1.CodecErrorOrigin.UNRECOGNIZED : result;
+  }
+  /**
+   * <pre>
+   * Error origin is explicit so SDKs never infer caller-versus-provider
+   * attribution from branch-specific numeric reason ranges. Missing, unknown,
+   * or inconsistent origin values must fail closed as provider failures.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecErrorOrigin origin = 100 [json_name = "origin"];</code>
+   * @param value The enum numeric value on the wire for origin to set.
+   */
+  private void setOriginValue(int value) {
+      origin_ = value;
+  }
+  /**
+   * <pre>
+   * Error origin is explicit so SDKs never infer caller-versus-provider
+   * attribution from branch-specific numeric reason ranges. Missing, unknown,
+   * or inconsistent origin values must fail closed as provider failures.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecErrorOrigin origin = 100 [json_name = "origin"];</code>
+   * @param value The origin to set.
+   * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+   */
+  private void setOrigin(me.really.codec.v1.CodecErrorOrigin value) {
+    origin_ = value.getNumber();
+
+  }
+  /**
+   * <pre>
+   * Error origin is explicit so SDKs never infer caller-versus-provider
+   * attribution from branch-specific numeric reason ranges. Missing, unknown,
+   * or inconsistent origin values must fail closed as provider failures.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecErrorOrigin origin = 100 [json_name = "origin"];</code>
+   */
+  private void clearOrigin() {
+
+    origin_ = 0;
+  }
+
   public static me.really.codec.v1.CodecError parseFrom(
       java.nio.ByteBuffer data)
       throws com.google.protobuf.InvalidProtocolBufferException {
@@ -471,13 +544,6 @@ public  final class CodecError extends
   }
 
   /**
-   * <pre>
-   * CodecError is the public, non-PII error envelope for codec boundary failures.
-   * The oneof keeps base encoding, PEM, multiformat, and canonicalization
-   * failures distinct while the shared CodecErrorReason enum provides stable
-   * cross-language reason codes.
-   * </pre>
-   *
    * Protobuf type {@code reallyme.codec.v1.CodecError}
    */
   public static final class Builder extends
@@ -791,6 +857,83 @@ public  final class CodecError extends
       return this;
     }
 
+    /**
+     * <pre>
+     * Error origin is explicit so SDKs never infer caller-versus-provider
+     * attribution from branch-specific numeric reason ranges. Missing, unknown,
+     * or inconsistent origin values must fail closed as provider failures.
+     * </pre>
+     *
+     * <code>.reallyme.codec.v1.CodecErrorOrigin origin = 100 [json_name = "origin"];</code>
+     * @return The enum numeric value on the wire for origin.
+     */
+    @java.lang.Override
+    public int getOriginValue() {
+      return instance.getOriginValue();
+    }
+    /**
+     * <pre>
+     * Error origin is explicit so SDKs never infer caller-versus-provider
+     * attribution from branch-specific numeric reason ranges. Missing, unknown,
+     * or inconsistent origin values must fail closed as provider failures.
+     * </pre>
+     *
+     * <code>.reallyme.codec.v1.CodecErrorOrigin origin = 100 [json_name = "origin"];</code>
+     * @param value The origin to set.
+     * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+     * @return This builder for chaining.
+     */
+    public Builder setOriginValue(int value) {
+      copyOnWrite();
+      instance.setOriginValue(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Error origin is explicit so SDKs never infer caller-versus-provider
+     * attribution from branch-specific numeric reason ranges. Missing, unknown,
+     * or inconsistent origin values must fail closed as provider failures.
+     * </pre>
+     *
+     * <code>.reallyme.codec.v1.CodecErrorOrigin origin = 100 [json_name = "origin"];</code>
+     * @return The origin.
+     */
+    @java.lang.Override
+    public me.really.codec.v1.CodecErrorOrigin getOrigin() {
+      return instance.getOrigin();
+    }
+    /**
+     * <pre>
+     * Error origin is explicit so SDKs never infer caller-versus-provider
+     * attribution from branch-specific numeric reason ranges. Missing, unknown,
+     * or inconsistent origin values must fail closed as provider failures.
+     * </pre>
+     *
+     * <code>.reallyme.codec.v1.CodecErrorOrigin origin = 100 [json_name = "origin"];</code>
+     * @param value The enum numeric value on the wire for origin to set.
+     * @return This builder for chaining.
+     */
+    public Builder setOrigin(me.really.codec.v1.CodecErrorOrigin value) {
+      copyOnWrite();
+      instance.setOrigin(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Error origin is explicit so SDKs never infer caller-versus-provider
+     * attribution from branch-specific numeric reason ranges. Missing, unknown,
+     * or inconsistent origin values must fail closed as provider failures.
+     * </pre>
+     *
+     * <code>.reallyme.codec.v1.CodecErrorOrigin origin = 100 [json_name = "origin"];</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearOrigin() {
+      copyOnWrite();
+      instance.clearOrigin();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:reallyme.codec.v1.CodecError)
   }
   @java.lang.Override
@@ -815,10 +958,11 @@ public  final class CodecError extends
             me.really.codec.v1.CodecCanonicalizationError.class,
             me.really.codec.v1.CodecBackendError.class,
             me.really.codec.v1.CodecBoundaryError.class,
+            "origin_",
           };
           java.lang.String info =
-              "\u0000\u0006\u0001\u0000\u0001\u0006\u0006\u0000\u0000\u0000\u0001<\u0000\u0002<" +
-              "\u0000\u0003<\u0000\u0004<\u0000\u0005<\u0000\u0006<\u0000";
+              "\u0000\u0007\u0001\u0000\u0001d\u0007\u0000\u0000\u0000\u0001<\u0000\u0002<\u0000" +
+              "\u0003<\u0000\u0004<\u0000\u0005<\u0000\u0006<\u0000d\f";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {
