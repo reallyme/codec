@@ -12,6 +12,7 @@ readonly ADB="${ADB:-"$ANDROID_HOME_VALUE/platform-tools/adb"}"
 readonly EMULATOR="${EMULATOR:-"$ANDROID_HOME_VALUE/emulator/emulator"}"
 readonly SDKMANAGER="${SDKMANAGER:-"$ANDROID_HOME_VALUE/cmdline-tools/latest/bin/sdkmanager"}"
 readonly AVDMANAGER="${AVDMANAGER:-"$ANDROID_HOME_VALUE/cmdline-tools/latest/bin/avdmanager"}"
+readonly ANDROID_AVD_HOME_VALUE="${ANDROID_AVD_HOME:-"$HOME/.android/avd"}"
 readonly AVD_NAME="${REALLYME_CODEC_ANDROID_AVD:-}"
 readonly ANDROID_R8_PLATFORM="platforms;android-36"
 readonly ANDROID_R8_SYSTEM_IMAGE="system-images;android-36;google_apis;x86_64"
@@ -23,6 +24,7 @@ readonly NATIVE_ASSETS_DIR="$REPO_ROOT/build/android-native-assets"
 readonly APK_PATH="$REPO_ROOT/packages/kotlin-android/consumer-r8-runtime/build/outputs/apk/release/consumer-r8-runtime-release.apk"
 
 emulator_pid=""
+export ANDROID_AVD_HOME="$ANDROID_AVD_HOME_VALUE"
 
 cleanup() {
     if [[ -n "$emulator_pid" ]]; then
@@ -44,6 +46,7 @@ fail() {
 }
 
 ensure_avd_exists() {
+    mkdir -p "$ANDROID_AVD_HOME_VALUE"
     local avd_exists="false"
     while IFS= read -r existing_avd; do
         if [[ "$existing_avd" == "$AVD_NAME" ]]; then
@@ -59,7 +62,19 @@ ensure_avd_exists() {
     [[ -x "$SDKMANAGER" ]] || fail "Android sdkmanager is required at $SDKMANAGER"
     [[ -x "$AVDMANAGER" ]] || fail "Android avdmanager is required at $AVDMANAGER"
     { yes || true; } | "$SDKMANAGER" "emulator" "$ANDROID_R8_PLATFORM" "$ANDROID_R8_SYSTEM_IMAGE" >/dev/null
-    echo "no" | "$AVDMANAGER" create avd --force -n "$AVD_NAME" -k "$ANDROID_R8_SYSTEM_IMAGE" --device "pixel" >/dev/null
+    printf 'no\n' | "$AVDMANAGER" create avd --force -n "$AVD_NAME" -k "$ANDROID_R8_SYSTEM_IMAGE" --device "pixel" >/tmp/reallyme-codec-r8-avdmanager.log
+
+    while IFS= read -r existing_avd; do
+        if [[ "$existing_avd" == "$AVD_NAME" ]]; then
+            return
+        fi
+    done < <("$EMULATOR" -list-avds)
+
+    if [[ -f /tmp/reallyme-codec-r8-avdmanager.log ]]; then
+        cat /tmp/reallyme-codec-r8-avdmanager.log >&2 || true
+    fi
+    "$EMULATOR" -list-avds >&2 || true
+    fail "Android AVD was not available after creation"
 }
 
 [[ -x "$ADB" ]] || fail "adb is required at $ADB"

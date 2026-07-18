@@ -1764,8 +1764,9 @@ for (const workflowPath of packagePreflightWorkflows) {
 }
 for (const workflowPath of packageReleaseWorkflows) {
   assertContains(workflowPath, "Verify reviewed release SHA");
-  assertContains(workflowPath, "Resolve release SHA");
-  assertContains(workflowPath, 'default: ""');
+  assertContains(workflowPath, "Resolve current release SHA");
+  assertNotContains(workflowPath, "RELEASE_SHA_INPUT");
+  assertNotContains(workflowPath, "inputs.publish");
 }
 assertContains(".github/workflows/kotlin-android-package-release.yml", "Write native checksum manifest");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "Write native checksum manifest");
@@ -1820,8 +1821,7 @@ assertNotContains(".github/workflows/kotlin-android-package-release.yml", "publi
 assertNotContains(".github/workflows/npm-package-release.yml", "publish_swift:");
 assertNotContains(".github/workflows/npm-package-release.yml", "publish_maven:");
 assertContains(".github/workflows/crates-release.yml", "Verify reviewed release SHA");
-assertContains(".github/workflows/crates-release.yml", "Resolve release SHA");
-assertContains(".github/workflows/crates-release.yml", 'default: ""');
+assertContains(".github/workflows/crates-release.yml", "Resolve current release SHA");
 assertContains(".github/workflows/crates-release.yml", "release_version:");
 assertContains(".github/workflows/crates-release.yml", "crates/codec/Cargo.toml");
 assertContains(".github/workflows/crates-release.yml", "RELEASE_VERSION=${release_version}");
@@ -2618,10 +2618,21 @@ assertContains("packages/kotlin-android/consumer-r8-runtime/src/main/java/me/rea
 assertContains("scripts/test_android_consumer_r8_runtime.sh", ":consumer-r8-runtime:assembleRelease");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "logcat");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "ensure_avd_exists");
+assertContains("scripts/test_android_consumer_r8_runtime.sh", "ANDROID_AVD_HOME_VALUE");
+assertContains("scripts/test_android_consumer_r8_runtime.sh", "export ANDROID_AVD_HOME");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "$EMULATOR\" -list-avds");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "{ yes || true; } | \"$SDKMANAGER\"");
+assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android AVD was not available after creation");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "$AVDMANAGER\" create avd --force");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android consumer R8 runtime gate passed");
+assertContains(
+  ".github/workflows/kotlin-android-package-preflight.yml",
+  '{ yes || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "ndk;29.0.14206865"',
+);
+assertContains(
+  ".github/workflows/kotlin-android-package-release.yml",
+  '{ yes || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "ndk;29.0.14206865"',
+);
 assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.2.0");
 assertContains("packages/kotlin-android/README.md", "never sourced from the Git worktree");
 assertContains(
@@ -2654,12 +2665,12 @@ assertContains(".github/workflows/kotlin-android-package-preflight.yml", "Write 
 assertContains(".github/workflows/kotlin-android-package-release.yml", "verifyReleaseAarContainsJniLibs");
 assertContains(".github/workflows/kotlin-android-package-release.yml", "RELEASE_VERSION");
 assertContains(".github/workflows/swift-package-release.yml", "needs: [verify-release-sha, swift-artifact]");
-assertContains(".github/workflows/swift-package-release.yml", "if: inputs.publish == true");
-assertContains(".github/workflows/kotlin-android-package-release.yml", "if: inputs.publish == true");
-assertContains(".github/workflows/npm-package-release.yml", "if: inputs.publish == true");
+assertNotContains(".github/workflows/swift-package-release.yml", "if: inputs.publish == true");
+assertNotContains(".github/workflows/kotlin-android-package-release.yml", "if: inputs.publish == true");
+assertNotContains(".github/workflows/npm-package-release.yml", "if: inputs.publish == true");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "android aar preflight");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "requireAndroidJniLibs=true");
-assertContains(".github/workflows/kotlin-android-package-preflight.yml", "Install Android emulator image");
+assertNotContains(".github/workflows/kotlin-android-package-preflight.yml", "Install Android emulator image");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "Test Android consumer R8 runtime");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "REALLYME_CODEC_ANDROID_AVD: reallyme-r8-gate");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "timeout-minutes: 15");

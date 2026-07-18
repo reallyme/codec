@@ -6,23 +6,12 @@ name: Crates.io Release
 
 on:
   workflow_dispatch:
-    inputs:
-      release_sha:
-        description: Optional exact main commit SHA. Leave blank to use the current origin/main SHA.
-        required: false
-        type: string
-        default: ""
-      publish:
-        description: Publish crates to crates.io after the dry run succeeds
-        required: true
-        type: boolean
-        default: false
 
 permissions:
   contents: read
 
 concurrency:
-  group: crates-release-${{ inputs.release_sha || github.ref_name }}
+  group: crates-release-main
   cancel-in-progress: false
 
 jobs:
@@ -42,21 +31,11 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Resolve release SHA
+      - name: Resolve current release SHA
         id: resolve-release-sha
-        env:
-          RELEASE_SHA_INPUT: ${{ inputs.release_sha }}
         run: |
           git fetch --no-tags origin main
-          if [ -n "${RELEASE_SHA_INPUT}" ]; then
-            if [[ ! "${RELEASE_SHA_INPUT}" =~ ^[0-9a-f]{40}$ ]]; then
-              echo "::error::release_sha must be blank or a lowercase 40-character commit SHA"
-              exit 1
-            fi
-            release_sha="${RELEASE_SHA_INPUT}"
-          else
-            release_sha="$(git rev-parse origin/main)"
-          fi
+          release_sha="$(git rev-parse origin/main)"
           if [ "$(git rev-parse origin/main)" != "${release_sha}" ]; then
             echo "::error::resolved release SHA is not the current origin/main tip"
             exit 1
@@ -120,7 +99,6 @@ jobs:
   publish:
     name: publish crates
     needs: [verify-release-sha, dry-run]
-    if: inputs.publish == true
     runs-on: ubuntu-latest
     permissions:
       actions: read

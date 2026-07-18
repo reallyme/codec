@@ -7,21 +7,11 @@ name: npm Package Release
 on:
   workflow_dispatch:
     inputs:
-      release_sha:
-        description: Optional exact main commit SHA. Leave blank to use the current origin/main SHA.
-        required: false
-        type: string
-        default: ""
       version:
         description: Release version without leading v
         required: true
         type: string
         default: 0.2.0
-      publish:
-        description: Publish the TypeScript package to npm
-        required: true
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -46,21 +36,11 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Resolve release SHA
+      - name: Resolve current release SHA
         id: resolve-release-sha
-        env:
-          RELEASE_SHA_INPUT: ${{ inputs.release_sha }}
         run: |
           git fetch --no-tags origin main
-          if [ -n "${RELEASE_SHA_INPUT}" ]; then
-            if [[ ! "${RELEASE_SHA_INPUT}" =~ ^[0-9a-f]{40}$ ]]; then
-              echo "::error::release_sha must be blank or a lowercase 40-character commit SHA"
-              exit 1
-            fi
-            release_sha="${RELEASE_SHA_INPUT}"
-          else
-            release_sha="$(git rev-parse origin/main)"
-          fi
+          release_sha="$(git rev-parse origin/main)"
           if [ "$(git rev-parse origin/main)" != "${release_sha}" ]; then
             echo "::error::resolved release SHA is not the current origin/main tip"
             exit 1
@@ -141,7 +121,6 @@ jobs:
         working-directory: packages/ts
 
       - name: Publish npm package
-        if: inputs.publish == true
         run: |
           if [ -z "${NODE_AUTH_TOKEN}" ]; then
             echo "::error::NPM_TOKEN is required"

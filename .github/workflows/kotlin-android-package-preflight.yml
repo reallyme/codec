@@ -187,13 +187,8 @@ jobs:
 
       - name: Install Android NDK
         run: |
-          yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "ndk;29.0.14206865"
+          { yes || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "ndk;29.0.14206865"
           echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/29.0.14206865" >> "${GITHUB_ENV}"
-
-      - name: Install Android emulator image
-        run: |
-          yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "emulator" "platforms;android-36" "system-images;android-36;google_apis;x86_64"
-          echo "no" | "${ANDROID_HOME}/cmdline-tools/latest/bin/avdmanager" create avd --force -n reallyme-r8-gate -k "system-images;android-36;google_apis;x86_64" --device "pixel"
 
       - name: Stage Android JNI libraries
         run: scripts/build_android_native_resources.sh build/android-jniLibs
