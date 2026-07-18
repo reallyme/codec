@@ -2591,6 +2591,14 @@ assertContains(
   "packages/kotlin-android/gradle/verification-metadata.xml",
   '<component group="com.android.tools.build" name="gradle" version="9.3.0">',
 );
+assertContains(
+  "packages/kotlin-android/gradle/verification-metadata.xml",
+  'artifact name="aapt2-9.3.0-15703166-linux.jar"',
+);
+assertContains(
+  "packages/kotlin-android/gradle/verification-metadata.xml",
+  "e772a3dae8354764f1b0793903218427f483982445207f2e4ffc8c2026755bd4",
+);
 assertContains("packages/kotlin-android/build.gradle.kts", "fun nonBlank(value: String?): String?");
 assertContains("packages/kotlin-android/build.gradle.kts", "verifyRemoteMavenPublishingConfigured");
 assertContains("packages/kotlin-android/build.gradle.kts", "remote Maven publishing is not configured");
@@ -2614,18 +2622,18 @@ assertContains("scripts/test_android_consumer_r8_runtime.sh", "ensure_avd_exists
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "ANDROID_AVD_HOME_VALUE");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "export ANDROID_AVD_HOME");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "$EMULATOR\" -list-avds");
-assertContains("scripts/test_android_consumer_r8_runtime.sh", "{ yes || true; } | \"$SDKMANAGER\"");
+assertContains("scripts/test_android_consumer_r8_runtime.sh", "{ yes 2>/dev/null || true; } | \"$SDKMANAGER\"");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "$SDKMANAGER\" \"emulator\"");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android AVD was not available after creation");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "$AVDMANAGER\" create avd --force");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android consumer R8 runtime gate passed");
 assertContains(
   ".github/workflows/kotlin-android-package-preflight.yml",
-  '{ yes || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "ndk;29.0.14206865"',
+  '{ yes 2>/dev/null || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "ndk;29.0.14206865"',
 );
 assertContains(
   ".github/workflows/kotlin-android-package-release.yml",
-  '{ yes || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "ndk;29.0.14206865"',
+  '{ yes 2>/dev/null || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "ndk;29.0.14206865"',
 );
 assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.2.0");
 assertContains("packages/kotlin-android/README.md", "never sourced from the Git worktree");
@@ -2665,11 +2673,14 @@ assertNotContains(".github/workflows/npm-package-release.yml", "if: inputs.publi
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "android aar preflight");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "requireAndroidJniLibs=true");
 assertNotContains(".github/workflows/kotlin-android-package-preflight.yml", "Install Android emulator image");
-assertContains(".github/workflows/kotlin-android-package-preflight.yml", "Enable Android emulator KVM access");
-assertContains(".github/workflows/kotlin-android-package-preflight.yml", 'sudo chown "${USER}:${USER}" /dev/kvm');
-assertContains(".github/workflows/kotlin-android-package-preflight.yml", "Test Android consumer R8 runtime");
-assertContains(".github/workflows/kotlin-android-package-preflight.yml", "REALLYME_CODEC_ANDROID_AVD: reallyme-r8-gate");
-assertContains(".github/workflows/kotlin-android-package-preflight.yml", "timeout-minutes: 15");
+assertNotContains(".github/workflows/kotlin-android-package-preflight.yml", "Test Android consumer R8 runtime");
+assertContains(".github/workflows/kotlin-android-package-preflight.yml", "Build Android consumer R8 APK");
+assertContains(".github/workflows/android-runtime-gate.yml", "Android Runtime Gate");
+assertContains(".github/workflows/android-runtime-gate.yml", "Enable Android emulator KVM access");
+assertContains(".github/workflows/android-runtime-gate.yml", 'sudo chown "${USER}:${USER}" /dev/kvm');
+assertContains(".github/workflows/android-runtime-gate.yml", "Test Android consumer R8 runtime");
+assertContains(".github/workflows/android-runtime-gate.yml", "REALLYME_CODEC_ANDROID_AVD: reallyme-r8-gate");
+assertContains(".github/workflows/android-runtime-gate.yml", "timeout-minutes: 20");
 
 assertContains("scripts/maven_central_bundle_local.sh", "packages/kotlin/build.gradle.kts");
 assertContains("scripts/maven_central_bundle_local.sh", "packages/kotlin-android/build.gradle.kts");
