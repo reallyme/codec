@@ -1770,16 +1770,10 @@ for (const workflowPath of packageReleaseWorkflows) {
 }
 assertContains(".github/workflows/kotlin-android-package-release.yml", "Write native checksum manifest");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "Write native checksum manifest");
-assertContains(".github/workflows/jvm-native-resources.yml", "jvm native resources");
-assertContains(".github/workflows/jvm-native-resources.yml", "kotlin-native-");
-assertContains(".github/workflows/jvm-native-resources.yml", "build_kotlin_native_resource.sh");
-assertContains(".github/workflows/jvm-native-resources.yml", "Test host native loader");
 assertContains(".github/workflows/kotlin-android-package-release.yml", "Test host native loader");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "Test host native loader");
-assertContains(
-  ".github/workflows/jvm-native-resources.yml",
-  "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
-);
+assertContains("scripts/maven_central_bundle_local.sh", "kotlin-android-package-preflight.yml");
+assertContains("scripts/maven_central_bundle_local.sh", '-f "version=${VERSION}"');
 assertWorkflowPermissionsPolicy({
   path: ".github/workflows/swift-package-release.yml",
   workflow: { contents: "read" },
@@ -1943,7 +1937,6 @@ assertMinOccurrences(".github/workflows/kotlin-android-package-preflight.yml", "
 assertMinOccurrences(".github/workflows/npm-package-preflight.yml", "node-version: '24'", 1);
 for (const workflowPath of [
   ".github/workflows/fuzz.yml",
-  ".github/workflows/jvm-native-resources.yml",
   ...packagePreflightWorkflows,
   ...packageReleaseWorkflows,
 ]) {
@@ -2672,6 +2665,8 @@ assertNotContains(".github/workflows/npm-package-release.yml", "if: inputs.publi
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "android aar preflight");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "requireAndroidJniLibs=true");
 assertNotContains(".github/workflows/kotlin-android-package-preflight.yml", "Install Android emulator image");
+assertContains(".github/workflows/kotlin-android-package-preflight.yml", "Enable Android emulator KVM access");
+assertContains(".github/workflows/kotlin-android-package-preflight.yml", 'sudo chown "${USER}:${USER}" /dev/kvm');
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "Test Android consumer R8 runtime");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "REALLYME_CODEC_ANDROID_AVD: reallyme-r8-gate");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "timeout-minutes: 15");
