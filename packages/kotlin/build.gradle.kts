@@ -34,6 +34,8 @@ val signingKey = providers.gradleProperty("signingInMemoryKey")
     .orElse(providers.environmentVariable("MAVEN_SIGNING_KEY"))
 val signingPassword = providers.gradleProperty("signingInMemoryKeyPassword")
     .orElse(providers.environmentVariable("MAVEN_SIGNING_PASSWORD"))
+val localReleaseRepositoryDir = providers.gradleProperty("reallyme.maven.localReleaseRepositoryDir")
+    .map { file(it) }
 fun nonBlank(value: String?): String? = value?.trim()?.takeIf { it.isNotEmpty() }
 
 val remoteMavenRepositoryUrlValue = nonBlank(remoteMavenRepositoryUrl.orNull)
@@ -373,7 +375,9 @@ tasks.named("publish") {
 }
 
 tasks.withType<PublishToMavenRepository>().configureEach {
-    dependsOn(verifyRemoteMavenPublishingConfigured)
+    if (name.endsWith("ToRemoteReleaseRepository")) {
+        dependsOn(verifyRemoteMavenPublishingConfigured)
+    }
 }
 
 publishing {
@@ -409,6 +413,12 @@ publishing {
         }
     }
     repositories {
+        localReleaseRepositoryDir.orNull?.let { repositoryDir ->
+            maven {
+                name = "localRelease"
+                url = repositoryDir.toURI()
+            }
+        }
         if (remoteMavenRepositoryUri != null) {
             maven {
                 name = "remoteRelease"

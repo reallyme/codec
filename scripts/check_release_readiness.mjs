@@ -1774,6 +1774,13 @@ assertContains(".github/workflows/kotlin-android-package-release.yml", "Test hos
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "Test host native loader");
 assertContains("scripts/maven_central_bundle_local.sh", "kotlin-android-package-preflight.yml");
 assertContains("scripts/maven_central_bundle_local.sh", '-f "version=${VERSION}"');
+assertContains("scripts/maven_central_bundle_local.sh", 'NATIVE_RESOURCE_RUN_ID="${MAVEN_NATIVE_RESOURCE_RUN_ID:-${RUN_ID:-}}"');
+assertContains("scripts/maven_central_bundle_local.sh", 'download_kotlin_native_resources_from_run "$NATIVE_RESOURCE_RUN_ID"');
+assertContains("scripts/maven_central_bundle_local.sh", 'publishMavenPublicationToLocalReleaseRepository');
+assertContains("scripts/maven_central_bundle_local.sh", 'publishReleasePublicationToLocalReleaseRepository');
+assertContains("scripts/maven_central_bundle_local.sh", '-Preallyme.maven.localReleaseRepositoryDir="$JVM_LOCAL_RELEASE_REPOSITORY_DIR"');
+assertContains("scripts/maven_central_bundle_local.sh", '-Preallyme.maven.localReleaseRepositoryDir="$ANDROID_LOCAL_RELEASE_REPOSITORY_DIR"');
+assertContains("scripts/maven-central-bundle.local.sh", 'exec "${SCRIPT_DIR}/maven_central_bundle_local.sh" "$@"');
 assertWorkflowPermissionsPolicy({
   path: ".github/workflows/swift-package-release.yml",
   workflow: { contents: "read" },
@@ -2057,7 +2064,6 @@ assertContains("packages/kotlin/build.gradle.kts", "verifyRemoteMavenPublishingC
 assertContains("packages/kotlin/build.gradle.kts", "remote Maven publishing is not configured");
 assertContains("packages/kotlin/build.gradle.kts", 'parsed.scheme != "https"');
 assertNotContains("packages/kotlin/build.gradle.kts", "reallyme.maven.requireRemote");
-assertNotContains("packages/kotlin/build.gradle.kts", 'name = "localRelease"');
 assertNotContains(".github/workflows/kotlin-android-package-release.yml", "-Preallyme.maven.requireRemote=true");
 assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "public fun tryParseCid(cid: String): String?");
 assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "public fun dagCborCodecCode(): Int");
@@ -2604,7 +2610,6 @@ assertContains("packages/kotlin-android/build.gradle.kts", "verifyRemoteMavenPub
 assertContains("packages/kotlin-android/build.gradle.kts", "remote Maven publishing is not configured");
 assertContains("packages/kotlin-android/build.gradle.kts", 'parsed.scheme != "https"');
 assertNotContains("packages/kotlin-android/build.gradle.kts", "reallyme.maven.requireRemote");
-assertNotContains("packages/kotlin-android/build.gradle.kts", 'name = "localRelease"');
 assertContains("packages/kotlin-android/consumer-rules.pro", "ReallyMeCodecException$*");
 assertNotContains("packages/kotlin-android/consumer-rules.pro", "ReallyMeCodecProtoStatus");
 assertNotContains("packages/kotlin-android/consumer-rules.pro", "ReallyMeCodecProtoResult");
@@ -2688,6 +2693,12 @@ assertContains("scripts/maven_central_bundle_local.sh", "packages/kotlin/build/r
 assertContains("scripts/maven_central_bundle_local.sh", "packages/kotlin-android/build/repos/releases");
 assertNotContains("scripts/maven_central_bundle_local.sh", "packages/kotlin-codec");
 assertNotContains("scripts/maven_central_bundle_local.sh", "packages/android-codec");
+assertContains("packages/kotlin/build.gradle.kts", 'val localReleaseRepositoryDir = providers.gradleProperty("reallyme.maven.localReleaseRepositoryDir")');
+assertContains("packages/kotlin/build.gradle.kts", 'name = "localRelease"');
+assertContains("packages/kotlin/build.gradle.kts", 'if (name.endsWith("ToRemoteReleaseRepository"))');
+assertContains("packages/kotlin-android/build.gradle.kts", 'val localReleaseRepositoryDir = providers.gradleProperty("reallyme.maven.localReleaseRepositoryDir")');
+assertContains("packages/kotlin-android/build.gradle.kts", 'name = "localRelease"');
+assertContains("packages/kotlin-android/build.gradle.kts", 'if (name.endsWith("ToRemoteReleaseRepository"))');
 
 assertContains("packages/ts/package.json", '"test:browser": "npm run build && node scripts/browser-wasm-test.mjs"');
 assertContains("packages/ts/scripts/browser-wasm-test.mjs", "__REALLYME_CODEC_BROWSER_WASM_RESULT__");

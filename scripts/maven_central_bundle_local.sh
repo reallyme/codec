@@ -13,6 +13,11 @@ IFS=$'\n\t'
 #   ANDROID_NDK_HOME=/path/to/android-ndk \
 #   ./scripts/maven_central_bundle_local.sh
 #
+# Compatibility:
+#   RUN_ID=<github-actions-run-id> may be set to download JVM native resources
+#   from a specific already-reviewed Actions run instead of discovering or
+#   dispatching a run for the current commit.
+#
 # Output:
 #   build/maven-central-upload/out/reallyme-maven-central-<version>.zip
 #
@@ -29,10 +34,13 @@ ANDROID_JNI_LIBS_DIR_WAS_SET="${ANDROID_JNI_LIBS_DIR+x}"
 ANDROID_JNI_LIBS_DIR="${ANDROID_JNI_LIBS_DIR:-${WORK_DIR}/android-jniLibs}"
 ANDROID_NATIVE_ASSETS_DIR="${ANDROID_NATIVE_ASSETS_DIR:-${WORK_DIR}/android-native-assets}"
 ANDROID_NDK_VERSION="${ANDROID_NDK_VERSION:-29.0.14206865}"
+JVM_LOCAL_RELEASE_REPOSITORY_DIR="${JVM_LOCAL_RELEASE_REPOSITORY_DIR:-${ROOT_DIR}/packages/kotlin/build/repos/releases}"
+ANDROID_LOCAL_RELEASE_REPOSITORY_DIR="${ANDROID_LOCAL_RELEASE_REPOSITORY_DIR:-${ROOT_DIR}/packages/kotlin-android/build/repos/releases}"
 NATIVE_RESOURCE_WORKFLOW="${MAVEN_NATIVE_RESOURCE_WORKFLOW:-kotlin-android-package-preflight.yml}"
 NATIVE_RESOURCE_ARTIFACT_PATTERN="${MAVEN_NATIVE_RESOURCE_ARTIFACT_PATTERN:-kotlin-native-*}"
 NATIVE_RESOURCE_DOWNLOAD_DIR="${MAVEN_NATIVE_RESOURCE_DOWNLOAD_DIR:-${WORK_DIR}/kotlin-native-artifacts}"
 NATIVE_RESOURCE_WORKFLOW_TIMEOUT_SECONDS="${MAVEN_NATIVE_RESOURCE_WORKFLOW_TIMEOUT_SECONDS:-3600}"
+NATIVE_RESOURCE_RUN_ID="${MAVEN_NATIVE_RESOURCE_RUN_ID:-${RUN_ID:-}}"
 
 fail() {
   printf 'maven central bundle failed: %s\n' "$1" >&2
@@ -179,6 +187,15 @@ ensure_kotlin_native_resources() {
 
   mkdir -p "$KOTLIN_NATIVE_RESOURCES_DIR"
   if kotlin_native_resources_are_complete; then
+    return
+  fi
+
+  if [ -n "$NATIVE_RESOURCE_RUN_ID" ]; then
+    require_tool gh
+    download_kotlin_native_resources_from_run "$NATIVE_RESOURCE_RUN_ID"
+    if ! kotlin_native_resources_are_complete; then
+      fail "downloaded JVM native resources are incomplete; check GitHub Actions run ${NATIVE_RESOURCE_RUN_ID}"
+    fi
     return
   fi
 
@@ -433,8 +450,8 @@ node "${ROOT_DIR}/scripts/write_native_manifest.mjs" \
   "${ANDROID_NATIVE_ASSETS_DIR}/reallyme-codec/native-manifest.json"
 
 rm -rf \
-  "${ROOT_DIR}/packages/kotlin/build/repos/releases" \
-  "${ROOT_DIR}/packages/kotlin-android/build/repos/releases" \
+  "$JVM_LOCAL_RELEASE_REPOSITORY_DIR" \
+  "$ANDROID_LOCAL_RELEASE_REPOSITORY_DIR" \
   "$BUNDLE_ROOT" \
   "$OUTPUT_DIR"
 mkdir -p "$BUNDLE_ROOT" "$OUTPUT_DIR"
@@ -444,6 +461,7 @@ info "Publishing JVM artifacts to the local release repository"
   unset MAVEN_SIGNING_KEY MAVEN_SIGNING_PASSWORD
 "$GRADLE" -p "${ROOT_DIR}/packages/kotlin" \
     publishMavenPublicationToLocalReleaseRepository \
+    -Preallyme.maven.localReleaseRepositoryDir="$JVM_LOCAL_RELEASE_REPOSITORY_DIR" \
     -Preallyme.codec.nativeResourcesDir="$KOTLIN_NATIVE_RESOURCES_DIR" \
     -Preallyme.codec.requireFullNativeResources=true
 )
@@ -453,14 +471,15 @@ info "Publishing Android artifacts to the local release repository"
   unset MAVEN_SIGNING_KEY MAVEN_SIGNING_PASSWORD
 "$GRADLE" -p "${ROOT_DIR}/packages/kotlin-android" \
     publishReleasePublicationToLocalReleaseRepository \
+    -Preallyme.maven.localReleaseRepositoryDir="$ANDROID_LOCAL_RELEASE_REPOSITORY_DIR" \
     -Preallyme.codec.androidJniLibsDir="$ANDROID_JNI_LIBS_DIR" \
     -Preallyme.codec.androidNativeAssetsDir="$ANDROID_NATIVE_ASSETS_DIR" \
     -Preallyme.codec.requireAndroidJniLibs=true
 )
 
 info "Assembling Maven repository-layout bundle"
-cp -R "${ROOT_DIR}/packages/kotlin/build/repos/releases/." "$BUNDLE_ROOT/"
-cp -R "${ROOT_DIR}/packages/kotlin-android/build/repos/releases/." "$BUNDLE_ROOT/"
+cp -R "${JVM_LOCAL_RELEASE_REPOSITORY_DIR}/." "$BUNDLE_ROOT/"
+cp -R "${ANDROID_LOCAL_RELEASE_REPOSITORY_DIR}/." "$BUNDLE_ROOT/"
 
 info "Removing local Maven repository metadata"
 remove_local_repository_metadata "$BUNDLE_ROOT"
