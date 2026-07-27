@@ -14,18 +14,18 @@ plugins:
     strategy: all
 
   # TypeScript package output.
-  - remote: buf.build/bufbuild/es:v2.12.1
+  - remote: buf.build/bufbuild/es:v2.13.0
     out: packages/ts/src/proto/generated
     opt:
       - target=ts
 
   # Repository-level generated artifacts for consumers that vendor generated
   # protocol types directly.
-  - remote: buf.build/bufbuild/es:v2.12.1
+  - remote: buf.build/bufbuild/es:v2.13.0
     out: gen/es
     opt:
       - target=ts
-  - remote: buf.build/bufbuild/es:v2.12.1
+  - remote: buf.build/bufbuild/es:v2.13.0
     out: gen/es
     opt:
       - target=js

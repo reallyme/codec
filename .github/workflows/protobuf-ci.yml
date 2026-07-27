@@ -41,7 +41,7 @@ permissions:
   contents: read
 
 env:
-  BUFFA_VERSION: 0.9.0
+  BUFFA_VERSION: 0.9.1
   BUF_VERSION: 1.71.0
 
 jobs:

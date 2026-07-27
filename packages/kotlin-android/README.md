@@ -15,7 +15,7 @@ library manually.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.2.0")
+    implementation("me.really:codec-android:0.2.1")
 }
 ```
 
