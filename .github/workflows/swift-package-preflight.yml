@@ -18,7 +18,7 @@ on:
         description: Release version without leading v
         required: true
         type: string
-        default: 0.2.0
+        default: 0.2.1
 
 permissions:
   contents: read
@@ -57,6 +57,10 @@ jobs:
           fi
           if [ "$(git rev-parse origin/main)" != "${release_sha}" ]; then
             echo "::error::resolved release SHA is not the current origin/main tip"
+            exit 1
+          fi
+          if [ "${GITHUB_SHA}" != "${release_sha}" ]; then
+            echo "::error::resolved release SHA does not match the workflow run head SHA"
             exit 1
           fi
           git checkout --detach "${release_sha}"
@@ -100,10 +104,31 @@ jobs:
       - name: Build SwiftPM binary artifact
         run: scripts/build_swift_xcframework.sh
 
-      - name: Verify SwiftPM binary manifest wiring
+      # Preserve the exact tested candidate so the credentialed release job
+      # promotes these bytes rather than compiling a second archive.
+      - name: Upload Swift release candidate
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: swift-xcframework-${{ inputs.version }}-${{ needs.verify-source-sha.outputs.release_sha }}
+          path: |
+            build/swift/ReallyMeCodecFFI.xcframework.zip
+            build/swift/ReallyMeCodecFFI.xcframework.checksum
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Test Swift release artifact verifier
+        run: node --test scripts/verify_swift_release_artifact.test.mjs
+
+      - name: Bind manifest to Swift release candidate
         run: |
           checksum="$(cat build/swift/ReallyMeCodecFFI.xcframework.checksum)"
           node scripts/prepare_swift_binary_manifest.mjs "${RELEASE_VERSION}" "${checksum}"
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+
+      - name: Verify generated SwiftPM manifest and release candidate
+        run: |
+          node scripts/verify_swift_release_artifact.mjs build/swift/ReallyMeCodecFFI.xcframework.zip build/swift/ReallyMeCodecFFI.xcframework.checksum Package.swift "${RELEASE_VERSION}"
           node scripts/run_pinned_release_readiness.mjs --release-packages
         env:
           RELEASE_VERSION: ${{ inputs.version }}

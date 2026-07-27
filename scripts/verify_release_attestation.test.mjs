@@ -28,10 +28,10 @@ const workflowRun = (overrides = {}) => ({
 test("package preflight attestation is bound to the requested version", () => {
   assert.doesNotThrow(() => {
     requireLatestSuccessfulRun(
-      [workflowRun({ displayTitle: "Swift package preflight 0.2.0", event: "workflow_dispatch" })],
+      [workflowRun({ displayTitle: "Swift package preflight 0.2.1", event: "workflow_dispatch" })],
       releaseSha,
       "swift-package-preflight.yml",
-      "0.2.0",
+      "0.2.1",
     );
   });
   assert.throws(
@@ -39,7 +39,7 @@ test("package preflight attestation is bound to the requested version", () => {
       requireLatestSuccessfulRun(
         [
           workflowRun({
-            displayTitle: "Kotlin Android package preflight 0.2.0",
+            displayTitle: "Kotlin Android package preflight 0.2.1",
             event: "workflow_dispatch",
           }),
         ],
@@ -54,13 +54,13 @@ test("package preflight attestation is bound to the requested version", () => {
 });
 
 test("latest successful workflow attempt authorizes release", () => {
-  assert.doesNotThrow(() => {
-    requireLatestSuccessfulRun(
-      [workflowRun({ attempt: 1 }), workflowRun({ attempt: 2 })],
-      releaseSha,
-      "code-checks.yml",
-    );
-  });
+  const latest = requireLatestSuccessfulRun(
+    [workflowRun({ attempt: 1 }), workflowRun({ attempt: 2 })],
+    releaseSha,
+    "code-checks.yml",
+  );
+  assert.equal(latest.databaseId, 100);
+  assert.equal(latest.attempt, 2);
 });
 
 test("newer failed run invalidates an older success", () => {
@@ -85,20 +85,20 @@ test("newer in-progress run invalidates an older success", () => {
         [
           workflowRun({
             databaseId: 100,
-            displayTitle: "npm package preflight 0.2.0",
+            displayTitle: "npm package preflight 0.2.1",
             event: "workflow_dispatch",
           }),
           workflowRun({
             conclusion: null,
             databaseId: 101,
-            displayTitle: "npm package preflight 0.2.0",
+            displayTitle: "npm package preflight 0.2.1",
             event: "workflow_dispatch",
             status: "in_progress",
           }),
         ],
         releaseSha,
         "npm-package-preflight.yml",
-        "0.2.0",
+        "0.2.1",
       );
     },
     (error) =>

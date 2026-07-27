@@ -3,6 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+import { appendFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -28,6 +29,7 @@ const MAX_WAIT_SECONDS = 7_200;
 const DEFAULT_POLL_SECONDS = 20;
 const MAX_POLL_SECONDS = 300;
 const NON_NEGATIVE_INTEGER_PATTERN = /^(0|[1-9][0-9]*)$/u;
+const POSITIVE_INTEGER_PATTERN = /^[1-9][0-9]*$/u;
 
 export class ReleaseAttestationError extends Error {
   constructor(code) {
@@ -161,6 +163,7 @@ export const requireLatestSuccessfulRun = (rawRuns, releaseSha, workflow, releas
   if (latest.status !== "completed" || latest.conclusion !== "success") {
     fail(`latest-${workflow}-run-not-successful`);
   }
+  return latest;
 };
 
 const isWaitableWorkflowFailure = (error, workflow) =>
@@ -208,8 +211,7 @@ const requireWorkflowWithOptionalWait = ({
   for (;;) {
     const rawRuns = queryWorkflowRuns({ cwd, env, releaseSha, repository, workflow });
     try {
-      requireLatestSuccessfulRun(rawRuns, releaseSha, workflow, releaseVersion);
-      return;
+      return requireLatestSuccessfulRun(rawRuns, releaseSha, workflow, releaseVersion);
     } catch (error) {
       if (!isWaitableWorkflowFailure(error, workflow) || Date.now() >= deadlineMs) {
         throw error;
@@ -274,8 +276,9 @@ export const verifyReleaseAttestation = ({ cwd = process.cwd(), env = process.en
     fail("release-sha-is-not-current-main");
   }
 
+  let preflightRunId;
   for (const workflow of [CODE_CHECK_WORKFLOW, preflightWorkflow]) {
-    requireWorkflowWithOptionalWait({
+    const successfulRun = requireWorkflowWithOptionalWait({
       cwd,
       env,
       releaseSha,
@@ -285,13 +288,39 @@ export const verifyReleaseAttestation = ({ cwd = process.cwd(), env = process.en
       waitSeconds,
       pollSeconds,
     });
+    if (workflow === preflightWorkflow) {
+      preflightRunId = successfulRun.databaseId;
+    }
   }
+  if (!Number.isSafeInteger(preflightRunId) || preflightRunId < 1) {
+    fail("missing-preflight-run-id");
+  }
+  const expectedPreflightRunId = env.RELEASE_ATTESTATION_PREFLIGHT_RUN_ID;
+  if (expectedPreflightRunId !== undefined && expectedPreflightRunId !== "") {
+    if (!POSITIVE_INTEGER_PATTERN.test(expectedPreflightRunId)) {
+      fail("invalid-expected-preflight-run-id");
+    }
+    const expectedRunId = Number(expectedPreflightRunId);
+    if (!Number.isSafeInteger(expectedRunId) || expectedRunId !== preflightRunId) {
+      fail("preflight-run-id-changed");
+    }
+  }
+  return { preflightRunId };
 };
 
 const isMain = process.argv[1] !== undefined && fileURLToPath(import.meta.url) === process.argv[1];
 if (isMain) {
   try {
-    verifyReleaseAttestation();
+    const attestation = verifyReleaseAttestation();
+    if (process.env.RELEASE_ATTESTATION_WRITE_GITHUB_OUTPUT === "1") {
+      const outputPath = process.env.GITHUB_OUTPUT;
+      if (typeof outputPath !== "string" || outputPath.length === 0) {
+        fail("missing-github-output");
+      }
+      appendFileSync(outputPath, `preflight_run_id=${attestation.preflightRunId}\n`, {
+        encoding: "utf8",
+      });
+    }
     console.log("release attestation verified for current main and latest required workflow runs");
   } catch (error) {
     const code = error instanceof ReleaseAttestationError ? error.code : "unexpected-failure";

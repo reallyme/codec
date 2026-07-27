@@ -88,6 +88,21 @@ for (const argument of process.argv.slice(2)) {
   suppliedArguments.add(argument);
 }
 
+const assertSubstringsInOrder = (path, substrings) => {
+  const contents = readText(path);
+  let previousIndex = -1;
+  for (const substring of substrings) {
+    const currentIndex = contents.indexOf(substring, previousIndex + 1);
+    if (currentIndex < 0) {
+      fail(`${path} is missing ordered release step: ${substring}`);
+    }
+    if (currentIndex <= previousIndex) {
+      fail(`${path} has release steps in an unsafe order near: ${substring}`);
+    }
+    previousIndex = currentIndex;
+  }
+};
+
 const rustProductionSource = (path) => {
   const source = readText(path);
   const testStart = source.indexOf("\n#[cfg(test)]");
@@ -298,8 +313,8 @@ assertCargoFuzzWorkflowPolicy({
   },
 });
 
-const codecPackageVersion = "0.2.0";
-const codecProtoPackageVersion = "0.2.0";
+const codecPackageVersion = "0.2.1";
+const codecProtoPackageVersion = "0.2.1";
 const releasePackagesMode = suppliedArguments.has("--release-packages");
 const generatedFreshnessMode = suppliedArguments.has("--generated-freshness");
 const codecRustLeafCrates = [
@@ -329,7 +344,7 @@ if (rootCargo.includes("crates/crypto") || rootCargo.includes("crates/proto/cryp
   fail("root Cargo.toml still references removed crypto crates");
 }
 assertContains("Cargo.toml", 'repository = "https://github.com/reallyme/codec"');
-assertContains("Cargo.toml", 'buffa = { version = "0.9.0", features = ["json"] }');
+assertContains("Cargo.toml", 'buffa = { version = "0.9.1", features = ["json"] }');
 assertContains("README.md", "ReallyMe Codec is one cross-language codec operation contract for identity data.");
 assertContains("README.md", "released in lockstep with `reallyme-codec`");
 assertContains("README.md", "SDK consumers should usually start with the umbrella package");
@@ -1585,7 +1600,7 @@ assertContains("crates/codec/src/operation_contract/mod.rs", 'include!("copy_lim
 
 assertContains("buf.gen.yaml", "out: crates/proto/src/generated/buffa");
 assertContains("buf.gen.yaml", "out: packages/ts/src/proto/generated");
-assertContains("buf.gen.yaml", "buf.build/bufbuild/es:v2.12.1");
+assertContains("buf.gen.yaml", "buf.build/bufbuild/es:v2.13.0");
 assertContains("buf.gen.yaml", "buf.build/apple/swift:v1.38.1");
 assertContains("buf.gen.yaml", "buf.build/protocolbuffers/java:v35.1");
 assertContains("buf.gen.yaml", "buf.build/protocolbuffers/kotlin:v35.1");
@@ -1644,7 +1659,7 @@ assertContains(
 );
 assertContains("crates/proto/tests/generated_tests/error_wire.rs", "bounded_protobuf_decode_rejects_oversized_messages");
 assertContains("crates/proto/tests/generated_tests/error_wire.rs", "json_decode_rejects_inputs_that_expand_past_binary_cap");
-assertContains(".github/workflows/protobuf-ci.yml", "BUFFA_VERSION: 0.9.0");
+assertContains(".github/workflows/protobuf-ci.yml", "BUFFA_VERSION: 0.9.1");
 assertContains(".github/workflows/protobuf-ci.yml", "BUF_VERSION: 1.71.0");
 assertContains(".github/workflows/protobuf-ci.yml", "scripts/release-readiness/core.mjs");
 assertContains(".github/workflows/protobuf-ci.yml", "scripts/release-readiness/source-policy.mjs");
@@ -1685,8 +1700,9 @@ if (tsCodecPackage.private === true) {
   fail("packages/ts/package.json is private and cannot be published to npm");
 }
 assertContains("packages/ts/README.md", "@reallyme/codec/wasm/reallyme_codec_wasm.js");
-assertContains("packages/ts/package.json", '"@bufbuild/protobuf": "2.12.1"');
-assertContains("packages/ts/package.json", '"fast-check": "3.23.2"');
+assertContains("packages/ts/package.json", '"@bufbuild/protobuf": "2.13.0"');
+assertContains("packages/ts/package.json", '"fast-check": "4.9.0"');
+assertContains("packages/ts/package.json", '"typescript": "7.0.2"');
 assertContains("packages/ts/package.json", '"NOTICE"');
 readText("packages/ts/NOTICE");
 assertTypescriptProtoFacadeCompleteness({
@@ -1698,6 +1714,7 @@ const kotlinCodecBuild = readText("packages/kotlin/build.gradle.kts");
 if (!kotlinCodecBuild.includes(`version = "${codecPackageVersion}"`)) {
   fail(`packages/kotlin/build.gradle.kts is not versioned ${codecPackageVersion}`);
 }
+assertContains("packages/kotlin/build.gradle.kts", 'kotlin("jvm") version "2.4.10"');
 assertContains("packages/kotlin/build.gradle.kts", 'artifactId = "codec"');
 assertContains("packages/kotlin/build.gradle.kts", "Java, Kotlin, JVM, and Android");
 assertContains("packages/kotlin/build.gradle.kts", "com.google.protobuf:protobuf-javalite:4.35.1");
@@ -1760,7 +1777,7 @@ const packageReleaseWorkflows = Object.freeze([
 for (const workflowPath of packagePreflightWorkflows) {
   assertContains(workflowPath, "Resolve release SHA");
   assertContains(workflowPath, 'default: ""');
-  assertContains(workflowPath, "default: 0.2.0");
+  assertContains(workflowPath, "default: 0.2.1");
 }
 for (const workflowPath of packageReleaseWorkflows) {
   assertContains(workflowPath, "Verify reviewed release SHA");
@@ -1774,11 +1791,19 @@ assertContains(".github/workflows/kotlin-android-package-release.yml", "Test hos
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "Test host native loader");
 assertContains("scripts/maven_central_bundle_local.sh", "kotlin-android-package-preflight.yml");
 assertContains("scripts/maven_central_bundle_local.sh", '-f "version=${VERSION}"');
+assertContains("scripts/maven_central_bundle_local.sh", 'NATIVE_RESOURCE_RUN_ID="${MAVEN_NATIVE_RESOURCE_RUN_ID:-${RUN_ID:-}}"');
+assertContains("scripts/maven_central_bundle_local.sh", 'download_kotlin_native_resources_from_run "$NATIVE_RESOURCE_RUN_ID"');
+assertContains("scripts/maven_central_bundle_local.sh", 'publishMavenPublicationToLocalReleaseRepository');
+assertContains("scripts/maven_central_bundle_local.sh", 'publishReleasePublicationToLocalReleaseRepository');
+assertContains("scripts/maven_central_bundle_local.sh", '-Preallyme.maven.localReleaseRepositoryDir="$JVM_LOCAL_RELEASE_REPOSITORY_DIR"');
+assertContains("scripts/maven_central_bundle_local.sh", '-Preallyme.maven.localReleaseRepositoryDir="$ANDROID_LOCAL_RELEASE_REPOSITORY_DIR"');
+assertContains("scripts/maven-central-bundle.local.sh", 'exec "${SCRIPT_DIR}/maven_central_bundle_local.sh" "$@"');
 assertWorkflowPermissionsPolicy({
   path: ".github/workflows/swift-package-release.yml",
   workflow: { contents: "read" },
   jobs: {
     "verify-release-sha": { actions: "read", contents: "read" },
+    "swift-verify": { actions: "read", contents: "read" },
     "swift-release": { actions: "read", contents: "write" },
   },
 });
@@ -1824,15 +1849,22 @@ assertContains(".github/workflows/crates-release.yml", "needs.verify-release-sha
 assertNotContains(".github/workflows/crates-release.yml", "RELEASE_VERSION: ${{ inputs.version }}");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "needs: [verify-source-sha, jvm-native]");
 assertContains(".github/workflows/kotlin-android-package-release.yml", "needs: [verify-release-sha, jvm-native]");
-assertContains(".github/workflows/swift-package-release.yml", "needs: [verify-release-sha, swift-artifact]");
-assertContains(".github/workflows/swift-package-release.yml", "needs: [verify-release-sha, swift-artifact, swift-verify]");
 assertContains(
   ".github/workflows/swift-package-release.yml",
   `swift-verify:
     name: SwiftPM artifact verification
-    needs: [verify-release-sha, swift-artifact]
-    runs-on: macos-26`,
+    needs: verify-release-sha
+    runs-on: macos-26
+    permissions:`,
 );
+assertContains(".github/workflows/swift-package-release.yml", "preflight_run_id:");
+assertContains(".github/workflows/swift-package-release.yml", "RELEASE_ATTESTATION_WRITE_GITHUB_OUTPUT");
+assertContains(".github/workflows/swift-package-release.yml", "Download attested Swift artifact");
+assertContains(".github/workflows/swift-package-release.yml", "Download verified Swift artifact");
+assertContains(".github/workflows/swift-package-release.yml", "run-id: ${{ needs.verify-release-sha.outputs.preflight_run_id }}");
+assertContains(".github/workflows/swift-package-release.yml", "RELEASE_ATTESTATION_PREFLIGHT_RUN_ID");
+assertContains(".github/workflows/swift-package-release.yml", "Bind release manifest to verified Swift artifact");
+assertNotContains(".github/workflows/swift-package-release.yml", "scripts/build_swift_xcframework.sh");
 assertContains(".github/workflows/crates-release.yml", "needs: [verify-release-sha, dry-run]");
 assertWorkflowRunStep(
   ".github/workflows/swift-package-release.yml",
@@ -1899,15 +1931,9 @@ node scripts/publish_crates_in_order.mjs publish`,
 );
 assertWorkflowRunStep(
   ".github/workflows/swift-package-release.yml",
-  "Verify SwiftPM manifest",
+  "Verify SwiftPM manifest and downloaded artifact",
   `node scripts/verify_swift_release_artifact.mjs build/swift/ReallyMeCodecFFI.xcframework.zip build/swift/ReallyMeCodecFFI.xcframework.checksum Package.swift "\${RELEASE_VERSION}"
 node scripts/run_pinned_release_readiness.mjs --release-packages`,
-);
-assertWorkflowRunStep(
-  ".github/workflows/swift-package-release.yml",
-  "Select Xcode 26.4 for Swift artifact",
-  `sudo xcode-select -s /Applications/Xcode_26.4.app
-swift --version`,
 );
 assertWorkflowRunStep(
   ".github/workflows/swift-package-release.yml",
@@ -1919,17 +1945,51 @@ assertContains(".github/workflows/swift-package-release.yml", "SwiftPM artifact 
 assertWorkflowRunStep(
   ".github/workflows/swift-package-release.yml",
   "Create immutable GitHub release with Swift artifact",
-  `node scripts/verify_release_attestation.mjs
+  `node scripts/verify_swift_release_artifact.mjs build/swift/ReallyMeCodecFFI.xcframework.zip build/swift/ReallyMeCodecFFI.xcframework.checksum Package.swift "\${RELEASE_VERSION}"
+node scripts/verify_release_attestation.mjs
 if gh release view "v\${RELEASE_VERSION}" >/dev/null 2>&1; then
   echo "::error::GitHub release v\${RELEASE_VERSION} already exists"
   exit 1
 fi
-if git ls-remote --exit-code --tags origin "refs/tags/v\${RELEASE_VERSION}" >/dev/null 2>&1; then
-  echo "::error::Git tag v\${RELEASE_VERSION} already exists"
+if ! git diff --quiet -- . ':(exclude)Package.swift'; then
+  echo "::error::Swift release preparation modified files other than Package.swift"
   exit 1
 fi
-gh release create "v\${RELEASE_VERSION}" build/swift/ReallyMeCodecFFI.xcframework.zip --target "\${RELEASE_SHA}" --title "ReallyMe Codec v\${RELEASE_VERSION}" --notes "ReallyMe Codec package release v\${RELEASE_VERSION}."`,
+tag_target="\${RELEASE_SHA}"
+if ! git diff --quiet -- Package.swift; then
+  git config user.name "github-actions[bot]"
+  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+  git add Package.swift
+  release_commit_date="$(git show -s --format=%cI "\${RELEASE_SHA}")"
+  GIT_AUTHOR_DATE="\${release_commit_date}" GIT_COMMITTER_DATE="\${release_commit_date}" \\
+    git commit -m "Bind Swift artifact for v\${RELEASE_VERSION}"
+  tag_target="$(git rev-parse HEAD)"
+fi
+existing_tag_target="$(git ls-remote --tags origin "refs/tags/v\${RELEASE_VERSION}" | cut -f1)"
+if [ -n "\${existing_tag_target}" ] && [ "\${existing_tag_target}" != "\${tag_target}" ]; then
+  echo "::error::Git tag v\${RELEASE_VERSION} already targets a different commit"
+  exit 1
+fi
+if [ -z "\${existing_tag_target}" ]; then
+  git tag "v\${RELEASE_VERSION}" "\${tag_target}"
+  git push origin "refs/tags/v\${RELEASE_VERSION}"
+fi
+gh release create "v\${RELEASE_VERSION}" build/swift/ReallyMeCodecFFI.xcframework.zip --verify-tag --title "ReallyMe Codec v\${RELEASE_VERSION}" --notes "ReallyMe Codec package release v\${RELEASE_VERSION}."`,
 );
+assertSubstringsInOrder(".github/workflows/swift-package-release.yml", [
+  "Download attested Swift artifact",
+  "Bind manifest to attested Swift artifact",
+  "Verify SwiftPM manifest and downloaded artifact",
+  "Download verified Swift artifact",
+  "Bind release manifest to verified Swift artifact",
+  "Create immutable GitHub release with Swift artifact",
+]);
+const swiftReleaseArtifactVerificationCount = readText(".github/workflows/swift-package-release.yml").match(
+  /node scripts\/verify_swift_release_artifact[.]mjs/gu,
+)?.length;
+if (swiftReleaseArtifactVerificationCount !== 2) {
+  fail("Swift release workflow must verify the downloaded archive in both verification jobs");
+}
 assertMinOccurrences(".github/workflows/swift-package-release.yml", "node-version: '24'", 3);
 assertMinOccurrences(".github/workflows/kotlin-android-package-release.yml", "node-version: '24'", 3);
 assertMinOccurrences(".github/workflows/npm-package-release.yml", "node-version: '24'", 2);
@@ -1997,7 +2057,7 @@ assertContains(
 assertContains(".github/workflows/kotlin-android-package-release.yml", "requireFullNativeResources=true");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "requireFullNativeResources=true");
 assertContains("packages/kotlin/settings.gradle.kts", 'rootProject.name = "reallyme-codec"');
-assertContains("packages/kotlin/README.md", "me.really:codec:0.2.0");
+assertContains("packages/kotlin/README.md", "me.really:codec:0.2.1");
 assertContains("packages/kotlin/README.md", "ships Rust JNI libraries as platform resources");
 assertContains(
   "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
@@ -2057,7 +2117,6 @@ assertContains("packages/kotlin/build.gradle.kts", "verifyRemoteMavenPublishingC
 assertContains("packages/kotlin/build.gradle.kts", "remote Maven publishing is not configured");
 assertContains("packages/kotlin/build.gradle.kts", 'parsed.scheme != "https"');
 assertNotContains("packages/kotlin/build.gradle.kts", "reallyme.maven.requireRemote");
-assertNotContains("packages/kotlin/build.gradle.kts", 'name = "localRelease"');
 assertNotContains(".github/workflows/kotlin-android-package-release.yml", "-Preallyme.maven.requireRemote=true");
 assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "public fun tryParseCid(cid: String): String?");
 assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "public fun dagCborCodecCode(): Int");
@@ -2313,6 +2372,13 @@ assertContains(".github/workflows/swift-package-preflight.yml", "REALLYME_CODEC_
 assertContains(".github/workflows/swift-package-preflight.yml", "cargo build --locked -p reallyme-codec-ffi");
 assertContains(".github/workflows/code-checks.yml", "cargo build --locked -p reallyme-codec-ffi");
 assertContains(".github/workflows/swift-package-preflight.yml", "Build SwiftPM binary artifact");
+assertContains(".github/workflows/swift-package-preflight.yml", "Upload Swift release candidate");
+assertContains(".github/workflows/swift-package-preflight.yml", "Bind manifest to Swift release candidate");
+assertContains(".github/workflows/swift-package-preflight.yml", "Verify generated SwiftPM manifest and release candidate");
+assertContains(
+  ".github/workflows/swift-package-preflight.yml",
+  `node scripts/verify_swift_release_artifact.mjs build/swift/ReallyMeCodecFFI.xcframework.zip build/swift/ReallyMeCodecFFI.xcframework.checksum Package.swift "\${RELEASE_VERSION}"`,
+);
 assertContains(".github/workflows/swift-package-preflight.yml", "Prepare local SwiftPM binary manifest");
 assertContains(".github/workflows/swift-package-preflight.yml", "--local-artifact-path build/swift/ReallyMeCodecFFI.xcframework");
 assertContains(".github/workflows/swift-package-preflight.yml", "Reset SwiftPM package state");
@@ -2322,6 +2388,12 @@ assertContains(
   ".github/workflows/swift-package-preflight.yml",
   "node scripts/run_pinned_release_readiness.mjs --release-packages",
 );
+assertSubstringsInOrder(".github/workflows/swift-package-preflight.yml", [
+  "Build SwiftPM binary artifact",
+  "Upload Swift release candidate",
+  "Bind manifest to Swift release candidate",
+  "Verify generated SwiftPM manifest and release candidate",
+]);
 assertContains("packages/ts/src/multiformat.ts", "ensureStringValue(encoded)");
 assertContains("packages/ts/src/multiformat.ts", "snapshotBoundedBytesInput(bytes)");
 assertContains("packages/ts/src/cbor.ts", "ensureStringValue(cid)");
@@ -2604,7 +2676,6 @@ assertContains("packages/kotlin-android/build.gradle.kts", "verifyRemoteMavenPub
 assertContains("packages/kotlin-android/build.gradle.kts", "remote Maven publishing is not configured");
 assertContains("packages/kotlin-android/build.gradle.kts", 'parsed.scheme != "https"');
 assertNotContains("packages/kotlin-android/build.gradle.kts", "reallyme.maven.requireRemote");
-assertNotContains("packages/kotlin-android/build.gradle.kts", 'name = "localRelease"');
 assertContains("packages/kotlin-android/consumer-rules.pro", "ReallyMeCodecException$*");
 assertNotContains("packages/kotlin-android/consumer-rules.pro", "ReallyMeCodecProtoStatus");
 assertNotContains("packages/kotlin-android/consumer-rules.pro", "ReallyMeCodecProtoResult");
@@ -2635,7 +2706,7 @@ assertContains(
   ".github/workflows/kotlin-android-package-release.yml",
   '{ yes 2>/dev/null || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "ndk;29.0.14206865"',
 );
-assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.2.0");
+assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.2.1");
 assertContains("packages/kotlin-android/README.md", "never sourced from the Git worktree");
 assertContains(
   "packages/kotlin-android/gradle.properties",
@@ -2666,7 +2737,7 @@ assertContains(".github/workflows/kotlin-android-package-release.yml", "Write An
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "Write Android native checksum manifest");
 assertContains(".github/workflows/kotlin-android-package-release.yml", "verifyReleaseAarContainsJniLibs");
 assertContains(".github/workflows/kotlin-android-package-release.yml", "RELEASE_VERSION");
-assertContains(".github/workflows/swift-package-release.yml", "needs: [verify-release-sha, swift-artifact]");
+assertContains(".github/workflows/swift-package-release.yml", "needs: [verify-release-sha, swift-verify]");
 assertNotContains(".github/workflows/swift-package-release.yml", "if: inputs.publish == true");
 assertNotContains(".github/workflows/kotlin-android-package-release.yml", "if: inputs.publish == true");
 assertNotContains(".github/workflows/npm-package-release.yml", "if: inputs.publish == true");
@@ -2688,6 +2759,12 @@ assertContains("scripts/maven_central_bundle_local.sh", "packages/kotlin/build/r
 assertContains("scripts/maven_central_bundle_local.sh", "packages/kotlin-android/build/repos/releases");
 assertNotContains("scripts/maven_central_bundle_local.sh", "packages/kotlin-codec");
 assertNotContains("scripts/maven_central_bundle_local.sh", "packages/android-codec");
+assertContains("packages/kotlin/build.gradle.kts", 'val localReleaseRepositoryDir = providers.gradleProperty("reallyme.maven.localReleaseRepositoryDir")');
+assertContains("packages/kotlin/build.gradle.kts", 'name = "localRelease"');
+assertContains("packages/kotlin/build.gradle.kts", 'if (name.endsWith("ToRemoteReleaseRepository"))');
+assertContains("packages/kotlin-android/build.gradle.kts", 'val localReleaseRepositoryDir = providers.gradleProperty("reallyme.maven.localReleaseRepositoryDir")');
+assertContains("packages/kotlin-android/build.gradle.kts", 'name = "localRelease"');
+assertContains("packages/kotlin-android/build.gradle.kts", 'if (name.endsWith("ToRemoteReleaseRepository"))');
 
 assertContains("packages/ts/package.json", '"test:browser": "npm run build && node scripts/browser-wasm-test.mjs"');
 assertContains("packages/ts/scripts/browser-wasm-test.mjs", "__REALLYME_CODEC_BROWSER_WASM_RESULT__");
@@ -2699,7 +2776,7 @@ assertContains(".github/workflows/npm-package-preflight.yml", "Test TypeScript c
 
 assertContains("README.md", "https://github.com/reallyme/codec");
 assertContains("README.md", "https://www.npmjs.com/package/@reallyme/codec");
-assertContains("README.md", "me.really:codec:0.2.0");
+assertContains("README.md", "me.really:codec:0.2.1");
 assertContains("README.md", "reallyme-codec-proto");
 assertContains("README.md", "## Published Surfaces");
 assertContains("README.md", "`me.really:codec-android` AAR");
@@ -2767,7 +2844,7 @@ for (const messageName of codecProtoProviderOutputMessages) {
   );
 }
 assertReallyMeProtobufReleasePolicy({
-  buffaVersion: "0.9.0",
+  buffaVersion: "0.9.1",
   generatedFreshnessMode,
   workflowMode: "delegated",
   generatedFreshnessStepRun:

@@ -15,7 +15,7 @@ const RELEASE_READINESS_COMMIT = "f27973caf9d3a12847cac4032c361f5f553c97e9";
 const RELEASE_READINESS_CORE_SHA256 =
   "70cc78721738cf352024938e8fc86e73380e71b2cdf7a9a733687543167cbaae";
 const LOCAL_CHECKER_SHA256 =
-  "30a6f63d1be7dac397c7e8963e852272019ef8cffd88ba4fecd4b2d32fbac6e7";
+  "6eb6bdd5360ca86b4b541594416ae7d636585a926a5a9e4cbcc8490a41ad040f";
 // The upstream pin authenticates the original release; the local pin covers
 // the company-name correction without changing that upstream authority.
 const LOCAL_CORE_SHA256 =

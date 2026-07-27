@@ -11,7 +11,7 @@ on:
         description: Release version without leading v
         required: true
         type: string
-        default: 0.2.0
+        default: 0.2.1
 
 permissions:
   contents: read
@@ -29,6 +29,7 @@ jobs:
       contents: read
     outputs:
       release_sha: ${{ steps.resolve-release-sha.outputs.release_sha }}
+      preflight_run_id: ${{ steps.verify-attestation.outputs.preflight_run_id }}
     steps:
       - name: Checkout main for release SHA resolution
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
@@ -41,14 +42,12 @@ jobs:
         run: |
           git fetch --no-tags origin main
           release_sha="$(git rev-parse origin/main)"
-          if [ "$(git rev-parse origin/main)" != "${release_sha}" ]; then
-            echo "::error::resolved release SHA is not the current origin/main tip"
+          if [ "${GITHUB_SHA}" != "${release_sha}" ]; then
+            echo "::error::resolved release SHA does not match the workflow run head SHA"
             exit 1
           fi
           git checkout --detach "${release_sha}"
           echo "release_sha=${release_sha}" >> "${GITHUB_OUTPUT}"
-          echo "RELEASE_SHA=${release_sha}" >> "${GITHUB_ENV}"
-          echo "Using release SHA ${release_sha}"
 
       - name: Install Node
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
@@ -56,6 +55,7 @@ jobs:
           node-version: '24'
 
       - name: Require current main and successful Swift package checks
+        id: verify-attestation
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -64,55 +64,29 @@ jobs:
           RELEASE_ATTESTATION_PREFLIGHT_WORKFLOW: swift-package-preflight.yml
           RELEASE_ATTESTATION_WAIT_SECONDS: "3600"
           RELEASE_ATTESTATION_POLL_SECONDS: "20"
+          RELEASE_ATTESTATION_WRITE_GITHUB_OUTPUT: "1"
         run: node scripts/verify_release_attestation.mjs
-
-  swift-artifact:
-    name: Swift xcframework
-    needs: verify-release-sha
-    runs-on: macos-26
-    steps:
-      - name: Checkout
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
-        with:
-          ref: ${{ needs.verify-release-sha.outputs.release_sha }}
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88 # master
-        with:
-          toolchain: 1.96.0
-
-      - name: Select Xcode 26.4 for Swift artifact
-        run: |
-          sudo xcode-select -s /Applications/Xcode_26.4.app
-          swift --version
-
-      - name: Build SwiftPM binary artifact
-        run: scripts/build_swift_xcframework.sh
-
-      - name: Upload Swift artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: swift-xcframework
-          path: |
-            build/swift/ReallyMeCodecFFI.xcframework.zip
-            build/swift/ReallyMeCodecFFI.xcframework.checksum
-          if-no-files-found: error
 
   swift-verify:
     name: SwiftPM artifact verification
-    needs: [verify-release-sha, swift-artifact]
+    needs: verify-release-sha
     runs-on: macos-26
+    permissions:
+      actions: read
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           ref: ${{ needs.verify-release-sha.outputs.release_sha }}
 
-      - name: Download Swift artifact
+      - name: Download attested Swift artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: swift-xcframework
+          name: swift-xcframework-${{ inputs.version }}-${{ needs.verify-release-sha.outputs.release_sha }}
           path: build/swift
+          github-token: ${{ github.token }}
+          run-id: ${{ needs.verify-release-sha.outputs.preflight_run_id }}
 
       - name: Install Node
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
@@ -124,7 +98,14 @@ jobs:
           sudo xcode-select -s /Applications/Xcode_26.4.app
           swift --version
 
-      - name: Verify SwiftPM manifest
+      - name: Bind manifest to attested Swift artifact
+        run: |
+          checksum="$(cat build/swift/ReallyMeCodecFFI.xcframework.checksum)"
+          node scripts/prepare_swift_binary_manifest.mjs "${RELEASE_VERSION}" "${checksum}"
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+
+      - name: Verify SwiftPM manifest and downloaded artifact
         run: |
           node scripts/verify_swift_release_artifact.mjs build/swift/ReallyMeCodecFFI.xcframework.zip build/swift/ReallyMeCodecFFI.xcframework.checksum Package.swift "${RELEASE_VERSION}"
           node scripts/run_pinned_release_readiness.mjs --release-packages
@@ -133,8 +114,9 @@ jobs:
 
   swift-release:
     name: SwiftPM release tag
-    needs: [verify-release-sha, swift-artifact, swift-verify]
-    runs-on: ubuntu-latest
+    needs: [verify-release-sha, swift-verify]
+    runs-on: macos-26
+    environment: github-release
     permissions:
       actions: read
       contents: write
@@ -145,34 +127,69 @@ jobs:
           ref: ${{ needs.verify-release-sha.outputs.release_sha }}
           fetch-depth: 0
 
-      - name: Download Swift artifact
+      - name: Download verified Swift artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: swift-xcframework
+          name: swift-xcframework-${{ inputs.version }}-${{ needs.verify-release-sha.outputs.release_sha }}
           path: build/swift
+          github-token: ${{ github.token }}
+          run-id: ${{ needs.verify-release-sha.outputs.preflight_run_id }}
 
       - name: Install Node
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: '24'
 
+      - name: Select Xcode 26.4 for Swift release
+        run: |
+          sudo xcode-select -s /Applications/Xcode_26.4.app
+          swift --version
+
+      - name: Bind release manifest to verified Swift artifact
+        run: |
+          checksum="$(cat build/swift/ReallyMeCodecFFI.xcframework.checksum)"
+          node scripts/prepare_swift_binary_manifest.mjs "${RELEASE_VERSION}" "${checksum}"
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+
       - name: Create immutable GitHub release with Swift artifact
         run: |
+          node scripts/verify_swift_release_artifact.mjs build/swift/ReallyMeCodecFFI.xcframework.zip build/swift/ReallyMeCodecFFI.xcframework.checksum Package.swift "${RELEASE_VERSION}"
           node scripts/verify_release_attestation.mjs
           if gh release view "v${RELEASE_VERSION}" >/dev/null 2>&1; then
             echo "::error::GitHub release v${RELEASE_VERSION} already exists"
             exit 1
           fi
-          if git ls-remote --exit-code --tags origin "refs/tags/v${RELEASE_VERSION}" >/dev/null 2>&1; then
-            echo "::error::Git tag v${RELEASE_VERSION} already exists"
+          if ! git diff --quiet -- . ':(exclude)Package.swift'; then
+            echo "::error::Swift release preparation modified files other than Package.swift"
             exit 1
           fi
-          gh release create "v${RELEASE_VERSION}" build/swift/ReallyMeCodecFFI.xcframework.zip --target "${RELEASE_SHA}" --title "ReallyMe Codec v${RELEASE_VERSION}" --notes "ReallyMe Codec package release v${RELEASE_VERSION}."
+          tag_target="${RELEASE_SHA}"
+          if ! git diff --quiet -- Package.swift; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add Package.swift
+            release_commit_date="$(git show -s --format=%cI "${RELEASE_SHA}")"
+            GIT_AUTHOR_DATE="${release_commit_date}" GIT_COMMITTER_DATE="${release_commit_date}" \
+              git commit -m "Bind Swift artifact for v${RELEASE_VERSION}"
+            tag_target="$(git rev-parse HEAD)"
+          fi
+          existing_tag_target="$(git ls-remote --tags origin "refs/tags/v${RELEASE_VERSION}" | cut -f1)"
+          if [ -n "${existing_tag_target}" ] && [ "${existing_tag_target}" != "${tag_target}" ]; then
+            echo "::error::Git tag v${RELEASE_VERSION} already targets a different commit"
+            exit 1
+          fi
+          if [ -z "${existing_tag_target}" ]; then
+            git tag "v${RELEASE_VERSION}" "${tag_target}"
+            git push origin "refs/tags/v${RELEASE_VERSION}"
+          fi
+          gh release create "v${RELEASE_VERSION}" build/swift/ReallyMeCodecFFI.xcframework.zip --verify-tag --title "ReallyMe Codec v${RELEASE_VERSION}" --notes "ReallyMe Codec package release v${RELEASE_VERSION}."
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           RELEASE_SHA: ${{ needs.verify-release-sha.outputs.release_sha }}
           RELEASE_VERSION: ${{ inputs.version }}
           RELEASE_ATTESTATION_PREFLIGHT_WORKFLOW: swift-package-preflight.yml
+          RELEASE_ATTESTATION_PREFLIGHT_RUN_ID: ${{ needs.verify-release-sha.outputs.preflight_run_id }}
           RELEASE_ATTESTATION_WAIT_SECONDS: "3600"
           RELEASE_ATTESTATION_POLL_SECONDS: "20"

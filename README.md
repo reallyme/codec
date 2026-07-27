@@ -36,7 +36,7 @@ every codec family. Consumers that need a smaller dependency surface can select
 only the families they use:
 
 ```toml
-reallyme-codec = { version = "0.2.0", default-features = false, features = [
+reallyme-codec = { version = "0.2.1", default-features = false, features = [
   "base64url",
   "multikey",
 ] }
@@ -47,7 +47,7 @@ reallyme-codec = { version = "0.2.0", default-features = false, features = [
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.2.0"
+    from: "0.2.1"
 )
 ```
 
@@ -59,7 +59,7 @@ reallyme-codec = { version = "0.2.0", default-features = false, features = [
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.2.0")
+    implementation("me.really:codec:0.2.1")
 }
 ```
 
@@ -67,7 +67,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.2.0")
+    implementation("me.really:codec-android:0.2.1")
 }
 ```
 
