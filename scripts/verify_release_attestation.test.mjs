@@ -28,10 +28,10 @@ const workflowRun = (overrides = {}) => ({
 test("package preflight attestation is bound to the requested version", () => {
   assert.doesNotThrow(() => {
     requireLatestSuccessfulRun(
-      [workflowRun({ displayTitle: "Swift package preflight 0.2.1", event: "workflow_dispatch" })],
+      [workflowRun({ displayTitle: "Swift package preflight 0.2.2", event: "workflow_dispatch" })],
       releaseSha,
       "swift-package-preflight.yml",
-      "0.2.1",
+      "0.2.2",
     );
   });
   assert.throws(
@@ -39,7 +39,7 @@ test("package preflight attestation is bound to the requested version", () => {
       requireLatestSuccessfulRun(
         [
           workflowRun({
-            displayTitle: "Kotlin Android package preflight 0.2.1",
+            displayTitle: "Kotlin Android package preflight 0.2.2",
             event: "workflow_dispatch",
           }),
         ],
@@ -85,20 +85,20 @@ test("newer in-progress run invalidates an older success", () => {
         [
           workflowRun({
             databaseId: 100,
-            displayTitle: "npm package preflight 0.2.1",
+            displayTitle: "npm package preflight 0.2.2",
             event: "workflow_dispatch",
           }),
           workflowRun({
             conclusion: null,
             databaseId: 101,
-            displayTitle: "npm package preflight 0.2.1",
+            displayTitle: "npm package preflight 0.2.2",
             event: "workflow_dispatch",
             status: "in_progress",
           }),
         ],
         releaseSha,
         "npm-package-preflight.yml",
-        "0.2.1",
+        "0.2.2",
       );
     },
     (error) =>

@@ -14,18 +14,18 @@ plugins:
     strategy: all
 
   # TypeScript package output.
-  - remote: buf.build/bufbuild/es:v2.13.0
+  - remote: buf.build/bufbuild/es:v2.14.1
     out: packages/ts/src/proto/generated
     opt:
       - target=ts
 
   # Repository-level generated artifacts for consumers that vendor generated
   # protocol types directly.
-  - remote: buf.build/bufbuild/es:v2.13.0
+  - remote: buf.build/bufbuild/es:v2.14.1
     out: gen/es
     opt:
       - target=ts
-  - remote: buf.build/bufbuild/es:v2.13.0
+  - remote: buf.build/bufbuild/es:v2.14.1
     out: gen/es
     opt:
       - target=js
@@ -33,11 +33,11 @@ plugins:
     out: gen/swift
     opt:
       - Visibility=Public
-  - remote: buf.build/protocolbuffers/java:v35.1
+  - remote: buf.build/protocolbuffers/java:v36.1
     out: gen/java
     opt:
       - lite
-  - remote: buf.build/protocolbuffers/kotlin:v35.1
+  - remote: buf.build/protocolbuffers/kotlin:v36.1
     out: gen/kotlin
     opt:
       - lite

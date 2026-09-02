@@ -4,7 +4,7 @@
 
 [package]
 name = "reallyme-codec"
-version = "0.2.1"
+version = "0.2.2"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -15,16 +15,16 @@ readme = "README.md"
 include = ["/src/**/*.rs", "/Cargo.toml", "/README.md", "/LICENSE", "/NOTICE"]
 
 [dependencies]
-codec-base64 = { package = "reallyme-codec-base64", version = "0.2.1", path = "../base64", optional = true }
-codec-base64url = { package = "reallyme-codec-base64url", version = "0.2.1", path = "../base64url", optional = true }
-codec-cbor = { package = "reallyme-codec-cbor", version = "0.2.1", path = "../cbor", optional = true }
-codec-hex = { package = "reallyme-codec-hex", version = "0.2.1", path = "../hex", optional = true }
-codec-jcs = { package = "reallyme-codec-jcs", version = "0.2.1", path = "../jcs", optional = true }
-codec-multibase = { package = "reallyme-codec-multibase", version = "0.2.1", path = "../multibase", optional = true }
-codec-multicodec = { package = "reallyme-codec-multicodec", version = "0.2.1", path = "../multicodec", optional = true }
-codec-multikey = { package = "reallyme-codec-multikey", version = "0.2.1", path = "../multikey", optional = true }
-codec-pem = { package = "reallyme-codec-pem", version = "0.2.1", path = "../pem", optional = true }
-codec-proto = { package = "reallyme-codec-proto", version = "0.2.1", path = "../proto", default-features = false, features = ["generated"], optional = true }
+codec-base64 = { package = "reallyme-codec-base64", version = "0.2.2", path = "../base64", optional = true }
+codec-base64url = { package = "reallyme-codec-base64url", version = "0.2.2", path = "../base64url", optional = true }
+codec-cbor = { package = "reallyme-codec-cbor", version = "0.2.2", path = "../cbor", optional = true }
+codec-hex = { package = "reallyme-codec-hex", version = "0.2.2", path = "../hex", optional = true }
+codec-jcs = { package = "reallyme-codec-jcs", version = "0.2.2", path = "../jcs", optional = true }
+codec-multibase = { package = "reallyme-codec-multibase", version = "0.2.2", path = "../multibase", optional = true }
+codec-multicodec = { package = "reallyme-codec-multicodec", version = "0.2.2", path = "../multicodec", optional = true }
+codec-multikey = { package = "reallyme-codec-multikey", version = "0.2.2", path = "../multikey", optional = true }
+codec-pem = { package = "reallyme-codec-pem", version = "0.2.2", path = "../pem", optional = true }
+codec-proto = { package = "reallyme-codec-proto", version = "0.2.2", path = "../proto", default-features = false, features = ["generated"], optional = true }
 buffa = { workspace = true, optional = true }
 thiserror = { workspace = true, optional = true }
 zeroize = { workspace = true, optional = true }

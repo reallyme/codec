@@ -2,10 +2,10 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 # To regenerate this file, run: ./gradlew :dependencies --write-locks
-com.google.code.gson:gson:2.11.0=testCompileClasspath,testRuntimeClasspath
-com.google.errorprone:error_prone_annotations:2.27.0=testCompileClasspath,testRuntimeClasspath
-com.google.protobuf:protobuf-javalite:4.35.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
-com.google.protobuf:protobuf-kotlin-lite:4.35.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.google.code.gson:gson:2.14.0=testCompileClasspath,testRuntimeClasspath
+com.google.errorprone:error_prone_annotations:2.48.0=testCompileClasspath,testRuntimeClasspath
+com.google.protobuf:protobuf-javalite:4.36.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.google.protobuf:protobuf-kotlin-lite:4.36.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 org.apiguardian:apiguardian-api:1.1.2=testCompileClasspath
 org.bouncycastle:bcpg-jdk18on:1.84=kotlinBouncyCastleConfiguration
 org.bouncycastle:bcpkix-jdk18on:1.84=kotlinBouncyCastleConfiguration
@@ -41,11 +41,12 @@ org.jetbrains.kotlin:kotlin-test:2.4.10=testCompileClasspath,testRuntimeClasspat
 org.jetbrains.kotlin:kotlin-tooling-core:2.4.10=kotlinAbiValidationCompatClasspath,kotlinBuildToolsApiClasspath,kotlinCompilerClasspath
 org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.8.0=kotlinAbiValidationCompatClasspath,kotlinBuildToolsApiClasspath,kotlinCompilerClasspath,kotlinKlibCommonizerClasspath
 org.jetbrains:annotations:13.0=compileClasspath,kotlinAbiValidationCompatClasspath,kotlinBuildToolsApiClasspath,kotlinCompilerClasspath,kotlinCompilerPluginClasspathMain,kotlinCompilerPluginClasspathTest,kotlinKlibCommonizerClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
-org.junit.jupiter:junit-jupiter-api:5.11.4=testCompileClasspath,testRuntimeClasspath
-org.junit.jupiter:junit-jupiter-engine:5.11.4=testRuntimeClasspath
-org.junit.platform:junit-platform-commons:1.11.4=testCompileClasspath,testRuntimeClasspath
-org.junit.platform:junit-platform-engine:1.11.4=testRuntimeClasspath
-org.junit.platform:junit-platform-launcher:1.11.4=testRuntimeClasspath
-org.junit:junit-bom:5.11.4=testCompileClasspath,testRuntimeClasspath
+org.jspecify:jspecify:1.0.0=testCompileClasspath
+org.junit.jupiter:junit-jupiter-api:6.1.3=testCompileClasspath,testRuntimeClasspath
+org.junit.jupiter:junit-jupiter-engine:6.1.3=testRuntimeClasspath
+org.junit.platform:junit-platform-commons:6.1.3=testCompileClasspath,testRuntimeClasspath
+org.junit.platform:junit-platform-engine:6.1.3=testRuntimeClasspath
+org.junit.platform:junit-platform-launcher:6.1.3=testRuntimeClasspath
+org.junit:junit-bom:6.1.3=testCompileClasspath,testRuntimeClasspath
 org.opentest4j:opentest4j:1.3.0=testCompileClasspath,testRuntimeClasspath
 empty=annotationProcessor,implementationDependenciesMetadata,kotlinCompilerPluginClasspath,kotlinNativeCompilerPluginClasspath,kotlinScriptDefExtensions,testAnnotationProcessor,testImplementationDependenciesMetadata,testKotlinScriptDefExtensions

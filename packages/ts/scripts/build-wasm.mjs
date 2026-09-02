@@ -8,7 +8,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REQUIRED_WASM_PACK_VERSION = [0, 15, 0];
-const REQUIRED_WASM_BINDGEN_VERSION = [0, 2, 126];
+const REQUIRED_WASM_BINDGEN_VERSION = [0, 2, 127];
 const WASM_PACK_COMMAND = "wasm-pack";
 const WASM_BINDGEN_COMMAND = "wasm-bindgen";
 

@@ -4,7 +4,7 @@
 
 [package]
 name = "reallyme-codec-ffi"
-version = "0.2.1"
+version = "0.2.2"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -16,8 +16,8 @@ description = "ReallyMe native C ABI and JNI surface for Rust-backed codec opera
 crate-type = ["rlib", "staticlib", "cdylib"]
 
 [dependencies]
-codec-proto = { package = "reallyme-codec-proto", version = "0.2.1", path = "../proto", features = ["generated"] }
-codec-runtime = { package = "reallyme-codec", version = "0.2.1", path = "../codec", default-features = false, features = ["operation-contract"] }
+codec-proto = { package = "reallyme-codec-proto", version = "0.2.2", path = "../proto", features = ["generated"] }
+codec-runtime = { package = "reallyme-codec", version = "0.2.2", path = "../codec", default-features = false, features = ["operation-contract"] }
 jni = { workspace = true }
 zeroize = { workspace = true }
 

@@ -26,7 +26,7 @@ test("Swift release verifier accepts matching archive, sidecar, manifest, and ve
     writeFileSync(
       manifest,
       `let ffiArtifactChecksum = "${checksum}"
-let ffiArtifactVersion = "0.2.1"
+let ffiArtifactVersion = "0.2.2"
 let ffiArtifactLocalPathOverride = ""
 .binaryTarget(
     name: "ReallyMeCodecFFI",
@@ -36,7 +36,7 @@ let ffiArtifactLocalPathOverride = ""
 `,
     );
     assert.doesNotThrow(() => {
-      execFileSync(process.execPath, [script, archive, sidecar, manifest, "0.2.1"], {
+      execFileSync(process.execPath, [script, archive, sidecar, manifest, "0.2.2"], {
         stdio: "pipe",
       });
     });
@@ -56,7 +56,7 @@ test("Swift release verifier recomputes bytes and rejects a forged sidecar", () 
     writeFileSync(
       manifest,
       `let ffiArtifactChecksum = "${"0".repeat(64)}"
-let ffiArtifactVersion = "0.2.1"
+let ffiArtifactVersion = "0.2.2"
 let ffiArtifactLocalPathOverride = ""
 .binaryTarget(
     name: "ReallyMeCodecFFI",
@@ -66,7 +66,7 @@ let ffiArtifactLocalPathOverride = ""
 `,
     );
     assert.throws(() => {
-      execFileSync(process.execPath, [script, archive, sidecar, manifest, "0.2.1"], {
+      execFileSync(process.execPath, [script, archive, sidecar, manifest, "0.2.2"], {
         stdio: "pipe",
       });
     });
@@ -88,7 +88,7 @@ test("Swift release verifier rejects unused manifest checksum variables", () => 
     writeFileSync(
       manifest,
       `let ffiArtifactChecksum = "${checksum}"
-let ffiArtifactVersion = "0.2.1"
+let ffiArtifactVersion = "0.2.2"
 let ffiArtifactLocalPathOverride = ""
 .binaryTarget(
     name: "ReallyMeCodecFFI",
@@ -98,7 +98,7 @@ let ffiArtifactLocalPathOverride = ""
 `,
     );
     assert.throws(() => {
-      execFileSync(process.execPath, [script, archive, sidecar, manifest, "0.2.1"], {
+      execFileSync(process.execPath, [script, archive, sidecar, manifest, "0.2.2"], {
         stdio: "pipe",
       });
     });
