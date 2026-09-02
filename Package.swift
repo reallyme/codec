@@ -8,7 +8,7 @@
 // SwiftPM and Xcode only read `Package.swift` at the repository root when a
 // package is consumed by URL, e.g.
 //
-//     .package(url: "https://github.com/reallyme/codec", from: "0.2.1")
+//     .package(url: "https://github.com/reallyme/codec", from: "0.2.2")
 //     .product(name: "ReallyMeCodec", package: "codec")
 //
 // The Swift sources live under `packages/swift/` to keep symmetry with the

@@ -1,6 +1,6 @@
 {
   "name": "@reallyme/codec",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "TypeScript facade for the ReallyMe codec WASM package.",
   "license": "Apache-2.0",
   "sideEffects": false,
@@ -39,7 +39,7 @@
     "test": "npm run build && node --test \"test/*.test.mjs\""
   },
   "dependencies": {
-    "@bufbuild/protobuf": "2.13.0"
+    "@bufbuild/protobuf": "2.14.1"
   },
   "devDependencies": {
     "fast-check": "4.9.0",

@@ -34,7 +34,7 @@ publish = false
 # audited version requirement governs the repo. Crate-specific features,
 # default-features, and optional flags remain declared at the use site.
 [workspace.dependencies]
-base64 = "0.22"
+base64 = { version = "0.23", default-features = false, features = ["std"] }
 bs58 = "0.5"
 buffa = { version = "0.9.1", features = ["json"] }
 cid = "0.11.3"
@@ -49,7 +49,7 @@ ryu-js = "1"
 serde = "1.0.229"
 serde_json = { version = "1.0.151", features = ["float_roundtrip", "unbounded_depth"] }
 sha2 = "0.11"
-thiserror = "2.0.19"
+thiserror = "2.0.20"
 wasm-bindgen = "0.2"
 wasm-bindgen-test = "0.3"
 zeroize = "1.9"

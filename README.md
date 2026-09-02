@@ -85,7 +85,7 @@ every codec family. Consumers that need a smaller dependency surface can select
 only the families they use:
 
 ```toml
-reallyme-codec = { version = "0.2.1", default-features = false, features = [
+reallyme-codec = { version = "0.2.2", default-features = false, features = [
   "base64url",
   "multikey",
 ] }
@@ -96,7 +96,7 @@ reallyme-codec = { version = "0.2.1", default-features = false, features = [
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.2.1"
+    from: "0.2.2"
 )
 ```
 
@@ -108,7 +108,7 @@ reallyme-codec = { version = "0.2.1", default-features = false, features = [
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.2.1")
+    implementation("me.really:codec:0.2.2")
 }
 ```
 
@@ -116,7 +116,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.2.1")
+    implementation("me.really:codec-android:0.2.2")
 }
 ```
 
@@ -135,7 +135,7 @@ ReallyMe Codec is pre-1.0. We follow the Rust community convention for
 [0.x compatibility](https://doc.rust-lang.org/cargo/reference/semver.html):
 breaking changes increment the minor version, such as `0.1.x` to `0.2.0`, and
 additive compatible changes increment the patch version, such as `0.2.0` to
-`0.2.1`.
+`0.2.2`.
 
 For Rust consumers, pin to the minor line you have reviewed, for example
 `reallyme-codec = "0.2"`. A full version written by `cargo add`, such as

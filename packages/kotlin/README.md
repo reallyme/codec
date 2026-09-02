@@ -15,7 +15,7 @@ parsing, or DAG-CBOR on the JVM.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.2.1")
+    implementation("me.really:codec:0.2.2")
 }
 ```
 

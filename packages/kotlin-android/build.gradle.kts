@@ -9,14 +9,14 @@ import java.security.MessageDigest
 import java.util.zip.ZipFile
 
 plugins {
-    id("com.android.library") version "9.3.0"
-    id("com.android.application") version "9.3.0" apply false
+    id("com.android.library") version "9.4.0"
+    id("com.android.application") version "9.4.0" apply false
     `maven-publish`
     signing
 }
 
 group = "me.really"
-version = "0.2.1"
+version = "0.2.2"
 
 dependencyLocking {
     lockAllConfigurations()
@@ -167,8 +167,8 @@ android {
 }
 
 dependencies {
-    api("com.google.protobuf:protobuf-javalite:4.35.1")
-    api("com.google.protobuf:protobuf-kotlin-lite:4.35.1")
+    api("com.google.protobuf:protobuf-javalite:4.36.1")
+    api("com.google.protobuf:protobuf-kotlin-lite:4.36.1")
 }
 
 val generateAndroidNativeManifest = tasks.register("generateAndroidNativeManifest") {
