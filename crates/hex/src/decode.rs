@@ -6,14 +6,15 @@ use crate::HexError;
 
 /// Decode canonical lowercase hexadecimal bytes.
 pub fn lower_hex_to_bytes(input: &str) -> Result<Vec<u8>, HexError> {
-    if !input.len().is_multiple_of(2) {
+    let (pairs, remainder) = input.as_bytes().as_chunks::<2>();
+    if !remainder.is_empty() {
         return Err(HexError::OddLength);
     }
 
-    let mut output = Vec::with_capacity(input.len() / 2);
-    for pair in input.as_bytes().chunks_exact(2) {
-        let high = lower_hex_value(pair[0])?;
-        let low = lower_hex_value(pair[1])?;
+    let mut output = Vec::with_capacity(pairs.len());
+    for [high_byte, low_byte] in pairs {
+        let high = lower_hex_value(*high_byte)?;
+        let low = lower_hex_value(*low_byte)?;
         output.push((high << 4) | low);
     }
 
