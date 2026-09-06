@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 #![allow(missing_docs)]
 #![allow(
@@ -14,7 +14,7 @@ use cid::Cid;
 use codec_cbor::CborValue;
 use codec_cbor::{
     compute_cid_dag_cbor, dag_cbor_multihash, encode_dag_cbor, is_valid_cid_string,
-    sha2_256_content_hash, verify_dag_cbor_cid,
+    sha2_256_content_hash, try_parse_cid, verify_dag_cbor_cid, MAX_CID_STRING_LEN,
 };
 
 fn enc(value: &CborValue) -> Vec<u8> {
@@ -139,4 +139,83 @@ fn random_payloads_produce_valid_cids() {
         let cid = compute_cid_dag_cbor(&enc(&v));
         assert!(is_valid_cid_string(&cid));
     }
+}
+
+#[test]
+fn cid_parsers_reject_trailing_binary_data_and_paths() {
+    let payload = enc(&CborValue::Null);
+    let canonical = compute_cid_dag_cbor(&payload);
+    let parsed = Cid::try_from(canonical.as_str()).unwrap();
+    let mut suffixed = parsed.to_bytes();
+    suffixed.extend_from_slice(b"untrusted suffix");
+    for invalid in [
+        cid::multibase::encode(Base::Base32Lower, &suffixed),
+        cid::multibase::encode(Base::Base58Btc, &suffixed),
+        format!("/ipfs/{canonical}"),
+        format!("https://example.invalid/ipfs/{canonical}"),
+    ] {
+        assert!(!is_valid_cid_string(&invalid));
+        assert!(try_parse_cid(&invalid).is_none());
+        assert_eq!(
+            verify_dag_cbor_cid(&invalid, &payload),
+            (false, canonical.clone(), String::new())
+        );
+    }
+}
+
+#[test]
+fn cid_parsers_preserve_versions_and_alternate_bases() {
+    let hash = dag_cbor_multihash(b"version compatibility");
+    let v0 = Cid::new_v0(hash).unwrap();
+    assert_eq!(try_parse_cid(&v0.to_string()), Some(v0));
+    let v1 = Cid::new_v1(0x71, hash);
+    for base in [
+        Base::Base2,
+        Base::Base8,
+        Base::Base10,
+        Base::Base16Lower,
+        Base::Base32Lower,
+        Base::Base32Upper,
+        Base::Base36Lower,
+        Base::Base58Btc,
+        Base::Base64,
+        Base::Base64Url,
+        Base::Base64Pad,
+        Base::Base64UrlPad,
+        Base::Base32HexLower,
+        Base::Base32PadLower,
+        Base::Base32Z,
+        Base::Base256Emoji,
+    ] {
+        let text = v1.to_string_of_base(base).unwrap();
+        assert_eq!(try_parse_cid(&text), Some(v1));
+    }
+    let mut invalid_v0 = v0.to_bytes();
+    invalid_v0.push(0);
+    assert!(try_parse_cid(&cid::multibase::encode(Base::Base58Btc, invalid_v0)).is_none());
+}
+
+#[test]
+fn cid_parsers_reject_nonminimal_varints_and_oversized_text() {
+    let cid = Cid::new_v1(0x71, dag_cbor_multihash(b"minimal"));
+    let canonical = cid.to_bytes();
+    for index in 0..4 {
+        let mut nonminimal = canonical.clone();
+        nonminimal[index] |= 0x80;
+        nonminimal.insert(index + 1, 0);
+        assert!(try_parse_cid(&cid::multibase::encode(Base::Base16Lower, nonminimal)).is_none());
+    }
+    for prefix in ['z', 'k', 'b'] {
+        let oversized = format!("{prefix}{}", "1".repeat(MAX_CID_STRING_LEN));
+        assert!(try_parse_cid(&oversized).is_none());
+        assert!(!is_valid_cid_string(&oversized));
+        assert!(!verify_dag_cbor_cid(&oversized, b"payload").0);
+    }
+    let largest = Cid::new_v1(
+        u64::MAX,
+        multihash::Multihash::wrap(u64::MAX, &[0xff; 64]).unwrap(),
+    );
+    let base2 = largest.to_string_of_base(Base::Base2).unwrap();
+    assert!(base2.len() <= MAX_CID_STRING_LEN);
+    assert_eq!(try_parse_cid(&base2), Some(largest));
 }

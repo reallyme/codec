@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 use super::super::{rm_codec_process_operation, rm_codec_process_operation_json};
 use super::assert_generated_error;
@@ -12,6 +12,27 @@ use codec_proto::generated::proto::reallyme::codec::v1::{
     CodecOperationResponse,
 };
 use codec_proto::{decode_protobuf, encode_protobuf, CodecWireErrorBranch};
+
+#[test]
+fn operation_ffi_rejects_request_aliasing_produced_length() {
+    for process in [rm_codec_process_operation, rm_codec_process_operation_json] {
+        let mut storage = [usize::MAX; 2];
+        let pointer = storage.as_mut_ptr();
+        // SAFETY: Caller-owned aligned storage remains live throughout the
+        // call. The deliberate overlap must fail without borrowing or writing.
+        let status = unsafe {
+            process(
+                pointer.cast::<u8>(),
+                core::mem::size_of_val(&storage),
+                core::ptr::null_mut(),
+                0,
+                pointer,
+            )
+        };
+        assert_eq!(status, CODEC_INVALID_ARGUMENT);
+        assert_eq!(storage, [usize::MAX; 2]);
+    }
+}
 
 #[test]
 fn operation_ffi_exports_return_resource_limit_responses_for_oversized_input() {

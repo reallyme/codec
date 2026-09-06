@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import {
   codecProtoProviderOutputMessages,
@@ -13,30 +14,30 @@ import {
   codecProtoSensitiveOwnerMessages,
 } from "./codec_proto_sensitivity.mjs";
 
-const root = new URL("..", import.meta.url);
+const root = fileURLToPath(new URL("..", import.meta.url));
 
 const protoPath = join(
-  root.pathname,
+  root,
   "crates/proto/proto/reallyme/codec/v1/codec.proto",
 );
 const rustGeneratedPath = join(
-  root.pathname,
+  root,
   "crates/proto/src/generated/buffa/reallyme.codec.v1.codec.rs",
 );
 const rustGeneratedViewPath = join(
-  root.pathname,
+  root,
   "crates/proto/src/generated/buffa/reallyme.codec.v1.codec.__view.rs",
 );
 const rustGeneratedModulePath = join(
-  root.pathname,
+  root,
   "crates/proto/src/generated/buffa/reallyme.codec.v1.mod.rs",
 );
 const esGeneratedPath = join(
-  root.pathname,
+  root,
   "gen/es/reallyme/codec/v1/codec_pb.ts",
 );
 const tsPackageGeneratedPath = join(
-  root.pathname,
+  root,
   "packages/ts/src/proto/generated/reallyme/codec/v1/codec_pb.ts",
 );
 const protoSource = readFileSync(protoPath, "utf8");
@@ -494,10 +495,10 @@ function redactOwnedRustDebugAndMemory() {
   source = replaceAllRequired(
     source,
     `                        _ => {
-                            map.next_value::<serde::de::IgnoredAny>()?;
+                            map.next_value::<::serde::de::IgnoredAny>()?;
                         }`,
     `                        _ => {
-                            return Err(serde::de::Error::custom("unknown field"));
+                            return Err(::serde::de::Error::custom("unknown field"));
                         }`,
     rustGeneratedPath,
   );
@@ -1139,7 +1140,7 @@ function removeSensitiveRustOwnedViews() {
 }
 
 function redactSwiftDebug() {
-  const filePath = join(root.pathname, "gen/swift/reallyme/codec/v1/codec.pb.swift");
+  const filePath = join(root, "gen/swift/reallyme/codec/v1/codec.pb.swift");
   let source = readFileSync(filePath, "utf8");
   for (const messageName of sensitiveMessageNames) {
     const swiftName = `ReallyMeProto${messageName}`;
@@ -1184,7 +1185,7 @@ function redactSwiftDebug() {
 
 function redactJavaDebug() {
   for (const messageName of sensitiveMessageNames) {
-    const filePath = join(root.pathname, `gen/java/me/really/codec/v1/${messageName}.java`);
+    const filePath = join(root, `gen/java/me/really/codec/v1/${messageName}.java`);
     let source = readFileSync(filePath, "utf8");
     const declaration = new RegExp(`public\\s+final\\s+class\\s+${messageName}\\s+extends`, "gu");
     if ([...source.matchAll(declaration)].length !== 1) {
@@ -1243,7 +1244,7 @@ function redactJavaDebug() {
 
   for (const messageName of codecProtoProviderOutputMessages) {
     const filePath = join(
-      root.pathname,
+      root,
       `gen/java/me/really/codec/v1/${messageName}.java`,
     );
     const source = ensureJavaUnknownFieldInspection(
@@ -1300,15 +1301,15 @@ function normalizeGeneratedWhitespace(directoryPath, extension) {
 }
 
 function generatedOutputPaths() {
-  const javaDirectory = join(root.pathname, "gen/java/me/really/codec/v1");
-  const kotlinDirectory = join(root.pathname, "gen/kotlin/me/really/codec/v1");
+  const javaDirectory = join(root, "gen/java/me/really/codec/v1");
+  const kotlinDirectory = join(root, "gen/kotlin/me/really/codec/v1");
   return [
     rustGeneratedPath,
     rustGeneratedViewPath,
     rustGeneratedModulePath,
     esGeneratedPath,
     tsPackageGeneratedPath,
-    join(root.pathname, "gen/swift/reallyme/codec/v1/codec.pb.swift"),
+    join(root, "gen/swift/reallyme/codec/v1/codec.pb.swift"),
     ...readdirSync(javaDirectory)
       .filter((fileName) => fileName.endsWith(".java"))
       .map((fileName) => join(javaDirectory, fileName)),
@@ -1328,11 +1329,11 @@ redactViewRustDebug();
 removeSensitiveRustOwnedViews();
 redactSwiftDebug();
 redactJavaDebug();
-normalizeGeneratedWhitespace(join(root.pathname, "gen/java/me/really/codec/v1"), ".java");
-normalizeGeneratedWhitespace(join(root.pathname, "gen/kotlin/me/really/codec/v1"), ".kt");
-normalizeGeneratedWhitespace(join(root.pathname, "gen/es/reallyme/codec/v1"), ".ts");
+normalizeGeneratedWhitespace(join(root, "gen/java/me/really/codec/v1"), ".java");
+normalizeGeneratedWhitespace(join(root, "gen/kotlin/me/really/codec/v1"), ".kt");
+normalizeGeneratedWhitespace(join(root, "gen/es/reallyme/codec/v1"), ".ts");
 normalizeGeneratedWhitespace(
-  join(root.pathname, "packages/ts/src/proto/generated/reallyme/codec/v1"),
+  join(root, "packages/ts/src/proto/generated/reallyme/codec/v1"),
   ".ts",
 );
 

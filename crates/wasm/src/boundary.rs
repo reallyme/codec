@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 use js_sys::{JsString, Uint8Array};
 use wasm_bindgen::JsValue;
@@ -34,19 +34,18 @@ fn utf8_byte_len_for_js_string(value: &JsString) -> Result<usize, JsValue> {
     let mut bytes = 0_usize;
     let mut units = value.iter().peekable();
     while let Some(code_unit) = units.next() {
-        // wasm-bindgen converts unpaired surrogates lossily to U+FFFD. Count
-        // that exact UTF-8 output here so oversize strings are rejected before
-        // the Rust String allocation.
+        // Reject unpaired surrogates before wasm-bindgen replaces them with
+        // U+FFFD. Canonicalization must never sign or hash a repaired document.
         let width = if (0xd800..=0xdbff).contains(&code_unit) {
             match units.peek().copied() {
                 Some(0xdc00..=0xdfff) => {
                     let _ = units.next();
                     4
                 }
-                _ => 3,
+                _ => return Err(invalid_input()),
             }
         } else if (0xdc00..=0xdfff).contains(&code_unit) {
-            3
+            return Err(invalid_input());
         } else {
             utf8_bytes_for_code_unit(code_unit)
         };

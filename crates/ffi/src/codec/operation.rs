@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 use codec_runtime::operation_contract::{
     process_operation_response, process_operation_response_json,
 };
 
 use crate::guard::ffi_guard;
-use crate::pointer::read_slice;
+use crate::pointer::{read_slice, validate_input_scalar_output};
 use crate::status::{CodecStatus, CODEC_OK};
 
 use super::{initialize_output_length, validate_proto_boundary_input_length, write_output};
@@ -94,6 +94,9 @@ fn process_operation_boundary(
     max_request_len: usize,
     process_request: fn(&[u8]) -> zeroize::Zeroizing<Vec<u8>>,
 ) -> CodecStatus {
+    if let Err(status) = validate_input_scalar_output(request_ptr, request_len, len_out) {
+        return status;
+    }
     let output_status = initialize_output_length(output_ptr, output_len, len_out);
     if output_status != CODEC_OK {
         return output_status;

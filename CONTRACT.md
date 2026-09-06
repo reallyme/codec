@@ -1,7 +1,5 @@
 <!--
 SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
-
-SPDX-License-Identifier: Apache-2.0
 -->
 
 # ReallyMe Codec Contract
@@ -11,8 +9,9 @@ SDK facades for Swift, Kotlin, and TypeScript.
 
 ## Owned Surfaces
 
-- `crates/codec/**` contains the Rust implementation that defines codec
-  behavior.
+- Codec leaf crates such as `crates/base64`, `crates/cbor`, and `crates/pem`
+  implement primitive behavior. `crates/codec` provides the Rust facade and
+  generated operation dispatch.
 - `crates/ffi` exposes the native C ABI and JNI boundary used by Swift
   and Kotlin.
 - `crates/wasm` exposes the WASM boundary used by
@@ -25,17 +24,21 @@ SDK facades for Swift, Kotlin, and TypeScript.
 
 The protobuf schema is canonical for cross-language request, response, and
 error shapes. Rust primitive modules remain canonical for behavior, but SDK
-wire DTOs and typed boundary errors must be generated from, or mechanically
+structured result types and error codes must be generated from, or mechanically
 backed by, the protobuf schema rather than maintained as independent parallel
-models.
+models. Scalar adapter calls remain available for base encodings, predicates,
+and JCS; structured operations use the generated request/response boundary.
 
 ## Repository Shape
 
 ```text
 reallyme/codec
   crates/
-    codec/
-    proto/codec/
+    codec/       # Rust facade and operation dispatch
+    cbor/        # CBOR primitive (alongside the other codec leaf crates)
+    proto/       # Schema, generated Rust messages, and wire codecs
+    ffi/
+    wasm/
   packages/
     ts/
     swift/

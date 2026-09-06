@@ -1,14 +1,14 @@
 // swift-tools-version: 6.3
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 // Root manifest for `reallyme-codec`.
 //
 // SwiftPM and Xcode only read `Package.swift` at the repository root when a
 // package is consumed by URL, e.g.
 //
-//     .package(url: "https://github.com/reallyme/codec", from: "0.2.2")
+//     .package(url: "https://github.com/reallyme/codec", from: "0.2.3")
 //     .product(name: "ReallyMeCodec", package: "codec")
 //
 // The Swift sources live under `packages/swift/` to keep symmetry with the

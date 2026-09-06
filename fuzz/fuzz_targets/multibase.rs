@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 //! Fuzz the multibase and base58btc decoders on arbitrary text input.
 //! Property: decoding untrusted input must never panic — it either returns

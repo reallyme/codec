@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 /// Signed 32-bit status code returned by every C ABI entry point
 /// (`rm_codec_status_t` at the boundary); `0` is success and negatives are

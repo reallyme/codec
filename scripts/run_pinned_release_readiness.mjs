@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 import { createHash, timingSafeEqual } from "node:crypto";
 import { lstatSync, readFileSync } from "node:fs";
@@ -11,11 +11,11 @@ import { spawnSync } from "node:child_process";
 // upstream core. The local checker still carries repository policy, so this
 // runner verifies the fetched upstream bytes, compares them directly with the
 // vendored core, and separately pins the local checker bytes before executing.
-const RELEASE_READINESS_COMMIT = "44065b7488a8d3c77f66f530dff770fb39be9707";
+const RELEASE_READINESS_COMMIT = "304bc55cdca3c53bf66218982d51188f341806ed";
 const RELEASE_READINESS_CORE_SHA256 =
-  "fcc0b725a85784617568c29f1aa3382a206faaddc3a22012e46f0e35303e4e6d";
+  "0a33532aa595871c1beefb1ad1d3930f1a51675b236a73e8bf93ad5d7ccdbae4";
 const LOCAL_CHECKER_SHA256 =
-  "e66b4b09e40308236140c6e14c3f689c2637a0912602c61e0c8c80f736a35d26";
+  "9366e6bde5e00b9949d68237602f7b2a076d2911a6465cd987ffe265001c972b";
 const RELEASE_READINESS_CORE_URL =
   `https://raw.githubusercontent.com/reallyme/release-readiness/${RELEASE_READINESS_COMMIT}/core.mjs`;
 const VENDORED_CORE_PATH = "scripts/release-readiness/core.mjs";

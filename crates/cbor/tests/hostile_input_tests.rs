@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 //! Denial-of-service regression tests: the decoder must reject hostile
 //! length prefixes and nesting *before* it allocates or recurses, so that
@@ -117,4 +117,39 @@ fn nested_fill_remaining_arrays_do_not_preallocate_declared_counts() {
     bytes.push(0x00);
 
     assert!(decode_dag_cbor(&bytes).is_err());
+}
+
+#[test]
+fn float_rejection_metadata_never_contains_payload_bits() {
+    for initial in [0xf9, 0xfa, 0xfb] {
+        for fill in [0x61, 0x00, 0xff] {
+            let mut bytes = vec![fill; 9];
+            bytes[0] = initial;
+            assert_eq!(
+                decode_dag_cbor(&bytes),
+                Err(CborError::DisallowedSimpleValue {
+                    value: u64::from(initial & 0x1f)
+                })
+            );
+        }
+    }
+}
+
+#[test]
+fn dag_cbor_values_support_explicit_recursive_zeroization() {
+    use codec_cbor::CborValue;
+    use zeroize::Zeroize;
+
+    let mut value = CborValue::Map(vec![(
+        "identity-key".to_owned(),
+        CborValue::Array(vec![
+            CborValue::String("example".to_owned()),
+            CborValue::Bytes(vec![0xa5; 32]),
+        ]),
+    )]);
+    value.zeroize();
+    assert_eq!(value, CborValue::Map(Vec::new()));
+    let mut scalar = CborValue::Int(42);
+    scalar.zeroize();
+    assert_eq!(scalar, CborValue::Int(0));
 }

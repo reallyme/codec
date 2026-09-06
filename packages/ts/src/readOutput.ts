@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 import {
   MAX_CODEC_FFI_INPUT_BYTES,
@@ -11,6 +11,14 @@ import { ReallyMeCodecError } from "./errors.js";
 
 const uint8ArraySubarray = Uint8Array.prototype.subarray;
 const uint8ArraySet = Uint8Array.prototype.set;
+const byteInputReservedProperties: ReadonlyArray<string> = [
+  "constructor",
+  "length",
+  "byteLength",
+  "byteOffset",
+  "buffer",
+  "subarray",
+];
 
 const readProviderProperty = (
   object: object,
@@ -47,11 +55,29 @@ const requireBoundedProviderString = (value: string, allowEmpty: boolean): strin
 };
 
 export const ensureBytesInput = (value: Uint8Array): void => {
-  if (
-    !(value instanceof Uint8Array) ||
-    !ArrayBuffer.isView(value) ||
-    value.constructor !== Uint8Array
-  ) {
+  try {
+    if (
+      !(value instanceof Uint8Array) ||
+      !ArrayBuffer.isView(value) ||
+      Object.getPrototypeOf(value) !== Uint8Array.prototype
+    ) {
+      throw new ReallyMeCodecError("invalid-input");
+    }
+    // Own metadata can hide the actual view length; an own constructor can
+    // change subarray's species and substitute different bytes during copying.
+    // Reject overrides without invoking getters before crossing into WASM.
+    for (const property of byteInputReservedProperties) {
+      const descriptor = Object.getOwnPropertyDescriptor(value, property);
+      // A data property naming the ordinary constructor preserves the same
+      // species behavior as an unmodified view and was accepted previously.
+      if (property === "constructor" && descriptor?.value === Uint8Array) {
+        continue;
+      }
+      if (descriptor !== undefined) {
+        throw new ReallyMeCodecError("invalid-input");
+      }
+    }
+  } catch (_error: unknown) {
     throw new ReallyMeCodecError("invalid-input");
   }
 };

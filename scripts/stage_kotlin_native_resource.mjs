@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 import { copyFileSync, mkdirSync, statSync } from "node:fs";
 import { basename, join, resolve } from "node:path";

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 fn process_multicodec_prefix_for_name(name: &str) -> Result<CodecMulticodecSpec, CodecWireError> {
     let spec = prefix_for_name(name).map_err(multicodec_boundary_error)?;

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 //! Operation-specific semantic layer for structured DAG-CBOR operations.
 //!
@@ -87,8 +87,8 @@ pub fn encode_dag_cbor_value(value: &CborValue) -> Result<Zeroizing<Vec<u8>>, Cb
 }
 
 /// Decode one DAG-CBOR byte sequence into the domain value.
-pub fn decode_dag_cbor_value(bytes: &[u8]) -> Result<CborValue, CborError> {
-    decode_primitive_dag_cbor(bytes)
+pub fn decode_dag_cbor_value(bytes: &[u8]) -> Result<Zeroizing<CborValue>, CborError> {
+    decode_primitive_dag_cbor(bytes).map(Zeroizing::new)
 }
 
 /// Encode one validated deterministic-CBOR domain value.

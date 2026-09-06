@@ -1,7 +1,5 @@
 <!--
 SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
-
-SPDX-License-Identifier: Apache-2.0
 -->
 
 # Codec Vectors
@@ -30,10 +28,9 @@ or normalize the input.
 
 The manifest also carries a structured `deterministicCbor` section containing
 pinned positive, canonical-rejection, and interoperability literals for the
-`0.2.0` profile. Its synthetic `idkit-ios` fixtures freeze byte-for-byte
-compatibility with the existing consumer, including passport claims
-optionality, the separate fingerprint map, and mixed integer claim-tag
-ordering, without introducing passport-specific production behavior.
+`0.2.0` profile. Synthetic consumer-shape fixtures cover optional claims,
+separate nested maps, and mixed integer-key ordering. They contain test data
+and do not introduce application-specific behavior into the codec.
 
 `deterministicCbor.fixtureClasses` labels each section by intent:
 

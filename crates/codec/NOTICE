@@ -1,12 +1,10 @@
 SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 
-SPDX-License-Identifier: Apache-2.0
-
 ReallyMe Codec
 Copyright © 2026 ReallyMe LLC. All rights reserved.
 
 This package includes codec utilities developed by ReallyMe LLC and distributed
-under the Apache License, Version 2.0.
+under either the MIT License or the Apache License, Version 2.0, at your option.
 
 The package is part of the ReallyMe Codec workspace and intentionally excludes
 cryptographic primitive implementations. Dependency license terms are recorded

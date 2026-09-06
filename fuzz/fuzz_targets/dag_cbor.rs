@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 //! Fuzz the DAG-CBOR decoder and CID verifier on arbitrary bytes.
 //! Property: decoding untrusted, possibly-malformed CBOR (deep nesting,
@@ -12,7 +12,11 @@
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
-    let _ = codec_cbor::decode_dag_cbor(data);
+    if let Ok(value) = codec_cbor::decode_dag_cbor(data) {
+        // Successful decoding promises canonical bytes. Exercise both encoder
+        // passes as well, and require exact byte-for-byte preservation.
+        assert_eq!(codec_cbor::encode_dag_cbor(&value).as_deref(), Ok(data));
+    }
 
     // Split the input so the tail also drives the CID string parser and the
     // CID-over-bytes verifier without either allocating unbounded memory.

@@ -1,7 +1,5 @@
 <!--
 SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
-
-SPDX-License-Identifier: Apache-2.0
 -->
 
 # ReallyMeCodec Android
@@ -15,11 +13,15 @@ library manually.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.2.2")
+    implementation("me.really:codec-android:0.2.3")
 }
 ```
 
 ## Release Build
+
+Publishing uses **Kotlin Android Package Preflight** followed by **Kotlin Android
+Package Release**, which verifies the required checks for the selected source
+commit. To build the AAR locally from the repository root:
 
 ```sh
 scripts/build_android_native_resources.sh build/android-jniLibs
@@ -48,3 +50,21 @@ non-canonical encodings, unsupported CBOR types, and values beyond the shared
 resource limits. Recursive values are carried through generated protobuf
 messages with bounded message depth and unknown-field rejection before Rust
 performs the canonical operation.
+
+## Test
+
+With the Android SDK, the configured NDK, and a running emulator or connected
+test device available, run the R8 consumer gate from the repository root:
+
+```sh
+scripts/test_android_consumer_r8_runtime.sh
+```
+
+The gate builds fresh JNI libraries and a minified release consumer, installs
+the APK, and checks codec operations on the device. The **Android Runtime Gate**
+workflow runs this check in CI.
+
+## License
+
+Dual-licensed under the MIT License or Apache License, Version 2.0, at your
+option. See [LICENSE](../../LICENSE) for both license texts.

@@ -84,31 +84,31 @@ pub mod codec_error {
             Self::Some(Error::from(v))
         }
     }
-    impl serde::Serialize for Error {
-        fn serialize<S: serde::Serializer>(
+    impl ::serde::Serialize for Error {
+        fn serialize<S: ::serde::Serializer>(
             &self,
             s: S,
         ) -> ::core::result::Result<S::Ok, S::Error> {
-            use serde::ser::SerializeMap;
+            use ::serde::ser::SerializeMap;
             let mut map = s.serialize_map(Some(1))?;
             match self {
                 Self::BaseEncoding(v) => {
-                    map.serialize_entry("baseEncoding", v)?;
+                    map.serialize_entry("baseEncoding", &**v)?;
                 }
                 Self::Pem(v) => {
-                    map.serialize_entry("pem", v)?;
+                    map.serialize_entry("pem", &**v)?;
                 }
                 Self::Multiformat(v) => {
-                    map.serialize_entry("multiformat", v)?;
+                    map.serialize_entry("multiformat", &**v)?;
                 }
                 Self::Canonicalization(v) => {
-                    map.serialize_entry("canonicalization", v)?;
+                    map.serialize_entry("canonicalization", &**v)?;
                 }
                 Self::Backend(v) => {
-                    map.serialize_entry("backend", v)?;
+                    map.serialize_entry("backend", &**v)?;
                 }
                 Self::Boundary(v) => {
-                    map.serialize_entry("boundary", v)?;
+                    map.serialize_entry("boundary", &**v)?;
                 }
             }
             map.end()
@@ -154,19 +154,19 @@ pub mod codec_deterministic_cbor_integer {
             Self::Some(Value::from(v))
         }
     }
-    impl serde::Serialize for Value {
-        fn serialize<S: serde::Serializer>(
+    impl ::serde::Serialize for Value {
+        fn serialize<S: ::serde::Serializer>(
             &self,
             s: S,
         ) -> ::core::result::Result<S::Ok, S::Error> {
-            use serde::ser::SerializeMap;
+            use ::serde::ser::SerializeMap;
             let mut map = s.serialize_map(Some(1))?;
             match self {
                 Self::UnsignedValue(v) => {
-                    map.serialize_entry("unsignedValue", v)?;
+                    map.serialize_entry("unsignedValue", &**v)?;
                 }
                 Self::NegativeValue(v) => {
-                    map.serialize_entry("negativeValue", v)?;
+                    map.serialize_entry("negativeValue", &**v)?;
                 }
             }
             map.end()
@@ -210,19 +210,19 @@ pub mod codec_deterministic_cbor_map_key {
             Self::Some(Key::from(v))
         }
     }
-    impl serde::Serialize for Key {
-        fn serialize<S: serde::Serializer>(
+    impl ::serde::Serialize for Key {
+        fn serialize<S: ::serde::Serializer>(
             &self,
             s: S,
         ) -> ::core::result::Result<S::Ok, S::Error> {
-            use serde::ser::SerializeMap;
+            use ::serde::ser::SerializeMap;
             let mut map = s.serialize_map(Some(1))?;
             match self {
                 Self::IntegerKey(v) => {
-                    map.serialize_entry("integerKey", v)?;
+                    map.serialize_entry("integerKey", &**v)?;
                 }
                 Self::TextKey(v) => {
-                    map.serialize_entry("textKey", v)?;
+                    map.serialize_entry("textKey", &**v)?;
                 }
             }
             map.end()
@@ -336,34 +336,34 @@ pub mod codec_deterministic_cbor_value {
             Self::Some(Value::from(v))
         }
     }
-    impl serde::Serialize for Value {
-        fn serialize<S: serde::Serializer>(
+    impl ::serde::Serialize for Value {
+        fn serialize<S: ::serde::Serializer>(
             &self,
             s: S,
         ) -> ::core::result::Result<S::Ok, S::Error> {
-            use serde::ser::SerializeMap;
+            use ::serde::ser::SerializeMap;
             let mut map = s.serialize_map(Some(1))?;
             match self {
                 Self::NullValue(v) => {
-                    map.serialize_entry("nullValue", v)?;
+                    map.serialize_entry("nullValue", &**v)?;
                 }
                 Self::BoolValue(v) => {
-                    map.serialize_entry("boolValue", v)?;
+                    map.serialize_entry("boolValue", &**v)?;
                 }
                 Self::IntegerValue(v) => {
-                    map.serialize_entry("integerValue", v)?;
+                    map.serialize_entry("integerValue", &**v)?;
                 }
                 Self::TextValue(v) => {
-                    map.serialize_entry("textValue", v)?;
+                    map.serialize_entry("textValue", &**v)?;
                 }
                 Self::BytesValue(v) => {
-                    map.serialize_entry("bytesValue", v)?;
+                    map.serialize_entry("bytesValue", &**v)?;
                 }
                 Self::ArrayValue(v) => {
-                    map.serialize_entry("arrayValue", v)?;
+                    map.serialize_entry("arrayValue", &**v)?;
                 }
                 Self::MapValue(v) => {
-                    map.serialize_entry("mapValue", v)?;
+                    map.serialize_entry("mapValue", &**v)?;
                 }
             }
             map.end()
@@ -531,46 +531,46 @@ pub mod codec_operation_result {
             Self::Some(Result::from(v))
         }
     }
-    impl serde::Serialize for Result {
-        fn serialize<S: serde::Serializer>(
+    impl ::serde::Serialize for Result {
+        fn serialize<S: ::serde::Serializer>(
             &self,
             s: S,
         ) -> ::core::result::Result<S::Ok, S::Error> {
-            use serde::ser::SerializeMap;
+            use ::serde::ser::SerializeMap;
             let mut map = s.serialize_map(Some(1))?;
             match self {
                 Self::MulticodecPrefixForName(v) => {
-                    map.serialize_entry("multicodecPrefixForName", v)?;
+                    map.serialize_entry("multicodecPrefixForName", &**v)?;
                 }
                 Self::MulticodecLookupPrefix(v) => {
-                    map.serialize_entry("multicodecLookupPrefix", v)?;
+                    map.serialize_entry("multicodecLookupPrefix", &**v)?;
                 }
                 Self::MulticodecTable(v) => {
-                    map.serialize_entry("multicodecTable", v)?;
+                    map.serialize_entry("multicodecTable", &**v)?;
                 }
                 Self::MultikeyParse(v) => {
-                    map.serialize_entry("multikeyParse", v)?;
+                    map.serialize_entry("multikeyParse", &**v)?;
                 }
                 Self::DagCborVerifyCid(v) => {
-                    map.serialize_entry("dagCborVerifyCid", v)?;
+                    map.serialize_entry("dagCborVerifyCid", &**v)?;
                 }
                 Self::DagCborEncode(v) => {
-                    map.serialize_entry("dagCborEncode", v)?;
+                    map.serialize_entry("dagCborEncode", &**v)?;
                 }
                 Self::DagCborDecode(v) => {
-                    map.serialize_entry("dagCborDecode", v)?;
+                    map.serialize_entry("dagCborDecode", &**v)?;
                 }
                 Self::PemDecode(v) => {
-                    map.serialize_entry("pemDecode", v)?;
+                    map.serialize_entry("pemDecode", &**v)?;
                 }
                 Self::PemEncode(v) => {
-                    map.serialize_entry("pemEncode", v)?;
+                    map.serialize_entry("pemEncode", &**v)?;
                 }
                 Self::DeterministicCborEncode(v) => {
-                    map.serialize_entry("deterministicCborEncode", v)?;
+                    map.serialize_entry("deterministicCborEncode", &**v)?;
                 }
                 Self::DeterministicCborDecode(v) => {
-                    map.serialize_entry("deterministicCborDecode", v)?;
+                    map.serialize_entry("deterministicCborDecode", &**v)?;
                 }
             }
             map.end()
@@ -607,19 +607,19 @@ pub mod codec_operation_response {
             Self::Some(Outcome::from(v))
         }
     }
-    impl serde::Serialize for Outcome {
-        fn serialize<S: serde::Serializer>(
+    impl ::serde::Serialize for Outcome {
+        fn serialize<S: ::serde::Serializer>(
             &self,
             s: S,
         ) -> ::core::result::Result<S::Ok, S::Error> {
-            use serde::ser::SerializeMap;
+            use ::serde::ser::SerializeMap;
             let mut map = s.serialize_map(Some(1))?;
             match self {
                 Self::Result(v) => {
-                    map.serialize_entry("result", v)?;
+                    map.serialize_entry("result", &**v)?;
                 }
                 Self::Error(v) => {
-                    map.serialize_entry("error", v)?;
+                    map.serialize_entry("error", &**v)?;
                 }
             }
             map.end()
@@ -795,46 +795,46 @@ pub mod codec_operation_request {
             Self::Some(Operation::from(v))
         }
     }
-    impl serde::Serialize for Operation {
-        fn serialize<S: serde::Serializer>(
+    impl ::serde::Serialize for Operation {
+        fn serialize<S: ::serde::Serializer>(
             &self,
             s: S,
         ) -> ::core::result::Result<S::Ok, S::Error> {
-            use serde::ser::SerializeMap;
+            use ::serde::ser::SerializeMap;
             let mut map = s.serialize_map(Some(1))?;
             match self {
                 Self::MulticodecPrefixForName(v) => {
-                    map.serialize_entry("multicodecPrefixForName", v)?;
+                    map.serialize_entry("multicodecPrefixForName", &**v)?;
                 }
                 Self::MulticodecLookupPrefix(v) => {
-                    map.serialize_entry("multicodecLookupPrefix", v)?;
+                    map.serialize_entry("multicodecLookupPrefix", &**v)?;
                 }
                 Self::MulticodecTable(v) => {
-                    map.serialize_entry("multicodecTable", v)?;
+                    map.serialize_entry("multicodecTable", &**v)?;
                 }
                 Self::MultikeyParse(v) => {
-                    map.serialize_entry("multikeyParse", v)?;
+                    map.serialize_entry("multikeyParse", &**v)?;
                 }
                 Self::DagCborVerifyCid(v) => {
-                    map.serialize_entry("dagCborVerifyCid", v)?;
+                    map.serialize_entry("dagCborVerifyCid", &**v)?;
                 }
                 Self::DagCborEncode(v) => {
-                    map.serialize_entry("dagCborEncode", v)?;
+                    map.serialize_entry("dagCborEncode", &**v)?;
                 }
                 Self::DagCborDecode(v) => {
-                    map.serialize_entry("dagCborDecode", v)?;
+                    map.serialize_entry("dagCborDecode", &**v)?;
                 }
                 Self::PemDecode(v) => {
-                    map.serialize_entry("pemDecode", v)?;
+                    map.serialize_entry("pemDecode", &**v)?;
                 }
                 Self::PemEncode(v) => {
-                    map.serialize_entry("pemEncode", v)?;
+                    map.serialize_entry("pemEncode", &**v)?;
                 }
                 Self::DeterministicCborEncode(v) => {
-                    map.serialize_entry("deterministicCborEncode", v)?;
+                    map.serialize_entry("deterministicCborEncode", &**v)?;
                 }
                 Self::DeterministicCborDecode(v) => {
-                    map.serialize_entry("deterministicCborDecode", v)?;
+                    map.serialize_entry("deterministicCborDecode", &**v)?;
                 }
             }
             map.end()

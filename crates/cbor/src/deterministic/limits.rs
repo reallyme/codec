@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 /// Maximum encoded deterministic-CBOR byte length accepted at public
-/// decode/hash boundaries.
+/// decode boundaries.
 ///
 /// The generic deterministic profile may carry identity-adjacent text and byte
 /// strings. Keep this bound explicit and shared so every adapter can reject
@@ -55,7 +55,7 @@ pub const MAX_DETERMINISTIC_CBOR_AGGREGATE_BYTE_STRING_BYTES: usize = 1024 * 102
 /// Smallest negative integer supported by the deterministic generic profile.
 ///
 /// CBOR can represent negative integers outside this range. ReallyMe Codec
-/// intentionally does not expose that larger domain in `0.2.0` because every
+/// intentionally does not expose that larger domain in `0.2.x` because every
 /// supported SDK lane must preserve values exactly.
 pub const DETERMINISTIC_CBOR_NEGATIVE_MIN: i64 = i64::MIN;
 

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 fn process_dag_cbor_encode<P: buffa::ProtoBox<CodecDeterministicCborValue>>(
     value: &buffa::MessageField<CodecDeterministicCborValue, P>,
@@ -10,7 +10,7 @@ fn process_dag_cbor_encode<P: buffa::ProtoBox<CodecDeterministicCborValue>>(
     };
     let mut limits = DeterministicProtoLimits::default();
     validate_dag_cbor_proto_value(proto_value, 0, &mut limits)?;
-    let value = dag_cbor_value_from_field(value)?;
+    let value = Zeroizing::new(dag_cbor_value_from_field(value)?);
     let encoded = encode_dag_cbor_value(&value).map_err(dag_cbor_cbor_wire_error)?;
     Ok(CodecDagCborEncodeResult {
         encoded: try_copy_deterministic_bytes(encoded.as_slice())?,
@@ -85,7 +85,10 @@ fn process_pem_encode(
         options.map_or(0, |value| value.line_width),
         defaults.line_width,
     )?;
-    let line_ending = match options.and_then(|value| value.line_ending.as_known()) {
+    let configured_line_ending = options
+        .map(|value| value.line_ending.as_known().ok_or_else(malformed_request_wire_error))
+        .transpose()?;
+    let line_ending = match configured_line_ending {
         None | Some(CodecPemLineEnding::CODEC_PEM_LINE_ENDING_UNSPECIFIED) => defaults.line_ending,
         Some(CodecPemLineEnding::CODEC_PEM_LINE_ENDING_LF) => PemLineEnding::Lf,
         Some(CodecPemLineEnding::CODEC_PEM_LINE_ENDING_CRLF) => PemLineEnding::Crlf,

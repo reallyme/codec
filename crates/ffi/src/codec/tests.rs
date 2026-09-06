@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 use super::{
     rm_codec_abi_version, rm_codec_max_ffi_input_bytes, rm_codec_max_ffi_output_bytes,
@@ -325,4 +325,58 @@ fn failure_paths_initialize_scalar_out_parameters() {
     };
     assert_eq!(status, CODEC_INVALID_ARGUMENT);
     assert_eq!(result, 0);
+}
+
+#[test]
+fn scalar_outputs_reject_input_aliases_without_mutating_requests() {
+    for input_index in 0..3 {
+        let mut storage = [usize::MAX; 2];
+        let pointer = storage.as_mut_ptr();
+        let mut inputs = [(core::ptr::null(), 0); 3];
+        inputs[input_index] = (
+            pointer.cast::<u8>().cast_const(),
+            core::mem::size_of_val(&storage),
+        );
+        // SAFETY: All storage is initialized and aligned. No Rust references
+        // remain live across the call; the deliberately overlapping scalar
+        // output must be rejected before any input borrow or output write.
+        let status = unsafe {
+            rm_codec_process(
+                CODEC_BASE64_ENCODE,
+                inputs[0].0,
+                inputs[0].1,
+                inputs[1].0,
+                inputs[1].1,
+                inputs[2].0,
+                inputs[2].1,
+                core::ptr::null_mut(),
+                0,
+                pointer,
+            )
+        };
+        assert_eq!(status, CODEC_INVALID_ARGUMENT);
+        assert_eq!(storage, [usize::MAX; 2]);
+    }
+    for input_index in 0..2 {
+        let mut storage = [i32::MAX; 2];
+        let pointer = storage.as_mut_ptr();
+        let mut inputs = [(core::ptr::null(), 0); 2];
+        inputs[input_index] = (
+            pointer.cast::<u8>().cast_const(),
+            core::mem::size_of_val(&storage),
+        );
+        // SAFETY: Same initialized caller-owned overlap test as above.
+        let status = unsafe {
+            rm_codec_process_bool(
+                2,
+                inputs[0].0,
+                inputs[0].1,
+                inputs[1].0,
+                inputs[1].1,
+                pointer,
+            )
+        };
+        assert_eq!(status, CODEC_INVALID_ARGUMENT);
+        assert_eq!(storage, [i32::MAX; 2]);
+    }
 }

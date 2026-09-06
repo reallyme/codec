@@ -1,7 +1,5 @@
 <!--
 SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
-
-SPDX-License-Identifier: Apache-2.0
 -->
 
 # reallyme-codec
@@ -11,11 +9,11 @@ SPDX-License-Identifier: Apache-2.0
 [![npm codec](https://img.shields.io/npm/v/@reallyme/codec?label=npm%20codec&color=0f766e)](https://www.npmjs.com/package/@reallyme/codec)
 [![Maven codec](https://img.shields.io/maven-central/v/me.really/codec?label=maven%20codec&color=0f766e)](https://central.sonatype.com/artifact/me.really/codec)
 [![Security Policy](https://img.shields.io/badge/security-policy-0f766e)](SECURITY.md)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE)
 
 ReallyMe Codec keeps encodings consistent across Rust, TypeScript, Swift, Java,
 and Kotlin. It covers base encodings, multiformats, canonical CBOR/JCS, PEM armor, 
-and the protobuf error operation contract. Rust implements the codec behavior; TypeScript
+and the protobuf operation contract. Rust implements the codec behavior; TypeScript
 calls Rust through WASM, Swift through the C ABI, and Java/Kotlin through JNI.
 
 ## Why
@@ -54,7 +52,8 @@ lockstep ReallyMe Codec release line.
 
 | Area | Path |
 |---|---|
-| Core codecs | `crates/codec/*` |
+| Rust facade and operation dispatch | `crates/codec` |
+| Primitive codecs | `crates/base64`, `crates/cbor`, and the other codec leaf crates |
 | FFI and WASM adapters | `crates/ffi`, `crates/wasm` |
 | TypeScript package | `packages/ts` |
 | Swift package | `packages/swift`, `Package.swift` |
@@ -81,22 +80,26 @@ cargo add reallyme-codec
 ```
 
 The Rust crates require Rust `1.96.0` or newer. The default feature set enables
-every codec family. Consumers that need a smaller dependency surface can select
+every primitive codec family. Consumers that need a smaller dependency surface can select
 only the families they use:
 
 ```toml
-reallyme-codec = { version = "0.2.2", default-features = false, features = [
+reallyme-codec = { version = "0.2.3", default-features = false, features = [
   "base64url",
   "multikey",
 ] }
 ```
+
+The generated operation boundary is opt-in for Rust consumers: enable
+`operation-contract` to use `reallyme_codec::operation_contract`. The `serde`
+feature enables the base64url field adapters.
 
 ### Swift
 
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.2.2"
+    from: "0.2.3"
 )
 ```
 
@@ -108,7 +111,7 @@ reallyme-codec = { version = "0.2.2", default-features = false, features = [
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.2.2")
+    implementation("me.really:codec:0.2.3")
 }
 ```
 
@@ -116,7 +119,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.2.2")
+    implementation("me.really:codec-android:0.2.3")
 }
 ```
 
@@ -135,7 +138,7 @@ ReallyMe Codec is pre-1.0. We follow the Rust community convention for
 [0.x compatibility](https://doc.rust-lang.org/cargo/reference/semver.html):
 breaking changes increment the minor version, such as `0.1.x` to `0.2.0`, and
 additive compatible changes increment the patch version, such as `0.2.0` to
-`0.2.2`.
+`0.2.3`.
 
 For Rust consumers, pin to the minor line you have reviewed, for example
 `reallyme-codec = "0.2"`. A full version written by `cargo add`, such as
@@ -181,7 +184,7 @@ import me.really.codec.ReallyMeCodec;
 String encoded = ReallyMeCodec.base64urlEncode(new byte[] {1, 2, 3});
 ```
 
-TypeScript:
+TypeScript, after [initializing the WASM provider](packages/ts/README.md#usage):
 
 ```ts
 import { ReallyMeCodec } from "@reallyme/codec";
@@ -194,6 +197,8 @@ build typed values, cross the generated protobuf operation boundary, and use
 the Rust primitive codec for canonical bytes:
 
 ```swift
+import Foundation
+
 let value = ReallyMeDeterministicCbor.mapText([
     ("b", ReallyMeDeterministicCbor.unsigned(2)),
     ("a", ReallyMeDeterministicCbor.bytes(Data([0, 1, 2]))),
@@ -202,6 +207,8 @@ let cbor = try codec.deterministicCborEncodeData(value)
 ```
 
 ```kotlin
+import me.really.codec.ReallyMeDeterministicCbor
+
 val value = ReallyMeDeterministicCbor.mapText(
     linkedMapOf(
         "b" to ReallyMeDeterministicCbor.unsignedLong(2),
@@ -212,6 +219,8 @@ val cbor = ReallyMeCodec.deterministicCborEncode(value)
 ```
 
 ```ts
+import { ReallyMeDeterministicCbor } from "@reallyme/codec";
+
 const value = ReallyMeDeterministicCbor.mapText([
   ["b", ReallyMeDeterministicCbor.unsigned(2n)],
   ["a", ReallyMeDeterministicCbor.bytes(new Uint8Array([0, 1, 2]))],
@@ -222,7 +231,13 @@ const cbor = ReallyMeCodec.deterministicCborEncode(value);
 Deterministic-CBOR encode canonicalizes map ordering. Decode rejects duplicate
 semantic map keys, non-canonical map order, non-minimal integer or length
 forms, unsupported CBOR types, and inputs outside the documented resource
-limits. DAG-CBOR remains a separate profile with CID helpers; its structured
+limits. The generic profile permits at most 64 nested containers, 65,536 nodes
+(including map keys), and 16,384 entries per container. Encoded input and output
+are each capped at 1 MiB; aggregate UTF-8 text and aggregate byte-string content
+are each capped at 1 MiB.
+
+DAG-CBOR remains a separate profile with CID helpers; the supported subset
+uses text map keys and signed 64-bit integers, with no floats or tags. Its structured
 encode/decode methods use the same generated operation boundary and Rust
 semantic implementation.
 
@@ -242,9 +257,10 @@ codec identifiers or non-secret error envelopes.
 The executable transport boundary accepts one generated
 `CodecOperationRequest` and returns one binary `CodecOperationResponse` whose
 oneofs identify either the exact operation result or a typed `CodecError`.
-Operation-specific `*Proto` SDK helpers are request builders over that same
-entrypoint; they are not separate wire APIs. Native Rust callers retain the
-typed codec APIs and do not need to serialize.
+Structured SDK methods build requests for that same entrypoint and require
+the matching result variant. Base encodings and JCS call Rust through dedicated
+scalar adapter functions. Native Rust callers retain typed codec APIs and do
+not need to serialize.
 
 The protobuf schema is the canonical operation contract for cross-language request,
 response, and error shapes. Rust defines codec behavior, but SDKs and adapters
@@ -282,7 +298,9 @@ See [docs/protobuf.md](docs/protobuf.md) for the boundary rules.
 
 ## License
 
-Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).
+Dual-licensed under the MIT License or the Apache License, Version 2.0, at your
+option (`MIT OR Apache-2.0`). Both license texts are included in [LICENSE](LICENSE).
+Separately identified dependencies and vendored tools retain their own licenses.
 
 ## Copyright And Trademarks
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 #
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT OR Apache-2.0
 
 set -euo pipefail
 
@@ -35,13 +35,21 @@ esac
 
 cd "${ROOT_DIR}"
 
-if env -u RUSTFLAGS cargo build --locked -p reallyme-codec-ffi --release >/tmp/reallyme-ffi-abort-build.log 2>&1; then
+TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/reallyme-ffi-abi.XXXXXX")"
+readonly TEMP_DIR
+trap 'rm -rf "${TEMP_DIR}"' EXIT
+
+if env -u RUSTFLAGS cargo build --locked -p reallyme-codec-ffi --release --target-dir "${ROOT_DIR}/target" >"${TEMP_DIR}/abort-build.log" 2>&1; then
   echo "release FFI build unexpectedly succeeded without panic=unwind" >&2
+  exit 1
+fi
+if ! grep -Fq "reallyme-codec-ffi must be compiled with panic=unwind" "${TEMP_DIR}/abort-build.log"; then
+  echo "release FFI build failed before verifying the panic=unwind requirement" >&2
   exit 1
 fi
 
 readonly FFI_RUSTFLAGS="${RUSTFLAGS:+${RUSTFLAGS} }-C panic=unwind"
-RUSTFLAGS="${FFI_RUSTFLAGS}" cargo build --locked -p reallyme-codec-ffi --release
+RUSTFLAGS="${FFI_RUSTFLAGS}" cargo build --locked -p reallyme-codec-ffi --release --target-dir "${ROOT_DIR}/target"
 
 if [[ ! -f "${LIBRARY_PATH}" ]]; then
   echo "release FFI artifact was not produced at ${LIBRARY_PATH}" >&2
@@ -57,8 +65,7 @@ else
   exit 1
 fi
 
-readonly SYMBOL_DUMP="$(mktemp "${TMPDIR:-/tmp}/reallyme-ffi-symbols.XXXXXX")"
-trap 'rm -f "${SYMBOL_DUMP}" /tmp/reallyme-ffi-abort-build.log' EXIT
+readonly SYMBOL_DUMP="${TEMP_DIR}/symbols"
 
 "${NM_TOOL}" -g "${LIBRARY_PATH}" >"${SYMBOL_DUMP}"
 

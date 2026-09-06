@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 import { ReallyMeCodecError } from "./errors.js";
 
@@ -136,7 +136,7 @@ export const requireBoundaryUtf8String = (
   if (value.length > maximum) {
     invalidInput();
   }
-  const length = utf8ByteLength(value);
+  const length = strictUtf8ByteLength(value);
   requireBoundaryAggregate([length], maximum);
   return length;
 };

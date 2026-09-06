@@ -1,6 +1,4 @@
 # SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
-#
-# SPDX-License-Identifier: Apache-2.0
 
 [workspace]
 resolver = "2"
@@ -24,7 +22,7 @@ exclude = ["fuzz"]
 [workspace.package]
 edition = "2021"
 rust-version = "1.96"
-license = "Apache-2.0"
+license = "MIT OR Apache-2.0"
 repository = "https://github.com/reallyme/codec"
 publish = false
 
@@ -36,7 +34,7 @@ publish = false
 [workspace.dependencies]
 base64 = { version = "0.23", default-features = false, features = ["std"] }
 bs58 = "0.5"
-buffa = { version = "0.9.1", features = ["json"] }
+buffa = { version = "0.9.2", features = ["json"] }
 cid = "0.11.3"
 hex = "0.4"
 hex-literal = "1.1"

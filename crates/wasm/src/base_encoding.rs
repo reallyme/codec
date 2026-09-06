@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 use codec_core::scalar_ops::{
     decode_base64, decode_base64url, decode_lower_hex, encode_base64, encode_base64url,

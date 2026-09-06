@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 // The recursive deterministic-CBOR protobuf tree adds wrapper and length-prefix
 // bytes around a semantic document. These transport constants deliberately

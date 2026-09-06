@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 #![allow(missing_docs)]
 use codec_base64::{base64_to_bytes, bytes_to_base64, Base64Error};
@@ -101,4 +101,34 @@ fn rejects_non_canonical_trailing_bits() {
     // "Zg==" is canonical for "f"; changing the second sextet to "h"
     // preserves the decoded byte in lax decoders but sets non-zero pad bits.
     assert!(base64_to_bytes("Zh==").is_err());
+}
+
+#[test]
+fn rejects_late_decode_errors_without_returning_partial_bytes() {
+    let prefix = "YWJj".repeat(1024);
+    for suffix in ["!!!!", "Zh==", "Zg=", "Zg==extra"] {
+        assert!(matches!(
+            base64_to_bytes(&(prefix.clone() + suffix)),
+            Err(codec_base64::Base64Error::Invalid)
+        ));
+    }
+}
+
+#[test]
+fn owned_decode_matches_original_backend_across_lengths_and_bad_tails() -> Result<(), Base64Error> {
+    use base64::{engine::general_purpose::STANDARD, Engine as _};
+    // Exercise all input-length residues and both padded tails, including
+    // malformed suffixes after enough complete blocks to write partial output.
+    let data: Vec<u8> = (0..=255).collect();
+    for length in 0..=data.len() {
+        let encoded = STANDARD.encode(&data[..length]);
+        for suffix in ["", "=", "!", "A", "AA", "AB", "\n", "é"] {
+            let input = encoded.clone() + suffix;
+            match STANDARD.decode(&input) {
+                Ok(expected) => assert_eq!(base64_to_bytes(&input)?, expected),
+                Err(_) => assert!(matches!(base64_to_bytes(&input), Err(Base64Error::Invalid))),
+            }
+        }
+    }
+    Ok(())
 }

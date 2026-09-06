@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{CborError, CborValue, MAX_DAG_CBOR_INPUT_LEN, MAX_NESTING_DEPTH};
 use std::cmp::Ordering;
 use std::str;
+use zeroize::Zeroizing;
 
 const MT_UINT: u8 = 0;
 const MT_NEGINT: u8 = 1;
@@ -34,10 +35,11 @@ pub fn decode_dag_cbor(bytes: &[u8]) -> Result<CborValue, CborError> {
         return Err(CborError::InputTooLarge);
     }
     let (value, offset) = decode_value(bytes, 0, 0)?;
+    let mut value = Zeroizing::new(value);
     if offset != bytes.len() {
         return Err(CborError::TrailingBytes);
     }
-    Ok(value)
+    Ok(core::mem::replace(&mut *value, CborValue::Null))
 }
 
 /// `depth` is the number of array/map containers currently open. It is
@@ -57,6 +59,15 @@ fn decode_value(
 
     let major = first >> 5;
     let ai = first & 0x1f;
+
+    // Floating-point payload bits are caller data, not simple-value codes.
+    // Reject the type before reading them so typed errors cannot retain a
+    // private number or arbitrary eight-byte payload in their metadata.
+    if major == 7 && (25..=27).contains(&ai) {
+        return Err(CborError::DisallowedSimpleValue {
+            value: u64::from(ai),
+        });
+    }
 
     let (arg, new_offset) = read_argument(bytes, offset, ai)?;
     offset = new_offset;
@@ -98,14 +109,14 @@ fn decode_value(
             // header such as `9B 7F FF …`).
             bounded_capacity(item_count, bytes.len(), offset)?;
             let capacity = initial_container_capacity(item_count);
-            let mut items = Vec::with_capacity(capacity);
+            let mut items = Zeroizing::new(Vec::with_capacity(capacity));
             let mut off = offset;
             for _ in 0..item_count {
                 let (v, next) = decode_value(bytes, off, child_depth)?;
                 items.push(v);
                 off = next;
             }
-            Ok((CborValue::Array(items), off))
+            Ok((CborValue::Array(core::mem::take(&mut *items)), off))
         }
 
         MT_MAP => {
@@ -118,20 +129,21 @@ fn decode_value(
                 .ok_or(CborError::OffsetOverflow)?;
             bounded_capacity_with_min(entry_count, bytes.len(), offset, entry_min)?;
             let capacity = initial_container_capacity(entry_count);
-            let mut entries = Vec::with_capacity(capacity);
+            let mut entries = Zeroizing::new(Vec::with_capacity(capacity));
             let mut off = offset;
-            let mut last_key_bytes: Option<Vec<u8>> = None;
+            let mut last_key_bytes: Option<Zeroizing<Vec<u8>>> = None;
 
             for _ in 0..entry_count {
                 let (key_val, key_off) = decode_value(bytes, off, child_depth)?;
                 off = key_off;
 
-                let key = match key_val {
-                    CborValue::String(s) => s,
+                let mut key_val = Zeroizing::new(key_val);
+                let mut key = Zeroizing::new(match &mut *key_val {
+                    CborValue::String(s) => core::mem::take(s),
                     _ => return Err(CborError::MapKeyMustBeString),
-                };
+                });
 
-                let key_bytes = key.as_bytes().to_vec();
+                let key_bytes = Zeroizing::new(key.as_bytes().to_vec());
                 if let Some(prev) = &last_key_bytes {
                     match compare_bytes(prev, &key_bytes) {
                         Ordering::Less => {}
@@ -144,10 +156,10 @@ fn decode_value(
                 let (val, val_off) = decode_value(bytes, off, child_depth)?;
                 off = val_off;
 
-                entries.push((key, val));
+                entries.push((core::mem::take(&mut *key), val));
             }
 
-            Ok((CborValue::Map(entries), off))
+            Ok((CborValue::Map(core::mem::take(&mut *entries)), off))
         }
 
         7 => match arg {
@@ -241,9 +253,11 @@ fn extract_bytes(bytes: &[u8], offset: usize, len: u64) -> Result<(Vec<u8>, usiz
 }
 
 fn extract_string(bytes: &[u8], offset: usize, len: u64) -> Result<(String, usize), CborError> {
-    let (raw, off) = extract_bytes(bytes, offset, len)?;
-    let s = str::from_utf8(&raw).map_err(|_| CborError::InvalidUtf8)?;
-    Ok((s.to_string(), off))
+    let len = usize::try_from(len).map_err(|_| CborError::LengthTooLarge)?;
+    let end = checked_end(offset, len)?;
+    let raw = bytes.get(offset..end).ok_or(CborError::TruncatedBytes)?;
+    let s = str::from_utf8(raw).map_err(|_| CborError::InvalidUtf8)?;
+    Ok((s.to_string(), end))
 }
 
 fn checked_end(offset: usize, len: usize) -> Result<usize, CborError> {

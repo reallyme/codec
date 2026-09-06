@@ -1,7 +1,5 @@
 <!--
 SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
-
-SPDX-License-Identifier: Apache-2.0
 -->
 
 # ReallyMeCodec Swift
@@ -19,7 +17,7 @@ by Git URL; the source lives under `packages/swift` with the other language SDKs
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.2.2"
+    from: "0.2.3"
 )
 ```
 
@@ -49,12 +47,14 @@ let decoded = try codec.base64urlDecode(encoded)
 ```
 
 `ReallyMeCodec` exposes PEM armor, lowercase hex, base64/base64url, multibase,
-multicodec, multikey, DAG-CBOR, CID helpers, and JCS. The package does not
+multicodec, multikey, deterministic CBOR, DAG-CBOR, CID helpers, and JCS. The package does not
 silently fall back to local Swift implementations.
 
 Deterministic generic CBOR and DAG-CBOR use typed value builders:
 
 ```swift
+import Foundation
+
 let value = ReallyMeDeterministicCbor.mapText([
     ("b", ReallyMeDeterministicCbor.unsigned(2)),
     ("a", ReallyMeDeterministicCbor.bytes(Data([0, 1, 2]))),
@@ -77,6 +77,8 @@ The deterministic-CBOR builder supports integer and text map keys; the
 `ReallyMeDagCbor` builder intentionally exposes text-key maps only because
 DAG-CBOR has the stricter key profile. Both routes use the same generated
 protobuf operation contract and bounded SwiftProtobuf depth/resource checks.
+The shared value type does not make the profiles interchangeable: DAG-CBOR
+rejects integer map keys and integers above `Int64.max`.
 
 PEM input, output, and decoded DER use `[UInt8]` rather than `String` so
 callers can clear private-key material promptly with their own memory policy.
@@ -102,3 +104,8 @@ REALLYME_CODEC_SWIFTPM_RUNTIME_FFI=1 \
 REALLYME_CODEC_FFI_LIBRARY_PATH="$PWD/target/debug/libreallyme_codec_ffi.dylib" \
 swift test
 ```
+
+## License
+
+Dual-licensed under the MIT License or Apache License, Version 2.0, at your
+option. See [LICENSE](../../LICENSE) for both license texts.

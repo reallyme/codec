@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 use serde::{Deserialize, Deserializer, Serializer};
+use zeroize::Zeroizing;
 
 use crate::{base64url_to_bytes, bytes_to_base64url};
 
@@ -12,7 +13,10 @@ where
     S: Serializer,
 {
     match bytes {
-        Some(value) => serializer.serialize_some(&bytes_to_base64url(value)),
+        Some(value) => {
+            let encoded = Zeroizing::new(bytes_to_base64url(value));
+            serializer.serialize_some(encoded.as_str())
+        }
         None => serializer.serialize_none(),
     }
 }
@@ -24,7 +28,7 @@ where
 {
     let encoded = Option::<String>::deserialize(deserializer)?;
     match encoded {
-        Some(value) => base64url_to_bytes(&value)
+        Some(value) => base64url_to_bytes(&Zeroizing::new(value))
             .map(Some)
             .map_err(serde::de::Error::custom),
         None => Ok(None),

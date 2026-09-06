@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -284,6 +284,43 @@ test("byte boundaries reject proxy-wrapped typed arrays before length reads", ()
   });
   assertCodecError(() => base58btcEncode(forged), "invalid-input");
   assertCodecError(() => multicodecStripPrefix(forged), "invalid-input");
+});
+
+test("byte boundaries reject shadowed metadata and species without executing getters", () => {
+  for (const property of ["constructor", "length", "byteLength", "byteOffset", "buffer", "subarray"]) {
+    let getterInvoked = false;
+    const input = Uint8Array.of(0xa5);
+    Object.defineProperty(input, property, {
+      get() {
+        getterInvoked = true;
+        throw new Error("untrusted getter must not run");
+      },
+    });
+    assertCodecError(() => base64Encode(input), "invalid-input");
+    assertCodecError(() => processOperation(input), "invalid-input");
+    assert.equal(getterInvoked, false);
+    assert.equal(input[0], 0xa5);
+  }
+  const hiddenLength = new Uint8Array(MAX_CODEC_PROTO_MESSAGE_BYTES + 1);
+  Object.defineProperty(hiddenLength, "length", { value: 0 });
+  assertCodecError(() => processOperation(hiddenLength), "invalid-input");
+});
+
+test("byte boundaries reject substituted subarray contents and preserve ordinary views", () => {
+  const forged = Uint8Array.of(0xa5);
+  Object.defineProperty(forged, "subarray", {
+    value() { return Uint8Array.of(0x00); },
+  });
+  assertCodecError(() => base64Encode(forged), "invalid-input");
+  assert.equal(forged[0], 0xa5);
+
+  const backing = Uint8Array.of(0x00, 0xa5, 0xff);
+  const view = backing.subarray(1, 2);
+  Object.defineProperty(view, "applicationMetadata", { value: "harmless" });
+  Object.defineProperty(view, "constructor", { value: Uint8Array });
+  assert.equal(base64Encode(view), "pQ==");
+  assert.equal(base64Encode(new Uint8Array(backing.buffer, 1, 0)), "");
+  assert.deepEqual(backing, Uint8Array.of(0x00, 0xa5, 0xff));
 });
 
 test("ReallyMeCodec object exposes every codec family", () => {
@@ -1136,6 +1173,33 @@ test("JCS canonicalization is stable for supported JSON values", () => {
   assertCodecError(() => canonicalizeJsonText("{\"a\":1,\"a\":2}"), "invalid-input");
   assertCodecError(() => canonicalizeJsonText("18446744073709551615"), "invalid-input");
   assertCodecError(() => canonicalizeJsonText("1e19"), "invalid-input");
+});
+
+test("JCS rejects literal unpaired UTF-16 surrogates before WASM conversion", () => {
+  for (const invalid of ["\ud800", "\udfff", "\ud800x", "\ud800\ud800"]) {
+    const input = `{"value":"${invalid}"}`;
+    assertCodecError(() => canonicalizeJsonText(input), "invalid-input");
+    assert.throws(() => wasm.canonicalizeJson(input), (error) => error === "invalid-input");
+  }
+  const paired = '{"value":"\ud83d\udd10"}';
+  assert.equal(canonicalizeJsonText(paired), paired);
+  assert.equal(wasm.canonicalizeJson(paired), paired);
+});
+
+test("CID validation rejects paths and extra decoded bytes across WASM and protobuf", () => {
+  const payload = Uint8Array.of(0xa0);
+  const canonical = dagCborComputeCid(payload);
+  const raw = Uint8Array.from(Buffer.from("01711220", "hex"));
+  const digest = createHash("sha256").update(payload).digest();
+  const withSuffix = `f${Buffer.concat([raw, digest, Buffer.from([0])]).toString("hex")}`;
+  for (const invalid of [withSuffix, `/ipfs/${canonical}`, `https://example.invalid/ipfs/${canonical}`, `z${"1".repeat(1024)}`]) {
+    assert.equal(isValidCidString(invalid), false);
+    assert.equal(wasm.isValidCidString(invalid), false);
+    const result = dagCborVerifyCid(invalid, payload);
+    assert.equal(result.valid, false);
+    assert.equal(result.actualCid, "");
+    assert.equal(result.expectedCid, canonical);
+  }
 });
 
 test("JCS object boundary matches text boundary for bounded JSON values", () => {

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 import org.gradle.api.publish.maven.tasks.PublishToMavenLocal
 import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
@@ -18,7 +18,7 @@ plugins {
 }
 
 group = "me.really"
-version = "0.2.2"
+version = "0.2.3"
 
 dependencyLocking {
     lockAllConfigurations()
@@ -390,6 +390,11 @@ publishing {
                 description.set("ReallyMe codec compatibility facade for Java, Kotlin, JVM, and Android.")
                 url.set("https://github.com/reallyme/codec")
                 licenses {
+                    license {
+                        name.set("MIT License")
+                        url.set("https://opensource.org/license/mit")
+                        distribution.set("repo")
+                    }
                     license {
                         name.set("Apache License, Version 2.0")
                         url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")

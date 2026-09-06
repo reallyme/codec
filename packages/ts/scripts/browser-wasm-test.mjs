@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 import { spawn } from "node:child_process";
-import { createServer } from "node:http";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, extname, resolve, sep } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { startStaticServer } from "./browser-test-server.mjs";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const packageDirectory = resolve(scriptDirectory, "..");
@@ -38,22 +38,6 @@ if (chromeExecutable === undefined) {
 if (typeof WebSocket !== "function") {
   fail("Node.js with a global WebSocket implementation is required.");
 }
-
-const mimeType = (path) => {
-  switch (extname(path)) {
-    case ".html":
-      return "text/html; charset=utf-8";
-    case ".js":
-    case ".mjs":
-      return "text/javascript; charset=utf-8";
-    case ".wasm":
-      return "application/wasm";
-    case ".json":
-      return "application/json; charset=utf-8";
-    default:
-      return "application/octet-stream";
-  }
-};
 
 const browserTestPage = () => `<!doctype html>
 <meta charset="utf-8">
@@ -126,48 +110,6 @@ try {
   });
 }
 </script>`;
-
-const isPathInside = (root, target) => {
-  const relative = target.slice(root.length);
-  return target === root || (target.startsWith(root) && relative.startsWith(sep));
-};
-
-const startStaticServer = () =>
-  new Promise((resolveServer, rejectServer) => {
-    const server = createServer((request, response) => {
-      const url = new URL(request.url ?? "/", "http://127.0.0.1");
-      if (url.pathname === "/browser-wasm-test.html") {
-        response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-        response.end(browserTestPage());
-        return;
-      }
-
-      const relativePath = decodeURIComponent(url.pathname).replace(/^\/+/u, "");
-      const normalizedPath = resolve(packageDirectory, relativePath);
-      if (!isPathInside(packageDirectory, normalizedPath) || basename(normalizedPath) === "") {
-        response.writeHead(404);
-        response.end();
-        return;
-      }
-      try {
-        const body = readFileSync(normalizedPath);
-        response.writeHead(200, { "Content-Type": mimeType(normalizedPath) });
-        response.end(body);
-      } catch {
-        response.writeHead(404);
-        response.end();
-      }
-    });
-    server.once("error", rejectServer);
-    server.listen(0, "127.0.0.1", () => {
-      const address = server.address();
-      if (address === null || typeof address === "string") {
-        rejectServer(new Error("browser test server did not bind a TCP port"));
-        return;
-      }
-      resolveServer({ server, port: address.port });
-    });
-  });
 
 const fetchJson = async (url) => {
   const response = await fetch(url);
@@ -314,7 +256,7 @@ const runBrowserTest = async ({ serverPort, debuggerPort }) => {
 };
 
 const run = async () => {
-  const { server, port: serverPort } = await startStaticServer();
+  const { server, port: serverPort } = await startStaticServer({ packageDirectory, testPage: browserTestPage });
   const userDataDir = mkdtempSync(resolve(tmpdir(), "reallyme-codec-chrome-"));
   const chrome = spawn(chromeExecutable, [
     "--headless=new",

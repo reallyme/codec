@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::HexError;
+use zeroize::Zeroizing;
 
 /// Decode canonical lowercase hexadecimal bytes.
 pub fn lower_hex_to_bytes(input: &str) -> Result<Vec<u8>, HexError> {
@@ -11,14 +12,14 @@ pub fn lower_hex_to_bytes(input: &str) -> Result<Vec<u8>, HexError> {
         return Err(HexError::OddLength);
     }
 
-    let mut output = Vec::with_capacity(pairs.len());
+    let mut output = Zeroizing::new(Vec::with_capacity(pairs.len()));
     for [high_byte, low_byte] in pairs {
         let high = lower_hex_value(*high_byte)?;
         let low = lower_hex_value(*low_byte)?;
         output.push((high << 4) | low);
     }
 
-    Ok(output)
+    Ok(core::mem::take(&mut *output))
 }
 
 fn lower_hex_value(byte: u8) -> Result<u8, HexError> {

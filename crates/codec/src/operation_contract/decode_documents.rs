@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 fn process_deterministic_cbor_decode(
     encoded: &[u8],
@@ -88,21 +88,23 @@ fn dag_cbor_value_from_proto(
             try_copy_deterministic_bytes(&value.value)?,
         )),
         Some(codec_deterministic_cbor_value::Value::ArrayValue(value)) => {
-            let mut values = try_deterministic_vec(value.values.len())?;
+            let mut values = Zeroizing::new(try_deterministic_vec(value.values.len())?);
             for child in &value.values {
                 values.push(dag_cbor_value_from_proto(child)?);
             }
-            Ok(CborValue::Array(values))
+            Ok(CborValue::Array(core::mem::take(&mut *values)))
         }
         Some(codec_deterministic_cbor_value::Value::MapValue(value)) => {
-            let mut entries = try_deterministic_vec(value.entries.len())?;
+            let mut entries = Zeroizing::new(try_deterministic_vec(value.entries.len())?);
             for entry in &value.entries {
+                let mut key = Zeroizing::new(dag_cbor_key_from_field(&entry.key)?);
+                let value = dag_cbor_value_from_field(&entry.value)?;
                 entries.push((
-                    dag_cbor_key_from_field(&entry.key)?,
-                    dag_cbor_value_from_field(&entry.value)?,
+                    core::mem::take(&mut *key),
+                    value,
                 ));
             }
-            Ok(CborValue::Map(entries))
+            Ok(CborValue::Map(core::mem::take(&mut *entries)))
         }
         None => Err(malformed_request_wire_error()),
     }

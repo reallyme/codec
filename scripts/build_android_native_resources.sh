@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 #
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT OR Apache-2.0
 
 set -euo pipefail
 
@@ -45,7 +45,8 @@ build_android_target() {
   export "${linker_var}=${TOOLCHAIN_BIN}/${clang_prefix}${ANDROID_API}-clang"
   export "${ar_var}=${TOOLCHAIN_BIN}/llvm-ar"
   RUSTFLAGS="${FFI_RUSTFLAGS}" \
-    cargo build --locked -p reallyme-codec-ffi --release --target "${rust_target}"
+    cargo build --locked -p reallyme-codec-ffi --release --target "${rust_target}" \
+      --manifest-path "${ROOT_DIR}/Cargo.toml" --target-dir "${ROOT_DIR}/target"
 
   mkdir -p "${JNI_LIBS_ROOT}/${abi}"
   local staged_library="${JNI_LIBS_ROOT}/${abi}/libreallyme_codec_ffi.so"

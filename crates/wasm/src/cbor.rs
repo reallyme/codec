@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 use codec_core::scalar_ops::{
     compute_dag_cbor_cid, dag_cbor_codec_code as scalar_dag_cbor_codec_code, dag_cbor_content_hash,

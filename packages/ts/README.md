@@ -1,7 +1,5 @@
 <!--
 SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
-
-SPDX-License-Identifier: Apache-2.0
 -->
 
 # @reallyme/codec
@@ -55,17 +53,17 @@ const decoded = ReallyMeCodec.base64urlDecode(encoded);
 `processOperationJson` accepts UTF-8 bytes containing the generated ProtoJSON
 view of that same message. Both return binary `CodecOperationResponse` bytes;
 expected validation failures are represented by its typed error outcome and
-are not thrown as backend exceptions. Operation-specific public methods use
+are not thrown as backend exceptions. Structured public methods use
 that same fully discriminated response internally; the package does not keep
 operation-specific `*Proto` helper APIs or hand-written structured JSON result
-paths.
+paths. Base encodings, predicates, and JCS use dedicated Rust WASM functions.
 
 The deterministic-CBOR API uses a closed recursive value model with exact
 `bigint` integers, `Uint8Array` byte strings, arrays, and entry-list maps with
 integer or text keys. It does not use JavaScript `number` for integers. Floats,
 tags, indefinite-length items, arbitrary simple values, and
 compound map keys are outside the supported profile. DAG-CBOR remains a
-separate, stricter profile and retains its existing APIs and behavior.
+separate profile restricted to text map keys and signed 64-bit integers.
 
 ```ts
 const value = ReallyMeDeterministicCbor.mapText([
@@ -85,7 +83,16 @@ non-canonical input, unsupported CBOR types, and values beyond the documented
 resource limits. DAG-CBOR builders expose text-key maps and byte/integer
 helpers; deterministic CBOR additionally supports integer-key maps and the
 complete documented `u64`/`i64` integer ranges. `Uint8Array` is the canonical
-mutable-byte boundary for browser, Node, and WASM callers.
+mutable-byte boundary for browser, Node, and WASM callers. Pass ordinary
+`Uint8Array` views; subclasses (including Node `Buffer`), proxies, and overridden
+byte metadata or copy methods are rejected. Create a plain `Uint8Array` copy
+when adapting other byte containers.
+
+JCS rejects duplicate properties, unpaired UTF-16 surrogates, and integer-valued
+numbers outside the exact JavaScript integer range. CID validation accepts
+CIDv0 and supported multibase CIDv1 strings up to 1024 UTF-8 bytes; paths and
+trailing decoded bytes are rejected. CID computation uses DAG-CBOR/SHA-256
+CIDv1 in lowercase base32 and hashes the supplied bytes without parsing CBOR.
 
 Encoded CBOR and decoded byte-string values can contain the complete sensitive
 document. Returned buffers belong to the caller and should be cleared with
@@ -103,3 +110,8 @@ SDKs.
 
 Errors are typed as `ReallyMeCodecError`; they do not include raw input bytes
 or backend exception text.
+
+## License
+
+Dual-licensed under the MIT License or Apache License, Version 2.0, at your
+option. See [LICENSE](LICENSE) for both license texts.

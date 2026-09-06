@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 #![allow(missing_docs)]
 #![allow(
@@ -190,4 +190,37 @@ fn rejects_indefinite_length_map() {
     ];
 
     assert!(decode_dag_cbor(&bad).is_err());
+}
+
+#[test]
+fn duplicate_map_keys_are_rejected_before_child_errors() {
+    let mut deep = CborValue::Null;
+    for _ in 0..=MAX_NESTING_DEPTH {
+        deep = CborValue::Array(vec![deep]);
+    }
+    for invalid_child in [deep, CborValue::Bytes(vec![0; MAX_DAG_CBOR_INPUT_LEN])] {
+        let value = CborValue::Map(vec![
+            ("duplicate".into(), invalid_child),
+            ("duplicate".into(), CborValue::Null),
+        ]);
+        assert_eq!(encode_dag_cbor(&value), Err(CborError::DuplicateMapKey));
+    }
+}
+
+#[test]
+fn encoded_output_at_exact_limit_preserves_payload() {
+    // A byte string of this size has a five-byte CBOR header.
+    let payload = vec![0xa5; MAX_DAG_CBOR_INPUT_LEN - 5];
+    let encoded = enc(&CborValue::Bytes(payload.clone()));
+    assert_eq!(encoded.len(), MAX_DAG_CBOR_INPUT_LEN);
+    assert_eq!(&encoded[..5], &[0x5a, 0x00, 0x0f, 0xff, 0xfb]);
+    assert_eq!(&encoded[5..], payload);
+    assert_eq!(
+        decode_dag_cbor(&encoded).unwrap(),
+        CborValue::Bytes(payload)
+    );
+    assert_eq!(
+        encode_dag_cbor(&CborValue::Bytes(vec![0xa5; MAX_DAG_CBOR_INPUT_LEN - 4])),
+        Err(CborError::OutputTooLarge)
+    );
 }

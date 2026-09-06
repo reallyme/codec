@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 use codec_multibase::bytes_to_multibase58btc;
 use codec_multicodec::{KeyMaterialKind, MULTICODEC_TABLE, VARIABLE_KEY_LENGTH};

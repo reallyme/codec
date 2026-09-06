@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 #
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT OR Apache-2.0
 
 set -euo pipefail
 
@@ -151,7 +151,7 @@ mkdir -p "${HEADERS_DIR}" "${BUILD_DIR}/libs"
 cat >"${HEADERS_DIR}/reallyme_codec_ffi.h" <<'HEADER'
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 #ifndef REALLYME_CODEC_FFI_H
 #define REALLYME_CODEC_FFI_H

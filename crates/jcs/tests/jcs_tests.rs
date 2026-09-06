@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 #![allow(missing_docs)]
 use codec_jcs::{canonicalize_json_text, canonicalize_trusted_json_value, JcsError};
@@ -127,4 +127,16 @@ fn raw_json_rejects_invalid_or_trailing_input() {
         canonicalize_json_text(r#"{"a":1} {"b":2}"#),
         Err(JcsError::InvalidJson)
     );
+}
+
+#[test]
+fn malformed_objects_fail_after_accepting_sensitive_keys_and_values() {
+    for input in [
+        r#"{"identity-key":{"name":"example"},"pending-key":"#,
+        r#"{"identity-key":{"name":"example"},"pending-key":[true,}"#,
+        r#"{"identity-key":{"name":"example"},"unterminated-key"#,
+        r#"{"identity-key":{"name":"example"},"identity-key":{"broken":}"#,
+    ] {
+        assert_eq!(canonicalize_json_text(input), Err(JcsError::InvalidJson));
+    }
 }

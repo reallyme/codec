@@ -1,7 +1,5 @@
 <!--
 SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
-
-SPDX-License-Identifier: Apache-2.0
 -->
 
 # reallyme-codec
@@ -20,15 +18,15 @@ Canonicalization Scheme helpers.
 
 ```toml
 [dependencies]
-reallyme-codec = "0.2.2"
+reallyme-codec = "0.2.3"
 ```
 
-The default feature set enables every codec family. Consumers that need a
+The default feature set enables every primitive codec family. Consumers that need a
 smaller dependency surface can select only the families they use:
 
 ```toml
 [dependencies]
-reallyme-codec = { version = "0.2.2", default-features = false, features = ["base64url", "multikey"] }
+reallyme-codec = { version = "0.2.3", default-features = false, features = ["base64url", "multikey"] }
 ```
 
 ## Quick Start
@@ -63,7 +61,11 @@ DTOs that carry byte fields as unpadded base64url strings can enable the
 - `multicodec`
 - `multikey`
 - `pem`
-- `serde`
+- `serde` — base64url serde field adapters
+- `operation-contract` — generated binary protobuf and ProtoJSON dispatch
+
+`serde` and `operation-contract` are opt-in; they are not part of the default
+feature set. The operation contract enables its required codec families.
 
 ## Package Contract
 
@@ -75,3 +77,8 @@ released in lockstep with `reallyme-codec`.
 Rust consumers should usually depend on this umbrella crate. Direct use of a
 leaf crate is appropriate only when the consumer deliberately needs a smaller
 primitive surface and accepts the same lockstep ReallyMe Codec release line.
+
+## License
+
+Dual-licensed under the MIT License or Apache License, Version 2.0, at your
+option. See [LICENSE](LICENSE) for both license texts.

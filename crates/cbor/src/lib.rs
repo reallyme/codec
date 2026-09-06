@@ -1,18 +1,16 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
-//! Deterministic DAG-CBOR codec for authoritative, cryptographically
-//! signed data.
+//! Deterministic generic CBOR and a DAG-CBOR subset with content-ID helpers.
 //!
-//! The decoder is strict by construction: it rejects non-canonical
+//! Both profiles reject non-canonical
 //! integers, indefinite-length items, floats, tags, out-of-order map keys,
 //! and trailing bytes, so a given value has exactly one accepted encoding.
-//! Decoding untrusted input is bounded in input size, memory, and stack
-//! depth — container length prefixes are checked against the remaining input
-//! before any allocation, and nesting is capped at [`MAX_NESTING_DEPTH`] — so
-//! neither a crafted length nor pathological nesting can drive an
-//! out-of-memory or stack-overflow abort.
+//! DAG-CBOR supports text map keys and signed 64-bit integers. Generic CBOR
+//! also supports integer map keys and the full unsigned 64-bit range.
+//! Input-size and nesting limits bound parser work; declared container lengths
+//! are checked against remaining input before allocating their contents.
 
 mod cid;
 mod decode_dag_cbor;
@@ -23,24 +21,24 @@ mod encode_deterministic_cbor;
 mod error;
 mod value;
 
-/// Maximum array/map nesting depth accepted by [`decode_dag_cbor`].
+/// Maximum array/map nesting depth accepted by DAG-CBOR encode and decode.
 ///
-/// Authoritative documents in this system are shallow; this bound is far
-/// above any legitimate structure while still stopping a hostile input
-/// from recursing the decoder into a stack overflow.
+/// Limits recursive traversal of caller-controlled containers. Runtime
+/// adapters may enforce stricter transport limits.
 pub const MAX_NESTING_DEPTH: usize = 128;
 
-/// Maximum encoded DAG-CBOR byte length accepted at public decode/hash
-/// boundaries.
+/// Maximum encoded DAG-CBOR byte length accepted by encode and decode.
 ///
 /// This is a defense-in-depth bound for authoritative signed documents. It is
 /// intentionally much larger than expected production payloads while keeping
-/// parser, hash, and allocation work predictable under hostile input.
+/// parser and allocation work predictable under hostile input. Borrowed-byte
+/// hash and CID helpers do not enforce this cap or validate CBOR syntax.
 pub const MAX_DAG_CBOR_INPUT_LEN: usize = 1024 * 1024;
 
 pub use cid::{
     compute_cid_dag_cbor, dag_cbor_multihash, is_valid_cid_string, sha2_256_content_hash,
     try_parse_cid, verify_dag_cbor_cid, ContentHash, DagCborMultihash, DAG_CBOR_CODEC,
+    MAX_CID_STRING_LEN,
 };
 pub use decode_dag_cbor::decode_dag_cbor;
 pub use decode_deterministic_cbor::decode_deterministic_cbor;

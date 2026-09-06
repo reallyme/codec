@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 #![allow(missing_docs)]
 #![allow(
@@ -89,4 +89,41 @@ fn roundtrip_random_bytes() {
     let decoded = base64url_to_bytes(&encoded).unwrap();
 
     assert_eq!(decoded, data);
+}
+
+#[test]
+fn rejects_late_decode_errors_without_returning_partial_bytes() {
+    let prefix = "YWJj".repeat(1024);
+    for suffix in ["!!!!", "Zh", "Zg==", "Z"] {
+        assert!(matches!(
+            base64url_to_bytes(&(prefix.clone() + suffix)),
+            Err(codec_base64url::Base64UrlError::Invalid)
+        ));
+    }
+}
+
+#[test]
+fn owned_decode_matches_original_backend_for_every_two_byte_input() {
+    use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
+    // Enumerate canonical tails, nonzero pad bits, and non-UTF-8 byte input.
+    for first in 0..=u8::MAX {
+        for second in 0..=u8::MAX {
+            let input = [first, second];
+            assert_eq!(
+                base64url_bytes_to_bytes(&input).ok(),
+                URL_SAFE_NO_PAD.decode(input).ok()
+            );
+        }
+    }
+    let data: Vec<u8> = (0..=255).collect();
+    for length in 0..=data.len() {
+        let encoded = URL_SAFE_NO_PAD.encode(&data[..length]);
+        for suffix in ["", "=", "!", "A", "AA", "AB", "\n"] {
+            let input = encoded.clone() + suffix;
+            assert_eq!(
+                base64url_to_bytes(&input).ok(),
+                URL_SAFE_NO_PAD.decode(&input).ok()
+            );
+        }
+    }
 }

@@ -1,7 +1,5 @@
 <!--
 SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
-
-SPDX-License-Identifier: Apache-2.0
 -->
 
 # Protobuf
@@ -10,7 +8,8 @@ The codec protobuf operation contract lives in the publishable proto crate at
 [`../crates/proto/proto/reallyme/codec/v1/codec.proto`](../crates/proto/proto/reallyme/codec/v1/codec.proto).
 Use it when another protocol needs stable codec error envelopes, fixed-shape
 codec results, codec-owned configuration values, or the single executable
-`CodecOperationRequest` boundary.
+`CodecOperationRequest` boundary. Rust consumers enable the main crate's
+`operation-contract` feature to access executable dispatch.
 
 The proto crate defines messages only and intentionally declares no service.
 Executable dispatch is owned by the main `reallyme-codec` crate so native Rust
@@ -50,7 +49,7 @@ Errors crossing package, RPC, storage, telemetry, FFI, or SDK boundaries must
 map into `CodecErrorReason`. They must not include raw invalid input, PII,
 secrets, or backend exception text.
 
-All transport adapters converge on the same model:
+Structured operation adapters converge on the same model:
 
 1. Encode exactly one generated `CodecOperationRequest`.
 2. Call the binary operation boundary (or its generated ProtoJSON request
@@ -59,7 +58,8 @@ All transport adapters converge on the same model:
 4. Match its generated outcome oneof, then match the operation-specific result
    oneof or consume the typed `CodecError` directly.
 
-There is no out-of-band operation selector and no JSON result envelope.
+This generated operation lane has no out-of-band operation selector and no
+JSON result envelope.
 Operation-specific SDK helpers are conveniences that construct the generated
 request before entering this same boundary:
 
@@ -70,9 +70,11 @@ request before entering this same boundary:
 | Swift | `processOperation(_:)` | `processOperationJson(_:)` |
 | Kotlin / Java | `processOperation(byte[])` | `processOperationJson(byte[])` |
 
-Every typed SDK method constructs the corresponding generated request and
-requires the exact generated result variant. No operation-specific `*Proto`
-facade or opaque payload decoder is retained.
+Typed structured SDK methods construct the corresponding generated request
+and require the exact generated result variant. Base encodings, predicates,
+and JCS use dedicated scalar adapter calls. The native scalar ABI also retains
+legacy metadata operations; current structured SDK methods use the generated
+operation lane. No operation-specific `*Proto` facade is retained.
 
 The JSON transport is only the generated ProtoJSON view of
 `CodecOperationRequest`. Unknown fields, malformed JSON, invalid enum values,
@@ -81,7 +83,7 @@ typed `CodecOperationResponse` error outcome. There are no SDK-specific JSON
 option DTOs or parallel structured JSON dispatch paths.
 
 Generation is intentionally checked in. After installing `protoc-gen-buffa`
-version `0.9.0`, regenerate and harden the artifacts with the complete enforced
+version `0.9.2`, regenerate and harden the artifacts with the complete enforced
 pipeline:
 
 ```sh
@@ -95,7 +97,7 @@ cargo fmt --package reallyme-codec-proto
 The sensitivity manifest at `scripts/codec_proto_sensitivity.mjs` must classify
 every protobuf `bytes` and `string` field exactly once as sensitive or
 intentionally public. Do not add a scalar field without making that security
-decision. CI also runs `buf breaking --against origin/main`, the pinned
+decision. CI also runs `buf breaking --against '.git#branch=origin/main'`, the pinned
 hardening pipeline, and a generated-tree diff to catch schema drift or stale or
 unhardened artifacts.
 
@@ -137,7 +139,8 @@ keep its lifetime short, and wipe mutable `Uint8Array` owners as soon as the
 transport operation completes. Redaction in Rust, Swift, or Java does not carry
 across into the TypeScript runtime model.
 
-Swift and Kotlin do not expose PEM-specific protobuf builders because those
-runtimes require immutable `Data` or `ByteString` owners. Managed-runtime
-callers must minimize copies and wipe mutable transient byte arrays as soon as
-practical.
+Swift and Kotlin PEM facades accept mutable byte arrays and construct the
+generated requests internally. The generated message types remain available
+to generic operation callers; their `Data` or `ByteString` storage can introduce
+additional managed copies. Minimize those copies and wipe mutable transient
+byte arrays as soon as practical.

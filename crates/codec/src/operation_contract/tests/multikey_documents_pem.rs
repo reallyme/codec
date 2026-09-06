@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 #[test]
 fn multikey_parse_dispatch_matches_primitive_parser() {
@@ -427,4 +427,56 @@ fn malformed_binary_is_a_structured_boundary_error() {
         error.reason(),
         CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF
     );
+}
+
+#[test]
+fn pem_encode_rejects_unknown_line_ending_in_binary_and_json() {
+    use codec_proto::generated::proto::reallyme::codec::v1::CodecPemEncodeRequest;
+
+    for unknown in [-1, 3, i32::MAX] {
+        let request = CodecOperationRequest {
+            operation: Some(CodecPemEncodeRequest {
+                label: CodecPemLabel::CODEC_PEM_LABEL_PUBLIC_KEY.into(),
+                der: vec![0x01],
+                options: buffa::MessageField::some(CodecPemEncodeOptions {
+                    line_ending: EnumValue::from(unknown),
+                    ..Default::default()
+                }),
+                __buffa_unknown_fields: Default::default(),
+            }.into()),
+            __buffa_unknown_fields: Default::default(),
+        };
+        let error = codec_error_payload(&process_binary_and_proto_json(&request));
+        assert_eq!(error.branch(), CodecWireErrorBranch::Boundary);
+        assert_eq!(error.reason(), CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF);
+    }
+}
+
+#[test]
+fn pem_encode_preserves_absent_unspecified_and_known_line_endings() {
+    use codec_proto::generated::proto::reallyme::codec::v1::{CodecPemEncodeRequest, CodecPemEncodeResult};
+    for (line_ending, newline) in [
+        (None, "\n"),
+        (Some(CodecPemLineEnding::CODEC_PEM_LINE_ENDING_UNSPECIFIED), "\n"),
+        (Some(CodecPemLineEnding::CODEC_PEM_LINE_ENDING_LF), "\n"),
+        (Some(CodecPemLineEnding::CODEC_PEM_LINE_ENDING_CRLF), "\r\n"),
+    ] {
+        let options = line_ending.map(|number| CodecPemEncodeOptions {
+            line_ending: EnumValue::from(number),
+            ..Default::default()
+        });
+        let request = CodecOperationRequest {
+            operation: Some(CodecPemEncodeRequest {
+                label: CodecPemLabel::CODEC_PEM_LABEL_PUBLIC_KEY.into(),
+                der: vec![0x01],
+                options: options.into(),
+                __buffa_unknown_fields: Default::default(),
+            }.into()),
+            __buffa_unknown_fields: Default::default(),
+        };
+        let response = process_binary_and_proto_json(&request);
+        let result = result_payload(&response);
+        let encoded = decode_protobuf::<CodecPemEncodeResult>(result.bytes()).unwrap();
+        assert_eq!(encoded.pem, format!("-----BEGIN PUBLIC KEY-----{newline}AQ=={newline}-----END PUBLIC KEY-----{newline}").as_bytes());
+    }
 }

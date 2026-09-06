@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 #![allow(missing_docs)]
 #![allow(
@@ -66,4 +66,27 @@ fn rejects_inputs_above_decode_cap_before_base58_conversion() {
         base58btc_decode(&oversized),
         Err(Base58Error::InputTooLarge)
     ));
+}
+
+#[test]
+fn rejects_late_invalid_character_with_stable_error() {
+    let mut encoded = "2".repeat(1024);
+    encoded.push('0');
+    assert!(matches!(
+        base58btc_decode(&encoded),
+        Err(Base58Error::InvalidCharacter)
+    ));
+}
+
+#[test]
+fn owned_decode_matches_original_backend_at_boundaries() {
+    for length in [0, 1, 2, 32, 256, MAX_BASE58BTC_INPUT_LEN] {
+        for character in ['1', '2', 'z'] {
+            let input = character.to_string().repeat(length);
+            assert_eq!(
+                base58btc_decode(&input).unwrap(),
+                bs58::decode(&input).into_vec().unwrap()
+            );
+        }
+    }
 }

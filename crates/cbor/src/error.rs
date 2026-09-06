@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 use thiserror::Error;
 
@@ -73,7 +73,8 @@ pub enum CborError {
     /// A CBOR simple value not permitted by the DAG-CBOR profile was found.
     #[error("CBOR: simple value not allowed in DAG-CBOR")]
     DisallowedSimpleValue {
-        /// The CBOR simple-value code that was rejected.
+        /// The rejected simple-value code, or the additional-info code
+        /// (25, 26, or 27) for a rejected float. Never contains float payload bits.
         value: u64,
     },
 

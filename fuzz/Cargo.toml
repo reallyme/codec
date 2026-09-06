@@ -1,6 +1,4 @@
 # SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
-#
-# SPDX-License-Identifier: Apache-2.0
 
 # Coverage-guided fuzzing harnesses for the untrusted-input parsers.
 #
@@ -18,6 +16,7 @@ name = "codec-fuzz"
 version = "0.0.0"
 edition = "2021"
 publish = false
+license = "MIT OR Apache-2.0"
 
 [package.metadata]
 cargo-fuzz = true

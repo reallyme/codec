@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 //! Fuzz the multikey parser (multibase + multicodec prefix + key binding) on
 //! arbitrary text. Property: parsing an untrusted `did:key`-style multikey

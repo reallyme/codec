@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 use bs58::decode::Error as Bs58DecodeError;
 use thiserror::Error;
@@ -70,5 +70,12 @@ pub fn base58btc_decode(s: &str) -> Result<Vec<u8>, Base58Error> {
     if s.len() > MAX_BASE58BTC_INPUT_LEN {
         return Err(Base58Error::InputTooLarge);
     }
-    bs58::decode(s).into_vec().map_err(Base58Error::from)
+    // The decoded byte count cannot exceed the ASCII input length. Supplying
+    // our own wiping buffer also covers a late invalid-character failure.
+    let mut output = Zeroizing::new(vec![0_u8; s.len()]);
+    let length = bs58::decode(s)
+        .onto(output.as_mut_slice())
+        .map_err(Base58Error::from)?;
+    output.truncate(length);
+    Ok(core::mem::take(&mut *output))
 }

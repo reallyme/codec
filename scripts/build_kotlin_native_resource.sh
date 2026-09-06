@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 #
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT OR Apache-2.0
 
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-RESOURCES_ROOT="${1:-${ROOT_DIR}/packages/kotlin/native}"
+RESOURCES_ROOT="${1:-${ROOT_DIR}/build/kotlin-native-resources}"
 FFI_RUSTFLAGS="${RUSTFLAGS:+${RUSTFLAGS} }-C panic=unwind"
 
 case "$(uname -s)" in
@@ -25,5 +25,6 @@ case "$(uname -s)" in
     ;;
 esac
 
-RUSTFLAGS="${FFI_RUSTFLAGS}" cargo build --locked -p reallyme-codec-ffi --release
+RUSTFLAGS="${FFI_RUSTFLAGS}" cargo build --locked -p reallyme-codec-ffi --release \
+  --manifest-path "${ROOT_DIR}/Cargo.toml" --target-dir "${ROOT_DIR}/target"
 node "${ROOT_DIR}/scripts/stage_kotlin_native_resource.mjs" "${LIBRARY_PATH}" "${RESOURCES_ROOT}"

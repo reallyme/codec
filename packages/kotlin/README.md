@@ -1,7 +1,5 @@
 <!--
 SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
-
-SPDX-License-Identifier: Apache-2.0
 -->
 
 # ReallyMeCodec Java/Kotlin
@@ -15,7 +13,7 @@ parsing, or DAG-CBOR on the JVM.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.2.2")
+    implementation("me.really:codec:0.2.3")
 }
 ```
 
@@ -41,7 +39,7 @@ byte[] decoded = ReallyMeCodec.base64urlDecode(encoded);
 ```
 
 `ReallyMeCodec` covers base64, base64url, lowercase hex, base58btc,
-multibase, multicodec, multikey, DAG-CBOR, JCS, and PEM armor. Structured
+multibase, multicodec, multikey, deterministic CBOR, DAG-CBOR, JCS, and PEM armor. Structured
 results such as multicodec metadata and PEM decode output are returned as typed
 SDK objects converted from the generated protobuf operation response. The JVM
 package does not keep a parallel hand-written JSON result path.
@@ -50,6 +48,9 @@ Deterministic generic CBOR and DAG-CBOR use typed builders instead of tagged
 JSON:
 
 ```kotlin
+import me.really.codec.ReallyMeDeterministicCbor
+import me.really.codec.ReallyMeDagCbor
+
 val value = ReallyMeDeterministicCbor.mapText(
     listOf(
         "b" to ReallyMeDeterministicCbor.unsignedLong(2),
@@ -64,7 +65,9 @@ val dagCbor = ReallyMeCodec.dagCborEncode(
 
 Encoding canonicalizes map ordering. Decoding rejects duplicate semantic keys,
 non-canonical input, unsupported CBOR types, and values beyond the documented
-resource limits before returning SDK owners.
+resource limits before returning SDK owners. Although the builders share a
+value type, DAG-CBOR rejects integer map keys and positive integers above
+`Long.MAX_VALUE`.
 
 PEM input, output, and decoded DER use `ByteArray` rather than `String` so
 callers can overwrite private-key material promptly after use.
@@ -73,6 +76,8 @@ Local development builds can still load an explicit Rust ABI library when
 debugging provider loading:
 
 ```kotlin
+import me.really.codec.ReallyMeCodecRustNativeProvider
+
 ReallyMeCodecRustNativeProvider.loadLibrary("/path/to/libreallyme_codec_ffi.dylib")
 ```
 
@@ -100,3 +105,8 @@ artifact for development.
 Release and preflight builds pass
 `-Preallyme.codec.requireFullNativeResources=true`; in that mode Maven
 publication fails unless all supported JVM platform libraries are present.
+
+## License
+
+Dual-licensed under the MIT License or Apache License, Version 2.0, at your
+option. See [LICENSE](../../LICENSE) for both license texts.

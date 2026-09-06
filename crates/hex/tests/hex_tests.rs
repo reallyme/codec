@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 #![allow(missing_docs)]
 
@@ -30,6 +30,16 @@ fn encodes_lowercase_hex() {
     let encoded = bytes_to_lower_hex(&[0x00, 0x01, 0x0f, 0x10, 0xab, 0xff]);
 
     assert_eq!(encoded, "00010f10abff");
+}
+
+#[test]
+fn rejects_late_invalid_character_with_stable_error() {
+    let mut encoded = "ab".repeat(1024);
+    encoded.push_str("0!");
+    assert_eq!(
+        lower_hex_to_bytes(&encoded),
+        Err(HexError::InvalidCharacter)
+    );
 }
 
 #[test]

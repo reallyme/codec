@@ -1,13 +1,14 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 //! # reallyme-codec
 //!
 //! Codec-only utilities used by ReallyMe and DID tooling: base encodings,
 //! canonical JSON/CBOR serialization, multicodec lookup, multikey handling, and
 //! PEM text armor.
-//! This crate deliberately has no cryptographic primitive dependencies.
+//! SHA-256 is used for content identifiers. This crate does not expose signing,
+//! encryption, or key generation.
 
 #![forbid(unsafe_code)]
 
@@ -28,7 +29,7 @@ pub mod base64url {
     pub use codec_base64url::{serde_bytes, serde_option_bytes};
 }
 
-/// DAG-CBOR encode/decode and content-identifier helpers.
+/// Deterministic generic CBOR, DAG-CBOR, and content-identifier helpers.
 #[cfg(feature = "cbor")]
 pub mod cbor {
     pub use codec_cbor::{

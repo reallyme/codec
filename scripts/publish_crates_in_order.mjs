@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
+const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
 const MODE_INSPECT = "inspect";
 const MODE_PUBLISH = "publish";
 const args = process.argv.slice(2);
@@ -25,6 +27,7 @@ if (allowDirty && mode !== MODE_INSPECT) {
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
+    cwd: repositoryRoot,
     encoding: "utf8",
     stdio: options.capture ? "pipe" : "inherit",
   });
@@ -295,6 +298,11 @@ function publishPackage(pkg) {
     );
     sleepMs(delayMs);
   }
+
+  // Rate-limit responses can consume every attempt without entering the
+  // ordinary failure branch. Never report a partially published release as done.
+  console.error(`${pkg.name} publish retry limit exhausted`);
+  process.exit(1);
 }
 
 for (const pkg of ordered) {

@@ -101,9 +101,9 @@ dependencies = [
 
 [[package]]
 name = "buffa"
-version = "0.9.1"
+version = "0.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf9e6224bc4ee1f189ad257120c156fb05f95b826f5369d620b24984476c200a"
+checksum = "a92f2f5df67a9d5ccfc65237bfc954c56328aee40a04a9b92381ecba370be246"
 dependencies = [
  "base64 0.22.1",
  "bytes",
@@ -225,7 +225,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c54e03a951783e8b327515db3f2a2fd0e3bed362a96b066f341ce66ed49b4ead"
 dependencies = [
  "data-encoding",
- "syn 3.0.4",
+ "syn 2.0.119",
 ]
 
 [[package]]
@@ -465,7 +465,7 @@ checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
 
 [[package]]
 name = "reallyme-codec"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "buffa",
  "reallyme-codec-base64",
@@ -484,23 +484,25 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-base64"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "base64 0.23.1",
  "thiserror",
+ "zeroize",
 ]
 
 [[package]]
 name = "reallyme-codec-base64url"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "base64 0.23.1",
  "thiserror",
+ "zeroize",
 ]
 
 [[package]]
 name = "reallyme-codec-cbor"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "cid",
  "multihash",
@@ -512,14 +514,15 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-hex"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "thiserror",
+ "zeroize",
 ]
 
 [[package]]
 name = "reallyme-codec-jcs"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "itoa",
  "ryu-js",
@@ -531,7 +534,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-multibase"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "base64 0.23.1",
  "bs58",
@@ -542,11 +545,11 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-multicodec"
-version = "0.2.2"
+version = "0.2.3"
 
 [[package]]
 name = "reallyme-codec-multikey"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "reallyme-codec-multibase",
  "reallyme-codec-multicodec",
@@ -555,7 +558,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-pem"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "base64 0.23.1",
  "thiserror",
@@ -564,7 +567,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-proto"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "base64 0.23.1",
  "buffa",

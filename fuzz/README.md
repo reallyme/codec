@@ -1,7 +1,5 @@
 <!--
 SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
-
-SPDX-License-Identifier: Apache-2.0
 -->
 
 # Fuzzing Harnesses
@@ -24,7 +22,7 @@ own empty `[workspace]` so it does not inherit lint settings that libFuzzer's
 | `multicodec` | multicodec varint prefix | `codec_multicodec::{lookup_codec_prefix, strip_codec_prefix}` |
 | `multikey` | multikey (multibase+multicodec+binding) | `codec_multikey::parse_multikey` |
 | `base64url` | unpadded base64url decode | `codec_base64url::base64url_to_bytes` |
-| `dag_cbor` | DAG-CBOR decode + CID parse/verify | `codec_cbor::{decode_dag_cbor, try_parse_cid, verify_dag_cbor_cid}` |
+| `dag_cbor` | DAG-CBOR decode + canonical re-encode + CID parse/verify | `codec_cbor::{decode_dag_cbor, encode_dag_cbor, try_parse_cid, verify_dag_cbor_cid}` |
 | `deterministic_cbor` | generic deterministic-CBOR decode + canonical re-encode | `codec_cbor::{decode_deterministic_cbor, encode_deterministic_cbor}` |
 | `operation_contract` | executable protobuf + generated ProtoJSON dispatch | `reallyme_codec::operation_contract::{process_operation_response, process_operation_response_json}` |
 | `jcs_text` | strict JSON parsing + RFC 8785 canonicalization | `codec_jcs::canonicalize_json_text` |

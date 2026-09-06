@@ -207,6 +207,7 @@ where
 /// The oneof keeps base encoding, PEM, multiformat, and canonicalization
 /// failures distinct while the shared CodecErrorReason enum provides stable
 /// cross-language reason codes.
+#[allow(non_camel_case_types)]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 #[repr(i32)]
 pub enum CodecErrorOrigin {
@@ -353,6 +354,7 @@ impl ::buffa::Enumeration for CodecErrorOrigin {
 }
 /// CodecPemLabel is the typed protobuf representation of the PEM labels accepted
 /// by the codec parser.
+#[allow(non_camel_case_types)]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 #[repr(i32)]
 pub enum CodecPemLabel {
@@ -505,6 +507,7 @@ impl ::buffa::Enumeration for CodecPemLabel {
         ]
     }
 }
+#[allow(non_camel_case_types)]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 #[repr(i32)]
 pub enum CodecPemLineEnding {
@@ -654,6 +657,7 @@ impl ::buffa::Enumeration for CodecPemLineEnding {
 /// CodecKeyMaterialKind classifies the material described by a multicodec
 /// table entry. The enum is intentionally small and owned by this package so
 /// SDKs do not pass ad hoc strings across FFI or RPC boundaries.
+#[allow(non_camel_case_types)]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 #[repr(i32)]
 pub enum CodecKeyMaterialKind {
@@ -836,6 +840,7 @@ impl ::buffa::Enumeration for CodecKeyMaterialKind {
     }
 }
 /// CodecTag classifies the protocol role of a multicodec table entry.
+#[allow(non_camel_case_types)]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 #[repr(i32)]
 pub enum CodecTag {
@@ -1014,6 +1019,7 @@ impl ::buffa::Enumeration for CodecTag {
 ///   400-499: CBOR/JCS/JSON canonicalization
 ///   500-599: backend and internal failures
 ///   600-699: caller-controlled protobuf and ProtoJSON boundary failures
+#[allow(non_camel_case_types)]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 #[repr(i32)]
 pub enum CodecErrorReason {
@@ -1972,18 +1978,21 @@ impl ::buffa::ExtensionSet for CodecError {
         &mut self.__buffa_unknown_fields
     }
 }
-impl<'de> serde::Deserialize<'de> for CodecError {
-    fn deserialize<D: serde::Deserializer<'de>>(
+impl<'de> ::serde::Deserialize<'de> for CodecError {
+    fn deserialize<D: ::serde::Deserializer<'de>>(
         d: D,
     ) -> ::core::result::Result<Self, D::Error> {
         struct _V;
-        impl<'de> serde::de::Visitor<'de> for _V {
+        impl<'de> ::serde::de::Visitor<'de> for _V {
             type Value = CodecError;
-            fn expecting(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            fn expecting(
+                &self,
+                f: &mut ::core::fmt::Formatter<'_>,
+            ) -> ::core::fmt::Result {
                 f.write_str("struct CodecError")
             }
             #[allow(clippy::field_reassign_with_default)]
-            fn visit_map<A: serde::de::MapAccess<'de>>(
+            fn visit_map<A: ::serde::de::MapAccess<'de>>(
                 self,
                 mut map: A,
             ) -> ::core::result::Result<CodecError, A::Error> {
@@ -1998,9 +2007,9 @@ impl<'de> serde::Deserialize<'de> for CodecError {
                         "origin" => {
                             __f_origin = Some({
                                 struct _S;
-                                impl<'de> serde::de::DeserializeSeed<'de> for _S {
+                                impl<'de> ::serde::de::DeserializeSeed<'de> for _S {
                                     type Value = ::buffa::EnumValue<CodecErrorOrigin>;
-                                    fn deserialize<D: serde::Deserializer<'de>>(
+                                    fn deserialize<D: ::serde::Deserializer<'de>>(
                                         self,
                                         d: D,
                                     ) -> ::core::result::Result<
@@ -2025,7 +2034,7 @@ impl<'de> serde::Deserialize<'de> for CodecError {
                             if let Some(v) = v {
                                 if __oneof_error.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'error'",
                                         ),
                                     );
@@ -2049,7 +2058,7 @@ impl<'de> serde::Deserialize<'de> for CodecError {
                             if let Some(v) = v {
                                 if __oneof_error.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'error'",
                                         ),
                                     );
@@ -2073,7 +2082,7 @@ impl<'de> serde::Deserialize<'de> for CodecError {
                             if let Some(v) = v {
                                 if __oneof_error.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'error'",
                                         ),
                                     );
@@ -2097,7 +2106,7 @@ impl<'de> serde::Deserialize<'de> for CodecError {
                             if let Some(v) = v {
                                 if __oneof_error.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'error'",
                                         ),
                                     );
@@ -2121,7 +2130,7 @@ impl<'de> serde::Deserialize<'de> for CodecError {
                             if let Some(v) = v {
                                 if __oneof_error.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'error'",
                                         ),
                                     );
@@ -2145,7 +2154,7 @@ impl<'de> serde::Deserialize<'de> for CodecError {
                             if let Some(v) = v {
                                 if __oneof_error.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'error'",
                                         ),
                                     );
@@ -2158,7 +2167,7 @@ impl<'de> serde::Deserialize<'de> for CodecError {
                             }
                         }
                         _ => {
-                            return Err(serde::de::Error::custom("unknown field"));
+                            return Err(::serde::de::Error::custom("unknown field"));
                         }
                     }
                 }
@@ -5614,18 +5623,21 @@ impl ::buffa::ExtensionSet for CodecDeterministicCborInteger {
         &mut self.__buffa_unknown_fields
     }
 }
-impl<'de> serde::Deserialize<'de> for CodecDeterministicCborInteger {
-    fn deserialize<D: serde::Deserializer<'de>>(
+impl<'de> ::serde::Deserialize<'de> for CodecDeterministicCborInteger {
+    fn deserialize<D: ::serde::Deserializer<'de>>(
         d: D,
     ) -> ::core::result::Result<Self, D::Error> {
         struct _V;
-        impl<'de> serde::de::Visitor<'de> for _V {
+        impl<'de> ::serde::de::Visitor<'de> for _V {
             type Value = CodecDeterministicCborInteger;
-            fn expecting(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            fn expecting(
+                &self,
+                f: &mut ::core::fmt::Formatter<'_>,
+            ) -> ::core::fmt::Result {
                 f.write_str("struct CodecDeterministicCborInteger")
             }
             #[allow(clippy::field_reassign_with_default)]
-            fn visit_map<A: serde::de::MapAccess<'de>>(
+            fn visit_map<A: ::serde::de::MapAccess<'de>>(
                 self,
                 mut map: A,
             ) -> ::core::result::Result<CodecDeterministicCborInteger, A::Error> {
@@ -5648,7 +5660,7 @@ impl<'de> serde::Deserialize<'de> for CodecDeterministicCborInteger {
                             if let Some(v) = v {
                                 if __oneof_value.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'value'",
                                         ),
                                     );
@@ -5674,7 +5686,7 @@ impl<'de> serde::Deserialize<'de> for CodecDeterministicCborInteger {
                             if let Some(v) = v {
                                 if __oneof_value.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'value'",
                                         ),
                                     );
@@ -5687,7 +5699,7 @@ impl<'de> serde::Deserialize<'de> for CodecDeterministicCborInteger {
                             }
                         }
                         _ => {
-                            return Err(serde::de::Error::custom("unknown field"));
+                            return Err(::serde::de::Error::custom("unknown field"));
                         }
                     }
                 }
@@ -6252,18 +6264,21 @@ impl ::buffa::ExtensionSet for CodecDeterministicCborMapKey {
         &mut self.__buffa_unknown_fields
     }
 }
-impl<'de> serde::Deserialize<'de> for CodecDeterministicCborMapKey {
-    fn deserialize<D: serde::Deserializer<'de>>(
+impl<'de> ::serde::Deserialize<'de> for CodecDeterministicCborMapKey {
+    fn deserialize<D: ::serde::Deserializer<'de>>(
         d: D,
     ) -> ::core::result::Result<Self, D::Error> {
         struct _V;
-        impl<'de> serde::de::Visitor<'de> for _V {
+        impl<'de> ::serde::de::Visitor<'de> for _V {
             type Value = CodecDeterministicCborMapKey;
-            fn expecting(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            fn expecting(
+                &self,
+                f: &mut ::core::fmt::Formatter<'_>,
+            ) -> ::core::fmt::Result {
                 f.write_str("struct CodecDeterministicCborMapKey")
             }
             #[allow(clippy::field_reassign_with_default)]
-            fn visit_map<A: serde::de::MapAccess<'de>>(
+            fn visit_map<A: ::serde::de::MapAccess<'de>>(
                 self,
                 mut map: A,
             ) -> ::core::result::Result<CodecDeterministicCborMapKey, A::Error> {
@@ -6286,7 +6301,7 @@ impl<'de> serde::Deserialize<'de> for CodecDeterministicCborMapKey {
                             if let Some(v) = v {
                                 if __oneof_key.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'key'",
                                         ),
                                     );
@@ -6310,7 +6325,7 @@ impl<'de> serde::Deserialize<'de> for CodecDeterministicCborMapKey {
                             if let Some(v) = v {
                                 if __oneof_key.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'key'",
                                         ),
                                     );
@@ -6323,7 +6338,7 @@ impl<'de> serde::Deserialize<'de> for CodecDeterministicCborMapKey {
                             }
                         }
                         _ => {
-                            return Err(serde::de::Error::custom("unknown field"));
+                            return Err(::serde::de::Error::custom("unknown field"));
                         }
                     }
                 }
@@ -7352,18 +7367,21 @@ impl ::buffa::ExtensionSet for CodecDeterministicCborValue {
         &mut self.__buffa_unknown_fields
     }
 }
-impl<'de> serde::Deserialize<'de> for CodecDeterministicCborValue {
-    fn deserialize<D: serde::Deserializer<'de>>(
+impl<'de> ::serde::Deserialize<'de> for CodecDeterministicCborValue {
+    fn deserialize<D: ::serde::Deserializer<'de>>(
         d: D,
     ) -> ::core::result::Result<Self, D::Error> {
         struct _V;
-        impl<'de> serde::de::Visitor<'de> for _V {
+        impl<'de> ::serde::de::Visitor<'de> for _V {
             type Value = CodecDeterministicCborValue;
-            fn expecting(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            fn expecting(
+                &self,
+                f: &mut ::core::fmt::Formatter<'_>,
+            ) -> ::core::fmt::Result {
                 f.write_str("struct CodecDeterministicCborValue")
             }
             #[allow(clippy::field_reassign_with_default)]
-            fn visit_map<A: serde::de::MapAccess<'de>>(
+            fn visit_map<A: ::serde::de::MapAccess<'de>>(
                 self,
                 mut map: A,
             ) -> ::core::result::Result<CodecDeterministicCborValue, A::Error> {
@@ -7384,7 +7402,7 @@ impl<'de> serde::Deserialize<'de> for CodecDeterministicCborValue {
                             if let Some(v) = v {
                                 if __oneof_value.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'value'",
                                         ),
                                     );
@@ -7408,7 +7426,7 @@ impl<'de> serde::Deserialize<'de> for CodecDeterministicCborValue {
                             if let Some(v) = v {
                                 if __oneof_value.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'value'",
                                         ),
                                     );
@@ -7434,7 +7452,7 @@ impl<'de> serde::Deserialize<'de> for CodecDeterministicCborValue {
                             if let Some(v) = v {
                                 if __oneof_value.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'value'",
                                         ),
                                     );
@@ -7458,7 +7476,7 @@ impl<'de> serde::Deserialize<'de> for CodecDeterministicCborValue {
                             if let Some(v) = v {
                                 if __oneof_value.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'value'",
                                         ),
                                     );
@@ -7482,7 +7500,7 @@ impl<'de> serde::Deserialize<'de> for CodecDeterministicCborValue {
                             if let Some(v) = v {
                                 if __oneof_value.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'value'",
                                         ),
                                     );
@@ -7506,7 +7524,7 @@ impl<'de> serde::Deserialize<'de> for CodecDeterministicCborValue {
                             if let Some(v) = v {
                                 if __oneof_value.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'value'",
                                         ),
                                     );
@@ -7530,7 +7548,7 @@ impl<'de> serde::Deserialize<'de> for CodecDeterministicCborValue {
                             if let Some(v) = v {
                                 if __oneof_value.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'value'",
                                         ),
                                     );
@@ -7543,7 +7561,7 @@ impl<'de> serde::Deserialize<'de> for CodecDeterministicCborValue {
                             }
                         }
                         _ => {
-                            return Err(serde::de::Error::custom("unknown field"));
+                            return Err(::serde::de::Error::custom("unknown field"));
                         }
                     }
                 }
@@ -8859,18 +8877,21 @@ impl ::buffa::ExtensionSet for CodecOperationResult {
         &mut self.__buffa_unknown_fields
     }
 }
-impl<'de> serde::Deserialize<'de> for CodecOperationResult {
-    fn deserialize<D: serde::Deserializer<'de>>(
+impl<'de> ::serde::Deserialize<'de> for CodecOperationResult {
+    fn deserialize<D: ::serde::Deserializer<'de>>(
         d: D,
     ) -> ::core::result::Result<Self, D::Error> {
         struct _V;
-        impl<'de> serde::de::Visitor<'de> for _V {
+        impl<'de> ::serde::de::Visitor<'de> for _V {
             type Value = CodecOperationResult;
-            fn expecting(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            fn expecting(
+                &self,
+                f: &mut ::core::fmt::Formatter<'_>,
+            ) -> ::core::fmt::Result {
                 f.write_str("struct CodecOperationResult")
             }
             #[allow(clippy::field_reassign_with_default)]
-            fn visit_map<A: serde::de::MapAccess<'de>>(
+            fn visit_map<A: ::serde::de::MapAccess<'de>>(
                 self,
                 mut map: A,
             ) -> ::core::result::Result<CodecOperationResult, A::Error> {
@@ -8891,7 +8912,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationResult {
                             if let Some(v) = v {
                                 if __oneof_result.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'result'",
                                         ),
                                     );
@@ -8915,7 +8936,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationResult {
                             if let Some(v) = v {
                                 if __oneof_result.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'result'",
                                         ),
                                     );
@@ -8939,7 +8960,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationResult {
                             if let Some(v) = v {
                                 if __oneof_result.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'result'",
                                         ),
                                     );
@@ -8963,7 +8984,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationResult {
                             if let Some(v) = v {
                                 if __oneof_result.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'result'",
                                         ),
                                     );
@@ -8987,7 +9008,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationResult {
                             if let Some(v) = v {
                                 if __oneof_result.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'result'",
                                         ),
                                     );
@@ -9011,7 +9032,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationResult {
                             if let Some(v) = v {
                                 if __oneof_result.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'result'",
                                         ),
                                     );
@@ -9035,7 +9056,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationResult {
                             if let Some(v) = v {
                                 if __oneof_result.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'result'",
                                         ),
                                     );
@@ -9059,7 +9080,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationResult {
                             if let Some(v) = v {
                                 if __oneof_result.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'result'",
                                         ),
                                     );
@@ -9083,7 +9104,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationResult {
                             if let Some(v) = v {
                                 if __oneof_result.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'result'",
                                         ),
                                     );
@@ -9109,7 +9130,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationResult {
                             if let Some(v) = v {
                                 if __oneof_result.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'result'",
                                         ),
                                     );
@@ -9135,7 +9156,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationResult {
                             if let Some(v) = v {
                                 if __oneof_result.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'result'",
                                         ),
                                     );
@@ -9148,7 +9169,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationResult {
                             }
                         }
                         _ => {
-                            return Err(serde::de::Error::custom("unknown field"));
+                            return Err(::serde::de::Error::custom("unknown field"));
                         }
                     }
                 }
@@ -9370,18 +9391,21 @@ impl ::buffa::ExtensionSet for CodecOperationResponse {
         &mut self.__buffa_unknown_fields
     }
 }
-impl<'de> serde::Deserialize<'de> for CodecOperationResponse {
-    fn deserialize<D: serde::Deserializer<'de>>(
+impl<'de> ::serde::Deserialize<'de> for CodecOperationResponse {
+    fn deserialize<D: ::serde::Deserializer<'de>>(
         d: D,
     ) -> ::core::result::Result<Self, D::Error> {
         struct _V;
-        impl<'de> serde::de::Visitor<'de> for _V {
+        impl<'de> ::serde::de::Visitor<'de> for _V {
             type Value = CodecOperationResponse;
-            fn expecting(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            fn expecting(
+                &self,
+                f: &mut ::core::fmt::Formatter<'_>,
+            ) -> ::core::fmt::Result {
                 f.write_str("struct CodecOperationResponse")
             }
             #[allow(clippy::field_reassign_with_default)]
-            fn visit_map<A: serde::de::MapAccess<'de>>(
+            fn visit_map<A: ::serde::de::MapAccess<'de>>(
                 self,
                 mut map: A,
             ) -> ::core::result::Result<CodecOperationResponse, A::Error> {
@@ -9402,7 +9426,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationResponse {
                             if let Some(v) = v {
                                 if __oneof_outcome.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'outcome'",
                                         ),
                                     );
@@ -9426,7 +9450,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationResponse {
                             if let Some(v) = v {
                                 if __oneof_outcome.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'outcome'",
                                         ),
                                     );
@@ -9439,7 +9463,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationResponse {
                             }
                         }
                         _ => {
-                            return Err(serde::de::Error::custom("unknown field"));
+                            return Err(::serde::de::Error::custom("unknown field"));
                         }
                     }
                 }
@@ -10032,18 +10056,21 @@ impl ::buffa::ExtensionSet for CodecOperationRequest {
         &mut self.__buffa_unknown_fields
     }
 }
-impl<'de> serde::Deserialize<'de> for CodecOperationRequest {
-    fn deserialize<D: serde::Deserializer<'de>>(
+impl<'de> ::serde::Deserialize<'de> for CodecOperationRequest {
+    fn deserialize<D: ::serde::Deserializer<'de>>(
         d: D,
     ) -> ::core::result::Result<Self, D::Error> {
         struct _V;
-        impl<'de> serde::de::Visitor<'de> for _V {
+        impl<'de> ::serde::de::Visitor<'de> for _V {
             type Value = CodecOperationRequest;
-            fn expecting(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            fn expecting(
+                &self,
+                f: &mut ::core::fmt::Formatter<'_>,
+            ) -> ::core::fmt::Result {
                 f.write_str("struct CodecOperationRequest")
             }
             #[allow(clippy::field_reassign_with_default)]
-            fn visit_map<A: serde::de::MapAccess<'de>>(
+            fn visit_map<A: ::serde::de::MapAccess<'de>>(
                 self,
                 mut map: A,
             ) -> ::core::result::Result<CodecOperationRequest, A::Error> {
@@ -10066,7 +10093,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationRequest {
                             if let Some(v) = v {
                                 if __oneof_operation.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'operation'",
                                         ),
                                     );
@@ -10092,7 +10119,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationRequest {
                             if let Some(v) = v {
                                 if __oneof_operation.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'operation'",
                                         ),
                                     );
@@ -10116,7 +10143,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationRequest {
                             if let Some(v) = v {
                                 if __oneof_operation.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'operation'",
                                         ),
                                     );
@@ -10140,7 +10167,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationRequest {
                             if let Some(v) = v {
                                 if __oneof_operation.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'operation'",
                                         ),
                                     );
@@ -10166,7 +10193,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationRequest {
                             if let Some(v) = v {
                                 if __oneof_operation.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'operation'",
                                         ),
                                     );
@@ -10190,7 +10217,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationRequest {
                             if let Some(v) = v {
                                 if __oneof_operation.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'operation'",
                                         ),
                                     );
@@ -10214,7 +10241,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationRequest {
                             if let Some(v) = v {
                                 if __oneof_operation.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'operation'",
                                         ),
                                     );
@@ -10238,7 +10265,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationRequest {
                             if let Some(v) = v {
                                 if __oneof_operation.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'operation'",
                                         ),
                                     );
@@ -10262,7 +10289,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationRequest {
                             if let Some(v) = v {
                                 if __oneof_operation.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'operation'",
                                         ),
                                     );
@@ -10288,7 +10315,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationRequest {
                             if let Some(v) = v {
                                 if __oneof_operation.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'operation'",
                                         ),
                                     );
@@ -10314,7 +10341,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationRequest {
                             if let Some(v) = v {
                                 if __oneof_operation.is_some() {
                                     return Err(
-                                        serde::de::Error::custom(
+                                        ::serde::de::Error::custom(
                                             "multiple oneof fields set for 'operation'",
                                         ),
                                     );
@@ -10327,7 +10354,7 @@ impl<'de> serde::Deserialize<'de> for CodecOperationRequest {
                             }
                         }
                         _ => {
-                            return Err(serde::de::Error::custom("unknown field"));
+                            return Err(::serde::de::Error::custom("unknown field"));
                         }
                     }
                 }

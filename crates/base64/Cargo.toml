@@ -1,10 +1,8 @@
 # SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
-#
-# SPDX-License-Identifier: Apache-2.0
 
 [package]
 name = "reallyme-codec-base64"
-version = "0.2.2"
+version = "0.2.3"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -19,6 +17,7 @@ name = "codec_base64"
 [dependencies]
 base64 = { workspace = true }
 thiserror = { workspace = true }
+zeroize = { workspace = true }
 
 [lints]
 workspace = true

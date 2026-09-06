@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 use core::fmt;
 use std::cell::Cell;
@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 
 use serde::de::{DeserializeSeed, Deserializer, MapAccess, SeqAccess, Visitor};
 use serde_json::Number;
-use zeroize::Zeroize;
+use zeroize::{Zeroize, Zeroizing};
 
 use crate::JcsError;
 
@@ -52,15 +52,15 @@ impl SensitiveJsonValue {
             Self::Null | Self::Bool(_) | Self::Number(_) => {}
             Self::String(text) => text.zeroize(),
             Self::Array(values) => {
-                for value in values {
-                    value.zeroize_owned();
-                }
+                // Each child owns its own Drop cleanup. Clearing the array
+                // avoids repeatedly traversing each subtree at every ancestor.
+                values.clear();
             }
             Self::Object(values) => {
                 let owned_entries = core::mem::take(values);
-                for (mut key, mut value) in owned_entries {
+                for (mut key, value) in owned_entries {
                     key.zeroize();
-                    value.zeroize_owned();
+                    drop(value);
                 }
             }
         }
@@ -157,22 +157,25 @@ impl<'de> Visitor<'de> for StrictValueVisitor<'_> {
     where
         A: MapAccess<'de>,
     {
-        let mut values = BTreeMap::new();
+        // Establish the wiping owner before parsing any members: errors from
+        // next_key or next_value must also clear already accepted object keys.
+        let mut result = SensitiveJsonValue::Object(BTreeMap::new());
         let seed = StrictValueSeed {
             duplicate_property: self.duplicate_property,
         };
-        while let Some(mut key) = object.next_key::<String>()? {
-            let is_duplicate = values.contains_key(&key);
-            let mut value = object.next_value_seed(seed)?;
-            if is_duplicate {
-                self.duplicate_property.set(true);
-                key.zeroize();
-                value.zeroize_owned();
-            } else {
-                values.insert(key, value);
+        if let SensitiveJsonValue::Object(values) = &mut result {
+            while let Some(key) = object.next_key::<String>()? {
+                let mut key = Zeroizing::new(key);
+                let is_duplicate = values.contains_key(key.as_str());
+                let value = object.next_value_seed(seed)?;
+                if is_duplicate {
+                    self.duplicate_property.set(true);
+                } else {
+                    values.insert(core::mem::take(&mut *key), value);
+                }
             }
         }
-        Ok(SensitiveJsonValue::Object(values))
+        Ok(result)
     }
 }
 

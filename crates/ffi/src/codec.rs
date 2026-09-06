@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 use codec_runtime::multicodec::{
     prefix_for_name as multicodec_prefix_for_name, strip_prefix as multicodec_strip_prefix,
@@ -16,7 +16,10 @@ use codec_runtime::scalar_ops::{
 use zeroize::{Zeroize, Zeroizing};
 
 use crate::guard::ffi_guard;
-use crate::pointer::{read_slice, validate_output_len_pair, write_i32, write_len, write_slice};
+use crate::pointer::{
+    read_slice, validate_input_scalar_output, validate_output_len_pair, write_i32, write_len,
+    write_slice,
+};
 use crate::status::{
     CodecStatus, CODEC_BUFFER_TOO_SMALL, CODEC_INTERNAL_ERROR, CODEC_INVALID_ARGUMENT, CODEC_OK,
 };
@@ -375,8 +378,9 @@ fn process_bool(
 /// may use the same byte storage for input and output when their platform ABI
 /// permits it. Non-empty output ranges must point to writable caller-owned
 /// bytes and must not alias `len_out`. `len_out` must point to writable,
-/// aligned `usize` storage. Once those output pointers validate, `len_out` is
-/// initialized to zero before inputs are processed. A buffer-too-small result
+/// aligned `usize` storage disjoint from all input ranges. Once the output
+/// pointers and disjointness validate, `len_out` is initialized to zero before
+/// inputs are processed. A buffer-too-small result
 /// replaces it with the required length; every other failure leaves it zero.
 #[no_mangle]
 pub unsafe extern "C" fn rm_codec_process(
@@ -392,6 +396,15 @@ pub unsafe extern "C" fn rm_codec_process(
     len_out: *mut usize,
 ) -> CodecStatus {
     ffi_guard(|| {
+        for (input_ptr, input_len) in [
+            (first_ptr, first_len),
+            (second_ptr, second_len),
+            (third_ptr, third_len),
+        ] {
+            if let Err(status) = validate_input_scalar_output(input_ptr, input_len, len_out) {
+                return status;
+            }
+        }
         let output_status = initialize_output_length(output_ptr, output_len, len_out);
         if output_status != CODEC_OK {
             return output_status;
@@ -412,8 +425,9 @@ pub unsafe extern "C" fn rm_codec_process(
 ///
 /// Non-empty input ranges must point to initialized caller-owned bytes that
 /// remain valid for the duration of the call. `result_out` must point to
-/// writable, aligned `i32` storage. Once validated, `result_out` is initialized
-/// to false (`0`) before inputs are processed and remains false on failure.
+/// writable, aligned `i32` storage disjoint from all input ranges. Once
+/// validated, `result_out` is initialized to false (`0`) before inputs are
+/// processed and remains false on failure.
 #[no_mangle]
 pub unsafe extern "C" fn rm_codec_process_bool(
     operation: u32,
@@ -424,6 +438,11 @@ pub unsafe extern "C" fn rm_codec_process_bool(
     result_out: *mut i32,
 ) -> CodecStatus {
     ffi_guard(|| {
+        for (input_ptr, input_len) in [(first_ptr, first_len), (second_ptr, second_len)] {
+            if let Err(status) = validate_input_scalar_output(input_ptr, input_len, result_out) {
+                return status;
+            }
+        }
         // SAFETY: `write_i32` validates null and alignment before writing the
         // deterministic failure value.
         let result_status = unsafe { write_i32(result_out, 0) };

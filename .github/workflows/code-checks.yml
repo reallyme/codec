@@ -1,6 +1,4 @@
 # SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
-#
-# SPDX-License-Identifier: Apache-2.0
 
 name: Code Checks
 
@@ -53,6 +51,11 @@ jobs:
         uses: taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b # cargo-deny
         with:
           tool: cargo-deny@0.20.2
+
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b # cargo-audit
+        with:
+          tool: cargo-audit@0.22.2
 
       - name: Install wasm-pack
         uses: taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b # wasm-pack
@@ -121,11 +124,17 @@ jobs:
       - name: Test Swift release artifact verification
         run: node --test scripts/verify_swift_release_artifact.test.mjs
 
+      - name: Test build and release scripts
+        run: node --test scripts/tooling.test.mjs
+
       - name: Release readiness
         run: node scripts/run_pinned_release_readiness.mjs
 
       - name: Dependency policy
         run: cargo deny check
+
+      - name: Security advisory audit
+        run: scripts/audit_committed_lockfiles.sh
 
   native-sanitizers:
     name: native sanitizer lanes

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::status::{CodecStatus, CODEC_BUFFER_TOO_SMALL, CODEC_INVALID_ARGUMENT};
 
@@ -24,6 +24,7 @@ fn validate_nonzero_len<T>(ptr: *const T, len: usize) -> Result<(), CodecStatus>
     if len > MAX_FFI_SLICE_LEN {
         return Err(CODEC_INVALID_ARGUMENT);
     }
+    ptr.addr().checked_add(len).ok_or(CODEC_INVALID_ARGUMENT)?;
     Ok(())
 }
 
@@ -34,7 +35,34 @@ fn validate_output_ptr<T>(ptr: *mut T) -> Result<(), CodecStatus> {
     if !ptr.is_aligned() {
         return Err(CODEC_INVALID_ARGUMENT);
     }
+    ptr.addr()
+        .checked_add(core::mem::size_of::<T>())
+        .ok_or(CODEC_INVALID_ARGUMENT)?;
     Ok(())
+}
+
+/// Rejects input that overlaps scalar output storage before initialization.
+///
+/// Byte outputs can reuse input storage after an operation finishes reading,
+/// but scalar outputs are initialized before parsing and must be disjoint.
+pub(crate) fn validate_input_scalar_output<T>(
+    input_ptr: *const u8,
+    input_len: usize,
+    output_ptr: *mut T,
+) -> Result<(), CodecStatus> {
+    validate_output_ptr(output_ptr)?;
+    // A null input cannot overlap valid scalar storage. Leave its syntax
+    // validation to read_slice so ordinary invalid inputs still receive the
+    // documented initialized failure output.
+    if input_ptr.is_null() {
+        return Ok(());
+    }
+    validate_disjoint_ranges(
+        input_ptr,
+        input_len,
+        output_ptr.cast::<u8>(),
+        core::mem::size_of::<T>(),
+    )
 }
 
 fn validate_disjoint_ranges(
@@ -255,8 +283,8 @@ pub unsafe fn write_i32(ptr: *mut i32, value: i32) -> CodecStatus {
 mod tests {
     use super::{
         read_slice, validate_disjoint_len_outputs, validate_disjoint_output_pair,
-        validate_len_output, validate_output_len_pair, write_fixed, write_i32, write_len,
-        write_slice,
+        validate_input_scalar_output, validate_len_output, validate_output_len_pair, write_fixed,
+        write_i32, write_len, write_slice,
     };
     use crate::status::{CODEC_BUFFER_TOO_SMALL, CODEC_INVALID_ARGUMENT, CODEC_OK};
     use core::ptr::NonNull;
@@ -275,6 +303,50 @@ mod tests {
         let ptr = NonNull::<u8>::dangling().as_ptr();
         let status = unsafe { read_slice(ptr, usize::MAX) };
         assert_eq!(status, Err(CODEC_INVALID_ARGUMENT));
+    }
+
+    #[test]
+    fn scalar_overlap_validation_handles_partial_and_adjacent_ranges() {
+        let mut storage = [0_usize; 4];
+        let scalar = storage.as_mut_ptr().wrapping_add(1);
+        let bytes = storage.as_ptr().cast::<u8>();
+        let width = core::mem::size_of::<usize>();
+        // Inputs ending exactly at the scalar, or beginning immediately after
+        // it, remain legal. A single byte of intersection must fail closed.
+        for (offset, length, overlaps) in [
+            (0, width, false),
+            (0, width + 1, true),
+            (width - 1, 2, true),
+            (width, 0, false),
+            (width, 1, true),
+            (2 * width - 1, 2, true),
+            (2 * width, width, false),
+        ] {
+            assert_eq!(
+                validate_input_scalar_output(bytes.wrapping_add(offset), length, scalar),
+                if overlaps {
+                    Err(CODEC_INVALID_ARGUMENT)
+                } else {
+                    Ok(())
+                }
+            );
+        }
+        assert_eq!(storage, [0; 4]);
+    }
+
+    #[test]
+    fn slice_helpers_reject_address_wraparound() {
+        let pointer = core::ptr::without_provenance_mut::<u8>(usize::MAX);
+        // SAFETY: These impossible ranges must be rejected before a slice is
+        // constructed or any memory is accessed.
+        assert_eq!(
+            unsafe { read_slice(pointer, 2) },
+            Err(CODEC_INVALID_ARGUMENT)
+        );
+        assert_eq!(
+            unsafe { write_slice(pointer, 2) },
+            Err(CODEC_INVALID_ARGUMENT)
+        );
     }
 
     #[test]

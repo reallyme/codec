@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 export const MAX_DETERMINISTIC_CBOR_INPUT_LEN = 1_048_576;
 export const MAX_DETERMINISTIC_CBOR_OUTPUT_LEN = 1_048_576;

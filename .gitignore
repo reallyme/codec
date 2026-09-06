@@ -1,6 +1,4 @@
 # SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
-#
-# SPDX-License-Identifier: Apache-2.0
 
 # Rust build artifacts
 /target
@@ -28,43 +26,13 @@ target/
 .secrets/
 **/.secrets/
 
-# Local developer state
-/AGENTS.md
-/.claude/
-/.codex/
-
 # Generated artifacts
 /coverage/
 /tarpaulin-report.html
-/crypto-lane-logs/
 proptest-regressions/
 
-# Generated Rust/source artifacts
-**/generated
-**/generated/**
-**/src/generated
-**/src/generated/**
-!crates/proto/src/generated/
-!crates/proto/src/generated/**
-!packages/ts/src/proto/generated/
-!packages/ts/src/proto/generated/**
-**/src/pb
-**/src/pb/**
-**/src/prost
-**/src/prost/**
-**/*_grpc.rs
-**/*.grpc.rs
-**/*_pb.rs
-**/*.pb.rs
-**/*_tonic.rs
-**/*.tonic.rs
-**/*_prost.rs
-**/*.prost.rs
-**/*_generated.rs
-**/*.generated.rs
-**/*.gen.rs
-**/*.protos.rs
-**/*.capnp.rs
+# Generated protobuf bindings are committed and checked for freshness.
+# Build-generated files are covered by the target/ and build/ rules.
 
 # JavaScript tooling
 node_modules/

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 //! RFC 8785 conformance for the two areas where a naive canonicalizer
 //! silently diverges and breaks cross-implementation signatures: object
