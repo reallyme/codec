@@ -1,6 +1,6 @@
 # reallyme-codec
 
-Codecs for base encodings, multiformats, CBOR, CID, canonical JSON and PEM, available in Rust and language SDKs.
+Codecs for Rust, TypeScript, Swift, Java and Kotlin, covering base encodings, multiformats, CBOR, CID, canonical JSON and PEM.
 
 ## Published Surfaces
 
@@ -32,22 +32,26 @@ cargo add reallyme-codec
 ```
 
 The Rust crates require Rust `1.96.0` or newer. The default feature set enables
-every codec family. Consumers that need a smaller dependency surface can select
+every primitive codec family. Consumers that need a smaller dependency surface can select
 only the families they use:
 
 ```toml
-reallyme-codec = { version = "0.2.2", default-features = false, features = [
+reallyme-codec = { version = "0.2.3", default-features = false, features = [
   "base64url",
   "multikey",
 ] }
 ```
+
+The generated operation boundary is opt-in for Rust consumers: enable
+`operation-contract` to use `reallyme_codec::operation_contract`. The `serde`
+feature enables the base64url field adapters.
 
 ### Swift
 
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.2.2"
+    from: "0.2.3"
 )
 ```
 
@@ -59,7 +63,7 @@ reallyme-codec = { version = "0.2.2", default-features = false, features = [
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.2.2")
+    implementation("me.really:codec:0.2.3")
 }
 ```
 
@@ -67,7 +71,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.2.2")
+    implementation("me.really:codec-android:0.2.3")
 }
 ```
 
@@ -123,7 +127,7 @@ import me.really.codec.ReallyMeCodec;
 String encoded = ReallyMeCodec.base64urlEncode(new byte[] {1, 2, 3});
 ```
 
-TypeScript:
+TypeScript, after [initializing the WASM provider](packages/ts/README.md#usage):
 
 ```ts
 import { ReallyMeCodec } from "@reallyme/codec";
@@ -132,6 +136,8 @@ const encoded = ReallyMeCodec.base64urlEncode(new Uint8Array([1, 2, 3]));
 ```
 
 ```swift
+import Foundation
+
 let value = ReallyMeDeterministicCbor.mapText([
     ("b", ReallyMeDeterministicCbor.unsigned(2)),
     ("a", ReallyMeDeterministicCbor.bytes(Data([0, 1, 2]))),
@@ -140,6 +146,8 @@ let cbor = try codec.deterministicCborEncodeData(value)
 ```
 
 ```kotlin
+import me.really.codec.ReallyMeDeterministicCbor
+
 val value = ReallyMeDeterministicCbor.mapText(
     linkedMapOf(
         "b" to ReallyMeDeterministicCbor.unsignedLong(2),
@@ -150,6 +158,8 @@ val cbor = ReallyMeCodec.deterministicCborEncode(value)
 ```
 
 ```ts
+import { ReallyMeDeterministicCbor } from "@reallyme/codec";
+
 const value = ReallyMeDeterministicCbor.mapText([
   ["b", ReallyMeDeterministicCbor.unsigned(2n)],
   ["a", ReallyMeDeterministicCbor.bytes(new Uint8Array([0, 1, 2]))],
@@ -160,9 +170,12 @@ const cbor = ReallyMeCodec.deterministicCborEncode(value);
 Deterministic-CBOR encode canonicalizes map ordering. Decode rejects duplicate
 semantic map keys, non-canonical map order, non-minimal integer or length
 forms, unsupported CBOR types, and inputs outside the documented resource
-limits. DAG-CBOR remains a separate profile with CID helpers; its structured
-encode/decode methods use the same generated operation boundary and Rust
-semantic implementation.
+limits. The generic profile permits at most 64 nested containers, 65,536 nodes
+(including map keys), and 16,384 entries per container. Encoded input and output
+are each capped at 1 MiB; aggregate UTF-8 text and aggregate byte-string content
+are each capped at 1 MiB.
+
+DAG-CBOR uses text map keys and signed 64-bit integers; floats and tags are outside the supported profile.
 
 Swift and JVM packages include native libraries. See their package READMEs for installation and local-library loading.
 
@@ -176,9 +189,10 @@ codec identifiers or non-secret error envelopes.
 The executable transport boundary accepts one generated
 `CodecOperationRequest` and returns one binary `CodecOperationResponse` whose
 oneofs identify either the exact operation result or a typed `CodecError`.
-Operation-specific `*Proto` SDK helpers are request builders over that same
-entrypoint; they are not separate wire APIs. Native Rust callers retain the
-typed codec APIs and do not need to serialize.
+Structured SDK methods build requests for that same entrypoint and require
+the matching result variant. Base encodings and JCS call Rust through dedicated
+scalar adapter functions. Native Rust callers retain typed codec APIs and do
+not need to serialize.
 
 ProtoJSON uses protobuf enum names and standard padded Base64 for bytes. JSON requests return binary protobuf responses. Prefer binary protobuf or native APIs for sensitive data.
 
@@ -195,7 +209,9 @@ See [docs/protobuf.md](docs/protobuf.md) for the boundary rules.
 
 ## License
 
-Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).
+Dual-licensed under the MIT License or the Apache License, Version 2.0, at your
+option (`MIT OR Apache-2.0`). Both license texts are included in [LICENSE](LICENSE).
+Separately identified dependencies and vendored tools retain their own licenses.
 
 ## Copyright And Trademarks
 

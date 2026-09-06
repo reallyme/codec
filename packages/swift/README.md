@@ -7,7 +7,7 @@ Swift codecs for Apple platforms.
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.2.2"
+    from: "0.2.3"
 )
 ```
 
@@ -36,11 +36,13 @@ let encoded = try codec.base64urlEncode([1, 2, 3])
 let decoded = try codec.base64urlDecode(encoded)
 ```
 
-The Swift API includes base encodings, multiformats, DAG-CBOR, CID, PEM and JCS.
+The Swift API includes base encodings, multiformats, deterministic CBOR, DAG-CBOR, CID, PEM and JCS.
 
 Deterministic generic CBOR and DAG-CBOR use typed value builders:
 
 ```swift
+import Foundation
+
 let value = ReallyMeDeterministicCbor.mapText([
     ("b", ReallyMeDeterministicCbor.unsigned(2)),
     ("a", ReallyMeDeterministicCbor.bytes(Data([0, 1, 2]))),
@@ -52,7 +54,7 @@ let dagCbor = try codec.dagCborEncodeData(ReallyMeDagCbor.mapText([
 ]))
 ```
 
-Encoding canonicalizes map ordering. Decoding rejects duplicate keys, non-canonical input, unsupported types and exceeded limits. DAG-CBOR accepts text map keys only.
+Encoding canonicalizes map ordering. Decoding rejects duplicate keys, non-canonical input, unsupported types and exceeded limits. DAG-CBOR accepts text map keys only. Positive DAG-CBOR integers must not exceed `Int64.max`.
 
 PEM input, output, and decoded DER use `[UInt8]` rather than `String` so
 callers can clear private-key material promptly with their own memory policy.
@@ -78,5 +80,10 @@ REALLYME_CODEC_SWIFTPM_RUNTIME_FFI=1 \
 REALLYME_CODEC_FFI_LIBRARY_PATH="$PWD/target/debug/libreallyme_codec_ffi.dylib" \
 swift test
 ```
+
+## License
+
+Dual-licensed under the MIT License or Apache License, Version 2.0, at your
+option. See [LICENSE](../../LICENSE) for both license texts.
 
 Copyright © 2026 ReallyMe Technologies Limited. All rights reserved
