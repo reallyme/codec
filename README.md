@@ -1,8 +1,8 @@
-<!--
-SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
--->
+<div align="center">
 
-# reallyme-codec
+# ReallyMe Codec
+
+**Cross-platform Codec**
 
 [![Code Checks](https://github.com/reallyme/codec/actions/workflows/code-checks.yml/badge.svg)](https://github.com/reallyme/codec/actions/workflows/code-checks.yml)
 [![reallyme-codec](https://img.shields.io/crates/v/reallyme-codec?label=reallyme-codec&color=0f766e)](https://crates.io/crates/reallyme-codec)
@@ -10,6 +10,8 @@ SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
 [![Maven codec](https://img.shields.io/maven-central/v/me.really/codec?label=maven%20codec&color=0f766e)](https://central.sonatype.com/artifact/me.really/codec)
 [![Security Policy](https://img.shields.io/badge/security-policy-0f766e)](SECURITY.md)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE)
+
+</div>
 
 ReallyMe Codec keeps encodings consistent across Rust, TypeScript, Swift, Java,
 and Kotlin. It covers base encodings, multiformats, canonical CBOR/JCS, PEM armor, 
@@ -298,9 +300,10 @@ See [docs/protobuf.md](docs/protobuf.md) for the boundary rules.
 
 ## License
 
-Dual-licensed under the MIT License or the Apache License, Version 2.0, at your
-option (`MIT OR Apache-2.0`). Both license texts are included in [LICENSE](LICENSE).
-Separately identified dependencies and vendored tools retain their own licenses.
+Licensed under either the [MIT License](LICENSE-MIT) or the
+[Apache License, Version 2.0](LICENSE-APACHE), at your option.
+
+Third-party components retain their own licenses and notices.
 
 ## Copyright And Trademarks
 
