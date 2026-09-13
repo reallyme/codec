@@ -35,5 +35,3 @@ Reproduce a crash artifact:
 ```sh
 cargo +nightly-2026-07-01 fuzz run <target> fuzz/artifacts/<target>/<crash-file>
 ```
-
-Copyright © 2026 ReallyMe Technologies Limited. All rights reserved

@@ -15,5 +15,3 @@ C callers must supply live allocations of the declared size and obey the
 header's alignment, ownership and aliasing requirements. Pointer checks cannot
 prove that an arbitrary address is allocated. Load native libraries only from
 trusted storage.
-
-Copyright © 2026 ReallyMe Technologies Limited. All rights reserved

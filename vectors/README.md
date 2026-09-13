@@ -34,5 +34,3 @@ Resource construction recipe semantics are fixed as follows:
   arrays.
 
 A scalar root has depth zero; a container root has depth one. Every value and map key counts as one node.
-
-Copyright © 2026 ReallyMe Technologies Limited. All rights reserved

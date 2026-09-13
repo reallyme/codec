@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// SPDX-FileCopyrightText: Copyright © 2026 ReallyMe Technologies Limited. All rights reserved
+// SPDX-FileCopyrightText: 2026 ReallyMe Technologies Limited
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
@@ -15,11 +15,11 @@ const RELEASE_READINESS_COMMIT = "48a5ae4a9c6f25053459122d6f84cf1741463454";
 const RELEASE_READINESS_CORE_SHA256 =
   "6eab296596b6badd76bb1ce4abf67b73513981ad352e8f6ab5e44cdca257545e";
 const LOCAL_CHECKER_SHA256 =
-  "3cea605391cf68353438842ea331d92fc8dab2d2cde65dffccd5b5b1dd64006d";
+  "e1b12c447ea78e17deb10adfde14a578322fc54ed8e469debaf3ccd370e3d09a";
 // The upstream pin authenticates the original release; the local pin covers
 // the company-name correction without changing that upstream authority.
 const LOCAL_CORE_SHA256 =
-  "b8cc9a9c8056759790e76dd037478de3057c04e0f03b12370d6d6673ef53b6af";
+  "d488652a4b7b974feccd6b72f9f1bb69e0faa3efb39601d4b9c92afb7683bcd3";
 const RELEASE_READINESS_CORE_URL =
   `https://raw.githubusercontent.com/reallyme/release-readiness/${RELEASE_READINESS_COMMIT}/core.mjs`;
 const VENDORED_CORE_PATH = "scripts/release-readiness/core.mjs";

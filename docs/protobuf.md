@@ -7,5 +7,3 @@ definitions from different package versions.
 Prefer binary protobuf for sensitive requests. JSON parsing and managed-runtime
 values can retain copies that cannot be reliably erased. Keep payloads out of
 logs and clear caller-owned request and response buffers after use.
-
-Copyright © 2026 ReallyMe Technologies Limited. All rights reserved

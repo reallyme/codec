@@ -36,5 +36,3 @@ Out of scope:
 
 The current `0.2.x` line receives security fixes while the public API remains in
 early release. Pin exact versions in production deployments.
-
-Copyright © 2026 ReallyMe Technologies Limited. All rights reserved
