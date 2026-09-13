@@ -1,7 +1,3 @@
-<!--
-SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
--->
-
 # ReallyMeCodec Swift
 
 `ReallyMeCodec` is the Swift SDK facade for

@@ -1,7 +1,3 @@
-<!--
-SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
--->
-
 # Dependency Updates
 
 Review codec dependency updates one at a time when they affect parsing,

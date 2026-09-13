@@ -1,7 +1,3 @@
-<!--
-SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
--->
-
 # ReallyMeCodec Java/Kotlin
 
 `me.really:codec` is the Java/Kotlin JVM codec package for ReallyMe. It exposes

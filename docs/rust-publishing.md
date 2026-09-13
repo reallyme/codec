@@ -1,7 +1,3 @@
-<!--
-SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
--->
-
 # Rust Publishing
 
 Publishable crates in this repository are codec crates only. The root workspace

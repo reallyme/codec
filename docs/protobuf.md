@@ -1,7 +1,3 @@
-<!--
-SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
--->
-
 # Protobuf
 
 The codec protobuf operation contract lives in the publishable proto crate at

@@ -1,7 +1,3 @@
-<!--
-SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
--->
-
 # reallyme-codec-proto
 
 `reallyme-codec-proto` contains the Rust Buffa bindings for

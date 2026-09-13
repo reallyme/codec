@@ -1,7 +1,3 @@
-<!--
-SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
--->
-
 # Security Policy
 
 `reallyme-codec` is security-sensitive infrastructure. We treat parser bugs,

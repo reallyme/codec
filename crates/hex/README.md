@@ -1,7 +1,3 @@
-<!--
-SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
--->
-
 # reallyme-codec-hex
 
 Small lowercase hexadecimal helpers used by the ReallyMe codec packages.

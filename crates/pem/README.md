@@ -1,7 +1,3 @@
-<!--
-SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
--->
-
 # reallyme-codec-pem
 
 `reallyme-codec-pem` parses and emits PEM text armor: BEGIN/END labels,

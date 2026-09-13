@@ -1,7 +1,3 @@
-<!--
-SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
--->
-
 # Codec Vectors
 
 `codec-vectors.json` is the shared cross-language conformance suite for the

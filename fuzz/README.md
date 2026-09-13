@@ -1,7 +1,3 @@
-<!--
-SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
--->
-
 # Fuzzing Harnesses
 
 Coverage-guided libFuzzer targets for the untrusted-input parsers: the places

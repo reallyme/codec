@@ -1,7 +1,3 @@
-<!--
-SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
--->
-
 # ReallyMe Codec Contract
 
 This repository owns the `reallyme-codec` Rust crate family and the generated

@@ -1,7 +1,3 @@
-<!--
-SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
--->
-
 # ReallyMeCodec Android
 
 `me.really:codec-android` is the Android AAR for ReallyMe Codec. It packages

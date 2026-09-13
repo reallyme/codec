@@ -1,7 +1,3 @@
-<!--
-SPDX-FileCopyrightText: Copyright © 2026 ReallyMe LLC. All rights reserved
--->
-
 # @reallyme/codec
 
 `@reallyme/codec` is the TypeScript package for the Rust `reallyme-codec`
