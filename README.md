@@ -1,4 +1,4 @@
-# reallyme-codec
+# ReallyMe Codec
 
 Codecs for Rust, TypeScript, Swift, Java and Kotlin, covering base encodings, multiformats, CBOR, CID, canonical JSON and PEM.
 
@@ -209,14 +209,13 @@ See [docs/protobuf.md](docs/protobuf.md) for the boundary rules.
 
 ## License
 
-Dual-licensed under the MIT License or the Apache License, Version 2.0, at your
-option (`MIT OR Apache-2.0`). Both license texts are included in [LICENSE](LICENSE).
-Separately identified dependencies and vendored tools retain their own licenses.
+Licensed under either the [MIT License](LICENSE-MIT) or the
+[Apache License, Version 2.0](LICENSE-APACHE), at your option.
+
+Third-party components retain their own licenses and notices.
 
 ## Copyright And Trademarks
 
 Copyright © 2026 by ReallyMe Technologies Limited.
 
 ReallyMe® is a registered trademark of ReallyMe LLC.
-
-Copyright © 2026 ReallyMe Technologies Limited. All rights reserved
