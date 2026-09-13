@@ -767,11 +767,11 @@ assertContains(
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  'const RELEASE_READINESS_COMMIT = "304bc55cdca3c53bf66218982d51188f341806ed"',
+  'const RELEASE_READINESS_COMMIT = "48a5ae4a9c6f25053459122d6f84cf1741463454"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  '"0a33532aa595871c1beefb1ad1d3930f1a51675b236a73e8bf93ad5d7ccdbae4"',
+  '"6eab296596b6badd76bb1ce4abf67b73513981ad352e8f6ab5e44cdca257545e"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
