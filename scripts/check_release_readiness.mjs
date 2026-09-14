@@ -301,7 +301,7 @@ const assertTypescriptProtoFacadeCompleteness = ({ facadePath, generatedPath }) 
   });
 };
 
-assertReallyMeVendoredCorePolicy();
+assertReallyMeVendoredCorePolicy({ version: "0.6.0" });
 // Composite actions can hide additional third-party dependencies from the
 // top-level workflow scan. Reject them until the checker recursively validates
 // every local action dependency with the same full-SHA policy.
@@ -767,11 +767,11 @@ assertContains(
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  'const RELEASE_READINESS_COMMIT = "48a5ae4a9c6f25053459122d6f84cf1741463454"',
+  'const RELEASE_READINESS_COMMIT = "3fcf50eb312ae20dc9dc7a256f8fae67a7ba2c6b"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  '"6eab296596b6badd76bb1ce4abf67b73513981ad352e8f6ab5e44cdca257545e"',
+  '"435ae6205d000d1605761bce2e7b75a1584d6d3ad1b7d338ca8e61868959abdc"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
@@ -788,6 +788,10 @@ assertContains(
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
   "vendored core bytes do not match the pinned upstream core",
+);
+assertContains(
+  "scripts/release-readiness/core.mjs",
+  'RELEASE_READINESS_VERSION = "0.6.0"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",

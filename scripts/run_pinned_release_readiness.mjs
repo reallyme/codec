@@ -11,11 +11,11 @@ import { spawnSync } from "node:child_process";
 // upstream core. The local checker still carries repository policy, so this
 // runner verifies the fetched upstream bytes, compares them directly with the
 // vendored core, and separately pins the local checker bytes before executing.
-const RELEASE_READINESS_COMMIT = "48a5ae4a9c6f25053459122d6f84cf1741463454";
+const RELEASE_READINESS_COMMIT = "3fcf50eb312ae20dc9dc7a256f8fae67a7ba2c6b";
 const RELEASE_READINESS_CORE_SHA256 =
-  "6eab296596b6badd76bb1ce4abf67b73513981ad352e8f6ab5e44cdca257545e";
+  "435ae6205d000d1605761bce2e7b75a1584d6d3ad1b7d338ca8e61868959abdc";
 const LOCAL_CHECKER_SHA256 =
-  "79914bb5b2d3840d2247f2bb67fa4320092d897286ecf7a727c12563ff245b8d";
+  "fcded795b3e689ab6580afc928b988c05b400dbd965cd032f7d751c738632005";
 const RELEASE_READINESS_CORE_URL =
   `https://raw.githubusercontent.com/reallyme/release-readiness/${RELEASE_READINESS_COMMIT}/core.mjs`;
 const VENDORED_CORE_PATH = "scripts/release-readiness/core.mjs";
