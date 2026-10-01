@@ -14,7 +14,7 @@ use codec_cbor::{
     encode_dag_cbor as encode_primitive_dag_cbor,
     encode_deterministic_cbor as encode_primitive_deterministic_cbor,
     verify_dag_cbor_cid as verify_primitive_dag_cbor_cid, CborError, CborValue,
-    DeterministicCborError, DeterministicCborValue, MAX_DAG_CBOR_INPUT_LEN,
+    CidVerificationStatus, DeterministicCborError, DeterministicCborValue, MAX_DAG_CBOR_INPUT_LEN,
 };
 use zeroize::Zeroizing;
 
@@ -29,6 +29,12 @@ pub enum DagCborOperationError {
     /// The supplied DAG-CBOR payload exceeds the operation input limit.
     #[error("dag-cbor payload too large")]
     PayloadTooLarge,
+    /// The bytes do not form one canonical DAG-CBOR block.
+    #[error("invalid dag-cbor payload")]
+    InvalidPayload(CborError),
+    /// The block uses an IPLD value type outside this codec's closed model.
+    #[error("unsupported IPLD value")]
+    UnsupportedIpldValue,
 }
 
 /// Result of verifying a supplied CID against a DAG-CBOR payload.
@@ -40,16 +46,19 @@ pub struct DagCborCidVerification {
 
 impl DagCborCidVerification {
     /// Return whether the supplied CID equals the canonical CID for the payload.
+    #[cfg(test)]
     pub const fn valid(&self) -> bool {
         self.valid
     }
 
     /// Return the canonical CID computed from the supplied payload.
+    #[cfg(test)]
     pub fn expected_cid(&self) -> &str {
         self.expected_cid.as_str()
     }
 
     /// Return the canonical supplied CID, or an empty string for invalid input.
+    #[cfg(test)]
     pub fn actual_cid(&self) -> &str {
         self.actual_cid.as_str()
     }
@@ -73,9 +82,16 @@ pub fn verify_dag_cbor_cid(
         return Err(DagCborOperationError::PayloadTooLarge);
     }
 
-    let (valid, expected_cid, actual_cid) = verify_primitive_dag_cbor_cid(cid, payload);
+    let verified = verify_primitive_dag_cbor_cid(cid, payload).map_err(|error| match error {
+        CborError::DisallowedMajorType { major: 6 }
+        | CborError::DisallowedSimpleValue { value: 27 } => {
+            DagCborOperationError::UnsupportedIpldValue
+        }
+        other => DagCborOperationError::InvalidPayload(other),
+    })?;
+    let (status, expected_cid, actual_cid) = verified.into_parts();
     Ok(DagCborCidVerification {
-        valid,
+        valid: status == CidVerificationStatus::Match,
         expected_cid,
         actual_cid,
     })
@@ -109,7 +125,7 @@ pub fn decode_deterministic_cbor_value(
 mod tests {
     #![allow(clippy::unwrap_used)]
 
-    use codec_cbor::compute_cid_dag_cbor;
+    use codec_cbor::{compute_cid_dag_cbor, CidVerificationStatus};
 
     use super::{
         verify_dag_cbor_cid, verify_primitive_dag_cbor_cid, DagCborOperationError,
@@ -120,13 +136,15 @@ mod tests {
     fn verify_dag_cbor_cid_preserves_primitive_verification_semantics() {
         let payload = [0xa0];
         let cid = compute_cid_dag_cbor(&payload);
-        let (primitive_valid, primitive_expected, primitive_actual) =
-            verify_primitive_dag_cbor_cid(&cid, &payload);
+        let primitive = verify_primitive_dag_cbor_cid(&cid, &payload).unwrap();
         let verification = verify_dag_cbor_cid(&cid, &payload).unwrap();
 
-        assert_eq!(verification.valid(), primitive_valid);
-        assert_eq!(verification.expected_cid(), primitive_expected);
-        assert_eq!(verification.actual_cid(), primitive_actual);
+        assert_eq!(
+            verification.valid(),
+            primitive.status() == CidVerificationStatus::Match
+        );
+        assert_eq!(verification.expected_cid(), primitive.expected_cid());
+        assert_eq!(verification.actual_cid(), primitive.actual_cid());
     }
 
     #[test]

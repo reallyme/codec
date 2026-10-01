@@ -8,6 +8,10 @@ use thiserror::Error;
 #[derive(Debug, Error, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum HexError {
+    /// The output buffer cannot hold the requested hexadecimal text.
+    #[error("hex output capacity exceeded")]
+    OutputCapacityExceeded,
+
     /// Hex input must contain two lowercase hexadecimal characters per byte.
     #[error("odd-length hex input")]
     OddLength,

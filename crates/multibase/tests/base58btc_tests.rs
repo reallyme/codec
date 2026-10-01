@@ -9,7 +9,10 @@
     clippy::print_stdout,
     clippy::unwrap_used
 )]
-use codec_multibase::{base58btc_decode, base58btc_encode, Base58Error, MAX_BASE58BTC_INPUT_LEN};
+use codec_multibase::{
+    base58btc_decode, base58btc_encode, Base58Error, MAX_BASE58BTC_DECODED_LEN,
+    MAX_BASE58BTC_INPUT_LEN,
+};
 
 #[test]
 fn roundtrip() {
@@ -38,7 +41,7 @@ fn roundtrip_pq_sized_payload() {
 
 #[test]
 fn decode_cap_leaves_room_for_largest_supported_multikeys() {
-    assert_eq!(MAX_BASE58BTC_INPUT_LEN, 8 * 1024);
+    assert_eq!(MAX_BASE58BTC_INPUT_LEN, 5_600);
     let data: Vec<u8> = (0..3_200).map(|i| u8::try_from(i % 251).unwrap()).collect();
     let encoded = base58btc_encode(&data).unwrap();
     assert!(encoded.len() < MAX_BASE58BTC_INPUT_LEN);
@@ -47,7 +50,7 @@ fn decode_cap_leaves_room_for_largest_supported_multikeys() {
 
 #[test]
 fn rejects_inputs_above_encode_cap_before_base58_conversion() {
-    let oversized = vec![0_u8; MAX_BASE58BTC_INPUT_LEN + 1];
+    let oversized = vec![0_u8; MAX_BASE58BTC_DECODED_LEN + 1];
     assert!(matches!(
         base58btc_encode(&oversized),
         Err(Base58Error::InputTooLarge)
@@ -56,7 +59,10 @@ fn rejects_inputs_above_encode_cap_before_base58_conversion() {
 
 #[test]
 fn rejects_invalid_char() {
-    assert!(base58btc_decode("0").is_err()); // '0' not in alphabet
+    assert!(matches!(
+        base58btc_decode("0"),
+        Err(Base58Error::InvalidCharacter)
+    ));
 }
 
 #[test]
@@ -64,6 +70,20 @@ fn rejects_inputs_above_decode_cap_before_base58_conversion() {
     let oversized = "1".repeat(MAX_BASE58BTC_INPUT_LEN + 1);
     assert!(matches!(
         base58btc_decode(&oversized),
+        Err(Base58Error::InputTooLarge)
+    ));
+}
+
+#[test]
+fn post_decode_cap_rejects_short_spelling_of_too_many_zero_bytes() {
+    let exact = "1".repeat(MAX_BASE58BTC_DECODED_LEN);
+    assert_eq!(
+        base58btc_decode(&exact).unwrap(),
+        vec![0_u8; MAX_BASE58BTC_DECODED_LEN]
+    );
+    let over = "1".repeat(MAX_BASE58BTC_DECODED_LEN + 1);
+    assert!(matches!(
+        base58btc_decode(&over),
         Err(Base58Error::InputTooLarge)
     ));
 }
@@ -80,7 +100,7 @@ fn rejects_late_invalid_character_with_stable_error() {
 
 #[test]
 fn owned_decode_matches_original_backend_at_boundaries() {
-    for length in [0, 1, 2, 32, 256, MAX_BASE58BTC_INPUT_LEN] {
+    for length in [0, 1, 2, 32, 256, MAX_BASE58BTC_DECODED_LEN] {
         for character in ['1', '2', 'z'] {
             let input = character.to_string().repeat(length);
             assert_eq!(
@@ -89,4 +109,12 @@ fn owned_decode_matches_original_backend_at_boundaries() {
             );
         }
     }
+}
+
+#[test]
+fn largest_encodable_binary_input_remains_decodable() {
+    let input = vec![0xff; MAX_BASE58BTC_DECODED_LEN];
+    let encoded = base58btc_encode(&input).unwrap();
+    assert!(encoded.len() <= MAX_BASE58BTC_INPUT_LEN);
+    assert_eq!(base58btc_decode(&encoded).unwrap(), input);
 }

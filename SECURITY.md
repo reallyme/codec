@@ -6,10 +6,8 @@ cross-language divergence as security-relevant.
 
 ## Reporting
 
-Please report vulnerabilities privately before public disclosure. Use
-[GitHub private vulnerability reporting](https://github.com/reallyme/codec/security/advisories/new)
-for this repository when available; otherwise use the security contact listed
-for ReallyMe LLC.
+Please report vulnerabilities privately before public disclosure through
+[GitHub private vulnerability reporting](https://github.com/reallyme/codec/security/advisories/new).
 
 Include the affected package, version, input shape, and the smallest
 reproduction you can share without exposing sensitive data. Do not attach
@@ -34,5 +32,5 @@ Out of scope:
 
 ## Supported Versions
 
-The current `0.2.x` line receives security fixes while the public API remains in
+The current `0.3.x` line receives security fixes while the public API remains in
 early release. Pin exact versions in production deployments.

@@ -27,12 +27,16 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4"
 
 codec-base64url = { package = "reallyme-codec-base64url", path = "../crates/base64url" }
+codec-base64 = { package = "reallyme-codec-base64", path = "../crates/base64" }
+codec-hex = { package = "reallyme-codec-hex", path = "../crates/hex" }
+codec-pem = { package = "reallyme-codec-pem", path = "../crates/pem" }
 codec-multibase = { package = "reallyme-codec-multibase", path = "../crates/multibase" }
 codec-multicodec = { package = "reallyme-codec-multicodec", path = "../crates/multicodec" }
 codec-multikey = { package = "reallyme-codec-multikey", path = "../crates/multikey" }
 codec-cbor = { package = "reallyme-codec-cbor", path = "../crates/cbor" }
 codec-jcs = { package = "reallyme-codec-jcs", path = "../crates/jcs" }
 reallyme-codec = { path = "../crates/codec", default-features = false, features = ["operation-contract"] }
+codec-proto = { package = "reallyme-codec-proto", path = "../crates/proto", features = ["generated"] }
 
 [[bin]]
 name = "multibase"
@@ -86,6 +90,27 @@ bench = false
 [[bin]]
 name = "jcs_text"
 path = "fuzz_targets/jcs_text.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "base64"
+path = "fuzz_targets/base64.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "hex"
+path = "fuzz_targets/hex.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "pem_decode"
+path = "fuzz_targets/pem_decode.rs"
 test = false
 doc = false
 bench = false

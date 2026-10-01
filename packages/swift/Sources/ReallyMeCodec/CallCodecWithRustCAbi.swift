@@ -3,9 +3,12 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 import Foundation
-import ReallyMeCodecProto
 
-private let expectedCodecAbiVersion: UInt32 = 5
+private let expectedCodecAbiVersion: UInt32 = 6
+private let expectedCodecPackageMajor: UInt32 = 0
+private let expectedCodecPackageMinor: UInt32 = 3
+private let expectedCodecPackagePatch: UInt32 = 0
+private let maxProtoJsonRequestLength = 16_082_264
 
 private typealias CodecAbiVersionFunction = @convention(c) () -> UInt32
 private typealias CodecSizeLimitFunction = @convention(c) () -> UInt
@@ -43,6 +46,15 @@ private typealias CodecBoolFunction = @convention(c) (
 #if REALLYME_CODEC_LINKED_FFI
 @_silgen_name("rm_codec_abi_version")
 private func rmCodecAbiVersionLinked() -> UInt32
+
+@_silgen_name("rm_codec_package_version_major")
+private func rmCodecPackageVersionMajorLinked() -> UInt32
+
+@_silgen_name("rm_codec_package_version_minor")
+private func rmCodecPackageVersionMinorLinked() -> UInt32
+
+@_silgen_name("rm_codec_package_version_patch")
+private func rmCodecPackageVersionPatchLinked() -> UInt32
 
 @_silgen_name("rm_codec_max_operation_response_bytes")
 private func rmCodecMaxOperationResponseBytesLinked() -> UInt
@@ -111,6 +123,11 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
     #if REALLYME_CODEC_LINKED_FFI
     init() throws {
         try Self.requireCompatibleAbiVersion(rmCodecAbiVersionLinked())
+        try Self.requireCompatiblePackageVersion(
+            major: rmCodecPackageVersionMajorLinked(),
+            minor: rmCodecPackageVersionMinorLinked(),
+            patch: rmCodecPackageVersionPatchLinked()
+        )
         maxFfiInputLength = try Self.requireValidFfiLimit(rmCodecMaxFfiInputBytesLinked())
         maxFfiOutputLength = try Self.requireValidFfiLimit(rmCodecMaxFfiOutputBytesLinked())
         maxOperationResponseLength = try Self.requireValidOperationResponseLimit(
@@ -132,6 +149,23 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
             as: CodecAbiVersionFunction.self
         )
         try Self.requireCompatibleAbiVersion(abiVersionFunction())
+        let packageMajorFunction = try library.loadFunction(
+            "rm_codec_package_version_major",
+            as: CodecAbiVersionFunction.self
+        )
+        let packageMinorFunction = try library.loadFunction(
+            "rm_codec_package_version_minor",
+            as: CodecAbiVersionFunction.self
+        )
+        let packagePatchFunction = try library.loadFunction(
+            "rm_codec_package_version_patch",
+            as: CodecAbiVersionFunction.self
+        )
+        try Self.requireCompatiblePackageVersion(
+            major: packageMajorFunction(),
+            minor: packageMinorFunction(),
+            patch: packagePatchFunction()
+        )
         let inputLimitFunction = try library.loadFunction(
             "rm_codec_max_ffi_input_bytes",
             as: CodecSizeLimitFunction.self
@@ -164,6 +198,14 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
 
     static func requireCompatibleAbiVersion(_ actualVersion: UInt32) throws {
         guard actualVersion == expectedCodecAbiVersion else {
+            throw ReallyMeCodecError.providerFailure
+        }
+    }
+
+    static func requireCompatiblePackageVersion(major: UInt32, minor: UInt32, patch: UInt32) throws {
+        guard major == expectedCodecPackageMajor,
+              minor == expectedCodecPackageMinor,
+              patch == expectedCodecPackagePatch else {
             throw ReallyMeCodecError.providerFailure
         }
     }
@@ -201,6 +243,7 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
     func processOperation(request: [UInt8]) throws -> [UInt8] {
         try processOperationResponse(
             request: request,
+            maxRequestLength: maxOperationResponseLength,
             function: processOperationFunction
         )
     }
@@ -208,6 +251,7 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
     func processOperationJson(request: [UInt8]) throws -> [UInt8] {
         try processOperationResponse(
             request: request,
+            maxRequestLength: maxProtoJsonRequestLength,
             function: processOperationJsonFunction
         )
     }
@@ -248,7 +292,36 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
         guard codecError.origin == expectedOrigin else {
             return .providerFailure
         }
-        return expectedOrigin == .caller ? .invalidInput : .providerFailure
+        guard expectedOrigin == .caller else { return .providerFailure }
+        switch codecError.error {
+        case .baseEncoding(let error) where error.reason == .baseNonCanonicalHex:
+            return .nonCanonical
+        case .multiformat(let error) where error.reason == .multiformatUnknownMulticodec ||
+            error.reason == .multiformatInvalidMulticodecPrefix:
+            return .unsupportedCodec
+        case .canonicalization(let error) where error.reason == .canonicalUnsupportedIpldValue:
+            return .unsupportedIpldValue
+        case .canonicalization(let error) where Self.isNonCanonicalReason(error.reason):
+            return .nonCanonical
+        default:
+            return .invalidInput
+        }
+    }
+
+    private static func isNonCanonicalReason(
+        _ reason: ReallyMeProtoCodecErrorReason
+    ) -> Bool {
+        switch reason {
+        case .canonicalNonCanonicalCbor,
+             .canonicalNonCanonicalJson,
+             .canonicalNonMinimalCborInteger,
+             .canonicalDuplicateCborMapKey,
+             .canonicalCborMapKeysOutOfOrder,
+             .canonicalCborTrailingBytes:
+            return true
+        default:
+            return false
+        }
     }
 
     private static func isKnownReason(
@@ -355,8 +428,19 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
 
     private func processOperationResponse(
         request: [UInt8],
+        maxRequestLength: Int,
         function: CodecProcessProtoFunction
     ) throws -> [UInt8] {
+        if request.count > maxRequestLength {
+            var boundary = ReallyMeProtoCodecBoundaryError()
+            boundary.reason = .boundaryResourceLimitExceeded
+            var error = ReallyMeProtoCodecError()
+            error.boundary = boundary
+            error.origin = .caller
+            var response = ReallyMeProtoCodecOperationResponse()
+            response.error = error
+            return Array(try response.serializedData())
+        }
         var producedLength = 0
         let firstStatus = request.withUnsafeBufferPointer { requestBuffer in
             function(

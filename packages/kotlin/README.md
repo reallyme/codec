@@ -9,7 +9,7 @@ parsing, or DAG-CBOR on the JVM.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.2.3")
+    implementation("me.really:codec:0.3.0")
 }
 ```
 
@@ -17,6 +17,13 @@ dependencies {
 
 The Maven artifact ships Rust JNI libraries as platform resources. The facade
 extracts and loads the matching library on first use:
+
+The Linux resources are built for glibc, with a verified minimum symbol
+version of `GLIBC_2.34` in both `linux-x86_64` and `linux-aarch64` artifacts.
+They do not support musl-based systems such as Alpine Linux. On an unsupported
+system, provider loading fails with `ProviderFailure`; there is no fallback
+codec implementation. Consumers targeting older glibc or musl need a native
+build for that platform before using this package.
 
 ```kotlin
 import me.really.codec.ReallyMeCodec
@@ -64,6 +71,8 @@ non-canonical input, unsupported CBOR types, and values beyond the documented
 resource limits before returning SDK owners. Although the builders share a
 value type, DAG-CBOR rejects integer map keys and positive integers above
 `Long.MAX_VALUE`.
+CID verification reports IPLD links and floating-point values outside this
+SDK's closed DAG-CBOR model as `UnsupportedIpldValue`.
 
 PEM input, output, and decoded DER use `ByteArray` rather than `String` so
 callers can overwrite private-key material promptly after use.
@@ -74,6 +83,8 @@ debugging provider loading:
 ```kotlin
 import me.really.codec.ReallyMeCodecRustNativeProvider
 
+// Explicitly enable external native paths for local development only.
+System.setProperty("reallyme.codec.allowUnverifiedNative", "true")
 ReallyMeCodecRustNativeProvider.loadLibrary("/path/to/libreallyme_codec_ffi.dylib")
 ```
 
@@ -105,4 +116,4 @@ publication fails unless all supported JVM platform libraries are present.
 ## License
 
 Dual-licensed under the MIT License or Apache License, Version 2.0, at your
-option. See [LICENSE](../../LICENSE) for both license texts.
+option. See [MIT](../../LICENSE-MIT) and [Apache 2.0](../../LICENSE-APACHE).

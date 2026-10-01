@@ -15,6 +15,10 @@ use crate::{base58btc_decode, MultibaseError};
 /// function is reached with untrusted input through
 /// [`parse_multikey`](../../multikey/index.html).
 pub fn multibase_to_bytes(multibase: &str) -> Result<Vec<u8>, MultibaseError> {
+    const MAX_MULTIBASE_INPUT_LEN: usize = codec_base64url::MAX_BASE64URL_INPUT_LEN + 1;
+    if multibase.len() > MAX_MULTIBASE_INPUT_LEN {
+        return Err(MultibaseError::InputTooLarge);
+    }
     let mut chars = multibase.chars();
     let prefix = chars.next().ok_or(MultibaseError::TooShort)?;
     // The remainder of the string after the prefix character.

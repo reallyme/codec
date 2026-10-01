@@ -9,7 +9,7 @@ library manually.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.2.3")
+    implementation("me.really:codec-android:0.3.0")
 }
 ```
 
@@ -63,4 +63,4 @@ workflow runs this check in CI.
 ## License
 
 Dual-licensed under the MIT License or Apache License, Version 2.0, at your
-option. See [LICENSE](../../LICENSE) for both license texts.
+option. See [MIT](../../LICENSE-MIT) and [Apache 2.0](../../LICENSE-APACHE).

@@ -198,6 +198,12 @@ function validateSensitiveRustHardening(source) {
       if (countOccurrences(region, zeroizeNeedle) < 2) {
         fail(`${messageName}.${field.name} is missing a generated-path or Drop wipe`);
       }
+      if (field.kind === "bytes" || field.kind === "string") {
+        const mergeNeedle = `                ${zeroizeNeedle}\n                ::buffa::types::merge_${field.kind}(&mut self.${field.name}, buf)?;`;
+        if (!region.includes(mergeNeedle)) {
+          fail(`${messageName}.${field.name} is missing a pre-merge wipe`);
+        }
+      }
       if (region.includes(generatedSensitiveClear(field))) {
         fail(`${messageName}.${field.name} still uses a non-zeroizing clear path`);
       }
@@ -210,6 +216,10 @@ function validateSensitiveRustHardening(source) {
     }
     if (region.includes("self.__buffa_unknown_fields.clear();")) {
       fail(`${messageName} still clears unknown fields without zeroizing them`);
+    }
+    if (hasDropImpl(region, messageName) &&
+        !region.includes(`impl ::zeroize::ZeroizeOnDrop for ${messageName} {}`)) {
+      fail(`${messageName} is missing ZeroizeOnDrop`);
     }
   }
   if (source.includes("serde::de::IgnoredAny")) {
@@ -225,6 +235,31 @@ function sensitiveFieldWipe(field, owner) {
     return `__reallyme_zeroize_message_field(&mut ${owner}.${field.name});`;
   }
   return `::zeroize::Zeroize::zeroize(&mut ${owner}.${field.name});`;
+}
+
+function hardenSensitiveWireMerge(source, messageName, fields) {
+  const marker = `impl ::buffa::Message for ${messageName} {`;
+  const start = source.indexOf(marker);
+  if (start < 0) {
+    fail(`missing generated Rust Message impl for ${messageName}`);
+  }
+  const end = findMatchingBrace(source, source.indexOf("{", start));
+  let region = source.slice(start, end + 1);
+  for (const field of fields) {
+    if (field.kind !== "bytes" && field.kind !== "string") {
+      continue;
+    }
+    const merge = `                ::buffa::types::merge_${field.kind}(&mut self.${field.name}, buf)?;`;
+    const hardened = `                ${sensitiveFieldWipe(field, "self")}\n${merge}`;
+    if (region.includes(hardened)) {
+      continue;
+    }
+    if (countOccurrences(region, merge) !== 1) {
+      fail(`missing unique generated wire merge for ${messageName}.${field.name}`);
+    }
+    region = region.replace(merge, hardened);
+  }
+  return source.slice(0, start) + region + source.slice(end + 1);
 }
 
 function hardenSensitiveSerialize(source, messageName, fields) {
@@ -470,6 +505,7 @@ function redactOwnedRustDebugAndMemory() {
     }
 
     source = hardenSensitiveSerialize(source, messageName, fields);
+    source = hardenSensitiveWireMerge(source, messageName, fields);
 
     if (fields.length > 0 || sensitiveOwnerMessageNames.has(messageName)) {
       source = hardenSensitiveDrop(source, messageName, fields);
@@ -756,6 +792,7 @@ function hardenSensitiveDrop(source, messageName, fields) {
 ${body}
     }
 }
+impl ::zeroize::ZeroizeOnDrop for ${messageName} {}
 `;
   const existingDropPattern = sensitiveDropPattern(messageName, securityComment);
   if (existingDropPattern.test(source)) {
@@ -780,7 +817,7 @@ function removeSensitiveDrop(source, messageName) {
 
 function sensitiveDropPattern(messageName, securityComment) {
   return new RegExp(
-    `(?:${escapeRegExp(securityComment)})*impl ::core::ops::Drop for ${messageName} \\{\\n    fn drop\\(&mut self\\) \\{\\n[\\s\\S]*?    \\}\\n\\}\\n`,
+    `(?:${escapeRegExp(securityComment)})*impl ::core::ops::Drop for ${messageName} \\{\\n    fn drop\\(&mut self\\) \\{\\n[\\s\\S]*?    \\}\\n\\}\\n(?:impl ::zeroize::ZeroizeOnDrop for ${messageName} \\{\\}\\n)?`,
     "u",
   );
 }
@@ -1144,26 +1181,34 @@ function redactSwiftDebug() {
   let source = readFileSync(filePath, "utf8");
   for (const messageName of sensitiveMessageNames) {
     const swiftName = `ReallyMeProto${messageName}`;
-    const declaration = `public nonisolated struct ${swiftName}: Sendable {`;
+    const originalDeclaration = `nonisolated struct ${swiftName}: Sendable {`;
+    const declaration = `nonisolated struct ${swiftName}: Sendable, CustomReflectable {`;
+    if (countOccurrences(source, originalDeclaration) === 1) {
+      source = source.replace(originalDeclaration, declaration);
+    }
     if (countOccurrences(source, declaration) !== 1) {
       fail(`generated Swift message ${swiftName} must have exactly one declaration`);
     }
     const additions = [];
-    if (!source.includes(`public var debugDescription: String { "${swiftName}(<redacted>)" }`)) {
+    const mirrorComment = `// Mirror for ${swiftName} must not expose sensitive fields.`;
+    if (!source.includes(mirrorComment)) {
+      additions.push(`  ${mirrorComment}
+  var customMirror: Mirror { Mirror(self, children: []) }`);
+    }
+    if (!source.includes(`var debugDescription: String { "${swiftName}(<redacted>)" }`)) {
       additions.push(`  // Security post-processing: protobuf fields can contain secrets or PII.
-  public var debugDescription: String { "${swiftName}(<redacted>)" }
+  var debugDescription: String { "${swiftName}(<redacted>)" }
 
-  public func hash(into hasher: inout Hasher) {
+  func hash(into hasher: inout Hasher) {
     hasher.combine("${swiftName}(<redacted>)")
   }`);
     }
-    if (!source.includes(`public func textFormatString() -> String { "${swiftName}(<redacted>)" }`)) {
-      additions.push(`  // SwiftProtobuf's protocol-extension implementation traverses every
-  // field. Concrete sensitive messages shadow both public overloads so an
-  // explicit text-format call cannot bypass debug redaction.
-  public func textFormatString() -> String { "${swiftName}(<redacted>)" }
+    if (!source.includes(`func textFormatString() -> String { "${swiftName}(<redacted>)" }`)) {
+      additions.push(`  // Concrete calls use redacted text; SwiftProtobuf's generic Message
+  // extension still traverses fields, so generic text-format output is unsafe.
+  func textFormatString() -> String { "${swiftName}(<redacted>)" }
 
-  public func textFormatString(
+  func textFormatString(
     options _: SwiftProtobuf.TextFormatEncodingOptions
   ) -> String { "${swiftName}(<redacted>)" }`);
     }
@@ -1171,8 +1216,9 @@ function redactSwiftDebug() {
       source = source.replace(declaration, `${declaration}\n${additions.join("\n\n")}`);
     }
     for (const required of [
-      `public var debugDescription: String { "${swiftName}(<redacted>)" }`,
-      `public func textFormatString() -> String { "${swiftName}(<redacted>)" }`,
+      `var debugDescription: String { "${swiftName}(<redacted>)" }`,
+      mirrorComment,
+      `func textFormatString() -> String { "${swiftName}(<redacted>)" }`,
       `) -> String { "${swiftName}(<redacted>)" }`,
     ]) {
       if (!source.includes(required)) {
@@ -1180,7 +1226,16 @@ function redactSwiftDebug() {
       }
     }
   }
+  // SwiftProtobuf formats through a generic Message extension. Public message
+  // types would expose raw fields even when their concrete formatter is redacted.
+  // The Swift SDK therefore keeps generated wire types internal to its module.
   writeFileSync(filePath, source);
+  // SwiftPM compiles sources from one target directory. The generated wire
+  // code is internal in both locations, so it cannot be imported separately.
+  writeFileSync(
+    join(root, "packages/swift/Sources/ReallyMeCodec/GeneratedCodecProto.swift"),
+    source,
+  );
 }
 
 function redactJavaDebug() {
@@ -1310,6 +1365,7 @@ function generatedOutputPaths() {
     esGeneratedPath,
     tsPackageGeneratedPath,
     join(root, "gen/swift/reallyme/codec/v1/codec.pb.swift"),
+    join(root, "packages/swift/Sources/ReallyMeCodec/GeneratedCodecProto.swift"),
     ...readdirSync(javaDirectory)
       .filter((fileName) => fileName.endsWith(".java"))
       .map((fileName) => join(javaDirectory, fileName)),

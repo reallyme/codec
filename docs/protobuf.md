@@ -21,7 +21,7 @@ Generated surfaces:
 | Language | Surface |
 |---|---|
 | Rust | `reallyme-codec-proto` with the `generated` feature |
-| Swift | `ReallyMeCodecProto` |
+| Swift | Generated wire types internal to `ReallyMeCodec` |
 | Kotlin | generated `me.really.codec.v1` types |
 | TypeScript | `@reallyme/codec/proto` |
 
@@ -68,18 +68,27 @@ request before entering this same boundary:
 
 Typed structured SDK methods construct the corresponding generated request
 and require the exact generated result variant. Base encodings, predicates,
-and JCS use dedicated scalar adapter calls. The native scalar ABI also retains
-legacy metadata operations; current structured SDK methods use the generated
-operation lane. No operation-specific `*Proto` facade is retained.
+and JCS use dedicated scalar adapter calls. Metadata operations use the
+generated operation lane; legacy scalar operation numbers for metadata return
+`CODEC_INVALID_ARGUMENT`. No operation-specific `*Proto` facade is retained.
 
 The JSON transport is only the generated ProtoJSON view of
 `CodecOperationRequest`. Unknown fields, malformed JSON, invalid enum values,
 oversized JSON, and decoded messages that exceed the protobuf cap fail inside a
 typed `CodecOperationResponse` error outcome. There are no SDK-specific JSON
 option DTOs or parallel structured JSON dispatch paths.
+An unknown ProtoJSON enum name is a malformed JSON transport value; an unknown
+numeric enum carried by binary protobuf is a malformed request after decoding.
+These transport errors retain their distinct reasons. Once a request decodes,
+the same semantic error reasons apply to both transports.
+
+Use the binary protobuf entry point for private keys, decrypted plaintext, or
+other secret-bearing requests. JSON escape processing and duplicate field
+decoding can create immutable or temporary copies that cannot be reliably
+zeroized by the protobuf boundary.
 
 Generation is intentionally checked in. After installing `protoc-gen-buffa`
-version `0.9.2`, regenerate and harden the artifacts with the complete enforced
+and `protoc-gen-buffa-packaging` at version `0.9.2`, regenerate and harden the artifacts with the complete enforced
 pipeline:
 
 ```sh
@@ -93,7 +102,8 @@ cargo fmt --package reallyme-codec-proto
 The sensitivity manifest at `scripts/codec_proto_sensitivity.mjs` must classify
 every protobuf `bytes` and `string` field exactly once as sensitive or
 intentionally public. Do not add a scalar field without making that security
-decision. CI also runs `buf breaking --against '.git#branch=origin/main'`, the pinned
+decision. CI runs `buf breaking` against the latest published release tag, or
+against `origin/main` when no release tag is available, plus the pinned
 hardening pipeline, and a generated-tree diff to catch schema drift or stale or
 unhardened artifacts.
 
@@ -110,13 +120,16 @@ Use serialization only as an explicit transport operation with a controlled
 destination, and never pass a sensitive generated message to generic logging or
 telemetry.
 
-Generated Swift sensitive messages also shadow the
-concrete `textFormatString` overloads. SwiftProtobuf's text-format methods are
-protocol-extension methods, however, so code that first erases a sensitive
-message to `any SwiftProtobuf.Message` can bypass those concrete overloads and
-traverse the fields. Do not type-erase, text-format, reflect, interpolate, or
-log sensitive protobuf messages; decode only the required fields and keep
-those values inside the documented owner lifetime. The constant hash used by
+SwiftProtobuf's generic `Message` text formatter traverses fields, even if a
+concrete message shadows `textFormatString`. For this reason the Swift package
+compiles generated wire messages as internal types in `ReallyMeCodec` and does
+not vend a generated-message product. The public Swift API accepts and returns
+serialized operation bytes and typed SDK results; application code cannot
+obtain a generated message from the package for generic formatting. Internal
+code must still treat generated messages as secret-bearing transport objects;
+erasing one to `any SwiftProtobuf.Message` inside the SDK still exposes raw
+fields to the generic text formatter.
+The constant hash used by
 these Swift messages deliberately avoids secret-dependent hashing at the cost
 of collisions; attacker-sized `Set` or dictionary key workloads can degrade
 toward quadratic behavior.
@@ -138,5 +151,8 @@ across into the TypeScript runtime model.
 Swift and Kotlin PEM facades accept mutable byte arrays and construct the
 generated requests internally. The generated message types remain available
 to generic operation callers; their `Data` or `ByteString` storage can introduce
-additional managed copies. Minimize those copies and wipe mutable transient
-byte arrays as soon as practical.
+additional managed copies. The Kotlin typed facades parse response bytes with
+aliasing and finish conversion while the SDK still owns the response array; it
+wipes that array before returning. Generic callers receiving raw response bytes
+own their lifetime and cleanup. Minimize copies and wipe mutable transient byte
+arrays as soon as practical.

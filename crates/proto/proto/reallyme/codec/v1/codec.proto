@@ -87,7 +87,7 @@ message CodecDagCborDecodeResult {
 }
 
 // Zero limits select the documented codec defaults. An empty allowed-label list
-// selects the default PRIVATE KEY, EC PRIVATE KEY, and PUBLIC KEY set.
+// selects PUBLIC KEY only; private-key labels require an explicit allowlist.
 message CodecPemDecodeOptions {
   repeated CodecPemLabel allowed_labels = 1;
   uint32 max_input_len = 2;
@@ -116,8 +116,9 @@ message CodecPemEncodeOptions {
 
 message CodecPemEncodeRequest {
   CodecPemLabel label = 1;
-  // DER may contain private-key material. Generated owners are hardened to
-  // wipe this field on every success and failure path.
+  // DER may contain private-key material. Generated owned-message drop wipes
+  // the retained field; transport decoders may create temporary copies that
+  // cannot be reliably wiped. Use binary requests for secret-bearing DER.
   bytes der = 2;
   CodecPemEncodeOptions options = 3;
 }
@@ -437,6 +438,12 @@ enum CodecErrorReason {
   CODEC_ERROR_REASON_PEM_UNSUPPORTED_LABEL = 202;
   CODEC_ERROR_REASON_PEM_INVALID_BODY = 203;
   CODEC_ERROR_REASON_PEM_DER_TOO_LARGE = 204;
+  CODEC_ERROR_REASON_PEM_EMPTY_INPUT = 205;
+  CODEC_ERROR_REASON_PEM_EMPTY_DER = 206;
+  CODEC_ERROR_REASON_PEM_INVALID_OPTIONS = 207;
+  CODEC_ERROR_REASON_PEM_MISSING_BEGIN = 208;
+  CODEC_ERROR_REASON_PEM_MISSING_END = 209;
+  CODEC_ERROR_REASON_PEM_INVALID_BASE64 = 210;
 
   // Multiformats and key envelopes.
   CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTIBASE_PREFIX = 300;
@@ -450,6 +457,11 @@ enum CodecErrorReason {
   CODEC_ERROR_REASON_CANONICAL_INVALID_JSON = 402;
   CODEC_ERROR_REASON_CANONICAL_NON_CANONICAL_JSON = 403;
   CODEC_ERROR_REASON_CANONICAL_INTERNAL = 404;
+  CODEC_ERROR_REASON_CANONICAL_NON_MINIMAL_CBOR_INTEGER = 405;
+  CODEC_ERROR_REASON_CANONICAL_DUPLICATE_CBOR_MAP_KEY = 406;
+  CODEC_ERROR_REASON_CANONICAL_CBOR_MAP_KEYS_OUT_OF_ORDER = 407;
+  CODEC_ERROR_REASON_CANONICAL_CBOR_TRAILING_BYTES = 408;
+  CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE = 409;
 
   // Backend failures.
   CODEC_ERROR_REASON_BACKEND_INTERNAL = 500;

@@ -10,12 +10,12 @@
 //! lookup failures or table metadata.
 
 use codec_multicodec::{
-    lookup_codec_prefix, CodecSpec, CodecTag as PrimitiveCodecTag,
-    KeyMaterialKind as PrimitiveKeyMaterialKind, MULTICODEC_TABLE, VARIABLE_KEY_LENGTH,
+    lookup_codec_prefix, CodecSpec, CodecTag as PrimitiveCodecTag, KeyLength,
+    KeyMaterialKind as PrimitiveKeyMaterialKind, MULTICODEC_TABLE,
 };
 use std::sync::OnceLock;
 
-const MAX_U64_VARINT_BYTES: usize = 10;
+const MAX_UNSIGNED_VARINT_BYTES: usize = 9;
 
 static REGISTRY_VALIDITY: OnceLock<Result<(), MulticodecOperationError>> = OnceLock::new();
 
@@ -72,10 +72,8 @@ pub enum KeyMaterialKind {
 
 /// Semantic length rule for the value described by a multicodec entry.
 ///
-/// The registry uses zero for both variable-length key material and entries
-/// where a key length does not apply. Keeping those meanings distinct here
-/// prevents boundary adapters from treating an algorithm identifier as a
-/// variable-length key codec.
+/// The primitive registry represents these cases with separate enum variants,
+/// so transport adapters cannot mistake an algorithm identifier for a key.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum MulticodecLength {
@@ -213,15 +211,10 @@ pub fn lookup_prefix(value: &[u8]) -> Result<MulticodecLookup<'static>, Multicod
     })
 }
 
-/// Strip a known multicodec prefix, preserving `value` when no prefix matches.
+/// Strip a complete, recognized public-key multicodec prefix.
 pub fn strip_prefix(value: &[u8]) -> Result<&[u8], MulticodecOperationError> {
-    match lookup_prefix(value) {
-        Ok(found) => value
-            .get(found.prefix_length()..)
-            .ok_or(MulticodecOperationError::RegistryInvariant),
-        Err(MulticodecOperationError::InvalidPrefix) => Ok(value),
-        Err(error) => Err(error),
-    }
+    validate_registry()?;
+    codec_multicodec::strip_codec_prefix(value).map_err(|_| MulticodecOperationError::InvalidPrefix)
 }
 
 /// Return all supported multicodec entries in stable registry order.
@@ -284,6 +277,12 @@ fn validate_registry_entries(
         if is_key_tag != carries_key_material {
             return Err(MulticodecOperationError::RegistryInvariant);
         }
+        if (is_key_tag && matches!(spec.key_length, KeyLength::NotApplicable))
+            || (!is_key_tag && matches!(spec.key_length, KeyLength::Variable))
+            || matches!(spec.key_length, KeyLength::Fixed(0))
+        {
+            return Err(MulticodecOperationError::RegistryInvariant);
+        }
 
         let next_index = index
             .checked_add(1)
@@ -303,7 +302,7 @@ fn validate_registry_entries(
 }
 
 fn is_canonical_u64_varint(value: &[u8]) -> bool {
-    if value.len() > MAX_U64_VARINT_BYTES {
+    if value.len() > MAX_UNSIGNED_VARINT_BYTES {
         return false;
     }
     let Some((&last, leading)) = value.split_last() else {
@@ -315,7 +314,7 @@ fn is_canonical_u64_varint(value: &[u8]) -> bool {
     if !leading.is_empty() && last & 0x7f == 0 {
         return false;
     }
-    value.len() < MAX_U64_VARINT_BYTES || last <= 1
+    true
 }
 
 fn multicodec_spec(
@@ -324,16 +323,14 @@ fn multicodec_spec(
     key_material: PrimitiveKeyMaterialKind,
     algorithm_name: &'static str,
     prefix: &'static [u8],
-    key_length: usize,
+    key_length: KeyLength,
 ) -> Result<MulticodecSpec<'static>, MulticodecOperationError> {
     let tag = semantic_codec_tag(tag)?;
     let key_material = semantic_key_material_kind(key_material)?;
-    let length = if key_length != VARIABLE_KEY_LENGTH {
-        MulticodecLength::Fixed(key_length)
-    } else if key_material == KeyMaterialKind::NotKey {
-        MulticodecLength::NotApplicable
-    } else {
-        MulticodecLength::Variable
+    let length = match key_length {
+        KeyLength::Fixed(length) => MulticodecLength::Fixed(length),
+        KeyLength::Variable => MulticodecLength::Variable,
+        KeyLength::NotApplicable => MulticodecLength::NotApplicable,
     };
     Ok(MulticodecSpec {
         name,

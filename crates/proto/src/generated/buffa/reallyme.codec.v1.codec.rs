@@ -1040,6 +1040,12 @@ pub enum CodecErrorReason {
     CODEC_ERROR_REASON_PEM_UNSUPPORTED_LABEL = 202i32,
     CODEC_ERROR_REASON_PEM_INVALID_BODY = 203i32,
     CODEC_ERROR_REASON_PEM_DER_TOO_LARGE = 204i32,
+    CODEC_ERROR_REASON_PEM_EMPTY_INPUT = 205i32,
+    CODEC_ERROR_REASON_PEM_EMPTY_DER = 206i32,
+    CODEC_ERROR_REASON_PEM_INVALID_OPTIONS = 207i32,
+    CODEC_ERROR_REASON_PEM_MISSING_BEGIN = 208i32,
+    CODEC_ERROR_REASON_PEM_MISSING_END = 209i32,
+    CODEC_ERROR_REASON_PEM_INVALID_BASE64 = 210i32,
     /// Multiformats and key envelopes.
     CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTIBASE_PREFIX = 300i32,
     CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTICODEC_PREFIX = 301i32,
@@ -1051,6 +1057,11 @@ pub enum CodecErrorReason {
     CODEC_ERROR_REASON_CANONICAL_INVALID_JSON = 402i32,
     CODEC_ERROR_REASON_CANONICAL_NON_CANONICAL_JSON = 403i32,
     CODEC_ERROR_REASON_CANONICAL_INTERNAL = 404i32,
+    CODEC_ERROR_REASON_CANONICAL_NON_MINIMAL_CBOR_INTEGER = 405i32,
+    CODEC_ERROR_REASON_CANONICAL_DUPLICATE_CBOR_MAP_KEY = 406i32,
+    CODEC_ERROR_REASON_CANONICAL_CBOR_MAP_KEYS_OUT_OF_ORDER = 407i32,
+    CODEC_ERROR_REASON_CANONICAL_CBOR_TRAILING_BYTES = 408i32,
+    CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE = 409i32,
     /// Backend failures.
     CODEC_ERROR_REASON_BACKEND_INTERNAL = 500i32,
     /// Caller-controlled wire-boundary failures.
@@ -1105,6 +1116,24 @@ impl CodecErrorReason {
     ///Idiomatic alias for [`Self::CODEC_ERROR_REASON_PEM_DER_TOO_LARGE`]; `Debug` prints the variant name.
     #[allow(non_upper_case_globals)]
     pub const PemDerTooLarge: Self = Self::CODEC_ERROR_REASON_PEM_DER_TOO_LARGE;
+    ///Idiomatic alias for [`Self::CODEC_ERROR_REASON_PEM_EMPTY_INPUT`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const PemEmptyInput: Self = Self::CODEC_ERROR_REASON_PEM_EMPTY_INPUT;
+    ///Idiomatic alias for [`Self::CODEC_ERROR_REASON_PEM_EMPTY_DER`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const PemEmptyDer: Self = Self::CODEC_ERROR_REASON_PEM_EMPTY_DER;
+    ///Idiomatic alias for [`Self::CODEC_ERROR_REASON_PEM_INVALID_OPTIONS`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const PemInvalidOptions: Self = Self::CODEC_ERROR_REASON_PEM_INVALID_OPTIONS;
+    ///Idiomatic alias for [`Self::CODEC_ERROR_REASON_PEM_MISSING_BEGIN`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const PemMissingBegin: Self = Self::CODEC_ERROR_REASON_PEM_MISSING_BEGIN;
+    ///Idiomatic alias for [`Self::CODEC_ERROR_REASON_PEM_MISSING_END`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const PemMissingEnd: Self = Self::CODEC_ERROR_REASON_PEM_MISSING_END;
+    ///Idiomatic alias for [`Self::CODEC_ERROR_REASON_PEM_INVALID_BASE64`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const PemInvalidBase64: Self = Self::CODEC_ERROR_REASON_PEM_INVALID_BASE64;
     ///Idiomatic alias for [`Self::CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTIBASE_PREFIX`]; `Debug` prints the variant name.
     #[allow(non_upper_case_globals)]
     pub const MultiformatInvalidMultibasePrefix: Self = Self::CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTIBASE_PREFIX;
@@ -1132,6 +1161,21 @@ impl CodecErrorReason {
     ///Idiomatic alias for [`Self::CODEC_ERROR_REASON_CANONICAL_INTERNAL`]; `Debug` prints the variant name.
     #[allow(non_upper_case_globals)]
     pub const CanonicalInternal: Self = Self::CODEC_ERROR_REASON_CANONICAL_INTERNAL;
+    ///Idiomatic alias for [`Self::CODEC_ERROR_REASON_CANONICAL_NON_MINIMAL_CBOR_INTEGER`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const CanonicalNonMinimalCborInteger: Self = Self::CODEC_ERROR_REASON_CANONICAL_NON_MINIMAL_CBOR_INTEGER;
+    ///Idiomatic alias for [`Self::CODEC_ERROR_REASON_CANONICAL_DUPLICATE_CBOR_MAP_KEY`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const CanonicalDuplicateCborMapKey: Self = Self::CODEC_ERROR_REASON_CANONICAL_DUPLICATE_CBOR_MAP_KEY;
+    ///Idiomatic alias for [`Self::CODEC_ERROR_REASON_CANONICAL_CBOR_MAP_KEYS_OUT_OF_ORDER`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const CanonicalCborMapKeysOutOfOrder: Self = Self::CODEC_ERROR_REASON_CANONICAL_CBOR_MAP_KEYS_OUT_OF_ORDER;
+    ///Idiomatic alias for [`Self::CODEC_ERROR_REASON_CANONICAL_CBOR_TRAILING_BYTES`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const CanonicalCborTrailingBytes: Self = Self::CODEC_ERROR_REASON_CANONICAL_CBOR_TRAILING_BYTES;
+    ///Idiomatic alias for [`Self::CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const CanonicalUnsupportedIpldValue: Self = Self::CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE;
     ///Idiomatic alias for [`Self::CODEC_ERROR_REASON_BACKEND_INTERNAL`]; `Debug` prints the variant name.
     #[allow(non_upper_case_globals)]
     pub const BackendInternal: Self = Self::CODEC_ERROR_REASON_BACKEND_INTERNAL;
@@ -1299,6 +1343,26 @@ impl ::buffa::Enumeration for CodecErrorReason {
             204i32 => {
                 ::core::option::Option::Some(Self::CODEC_ERROR_REASON_PEM_DER_TOO_LARGE)
             }
+            205i32 => {
+                ::core::option::Option::Some(Self::CODEC_ERROR_REASON_PEM_EMPTY_INPUT)
+            }
+            206i32 => {
+                ::core::option::Option::Some(Self::CODEC_ERROR_REASON_PEM_EMPTY_DER)
+            }
+            207i32 => {
+                ::core::option::Option::Some(
+                    Self::CODEC_ERROR_REASON_PEM_INVALID_OPTIONS,
+                )
+            }
+            208i32 => {
+                ::core::option::Option::Some(Self::CODEC_ERROR_REASON_PEM_MISSING_BEGIN)
+            }
+            209i32 => {
+                ::core::option::Option::Some(Self::CODEC_ERROR_REASON_PEM_MISSING_END)
+            }
+            210i32 => {
+                ::core::option::Option::Some(Self::CODEC_ERROR_REASON_PEM_INVALID_BASE64)
+            }
             300i32 => {
                 ::core::option::Option::Some(
                     Self::CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTIBASE_PREFIX,
@@ -1341,6 +1405,31 @@ impl ::buffa::Enumeration for CodecErrorReason {
             }
             404i32 => {
                 ::core::option::Option::Some(Self::CODEC_ERROR_REASON_CANONICAL_INTERNAL)
+            }
+            405i32 => {
+                ::core::option::Option::Some(
+                    Self::CODEC_ERROR_REASON_CANONICAL_NON_MINIMAL_CBOR_INTEGER,
+                )
+            }
+            406i32 => {
+                ::core::option::Option::Some(
+                    Self::CODEC_ERROR_REASON_CANONICAL_DUPLICATE_CBOR_MAP_KEY,
+                )
+            }
+            407i32 => {
+                ::core::option::Option::Some(
+                    Self::CODEC_ERROR_REASON_CANONICAL_CBOR_MAP_KEYS_OUT_OF_ORDER,
+                )
+            }
+            408i32 => {
+                ::core::option::Option::Some(
+                    Self::CODEC_ERROR_REASON_CANONICAL_CBOR_TRAILING_BYTES,
+                )
+            }
+            409i32 => {
+                ::core::option::Option::Some(
+                    Self::CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE,
+                )
             }
             500i32 => {
                 ::core::option::Option::Some(Self::CODEC_ERROR_REASON_BACKEND_INTERNAL)
@@ -1416,6 +1505,22 @@ impl ::buffa::Enumeration for CodecErrorReason {
             Self::CODEC_ERROR_REASON_PEM_DER_TOO_LARGE => {
                 "CODEC_ERROR_REASON_PEM_DER_TOO_LARGE"
             }
+            Self::CODEC_ERROR_REASON_PEM_EMPTY_INPUT => {
+                "CODEC_ERROR_REASON_PEM_EMPTY_INPUT"
+            }
+            Self::CODEC_ERROR_REASON_PEM_EMPTY_DER => "CODEC_ERROR_REASON_PEM_EMPTY_DER",
+            Self::CODEC_ERROR_REASON_PEM_INVALID_OPTIONS => {
+                "CODEC_ERROR_REASON_PEM_INVALID_OPTIONS"
+            }
+            Self::CODEC_ERROR_REASON_PEM_MISSING_BEGIN => {
+                "CODEC_ERROR_REASON_PEM_MISSING_BEGIN"
+            }
+            Self::CODEC_ERROR_REASON_PEM_MISSING_END => {
+                "CODEC_ERROR_REASON_PEM_MISSING_END"
+            }
+            Self::CODEC_ERROR_REASON_PEM_INVALID_BASE64 => {
+                "CODEC_ERROR_REASON_PEM_INVALID_BASE64"
+            }
             Self::CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTIBASE_PREFIX => {
                 "CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTIBASE_PREFIX"
             }
@@ -1442,6 +1547,21 @@ impl ::buffa::Enumeration for CodecErrorReason {
             }
             Self::CODEC_ERROR_REASON_CANONICAL_INTERNAL => {
                 "CODEC_ERROR_REASON_CANONICAL_INTERNAL"
+            }
+            Self::CODEC_ERROR_REASON_CANONICAL_NON_MINIMAL_CBOR_INTEGER => {
+                "CODEC_ERROR_REASON_CANONICAL_NON_MINIMAL_CBOR_INTEGER"
+            }
+            Self::CODEC_ERROR_REASON_CANONICAL_DUPLICATE_CBOR_MAP_KEY => {
+                "CODEC_ERROR_REASON_CANONICAL_DUPLICATE_CBOR_MAP_KEY"
+            }
+            Self::CODEC_ERROR_REASON_CANONICAL_CBOR_MAP_KEYS_OUT_OF_ORDER => {
+                "CODEC_ERROR_REASON_CANONICAL_CBOR_MAP_KEYS_OUT_OF_ORDER"
+            }
+            Self::CODEC_ERROR_REASON_CANONICAL_CBOR_TRAILING_BYTES => {
+                "CODEC_ERROR_REASON_CANONICAL_CBOR_TRAILING_BYTES"
+            }
+            Self::CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE => {
+                "CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE"
             }
             Self::CODEC_ERROR_REASON_BACKEND_INTERNAL => {
                 "CODEC_ERROR_REASON_BACKEND_INTERNAL"
@@ -1527,6 +1647,26 @@ impl ::buffa::Enumeration for CodecErrorReason {
             "CODEC_ERROR_REASON_PEM_DER_TOO_LARGE" => {
                 ::core::option::Option::Some(Self::CODEC_ERROR_REASON_PEM_DER_TOO_LARGE)
             }
+            "CODEC_ERROR_REASON_PEM_EMPTY_INPUT" => {
+                ::core::option::Option::Some(Self::CODEC_ERROR_REASON_PEM_EMPTY_INPUT)
+            }
+            "CODEC_ERROR_REASON_PEM_EMPTY_DER" => {
+                ::core::option::Option::Some(Self::CODEC_ERROR_REASON_PEM_EMPTY_DER)
+            }
+            "CODEC_ERROR_REASON_PEM_INVALID_OPTIONS" => {
+                ::core::option::Option::Some(
+                    Self::CODEC_ERROR_REASON_PEM_INVALID_OPTIONS,
+                )
+            }
+            "CODEC_ERROR_REASON_PEM_MISSING_BEGIN" => {
+                ::core::option::Option::Some(Self::CODEC_ERROR_REASON_PEM_MISSING_BEGIN)
+            }
+            "CODEC_ERROR_REASON_PEM_MISSING_END" => {
+                ::core::option::Option::Some(Self::CODEC_ERROR_REASON_PEM_MISSING_END)
+            }
+            "CODEC_ERROR_REASON_PEM_INVALID_BASE64" => {
+                ::core::option::Option::Some(Self::CODEC_ERROR_REASON_PEM_INVALID_BASE64)
+            }
             "CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTIBASE_PREFIX" => {
                 ::core::option::Option::Some(
                     Self::CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTIBASE_PREFIX,
@@ -1569,6 +1709,31 @@ impl ::buffa::Enumeration for CodecErrorReason {
             }
             "CODEC_ERROR_REASON_CANONICAL_INTERNAL" => {
                 ::core::option::Option::Some(Self::CODEC_ERROR_REASON_CANONICAL_INTERNAL)
+            }
+            "CODEC_ERROR_REASON_CANONICAL_NON_MINIMAL_CBOR_INTEGER" => {
+                ::core::option::Option::Some(
+                    Self::CODEC_ERROR_REASON_CANONICAL_NON_MINIMAL_CBOR_INTEGER,
+                )
+            }
+            "CODEC_ERROR_REASON_CANONICAL_DUPLICATE_CBOR_MAP_KEY" => {
+                ::core::option::Option::Some(
+                    Self::CODEC_ERROR_REASON_CANONICAL_DUPLICATE_CBOR_MAP_KEY,
+                )
+            }
+            "CODEC_ERROR_REASON_CANONICAL_CBOR_MAP_KEYS_OUT_OF_ORDER" => {
+                ::core::option::Option::Some(
+                    Self::CODEC_ERROR_REASON_CANONICAL_CBOR_MAP_KEYS_OUT_OF_ORDER,
+                )
+            }
+            "CODEC_ERROR_REASON_CANONICAL_CBOR_TRAILING_BYTES" => {
+                ::core::option::Option::Some(
+                    Self::CODEC_ERROR_REASON_CANONICAL_CBOR_TRAILING_BYTES,
+                )
+            }
+            "CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE" => {
+                ::core::option::Option::Some(
+                    Self::CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE,
+                )
             }
             "CODEC_ERROR_REASON_BACKEND_INTERNAL" => {
                 ::core::option::Option::Some(Self::CODEC_ERROR_REASON_BACKEND_INTERNAL)
@@ -1613,6 +1778,12 @@ impl ::buffa::Enumeration for CodecErrorReason {
             Self::CODEC_ERROR_REASON_PEM_UNSUPPORTED_LABEL,
             Self::CODEC_ERROR_REASON_PEM_INVALID_BODY,
             Self::CODEC_ERROR_REASON_PEM_DER_TOO_LARGE,
+            Self::CODEC_ERROR_REASON_PEM_EMPTY_INPUT,
+            Self::CODEC_ERROR_REASON_PEM_EMPTY_DER,
+            Self::CODEC_ERROR_REASON_PEM_INVALID_OPTIONS,
+            Self::CODEC_ERROR_REASON_PEM_MISSING_BEGIN,
+            Self::CODEC_ERROR_REASON_PEM_MISSING_END,
+            Self::CODEC_ERROR_REASON_PEM_INVALID_BASE64,
             Self::CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTIBASE_PREFIX,
             Self::CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTICODEC_PREFIX,
             Self::CODEC_ERROR_REASON_MULTIFORMAT_UNKNOWN_MULTICODEC,
@@ -1622,6 +1793,11 @@ impl ::buffa::Enumeration for CodecErrorReason {
             Self::CODEC_ERROR_REASON_CANONICAL_INVALID_JSON,
             Self::CODEC_ERROR_REASON_CANONICAL_NON_CANONICAL_JSON,
             Self::CODEC_ERROR_REASON_CANONICAL_INTERNAL,
+            Self::CODEC_ERROR_REASON_CANONICAL_NON_MINIMAL_CBOR_INTEGER,
+            Self::CODEC_ERROR_REASON_CANONICAL_DUPLICATE_CBOR_MAP_KEY,
+            Self::CODEC_ERROR_REASON_CANONICAL_CBOR_MAP_KEYS_OUT_OF_ORDER,
+            Self::CODEC_ERROR_REASON_CANONICAL_CBOR_TRAILING_BYTES,
+            Self::CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE,
             Self::CODEC_ERROR_REASON_BACKEND_INTERNAL,
             Self::CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF,
             Self::CODEC_ERROR_REASON_BOUNDARY_MALFORMED_JSON,
@@ -2369,6 +2545,7 @@ impl ::core::ops::Drop for CodecMulticodecLookupPrefixRequest {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecMulticodecLookupPrefixRequest {}
 impl<'de> ::serde::Deserialize<'de> for CodecMulticodecLookupPrefixRequest {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -2467,6 +2644,7 @@ impl ::buffa::Message for CodecMulticodecLookupPrefixRequest {
                     tag,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )?;
+                ::zeroize::Zeroize::zeroize(&mut self.value);
                 ::buffa::types::merge_bytes(&mut self.value, buf)?;
             }
             _ => {
@@ -2646,6 +2824,7 @@ impl ::core::ops::Drop for CodecMultikeyParseRequest {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecMultikeyParseRequest {}
 impl<'de> ::serde::Deserialize<'de> for CodecMultikeyParseRequest {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -2744,6 +2923,7 @@ impl ::buffa::Message for CodecMultikeyParseRequest {
                     tag,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )?;
+                ::zeroize::Zeroize::zeroize(&mut self.multikey);
                 ::buffa::types::merge_string(&mut self.multikey, buf)?;
             }
             _ => {
@@ -2826,6 +3006,7 @@ impl ::core::ops::Drop for CodecDagCborVerifyCidRequest {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecDagCborVerifyCidRequest {}
 impl<'de> ::serde::Deserialize<'de> for CodecDagCborVerifyCidRequest {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -2940,6 +3121,7 @@ impl ::buffa::Message for CodecDagCborVerifyCidRequest {
                     tag,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )?;
+                ::zeroize::Zeroize::zeroize(&mut self.payload);
                 ::buffa::types::merge_bytes(&mut self.payload, buf)?;
             }
             _ => {
@@ -3019,6 +3201,7 @@ impl ::core::ops::Drop for CodecDagCborEncodeRequest {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecDagCborEncodeRequest {}
 impl<'de> ::serde::Deserialize<'de> for CodecDagCborEncodeRequest {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -3210,6 +3393,7 @@ impl ::core::ops::Drop for CodecDagCborEncodeResult {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecDagCborEncodeResult {}
 impl<'de> ::serde::Deserialize<'de> for CodecDagCborEncodeResult {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -3308,6 +3492,7 @@ impl ::buffa::Message for CodecDagCborEncodeResult {
                     tag,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )?;
+                ::zeroize::Zeroize::zeroize(&mut self.encoded);
                 ::buffa::types::merge_bytes(&mut self.encoded, buf)?;
             }
             _ => {
@@ -3384,6 +3569,7 @@ impl ::core::ops::Drop for CodecDagCborDecodeRequest {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecDagCborDecodeRequest {}
 impl<'de> ::serde::Deserialize<'de> for CodecDagCborDecodeRequest {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -3482,6 +3668,7 @@ impl ::buffa::Message for CodecDagCborDecodeRequest {
                     tag,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )?;
+                ::zeroize::Zeroize::zeroize(&mut self.encoded);
                 ::buffa::types::merge_bytes(&mut self.encoded, buf)?;
             }
             _ => {
@@ -3556,6 +3743,7 @@ impl ::core::ops::Drop for CodecDagCborDecodeResult {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecDagCborDecodeResult {}
 impl<'de> ::serde::Deserialize<'de> for CodecDagCborDecodeResult {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -3715,7 +3903,7 @@ pub const __CODEC_DAG_CBOR_DECODE_RESULT_JSON_ANY: ::buffa::type_registry::JsonA
     is_wkt: false,
 };
 /// Zero limits select the documented codec defaults. An empty allowed-label list
-/// selects the default PRIVATE KEY, EC PRIVATE KEY, and PUBLIC KEY set.
+/// selects PUBLIC KEY only; private-key labels require an explicit allowlist.
 #[derive(Clone, PartialEq, Default)]
 #[derive(::serde::Serialize, ::serde::Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -3977,6 +4165,7 @@ impl ::core::ops::Drop for CodecPemDecodeRequest {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecPemDecodeRequest {}
 impl<'de> ::serde::Deserialize<'de> for CodecPemDecodeRequest {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -4097,6 +4286,7 @@ impl ::buffa::Message for CodecPemDecodeRequest {
                     tag,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )?;
+                ::zeroize::Zeroize::zeroize(&mut self.pem);
                 ::buffa::types::merge_bytes(&mut self.pem, buf)?;
             }
             2u32 => {
@@ -4345,8 +4535,9 @@ pub struct CodecPemEncodeRequest {
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
     pub label: ::buffa::EnumValue<CodecPemLabel>,
-    /// DER may contain private-key material. Generated owners are hardened to
-    /// wipe this field on every success and failure path.
+    /// DER may contain private-key material. Generated owned-message drop wipes
+    /// the retained field; transport decoders may create temporary copies that
+    /// cannot be reliably wiped. Use binary requests for secret-bearing DER.
     ///
     /// Field 2: `der`
     #[serde(
@@ -4386,6 +4577,7 @@ impl ::core::ops::Drop for CodecPemEncodeRequest {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecPemEncodeRequest {}
 impl<'de> ::serde::Deserialize<'de> for CodecPemEncodeRequest {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -4530,6 +4722,7 @@ impl ::buffa::Message for CodecPemEncodeRequest {
                     tag,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )?;
+                ::zeroize::Zeroize::zeroize(&mut self.der);
                 ::buffa::types::merge_bytes(&mut self.der, buf)?;
             }
             3u32 => {
@@ -4618,6 +4811,7 @@ impl ::core::ops::Drop for CodecPemEncodeResult {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecPemEncodeResult {}
 impl<'de> ::serde::Deserialize<'de> for CodecPemEncodeResult {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -4716,6 +4910,7 @@ impl ::buffa::Message for CodecPemEncodeResult {
                     tag,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )?;
+                ::zeroize::Zeroize::zeroize(&mut self.pem);
                 ::buffa::types::merge_bytes(&mut self.pem, buf)?;
             }
             _ => {
@@ -4782,6 +4977,7 @@ impl ::core::ops::Drop for CodecDeterministicCborNull {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecDeterministicCborNull {}
 impl<'de> ::serde::Deserialize<'de> for CodecDeterministicCborNull {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -4937,6 +5133,7 @@ impl ::core::ops::Drop for CodecDeterministicCborBool {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecDeterministicCborBool {}
 impl<'de> ::serde::Deserialize<'de> for CodecDeterministicCborBool {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -5109,6 +5306,7 @@ impl ::core::ops::Drop for CodecDeterministicCborUnsignedInteger {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecDeterministicCborUnsignedInteger {}
 impl<'de> ::serde::Deserialize<'de> for CodecDeterministicCborUnsignedInteger {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -5285,6 +5483,7 @@ impl ::core::ops::Drop for CodecDeterministicCborNegativeInteger {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecDeterministicCborNegativeInteger {}
 impl<'de> ::serde::Deserialize<'de> for CodecDeterministicCborNegativeInteger {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -5460,6 +5659,7 @@ impl ::core::ops::Drop for CodecDeterministicCborInteger {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecDeterministicCborInteger {}
 impl CodecDeterministicCborInteger {
     /// Protobuf type URL for this message, for use with `Any::pack` and
     /// `Any::unpack_if`.
@@ -5768,6 +5968,7 @@ impl ::core::ops::Drop for CodecDeterministicCborText {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecDeterministicCborText {}
 impl<'de> ::serde::Deserialize<'de> for CodecDeterministicCborText {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -5866,6 +6067,7 @@ impl ::buffa::Message for CodecDeterministicCborText {
                     tag,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )?;
+                ::zeroize::Zeroize::zeroize(&mut self.value);
                 ::buffa::types::merge_string(&mut self.value, buf)?;
             }
             _ => {
@@ -5940,6 +6142,7 @@ impl ::core::ops::Drop for CodecDeterministicCborBytes {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecDeterministicCborBytes {}
 impl<'de> ::serde::Deserialize<'de> for CodecDeterministicCborBytes {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -6038,6 +6241,7 @@ impl ::buffa::Message for CodecDeterministicCborBytes {
                     tag,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )?;
+                ::zeroize::Zeroize::zeroize(&mut self.value);
                 ::buffa::types::merge_bytes(&mut self.value, buf)?;
             }
             _ => {
@@ -6109,6 +6313,7 @@ impl ::core::ops::Drop for CodecDeterministicCborMapKey {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecDeterministicCborMapKey {}
 impl CodecDeterministicCborMapKey {
     /// Protobuf type URL for this message, for use with `Any::pack` and
     /// `Any::unpack_if`.
@@ -6422,6 +6627,7 @@ impl ::core::ops::Drop for CodecDeterministicCborMapEntry {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecDeterministicCborMapEntry {}
 impl<'de> ::serde::Deserialize<'de> for CodecDeterministicCborMapEntry {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -6645,6 +6851,7 @@ impl ::core::ops::Drop for CodecDeterministicCborArray {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecDeterministicCborArray {}
 impl<'de> ::serde::Deserialize<'de> for CodecDeterministicCborArray {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -6832,6 +7039,7 @@ impl ::core::ops::Drop for CodecDeterministicCborMap {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecDeterministicCborMap {}
 impl<'de> ::serde::Deserialize<'de> for CodecDeterministicCborMap {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -7018,6 +7226,7 @@ impl ::core::ops::Drop for CodecDeterministicCborValue {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecDeterministicCborValue {}
 impl CodecDeterministicCborValue {
     /// Protobuf type URL for this message, for use with `Any::pack` and
     /// `Any::unpack_if`.
@@ -7634,6 +7843,7 @@ impl ::core::ops::Drop for CodecDeterministicCborEncodeRequest {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecDeterministicCborEncodeRequest {}
 impl<'de> ::serde::Deserialize<'de> for CodecDeterministicCborEncodeRequest {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -7827,6 +8037,7 @@ impl ::core::ops::Drop for CodecDeterministicCborEncodeResult {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecDeterministicCborEncodeResult {}
 impl<'de> ::serde::Deserialize<'de> for CodecDeterministicCborEncodeResult {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -7925,6 +8136,7 @@ impl ::buffa::Message for CodecDeterministicCborEncodeResult {
                     tag,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )?;
+                ::zeroize::Zeroize::zeroize(&mut self.encoded);
                 ::buffa::types::merge_bytes(&mut self.encoded, buf)?;
             }
             _ => {
@@ -8003,6 +8215,7 @@ impl ::core::ops::Drop for CodecDeterministicCborDecodeRequest {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecDeterministicCborDecodeRequest {}
 impl<'de> ::serde::Deserialize<'de> for CodecDeterministicCborDecodeRequest {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -8101,6 +8314,7 @@ impl ::buffa::Message for CodecDeterministicCborDecodeRequest {
                     tag,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )?;
+                ::zeroize::Zeroize::zeroize(&mut self.encoded);
                 ::buffa::types::merge_bytes(&mut self.encoded, buf)?;
             }
             _ => {
@@ -8179,6 +8393,7 @@ impl ::core::ops::Drop for CodecDeterministicCborDecodeResult {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecDeterministicCborDecodeResult {}
 impl<'de> ::serde::Deserialize<'de> for CodecDeterministicCborDecodeResult {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -8364,6 +8579,7 @@ impl ::core::ops::Drop for CodecOperationResult {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecOperationResult {}
 impl CodecOperationResult {
     /// Protobuf type URL for this message, for use with `Any::pack` and
     /// `Any::unpack_if`.
@@ -9236,6 +9452,7 @@ impl ::core::ops::Drop for CodecOperationResponse {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecOperationResponse {}
 impl CodecOperationResponse {
     /// Protobuf type URL for this message, for use with `Any::pack` and
     /// `Any::unpack_if`.
@@ -9535,6 +9752,7 @@ impl ::core::ops::Drop for CodecOperationRequest {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecOperationRequest {}
 impl CodecOperationRequest {
     /// Protobuf type URL for this message, for use with `Any::pack` and
     /// `Any::unpack_if`.
@@ -11103,6 +11321,7 @@ impl ::core::ops::Drop for CodecMultikeyParseResult {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecMultikeyParseResult {}
 impl<'de> ::serde::Deserialize<'de> for CodecMultikeyParseResult {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -11256,6 +11475,7 @@ impl ::buffa::Message for CodecMultikeyParseResult {
                     tag,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )?;
+                ::zeroize::Zeroize::zeroize(&mut self.public_key);
                 ::buffa::types::merge_bytes(&mut self.public_key, buf)?;
             }
             4u32 => {
@@ -11536,6 +11756,7 @@ impl ::core::ops::Drop for CodecPemDecodeResult {
         __reallyme_zeroize_unknown_fields(&mut self.__buffa_unknown_fields);
     }
 }
+impl ::zeroize::ZeroizeOnDrop for CodecPemDecodeResult {}
 impl<'de> ::serde::Deserialize<'de> for CodecPemDecodeResult {
     fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
     where
@@ -11650,6 +11871,7 @@ impl ::buffa::Message for CodecPemDecodeResult {
                     tag,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )?;
+                ::zeroize::Zeroize::zeroize(&mut self.der);
                 ::buffa::types::merge_bytes(&mut self.der, buf)?;
             }
             _ => {

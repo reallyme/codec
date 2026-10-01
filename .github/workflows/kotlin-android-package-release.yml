@@ -11,7 +11,7 @@ on:
         description: Release version without leading v
         required: true
         type: string
-        default: 0.2.3
+        default: 0.3.0
 
 permissions:
   contents: read

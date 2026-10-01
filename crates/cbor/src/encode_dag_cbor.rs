@@ -2,7 +2,10 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use crate::{CborError, CborValue, MAX_DAG_CBOR_INPUT_LEN, MAX_NESTING_DEPTH};
+use crate::{
+    CborError, CborValue, MAX_DAG_CBOR_CONTAINER_ENTRIES, MAX_DAG_CBOR_INPUT_LEN,
+    MAX_DAG_CBOR_NODES, MAX_NESTING_DEPTH,
+};
 use zeroize::Zeroizing;
 
 const MT_UINT: u8 = 0;
@@ -26,13 +29,24 @@ pub fn encode_dag_cbor(value: &CborValue) -> Result<Vec<u8>, CborError> {
     // error precedence, then reserves once so no written document buffer is
     // ever discarded by Vec growth.
     let mut length = 0_usize;
-    encode_value(value, &mut length, 0)?;
+    let mut nodes = 0_usize;
+    encode_value(value, &mut length, 0, &mut nodes)?;
     let mut out = Zeroizing::new(Vec::with_capacity(length));
-    encode_value(value, &mut *out, 0)?;
+    nodes = 0;
+    encode_value(value, &mut *out, 0, &mut nodes)?;
     Ok(core::mem::take(&mut *out))
 }
 
-fn encode_value(v: &CborValue, out: &mut impl EncodingSink, depth: usize) -> Result<(), CborError> {
+fn encode_value(
+    v: &CborValue,
+    out: &mut impl EncodingSink,
+    depth: usize,
+    nodes: &mut usize,
+) -> Result<(), CborError> {
+    *nodes = nodes.checked_add(1).ok_or(CborError::NodeLimitExceeded)?;
+    if *nodes > MAX_DAG_CBOR_NODES {
+        return Err(CborError::NodeLimitExceeded);
+    }
     match v {
         CborValue::Null => push_byte(out, 0xf6)?,
         CborValue::Bool(false) => push_byte(out, 0xf4)?,
@@ -59,15 +73,27 @@ fn encode_value(v: &CborValue, out: &mut impl EncodingSink, depth: usize) -> Res
 
         CborValue::Array(arr) => {
             let child_depth = descend(depth)?;
+            if arr.len() > MAX_DAG_CBOR_CONTAINER_ENTRIES {
+                return Err(CborError::ContainerEntriesExceeded);
+            }
             ensure_minimum_encoded_len(arr.len(), 1)?;
             write_header(MT_ARRAY, len_as_u64(arr.len())?, out)?;
             for v in arr {
-                encode_value(v, out, child_depth)?;
+                encode_value(v, out, child_depth, nodes)?;
             }
         }
 
         CborValue::Map(entries) => {
             let child_depth = descend(depth)?;
+            if entries.len() > MAX_DAG_CBOR_CONTAINER_ENTRIES {
+                return Err(CborError::ContainerEntriesExceeded);
+            }
+            *nodes = nodes
+                .checked_add(entries.len())
+                .ok_or(CborError::NodeLimitExceeded)?;
+            if *nodes > MAX_DAG_CBOR_NODES {
+                return Err(CborError::NodeLimitExceeded);
+            }
             ensure_minimum_encoded_len(entries.len(), 2)?;
             // Length-first deterministic ordering sorts text keys by the
             // length of their encoded bytes first, then by bytewise lexical
@@ -93,7 +119,7 @@ fn encode_value(v: &CborValue, out: &mut impl EncodingSink, depth: usize) -> Res
                 let kb = k.as_bytes();
                 write_header(MT_STRING, len_as_u64(kb.len())?, out)?;
                 extend_bytes(out, kb)?;
-                encode_value(v, out, child_depth)?;
+                encode_value(v, out, child_depth, nodes)?;
             }
         }
     }

@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: 2026 ReallyMe LLC
+#
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+[package]
+name = "reallyme-jcs-feature-unification-probe"
+version = "0.3.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[dependencies]
+reallyme-codec-jcs = { path = "../../crates/jcs" }
+serde_json = { version = "1", features = ["arbitrary_precision", "preserve_order"] }
+
+[lints.rust]
+unsafe_code = "forbid"

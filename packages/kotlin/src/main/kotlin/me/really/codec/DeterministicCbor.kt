@@ -7,6 +7,9 @@ package me.really.codec
 public sealed class ReallyMeDeterministicCborInteger {
     public class Unsigned public constructor(public val value: ULong) :
         ReallyMeDeterministicCborInteger() {
+        /** Java-friendly exact decimal view of the unsigned value. */
+        public fun toUnsignedDecimalString(): String = value.toString()
+
         override fun toString(): String = "ReallyMeDeterministicCborInteger(<redacted>)"
     }
 
@@ -72,6 +75,19 @@ public object ReallyMeDeterministicCbor {
             throw ReallyMeCodecException.InvalidInput()
         }
         return unsigned(value.toULong())
+    }
+
+    /** Constructs the full u64 range from Java without signed-long truncation. */
+    @JvmStatic
+    public fun unsignedDecimal(value: String): ReallyMeDeterministicCborValue {
+        if (value.isEmpty() || value.length > 20 || value.any { it !in '0'..'9' }) {
+            throw ReallyMeCodecException.InvalidInput()
+        }
+        val parsed = value.toULongOrNull() ?: throw ReallyMeCodecException.InvalidInput()
+        if (parsed.toString() != value) {
+            throw ReallyMeCodecException.InvalidInput()
+        }
+        return unsigned(parsed)
     }
 
     @JvmStatic

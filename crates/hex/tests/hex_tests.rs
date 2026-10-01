@@ -30,6 +30,7 @@ fn encodes_lowercase_hex() {
     let encoded = bytes_to_lower_hex(&[0x00, 0x01, 0x0f, 0x10, 0xab, 0xff]);
 
     assert_eq!(encoded, "00010f10abff");
+    assert_eq!(encoded.capacity(), 12);
 }
 
 #[test]
@@ -55,12 +56,13 @@ fn encodes_all_bytes_without_uppercase() {
 }
 
 #[test]
-fn appends_lowercase_hex() {
+fn appends_lowercase_hex() -> Result<(), HexError> {
     let mut output = String::from("sha256:");
 
-    write_lower_hex(&[0xde, 0xad, 0xbe, 0xef], &mut output);
+    write_lower_hex(&[0xde, 0xad, 0xbe, 0xef], &mut output)?;
 
     assert_eq!(output, "sha256:deadbeef");
+    Ok(())
 }
 
 #[test]

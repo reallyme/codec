@@ -18,7 +18,7 @@ on:
         description: Release version without leading v
         required: true
         type: string
-        default: 0.2.3
+        default: 0.3.0
 
 permissions:
   contents: read
@@ -37,6 +37,7 @@ jobs:
       - name: Checkout main for release SHA resolution
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           ref: main
           fetch-depth: 0
 
@@ -71,6 +72,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ needs.verify-source-sha.outputs.release_sha }}
 
       - name: Install Node
@@ -79,6 +81,11 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: packages/ts/package-lock.json
+
+      - name: Verify release version across package manifests
+        run: node scripts/verify_release_version.mjs "${RELEASE_VERSION}"
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master
@@ -94,7 +101,7 @@ jobs:
       - name: Install wasm-bindgen-cli
         uses: taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b # wasm-bindgen-cli
         with:
-          tool: wasm-bindgen-cli@0.2.127
+          tool: wasm-bindgen-cli@0.2.129
 
       - name: Install TypeScript codec package dependencies
         run: npm ci

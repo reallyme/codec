@@ -10,6 +10,9 @@ use crate::base58btc::Base58Error;
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum MultibaseError {
+    /// Encoded multibase text exceeded the supported resource limit.
+    #[error("multibase input too large")]
+    InputTooLarge,
     /// The input is too short to contain a multibase prefix and payload.
     #[error("invalid multibase string: too short")]
     TooShort,

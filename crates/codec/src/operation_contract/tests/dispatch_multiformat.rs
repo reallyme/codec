@@ -3,6 +3,19 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 #[test]
+fn binary_request_rejects_two_operation_fields_before_oneof_merge() {
+    let one = encode_protobuf(&table_request()).unwrap();
+    let mut two = one.to_vec();
+    two.extend_from_slice(one.as_slice());
+    let error = codec_error_payload(&process_operation_response(&two));
+    assert_eq!(error.branch(), CodecWireErrorBranch::Boundary);
+    assert_eq!(
+        error.reason(),
+        CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF
+    );
+}
+
+#[test]
 fn binary_and_proto_json_dispatch_match() {
     let requests = [
         (table_request(), true),

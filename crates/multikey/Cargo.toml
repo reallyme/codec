@@ -4,7 +4,7 @@
 
 [package]
 name = "reallyme-codec-multikey"
-version = "0.2.3"
+version = "0.3.0"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -17,12 +17,13 @@ include = ["/src/**/*.rs", "/tests/**/*.rs", "/Cargo.toml", "/LICENSE", "/NOTICE
 name = "codec_multikey"
 
 [dependencies]
-codec-multibase = { package = "reallyme-codec-multibase", version = "0.2.3", path = "../multibase" }
-codec-multicodec = { package = "reallyme-codec-multicodec", version = "0.2.3", path = "../multicodec" }
+codec-multibase = { package = "reallyme-codec-multibase", version = "=0.3.0", path = "../multibase" }
+codec-multicodec = { package = "reallyme-codec-multicodec", version = "=0.3.0", path = "../multicodec" }
 thiserror = { workspace = true }
+zeroize = { workspace = true }
 
 [dev-dependencies]
-codec-base64url = { package = "reallyme-codec-base64url", version = "0.2.3", path = "../base64url" }
+codec-base64url = { package = "reallyme-codec-base64url", version = "=0.3.0", path = "../base64url" }
 
 [lints]
 workspace = true

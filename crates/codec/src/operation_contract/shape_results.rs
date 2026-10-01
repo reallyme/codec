@@ -4,9 +4,7 @@
 
 /// Convert semantic multicodec metadata into the generated result contract.
 ///
-/// Direct scalar adapters use this hidden helper so generated ProtoJSON and
-/// binary protobuf share one result-shaping authority.
-pub fn codec_spec_proto(spec: &MulticodecSpec<'_>) -> Result<CodecMulticodecSpec, CodecWireError> {
+fn codec_spec_proto(spec: &MulticodecSpec<'_>) -> Result<CodecMulticodecSpec, CodecWireError> {
     let (fixed_length, variable_length) = match spec.length() {
         MulticodecLength::Fixed(length) => (usize_to_u32(length)?, false),
         MulticodecLength::Variable => (0, true),
@@ -27,7 +25,7 @@ pub fn codec_spec_proto(spec: &MulticodecSpec<'_>) -> Result<CodecMulticodecSpec
 
 /// Convert a semantic multicodec lookup into the generated result contract.
 #[doc(hidden)]
-pub fn multicodec_lookup_result_proto(
+fn multicodec_lookup_result_proto(
     found: &MulticodecLookup<'_>,
 ) -> Result<CodecMulticodecLookupResult, CodecWireError> {
     Ok(CodecMulticodecLookupResult {
@@ -40,7 +38,7 @@ pub fn multicodec_lookup_result_proto(
 
 /// Convert the semantic multicodec table into the generated result contract.
 #[doc(hidden)]
-pub fn multicodec_table_result_proto(
+fn multicodec_table_result_proto(
     table: &MulticodecTable<'_>,
 ) -> Result<CodecMulticodecTableResult, CodecWireError> {
     let mut entries = Vec::new();
@@ -58,7 +56,7 @@ pub fn multicodec_table_result_proto(
 
 /// Convert a semantic multikey parse result into the generated result contract.
 #[doc(hidden)]
-pub fn multikey_parse_result_proto(
+fn multikey_parse_result_proto(
     parsed: SemanticParsedMultikey,
 ) -> Result<CodecMultikeyParseResult, CodecWireError> {
     let variable_public_key_length = parsed.variable_public_key_length();
@@ -79,7 +77,7 @@ pub fn multikey_parse_result_proto(
 /// Convert a semantic DAG-CBOR CID verification into the generated contract.
 #[doc(hidden)]
 #[must_use]
-pub fn dag_cbor_verify_cid_result_proto(
+fn dag_cbor_verify_cid_result_proto(
     verification: DagCborCidVerification,
 ) -> CodecDagCborVerifyCidResult {
     let (valid, expected_cid, actual_cid) = verification.into_parts();
@@ -93,7 +91,7 @@ pub fn dag_cbor_verify_cid_result_proto(
 
 /// Convert a semantic PEM decode result into the generated result contract.
 #[doc(hidden)]
-pub fn pem_decode_result_proto(
+fn pem_decode_result_proto(
     decoded: DecodedPem,
 ) -> Result<CodecPemDecodeResult, CodecWireError> {
     // Allocate the non-secret label before transferring DER. If allocation

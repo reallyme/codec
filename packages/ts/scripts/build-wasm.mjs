@@ -3,12 +3,11 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 import { spawnSync } from "node:child_process";
-import { rmSync } from "node:fs";
+import { readFileSync, rmSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REQUIRED_WASM_PACK_VERSION = [0, 15, 0];
-const REQUIRED_WASM_BINDGEN_VERSION = [0, 2, 127];
 const WASM_PACK_COMMAND = "wasm-pack";
 const WASM_BINDGEN_COMMAND = "wasm-bindgen";
 
@@ -17,6 +16,12 @@ const packageDirectory = resolve(scriptDirectory, "..");
 const repositoryDirectory = resolve(packageDirectory, "..", "..");
 const wasmCrateDirectory = resolve(repositoryDirectory, "crates", "wasm");
 const outputDirectory = resolve(packageDirectory, "dist", "wasm");
+const cargoLockPath = resolve(repositoryDirectory, "Cargo.lock");
+const cargoLock = readFileSync(cargoLockPath, "utf8");
+const lockedBindgen = /^name = "wasm-bindgen"\nversion = "(\d+\.\d+\.\d+)"$/m.exec(cargoLock);
+if (lockedBindgen === null) {
+  fail("Cargo.lock does not contain one pinned wasm-bindgen version.");
+}
 
 function fail(message) {
   process.stderr.write(`${message}\n`);
@@ -85,12 +90,21 @@ if (wasmBindgenVersion === null) {
   fail("wasm-bindgen reported an unrecognized version string.");
 }
 
-if (compareVersion(wasmBindgenVersion, REQUIRED_WASM_BINDGEN_VERSION) < 0) {
+if (versionText(wasmBindgenVersion) !== lockedBindgen[1]) {
   fail(
-    `wasm-bindgen ${versionText(REQUIRED_WASM_BINDGEN_VERSION)} or newer is required; found ${versionText(
-      wasmBindgenVersion,
-    )}.`,
+    `wasm-bindgen ${lockedBindgen[1]} is required by Cargo.lock; found ${versionText(wasmBindgenVersion)}.`,
   );
+}
+
+// wasm-pack resolves metadata before forwarding --locked to Cargo. Check the
+// lockfile first so that metadata cannot silently repair a stale dependency.
+const lockedMetadata = spawnSync(
+  "cargo",
+  ["metadata", "--locked", "--format-version", "1", "--no-deps"],
+  { cwd: repositoryDirectory, stdio: ["inherit", "ignore", "inherit"] },
+);
+if (lockedMetadata.status !== 0) {
+  fail("Cargo.lock is not valid for the WASM workspace.");
 }
 
 const result = spawnSync(
@@ -98,12 +112,16 @@ const result = spawnSync(
   [
     "build",
     wasmCrateDirectory,
+    "--mode",
+    "no-install",
     "--target",
     "web",
     "--out-dir",
     outputDirectory,
     "--out-name",
     "reallyme_codec_wasm",
+    "--",
+    "--locked",
   ],
   {
     cwd: packageDirectory,
@@ -113,6 +131,10 @@ const result = spawnSync(
 
 if (result.status !== 0) {
   process.exit(result.status ?? 1);
+}
+
+if (readFileSync(cargoLockPath, "utf8") !== cargoLock) {
+  fail("The WASM build changed Cargo.lock.");
 }
 
 for (const generatedFile of [

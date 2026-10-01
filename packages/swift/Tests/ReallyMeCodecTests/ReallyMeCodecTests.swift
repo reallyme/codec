@@ -4,8 +4,11 @@
 
 import Foundation
 @testable import ReallyMeCodec
-import ReallyMeCodecProto
 import XCTest
+
+private enum FixtureError: Error {
+    case invalidHex
+}
 
 private struct CodecVectorManifest: Decodable {
     let schemaVersion: Int
@@ -39,10 +42,13 @@ private struct CodecVectors: Decodable {
     let unsupportedMultibase: String
     let multibaseMultibytePrefix: String
     let ed25519Multikey: String
+    let ed25519PrivateMultikey: String
     let nonCanonicalBase64urlMultikey: String
     let multikeyBindingType: String
+    let p256Multikey: String
     let mismatchedBindingType: String
     let mismatchedBindingAlgorithm: String
+    let emptyBindingAlgorithm: String
     let multicodecTableRequiredName: String
     let dagCborEncodedHex: String
     let dagCborNonCanonicalIntegerHex: String
@@ -74,6 +80,31 @@ private struct CodecVectors: Decodable {
 }
 
 final class ReallyMeCodecTests: XCTestCase {
+    func testPublicValueReflectionRedactsStoredBytes() {
+        let marker = "sensitive-reflection-marker"
+        let value = ReallyMeDeterministicCborValue.text(marker)
+        let entry = ReallyMeDeterministicCborMapEntry(key: .text(marker), value: value)
+        let parsed = ReallyMeParsedMultikey(
+            codecName: marker,
+            algorithmName: marker,
+            publicKey: Array(marker.utf8),
+            expectedPublicKeyLength: nil
+        )
+        let metadata = ReallyMeMulticodecMetadata(
+            name: marker,
+            algorithmName: marker,
+            tag: .key,
+            keyMaterialKind: .publicKey,
+            prefix: Array(marker.utf8),
+            expectedKeyLength: nil
+        )
+        for secretBearingValue: Any in [value, entry, parsed, metadata] {
+            var output = ""
+            dump(secretBearingValue, to: &output)
+            XCTAssertFalse(output.contains(marker))
+        }
+    }
+
     private static func libraryPath() throws -> String {
         if let value = ProcessInfo.processInfo.environment["REALLYME_CODEC_FFI_LIBRARY_PATH"],
            !value.isEmpty {
@@ -98,7 +129,11 @@ final class ReallyMeCodecTests: XCTestCase {
     }
 
     private static func configuredCodec() throws -> ReallyMeCodec {
+        #if REALLYME_CODEC_LINKED_FFI
+        return try ReallyMeCodec()
+        #else
         try ReallyMeCodec(rustCAbiLibrary: ReallyMeCodecRustCAbiLibrary(path: libraryPath()))
+        #endif
     }
 
     private static func codecVectors() throws -> CodecVectors {
@@ -120,7 +155,7 @@ final class ReallyMeCodecTests: XCTestCase {
 
     private static func hexBytes(_ text: String) throws -> [UInt8] {
         guard text.count.isMultiple(of: 2) else {
-            throw ReallyMeCodecError.invalidInput
+            throw FixtureError.invalidHex
         }
         var bytes: [UInt8] = []
         bytes.reserveCapacity(text.count / 2)
@@ -128,7 +163,7 @@ final class ReallyMeCodecTests: XCTestCase {
         while index < text.endIndex {
             let next = text.index(index, offsetBy: 2)
             guard let byte = UInt8(text[index..<next], radix: 16) else {
-                throw ReallyMeCodecError.invalidInput
+                throw FixtureError.invalidHex
             }
             bytes.append(byte)
             index = next
@@ -166,6 +201,24 @@ final class ReallyMeCodecTests: XCTestCase {
         }
     }
 
+    #if !REALLYME_CODEC_LINKED_FFI
+    func testUnmatchedBinaryArtifactFailsClosed() {
+        XCTAssertThrowsError(try ReallyMeCodec()) { error in
+            XCTAssertEqual(error as? ReallyMeCodecError, .providerUnavailable)
+        }
+    }
+    #else
+    func testLinkedProviderRunsSharedVectors() throws {
+        XCTAssertNil(ProcessInfo.processInfo.environment["REALLYME_CODEC_FFI_LIBRARY_PATH"])
+        let codec = try ReallyMeCodec()
+        let vectors = try Self.codecVectors()
+        let input = Data(try Self.hexBytes(vectors.baseInputHex))
+        XCTAssertEqual(try codec.base64urlEncode(input), vectors.base64urlUnpadded)
+        XCTAssertEqual(try codec.base64urlDecodeData(vectors.base64urlUnpadded), input)
+    }
+    #endif
+
+    #if !REALLYME_CODEC_LINKED_FFI
     func testTemporaryLibraryPatternRetainsLoadedImage() throws {
         let codec = try ReallyMeCodec(
             rustCAbiLibrary: ReallyMeCodecRustCAbiLibrary(path: Self.libraryPath())
@@ -175,6 +228,7 @@ final class ReallyMeCodecTests: XCTestCase {
             XCTAssertEqual(try codec.base64urlEncode([1, 2, 3]), "AQID")
         }
     }
+    #endif
 
     func testSwiftDataAndCborBuildersPreserveCanonicalBytes() throws {
         let codec = try Self.configuredCodec()
@@ -208,14 +262,14 @@ final class ReallyMeCodecTests: XCTestCase {
 
     func testManagedBoundariesRejectOversizedInputsBeforeSerialization() throws {
         let codec = try Self.configuredCodec()
-        let oversizedText = String(repeating: "a", count: 1_048_577)
+        let oversizedBase64 = String(repeating: "A", count: 1_048_580)
+        let oversizedJson = "\"" + String(repeating: "a", count: 1_048_575) + "\""
 
-        Self.assertCodecError(.invalidInput, try codec.base64Decode(oversizedText))
-        Self.assertCodecError(.invalidInput, try codec.canonicalizeJson(oversizedText))
-        Self.assertCodecError(
-            .invalidInput,
-            try codec.multicodecPrefixForName(oversizedText)
-        )
+        Self.assertCodecError(.invalidInput, try codec.base64Decode(oversizedBase64))
+        Self.assertCodecError(.invalidInput, try codec.canonicalizeJson(oversizedJson))
+        // The structured operation limit is larger than the scalar cap.
+        let oversizedOperationText = String(repeating: "a", count: 10_485_761)
+        Self.assertCodecError(.invalidInput, try codec.multicodecPrefixForName(oversizedOperationText))
     }
 
     func testBaseEncodingsHandleEmptyLargeAndInvalidInput() throws {
@@ -237,7 +291,7 @@ final class ReallyMeCodecTests: XCTestCase {
         Self.assertCodecError(.invalidInput, try codec.base64Decode("Zh=="))
         Self.assertCodecError(.invalidInput, try codec.base64Decode("AAEC-_8="))
         Self.assertCodecError(.invalidInput, try codec.base64urlDecode("AAEC-_8="))
-        Self.assertCodecError(.invalidInput, try codec.lowerHexToBytes("DEADBEEF"))
+        Self.assertCodecError(.nonCanonical, try codec.lowerHexToBytes("DEADBEEF"))
     }
 
     func testSharedVectorSuiteCoversSwiftPublicMethods() throws {
@@ -271,6 +325,9 @@ final class ReallyMeCodecTests: XCTestCase {
         let lookup = try codec.multicodecLookupPrefix(prefixedPublicKey)
         XCTAssertEqual(lookup.name, vectors.ed25519CodecName)
         XCTAssertEqual(try codec.multicodecStripPrefix(prefixedPublicKey), publicKey)
+        Self.assertCodecError(.unsupportedCodec, try codec.multicodecStripPrefix([0x99, 0x01, 0x01]))
+        Self.assertCodecError(.unsupportedCodec, try codec.multicodecStripPrefix([0x80, 0x26] + publicKey))
+        Self.assertCodecError(.unsupportedCodec, try codec.multicodecStripPrefix(Array(prefixedPublicKey.dropLast())))
         XCTAssertTrue(try codec.multicodecTable().entries.contains { $0.name == vectors.multicodecTableRequiredName })
 
         XCTAssertEqual(
@@ -280,6 +337,7 @@ final class ReallyMeCodecTests: XCTestCase {
         let parsed = try codec.multikeyParse(vectors.ed25519Multikey)
         XCTAssertEqual(parsed.codecName, vectors.ed25519CodecName)
         XCTAssertEqual(parsed.publicKey, publicKey)
+        Self.assertCodecError(.invalidInput, try codec.multikeyParse(vectors.ed25519PrivateMultikey))
         XCTAssertTrue(
             try codec.bindingTypeMatchesCodec(
                 bindingType: vectors.multikeyBindingType,
@@ -295,9 +353,33 @@ final class ReallyMeCodecTests: XCTestCase {
         Self.assertCodecError(
             .invalidInput,
             try codec.validateKeyBinding(
+                bindingType: "P256Key2024",
+                algorithm: nil,
+                multikey: vectors.p256Multikey
+            )
+        )
+        Self.assertCodecError(
+            .invalidInput,
+            try codec.validateKeyBinding(
                 bindingType: vectors.mismatchedBindingType,
                 algorithm: vectors.mismatchedBindingAlgorithm,
                 multikey: vectors.ed25519Multikey
+            )
+        )
+        Self.assertCodecError(
+            .invalidInput,
+            try codec.validateKeyBinding(
+                bindingType: vectors.multikeyBindingType,
+                algorithm: vectors.mismatchedBindingAlgorithm,
+                multikey: vectors.ed25519Multikey
+            )
+        )
+        Self.assertCodecError(
+            .invalidInput,
+            try codec.validateKeyBinding(
+                bindingType: "P256Key2024",
+                algorithm: vectors.emptyBindingAlgorithm,
+                multikey: vectors.p256Multikey
             )
         )
 
@@ -326,7 +408,11 @@ final class ReallyMeCodecTests: XCTestCase {
             try codec.encodePem(label: privateLabel, der: privateDer),
             Array(vectors.pemPrivatePem.utf8)
         )
-        let decodedPem = try codec.decodePem(Array(vectors.pemPrivatePem.utf8))
+        let decodedPem = try codec.decodePem(
+            Array(vectors.pemPrivatePem.utf8),
+            options: ReallyMePemDecodeOptions(allowedLabels: [.privateKey])
+        )
+        Self.assertCodecError(.invalidInput, try codec.decodePem(Array(vectors.pemPrivatePem.utf8)))
         XCTAssertEqual(decodedPem.label.rawValue, vectors.pemPrivateLabel)
         XCTAssertEqual(
             try codec.encodePem(
@@ -390,18 +476,18 @@ final class ReallyMeCodecTests: XCTestCase {
             try codec.multikeyParse(vectors.nonCanonicalBase64urlMultikey)
         )
         Self.assertCodecError(
-            .invalidInput,
+            .nonCanonical,
             try codec.dagCborDecode(Self.hexBytes(vectors.dagCborNonCanonicalIntegerHex))
         )
         Self.assertCodecError(
-            .invalidInput,
+            .nonCanonical,
             try codec.dagCborDecode(Self.hexBytes(vectors.dagCborDuplicateKeyHex))
         )
         Self.assertCodecError(
-            .invalidInput,
+            .nonCanonical,
             try codec.dagCborDecode(Self.hexBytes(vectors.dagCborOutOfOrderKeyHex))
         )
-        Self.assertCodecError(.invalidInput, try codec.canonicalizeJson(vectors.jcsDuplicateMemberJson))
+        Self.assertCodecError(.nonCanonical, try codec.canonicalizeJson(vectors.jcsDuplicateMemberJson))
         Self.assertCodecError(
             .invalidInput,
             try codec.canonicalizeJson(vectors.jcsNonInteroperableIntegerJson)
@@ -438,13 +524,13 @@ final class ReallyMeCodecTests: XCTestCase {
         XCTAssertEqual(metadata.tag, .key)
         XCTAssertEqual(metadata.algorithmName, "Ed25519")
         XCTAssertEqual(metadata.expectedKeyLength, 32)
-        Self.assertCodecError(.invalidInput, try codec.multicodecPrefixForName("not-a-codec"))
+        Self.assertCodecError(.unsupportedCodec, try codec.multicodecPrefixForName("not-a-codec"))
 
         let prefixed = metadata.prefix + publicKey
         let lookup = try codec.multicodecLookupPrefix(prefixed)
         XCTAssertEqual(lookup.name, "ed25519-pub")
         XCTAssertEqual(lookup.prefixLength, UInt32(metadata.prefix.count))
-        Self.assertCodecError(.invalidInput, try codec.multicodecLookupPrefix([0, 0, 7]))
+        Self.assertCodecError(.unsupportedCodec, try codec.multicodecLookupPrefix([0, 0, 7]))
         XCTAssertEqual(try codec.multicodecStripPrefix(prefixed), publicKey)
         XCTAssertTrue(try codec.multicodecTable().entries.contains { $0.name == "mlkem-1024-pub" })
 
@@ -457,7 +543,7 @@ final class ReallyMeCodecTests: XCTestCase {
         try codec.requireSupportedMulticodec("ed25519-pub")
         try codec.validateKeyBinding(bindingType: "Multikey", algorithm: nil, multikey: multikey)
 
-        Self.assertCodecError(.invalidInput, try codec.requireSupportedMulticodec("not-a-codec"))
+        Self.assertCodecError(.unsupportedCodec, try codec.requireSupportedMulticodec("not-a-codec"))
         Self.assertCodecError(
             .invalidInput,
             try codec.validateKeyBinding(bindingType: "P256Key2024", algorithm: "P-256", multikey: multikey)
@@ -483,19 +569,41 @@ final class ReallyMeCodecTests: XCTestCase {
         XCTAssertTrue(verification.valid)
         XCTAssertEqual(verification.expectedCid, cid)
 
+        let alternateCid = try codec.multibaseBase58btcEncode([0x01, 0x71] + codec.dagCborMultihash(encoded))
+        let alternateVerification = try codec.dagCborVerifyCid(cid: alternateCid, bytes: encoded)
+        XCTAssertFalse(alternateVerification.valid)
+        XCTAssertEqual(alternateVerification.actualCid, cid)
+
         let invalidUpperPayloadCid = String(cid.prefix(1)) + cid.dropFirst().uppercased()
         let invalidVerification = try codec.dagCborVerifyCid(cid: invalidUpperPayloadCid, bytes: encoded)
         XCTAssertFalse(invalidVerification.valid)
-        XCTAssertEqual(invalidVerification.actualCid, "")
+        XCTAssertEqual(invalidVerification.actualCid, cid)
         let emptyCidVerification = try codec.dagCborVerifyCid(cid: "", bytes: encoded)
         XCTAssertFalse(emptyCidVerification.valid)
         XCTAssertEqual(emptyCidVerification.expectedCid, cid)
         XCTAssertEqual(emptyCidVerification.actualCid, "")
+        let invalidBlocks: [[UInt8]] = [[0xff], [0x18, 0x01], [0xf6, 0xf6]]
+        for (index, invalidBlock) in invalidBlocks.enumerated() {
+            let invalidCid = try codec.dagCborComputeCid(invalidBlock)
+            let expected: ReallyMeCodecError = index == 0 ? .invalidInput : .nonCanonical
+            Self.assertCodecError(expected, try codec.dagCborVerifyCid(cid: invalidCid, bytes: invalidBlock))
+        }
+        let unsupportedBlocks: [[UInt8]] = [
+            [0xfb, 0x3f, 0xf8, 0, 0, 0, 0, 0, 0],
+            [0xd8, 0x2a, 0x41, 0],
+        ]
+        for unsupportedBlock in unsupportedBlocks {
+            let unsupportedCid = try codec.dagCborComputeCid(unsupportedBlock)
+            Self.assertCodecError(
+                .unsupportedIpldValue,
+                try codec.dagCborVerifyCid(cid: unsupportedCid, bytes: unsupportedBlock)
+            )
+        }
 
         XCTAssertEqual(try codec.dagCborSha256ContentHash(encoded).count, 32)
         XCTAssertGreaterThan(try codec.dagCborMultihash(encoded).count, 32)
         XCTAssertEqual(try codec.dagCborCodecCode(), 0x71)
-        Self.assertCodecError(.invalidInput, try codec.dagCborDecode([0xa2, 0x61, 0x62, 0x01, 0x61, 0x61, 0x02]))
+        Self.assertCodecError(.nonCanonical, try codec.dagCborDecode([0xa2, 0x61, 0x62, 0x01, 0x61, 0x61, 0x02]))
         let oversizedCbor = [UInt8](repeating: 0, count: 1024 * 1024 + 1)
         Self.assertCodecError(.invalidInput, try codec.dagCborDecode(oversizedCbor))
         Self.assertCodecError(.invalidInput, try codec.dagCborComputeCid(oversizedCbor))
@@ -554,7 +662,7 @@ final class ReallyMeCodecTests: XCTestCase {
         XCTAssertThrowsError(try ReallyMeDeterministicCborNegativeInteger(0)) { error in
             XCTAssertEqual(error as? ReallyMeCodecError, .invalidInput)
         }
-        Self.assertCodecError(.invalidInput, try codec.deterministicCborDecode([0x18, 0x00]))
+        Self.assertCodecError(.nonCanonical, try codec.deterministicCborDecode([0x18, 0x00]))
     }
 
     func testDeterministicCborProviderTreeIsValidatedBeforeSdkCopy() throws {
@@ -644,7 +752,10 @@ final class ReallyMeCodecTests: XCTestCase {
         let pem = try codec.encodePem(label: .privateKey, der: der)
 
         XCTAssertTrue(String(decoding: pem, as: UTF8.self).contains("-----BEGIN PRIVATE KEY-----"))
-        let decoded = try codec.decodePem(pem)
+        let decoded = try codec.decodePem(
+            pem,
+            options: ReallyMePemDecodeOptions(allowedLabels: [.privateKey])
+        )
         XCTAssertEqual(decoded.label, .privateKey)
         XCTAssertEqual(decoded.der, der)
 
@@ -693,15 +804,34 @@ final class ReallyMeCodecTests: XCTestCase {
     }
 
     func testAbiVersionMismatchFailsClosed() throws {
-        try ReallyMeCodecRustCAbiProvider.requireCompatibleAbiVersion(5)
+        try ReallyMeCodecRustCAbiProvider.requireCompatibleAbiVersion(6)
         Self.assertCodecError(
             .providerFailure,
             try ReallyMeCodecRustCAbiProvider.requireCompatibleAbiVersion(0)
         )
         Self.assertCodecError(
             .providerFailure,
-            try ReallyMeCodecRustCAbiProvider.requireCompatibleAbiVersion(1)
+            try ReallyMeCodecRustCAbiProvider.requireCompatibleAbiVersion(5)
         )
+    }
+
+    func testPackageVersionMismatchFailsClosed() throws {
+        try ReallyMeCodecRustCAbiProvider.requireCompatiblePackageVersion(
+            major: 0,
+            minor: 3,
+            patch: 0
+        )
+        let rejectedVersions: [(UInt32, UInt32, UInt32)] = [(0, 2, 1), (0, 3, 1), (1, 3, 0)]
+        for version in rejectedVersions {
+            Self.assertCodecError(
+                .providerFailure,
+                try ReallyMeCodecRustCAbiProvider.requireCompatiblePackageVersion(
+                    major: version.0,
+                    minor: version.1,
+                    patch: version.2
+                )
+            )
+        }
     }
 
     func testProviderSuppliedOperationResponseLimitFailsClosed() throws {
@@ -745,6 +875,32 @@ final class ReallyMeCodecTests: XCTestCase {
                 maxFfiOutputLength: 67_108_864
             )
         )
+    }
+
+    func testOversizedOperationRequestsReturnTheSameTypedEnvelope() throws {
+        let codec = try Self.configuredCodec()
+        let exactBinary = try ReallyMeProtoCodecOperationResponse(
+            serializedBytes: codec.processOperation([UInt8](repeating: 0, count: 10_489_856))
+        )
+        XCTAssertEqual(exactBinary.error.boundary.reason, .boundaryMalformedProtobuf)
+        let exactJson = try ReallyMeProtoCodecOperationResponse(
+            serializedBytes: codec.processOperationJson([UInt8](repeating: 0, count: 16_082_264))
+        )
+        XCTAssertEqual(exactJson.error.boundary.reason, .boundaryMalformedJson)
+
+        for excess in [1, 16] {
+            let binary = try codec.processOperation([UInt8](repeating: 0, count: 10_489_856 + excess))
+            let json = try codec.processOperationJson([UInt8](repeating: 0, count: 16_082_264 + excess))
+            for responseBytes in [binary, json] {
+                let response = try ReallyMeProtoCodecOperationResponse(serializedBytes: responseBytes)
+                guard case .error(let error)? = response.outcome else {
+                    XCTFail("expected boundary error envelope")
+                    return
+                }
+                XCTAssertEqual(error.boundary.reason, .boundaryResourceLimitExceeded)
+                XCTAssertEqual(error.origin, .caller)
+            }
+        }
     }
 
     func testProviderErrorOriginsAreAttributedDeterministically() {
@@ -800,6 +956,7 @@ final class ReallyMeCodecTests: XCTestCase {
             request.textFormatString(),
             "ReallyMeProtoCodecMultikeyParseRequest(<redacted>)"
         )
+        XCTAssertEqual(Mirror(reflecting: request).children.count, 0)
         var hasher = Hasher()
         request.hash(into: &hasher)
         let redactedHash = hasher.finalize()

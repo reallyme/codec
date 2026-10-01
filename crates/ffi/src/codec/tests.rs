@@ -3,26 +3,89 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use super::{
-    rm_codec_abi_version, rm_codec_max_ffi_input_bytes, rm_codec_max_ffi_output_bytes,
-    rm_codec_max_operation_response_bytes, rm_codec_process, rm_codec_process_bool,
-    validate_boundary_input_lengths, CODEC_ABI_VERSION, CODEC_BASE58BTC_DECODE,
-    CODEC_BASE58BTC_ENCODE, CODEC_BASE64_ENCODE, CODEC_CANONICALIZE_JSON,
-    CODEC_DAG_CBOR_VERIFY_CID, CODEC_MULTICODEC_LOOKUP_PREFIX, CODEC_MULTICODEC_PREFIX_FOR_NAME,
-    CODEC_MULTICODEC_TABLE, CODEC_MULTIKEY_PARSE, CODEC_PEM_DECODE, CODEC_PEM_ENCODE,
-    MAX_CODEC_FFI_INPUT_BYTES, MAX_CODEC_FFI_OUTPUT_BYTES,
+    multicodec_status, rm_codec_abi_version, rm_codec_max_ffi_input_bytes,
+    rm_codec_max_ffi_output_bytes, rm_codec_max_operation_response_bytes,
+    rm_codec_package_version_major, rm_codec_package_version_minor, rm_codec_package_version_patch,
+    rm_codec_process, rm_codec_process_bool, validate_boundary_input_lengths, write_output,
+    CODEC_ABI_VERSION, CODEC_BASE58BTC_DECODE, CODEC_BASE58BTC_ENCODE, CODEC_BASE64_ENCODE,
+    CODEC_CANONICALIZE_JSON, CODEC_DAG_CBOR_VERIFY_CID, CODEC_LOWER_HEX_DECODE,
+    CODEC_MULTICODEC_LOOKUP_PREFIX, CODEC_MULTICODEC_PREFIX_FOR_NAME, CODEC_MULTICODEC_TABLE,
+    CODEC_MULTIKEY_PARSE, CODEC_PEM_DECODE, CODEC_PEM_ENCODE, CODEC_VALIDATE_KEY_BINDING,
+    CODEC_VALIDATE_KEY_BINDING_NO_ALGORITHM, MAX_CODEC_FFI_INPUT_BYTES, MAX_CODEC_FFI_OUTPUT_BYTES,
 };
-use crate::status::{CODEC_BUFFER_TOO_SMALL, CODEC_INVALID_ARGUMENT, CODEC_OK};
+use crate::status::{
+    CODEC_BUFFER_TOO_SMALL, CODEC_INTERNAL_ERROR, CODEC_INVALID_ARGUMENT,
+    CODEC_INVALID_MULTICODEC_PREFIX, CODEC_NON_CANONICAL_HEX, CODEC_NON_CANONICAL_JSON, CODEC_OK,
+    CODEC_UNKNOWN_MULTICODEC,
+};
+use codec_adapter::scalar_ops::MAX_BASE58BTC_INPUT_BYTES;
 use codec_proto::generated::proto::reallyme::codec::v1::CodecErrorReason;
 use codec_proto::generated::proto::reallyme::codec::v1::{
     __buffa::oneof::codec_error, codec_operation_response, CodecErrorOrigin, CodecOperationResponse,
 };
 use codec_proto::{decode_protobuf, CodecWireErrorBranch};
-use codec_runtime::scalar_ops::MAX_BASE58BTC_INPUT_BYTES;
+use codec_runtime::multicodec::MulticodecOperationError;
+use zeroize::Zeroizing;
 
 mod operation;
 
 const RETIRED_CODEC_DAG_CBOR_ENCODE: u32 = 19;
 const RETIRED_CODEC_DAG_CBOR_DECODE: u32 = 20;
+
+#[test]
+fn scalar_binding_distinguishes_absent_and_empty_algorithm() {
+    let binding_type = b"Multikey";
+    let multikey = b"z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnW";
+    let empty_algorithm = [0_u8; 1];
+    let mut produced_len = usize::MAX;
+    // SAFETY: All input slices and the disjoint output-length location are
+    // valid throughout each synchronous call; no output bytes are expected.
+    let empty_status = unsafe {
+        rm_codec_process(
+            CODEC_VALIDATE_KEY_BINDING,
+            binding_type.as_ptr(),
+            binding_type.len(),
+            empty_algorithm.as_ptr(),
+            0,
+            multikey.as_ptr(),
+            multikey.len(),
+            core::ptr::null_mut(),
+            0,
+            &mut produced_len,
+        )
+    };
+    assert_eq!(empty_status, CODEC_INVALID_ARGUMENT);
+    // SAFETY: The same valid and disjoint storage is used; this operation
+    // explicitly represents an absent algorithm with an empty second input.
+    let absent_status = unsafe {
+        rm_codec_process(
+            CODEC_VALIDATE_KEY_BINDING_NO_ALGORITHM,
+            binding_type.as_ptr(),
+            binding_type.len(),
+            core::ptr::null(),
+            0,
+            multikey.as_ptr(),
+            multikey.len(),
+            core::ptr::null_mut(),
+            0,
+            &mut produced_len,
+        )
+    };
+    assert_eq!(absent_status, CODEC_OK);
+    assert_eq!(produced_len, 0);
+}
+
+#[test]
+fn scalar_multicodec_failures_keep_unsupported_statuses() {
+    assert_eq!(
+        multicodec_status(MulticodecOperationError::UnknownName),
+        CODEC_UNKNOWN_MULTICODEC
+    );
+    assert_eq!(
+        multicodec_status(MulticodecOperationError::InvalidPrefix),
+        CODEC_INVALID_MULTICODEC_PREFIX
+    );
+}
 
 fn generated_error(
     response_bytes: &[u8],
@@ -68,12 +131,37 @@ fn assert_generated_error(
 #[test]
 fn abi_version_export_matches_the_sdk_contract() {
     assert_eq!(rm_codec_abi_version(), CODEC_ABI_VERSION);
+    assert_eq!(rm_codec_package_version_major(), 0);
+    assert_eq!(rm_codec_package_version_minor(), 3);
+    assert_eq!(rm_codec_package_version_patch(), 0);
     assert_eq!(
         rm_codec_max_operation_response_bytes(),
         codec_proto::MAX_CODEC_PROTO_MESSAGE_BYTES
     );
     assert_eq!(rm_codec_max_ffi_input_bytes(), MAX_CODEC_FFI_INPUT_BYTES);
     assert_eq!(rm_codec_max_ffi_output_bytes(), MAX_CODEC_FFI_OUTPUT_BYTES);
+}
+
+#[test]
+#[allow(clippy::unwrap_used)]
+fn ffi_output_cap_accepts_exact_limit_and_rejects_one_more() {
+    let mut output_placeholder = 0_u8;
+    let mut produced_len = 0_usize;
+    let exact = Zeroizing::new(vec![0_u8; MAX_CODEC_FFI_OUTPUT_BYTES]);
+    assert_eq!(
+        write_output(&mut output_placeholder, 0, &mut produced_len, exact),
+        CODEC_BUFFER_TOO_SMALL
+    );
+    assert_eq!(produced_len, MAX_CODEC_FFI_OUTPUT_BYTES);
+
+    let over_limit = MAX_CODEC_FFI_OUTPUT_BYTES.checked_add(1).unwrap();
+    produced_len = 0;
+    let oversized = Zeroizing::new(vec![0_u8; over_limit]);
+    assert_eq!(
+        write_output(&mut output_placeholder, 0, &mut produced_len, oversized),
+        CODEC_INTERNAL_ERROR
+    );
+    assert_eq!(produced_len, 0);
 }
 
 #[test]
@@ -228,7 +316,31 @@ fn canonicalization_boundaries_reject_ambiguous_object_keys() {
             &mut produced_len,
         )
     };
-    assert_eq!(jcs_status, CODEC_INVALID_ARGUMENT);
+    assert_eq!(jcs_status, CODEC_NON_CANONICAL_JSON);
+    assert_eq!(produced_len, 0);
+}
+
+#[test]
+fn uppercase_hex_has_the_wire_noncanonical_status() {
+    let input = b"AB";
+    let mut produced_len = usize::MAX;
+    // SAFETY: The immutable input and mutable length storage remain valid for
+    // the call; failure occurs before any output buffer is required.
+    let status = unsafe {
+        rm_codec_process(
+            CODEC_LOWER_HEX_DECODE,
+            input.as_ptr(),
+            input.len(),
+            core::ptr::null(),
+            0,
+            core::ptr::null(),
+            0,
+            core::ptr::null_mut(),
+            0,
+            &mut produced_len,
+        )
+    };
+    assert_eq!(status, CODEC_NON_CANONICAL_HEX);
     assert_eq!(produced_len, 0);
 }
 

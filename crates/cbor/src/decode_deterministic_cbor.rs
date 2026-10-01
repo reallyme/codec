@@ -49,16 +49,33 @@ pub fn decode_deterministic_cbor(
 #[derive(Default)]
 struct DecodeLimits {
     nodes: usize,
+    pending_nodes: usize,
     aggregate_text_bytes: usize,
     aggregate_byte_string_bytes: usize,
 }
 
 impl DecodeLimits {
     fn add_node(&mut self) -> Result<(), DeterministicCborError> {
+        if self.nodes != 0 {
+            self.pending_nodes = self
+                .pending_nodes
+                .checked_sub(1)
+                .ok_or(DeterministicCborError::NodeLimitExceeded)?;
+        }
         self.nodes = checked_add(self.nodes, 1)?;
         if self.nodes > MAX_DETERMINISTIC_CBOR_NODES {
             return Err(DeterministicCborError::NodeLimitExceeded);
         }
+        Ok(())
+    }
+
+    fn reserve_children(&mut self, count: usize) -> Result<(), DeterministicCborError> {
+        let pending = checked_add(self.pending_nodes, count)?;
+        let declared_total = checked_add(self.nodes, pending)?;
+        if declared_total > MAX_DETERMINISTIC_CBOR_NODES {
+            return Err(DeterministicCborError::NodeLimitExceeded);
+        }
+        self.pending_nodes = pending;
         Ok(())
     }
 
@@ -111,6 +128,7 @@ fn decode_value(
             let child_depth = descend(depth)?;
             let item_count = container_count(argument)?;
             bounded_capacity(item_count, bytes.len(), offset, MIN_ELEMENT_ENCODED_LEN)?;
+            limits.reserve_children(item_count)?;
             // The declared count has already been bounded both semantically
             // and against the remaining input. Exact allocation prevents Vec
             // growth from abandoning earlier identity-bearing owners in
@@ -128,6 +146,7 @@ fn decode_value(
             let entry_count = container_count(argument)?;
             let min_entry_len = checked_mul(MIN_ELEMENT_ENCODED_LEN, 2)?;
             bounded_capacity(entry_count, bytes.len(), offset, min_entry_len)?;
+            limits.reserve_children(checked_mul(entry_count, 2)?)?;
             let mut entries = try_vec_with_capacity(entry_count)?;
             let mut previous_key_range: Option<(usize, usize)> = None;
 
@@ -383,4 +402,38 @@ fn checked_sub(left: usize, right: usize) -> Result<usize, DeterministicCborErro
 fn checked_mul(left: usize, right: usize) -> Result<usize, DeterministicCborError> {
     left.checked_mul(right)
         .ok_or(DeterministicCborError::OffsetOverflow)
+}
+
+#[cfg(test)]
+mod node_limit_tests {
+    use super::{DecodeLimits, MAX_DETERMINISTIC_CBOR_NODES};
+    use crate::DeterministicCborError;
+
+    #[test]
+    fn decoder_node_guards_accept_exact_limit_and_reject_one_more() {
+        // Keep the two accounting guards independently observable. Normal
+        // decoding reserves descendants before visiting them, so an earlier
+        // reservation failure can mask a later add-node regression.
+        let mut reservation = DecodeLimits {
+            nodes: 1,
+            pending_nodes: MAX_DETERMINISTIC_CBOR_NODES - 2,
+            ..DecodeLimits::default()
+        };
+        assert!(reservation.reserve_children(1).is_ok());
+        assert_eq!(
+            reservation.reserve_children(1),
+            Err(DeterministicCborError::NodeLimitExceeded)
+        );
+
+        let mut visits = DecodeLimits {
+            nodes: MAX_DETERMINISTIC_CBOR_NODES - 1,
+            pending_nodes: 2,
+            ..DecodeLimits::default()
+        };
+        assert!(visits.add_node().is_ok());
+        assert_eq!(
+            visits.add_node(),
+            Err(DeterministicCborError::NodeLimitExceeded)
+        );
+    }
 }

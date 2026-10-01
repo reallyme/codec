@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: 2026 ReallyMe LLC
+#
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+[package]
+name = "reallyme-codec-adapter"
+version = "0.3.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+description = "Internal scalar policy for ReallyMe codec boundaries."
+
+[dependencies]
+codec-base64 = { package = "reallyme-codec-base64", version = "=0.3.0", path = "../base64" }
+codec-base64url = { package = "reallyme-codec-base64url", version = "=0.3.0", path = "../base64url" }
+codec-cbor = { package = "reallyme-codec-cbor", version = "=0.3.0", path = "../cbor" }
+codec-hex = { package = "reallyme-codec-hex", version = "=0.3.0", path = "../hex" }
+codec-jcs = { package = "reallyme-codec-jcs", version = "=0.3.0", path = "../jcs" }
+codec-multibase = { package = "reallyme-codec-multibase", version = "=0.3.0", path = "../multibase" }
+codec-multikey = { package = "reallyme-codec-multikey", version = "=0.3.0", path = "../multikey" }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

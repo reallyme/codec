@@ -35,7 +35,9 @@ use codec_cbor::{
     MAX_DETERMINISTIC_CBOR_AGGREGATE_TEXT_BYTES, MAX_DETERMINISTIC_CBOR_CONTAINER_ENTRIES,
     MAX_DETERMINISTIC_CBOR_NESTING_DEPTH, MAX_DETERMINISTIC_CBOR_NODES,
 };
-use codec_pem::{PemDecodePolicy, PemEncodeOptions, PemLabel, PemLineEnding};
+use codec_pem::{
+    preflight_pem_encoded_length, PemDecodePolicy, PemEncodeOptions, PemLabel, PemLineEnding,
+};
 use codec_proto::generated::proto::reallyme::codec::v1::{
     __buffa::oneof::codec_operation_request::Operation as CodecOperation,
     codec_deterministic_cbor_integer, codec_deterministic_cbor_map_key,
@@ -54,11 +56,12 @@ use codec_proto::generated::proto::reallyme::codec::v1::{
 };
 use codec_proto::{
     codec_error, decode_json, decode_protobuf, encode_protobuf, CodecWireError,
-    CodecWireErrorBranch,
+    CodecWireErrorBranch, MAX_CODEC_PROTO_ERROR_ENVELOPE_BYTES, MAX_CODEC_PROTO_MESSAGE_BYTES,
 };
 use zeroize::Zeroizing;
 
 include!("dispatch.rs");
+include!("preflight_pem_decode.rs");
 include!("execute_multiformat.rs");
 include!("execute_documents.rs");
 include!("validate_documents.rs");

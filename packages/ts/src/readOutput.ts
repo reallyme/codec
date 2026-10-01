@@ -123,6 +123,31 @@ export const snapshotBoundedBytesInput = (
   }
 };
 
+/** Copy provider-owned bytes without invoking methods supplied by the provider. */
+export const snapshotProviderBytes = (
+  value: Uint8Array,
+  maximumLength = MAX_CODEC_FFI_OUTPUT_BYTES,
+): Uint8Array => {
+  try {
+    return snapshotBoundedBytesInput(value, maximumLength);
+  } catch (_error: unknown) {
+    throw new ReallyMeCodecError("provider-failure");
+  }
+};
+
+/** Wipes the private copy even when the provider rejects the request. */
+export const withSnapshotBytesInput = <T>(
+  value: Uint8Array,
+  action: (snapshot: Uint8Array) => T,
+): T => {
+  const snapshot = snapshotBoundedBytesInput(value);
+  try {
+    return action(snapshot);
+  } finally {
+    snapshot.fill(0);
+  }
+};
+
 export const ensureStringInput = (value: string): void => {
   if (typeof value !== "string" || value.length === 0) {
     throw new ReallyMeCodecError("invalid-input");

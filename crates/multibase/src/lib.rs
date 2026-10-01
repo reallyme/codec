@@ -9,7 +9,10 @@ mod decode;
 mod encode;
 mod error;
 
-pub use base58btc::{base58btc_decode, base58btc_encode, Base58Error, MAX_BASE58BTC_INPUT_LEN};
+pub use base58btc::{
+    base58btc_decode, base58btc_encode, Base58Error, MAX_BASE58BTC_DECODED_LEN,
+    MAX_BASE58BTC_INPUT_LEN,
+};
 pub use decode::multibase_to_bytes;
 pub use encode::{bytes_to_multibase58btc, bytes_to_multibase_base64url};
 pub use error::MultibaseError;

@@ -9,7 +9,22 @@
     clippy::print_stdout,
     clippy::unwrap_used
 )]
-use codec_base64url::{base64url_bytes_to_bytes, base64url_to_bytes, bytes_to_base64url};
+use codec_base64url::{
+    base64url_bytes_to_bytes, base64url_to_bytes, bytes_to_base64url, Base64UrlError,
+    MAX_BASE64URL_INPUT_LEN,
+};
+
+#[test]
+fn decode_input_limit_accepts_exact_boundary_and_rejects_next_byte() {
+    let accepted = "A".repeat(MAX_BASE64URL_INPUT_LEN);
+    assert!(base64url_to_bytes(&accepted).is_ok());
+    let mut rejected = accepted;
+    rejected.push('A');
+    assert!(matches!(
+        base64url_to_bytes(&rejected),
+        Err(Base64UrlError::InputTooLarge)
+    ));
+}
 
 #[test]
 fn roundtrip_unpadded() {

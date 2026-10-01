@@ -6,11 +6,16 @@
 import { appendFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { ReleaseVersionError, verifyCheckedOutReleaseVersion } from "./verify_release_version.mjs";
 
 const FULL_SHA_PATTERN = /^[0-9a-f]{40}$/u;
 const REPOSITORY_PATTERN = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u;
 const VERSION_PATTERN = /^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)$/u;
 const CODE_CHECK_WORKFLOW = "code-checks.yml";
+const DEPENDENCY_SECURITY_WORKFLOW = "dependency-security.yml";
+const PROTOBUF_WORKFLOW = "protobuf-ci.yml";
+const FUZZ_WORKFLOW = "fuzz.yml";
+const ANDROID_RUNTIME_WORKFLOW = "android-runtime-gate.yml";
 const PREFLIGHT_WORKFLOW_TITLES = Object.freeze({
   "crates-package-preflight.yml": "Crates package preflight",
   "swift-package-preflight.yml": "Swift package preflight",
@@ -19,6 +24,10 @@ const PREFLIGHT_WORKFLOW_TITLES = Object.freeze({
 });
 const REQUIRED_EVENTS = Object.freeze({
   [CODE_CHECK_WORKFLOW]: "push",
+  [DEPENDENCY_SECURITY_WORKFLOW]: "push",
+  [PROTOBUF_WORKFLOW]: "push",
+  [FUZZ_WORKFLOW]: "push",
+  [ANDROID_RUNTIME_WORKFLOW]: "workflow_dispatch",
   "crates-package-preflight.yml": "workflow_dispatch",
   "swift-package-preflight.yml": "workflow_dispatch",
   "kotlin-android-package-preflight.yml": "workflow_dispatch",
@@ -75,6 +84,18 @@ const parsePreflightWorkflow = (value) => {
   }
   return value;
 };
+
+export const requiredWorkflowsForRelease = (preflightWorkflow) => [
+  ...new Set([
+    CODE_CHECK_WORKFLOW,
+    DEPENDENCY_SECURITY_WORKFLOW,
+    PROTOBUF_WORKFLOW,
+    FUZZ_WORKFLOW,
+    ANDROID_RUNTIME_WORKFLOW,
+    "crates-package-preflight.yml",
+    parsePreflightWorkflow(preflightWorkflow),
+  ]),
+];
 
 const expectedDisplayTitle = (workflow, releaseVersion) => {
   const preflightTitle = PREFLIGHT_WORKFLOW_TITLES[workflow];
@@ -261,6 +282,14 @@ export const verifyReleaseAttestation = ({ cwd = process.cwd(), env = process.en
   if (checkedOutSha !== releaseSha) {
     fail("checkout-does-not-match-release-sha");
   }
+  try {
+    verifyCheckedOutReleaseVersion(releaseVersion, cwd);
+  } catch (error) {
+    if (error instanceof ReleaseVersionError) {
+      fail("release-version-mismatch");
+    }
+    fail("release-version-check-failed");
+  }
   run("git", ["fetch", "--no-tags", "origin", "main"], {
     cwd,
     env,
@@ -277,7 +306,7 @@ export const verifyReleaseAttestation = ({ cwd = process.cwd(), env = process.en
   }
 
   let preflightRunId;
-  for (const workflow of [CODE_CHECK_WORKFLOW, preflightWorkflow]) {
+  for (const workflow of requiredWorkflowsForRelease(preflightWorkflow)) {
     const successfulRun = requireWorkflowWithOptionalWait({
       cwd,
       env,

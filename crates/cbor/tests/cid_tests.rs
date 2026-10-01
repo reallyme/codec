@@ -14,7 +14,8 @@ use cid::Cid;
 use codec_cbor::CborValue;
 use codec_cbor::{
     compute_cid_dag_cbor, dag_cbor_multihash, encode_dag_cbor, is_valid_cid_string,
-    sha2_256_content_hash, try_parse_cid, verify_dag_cbor_cid, MAX_CID_STRING_LEN,
+    sha2_256_content_hash, try_parse_cid, verify_dag_cbor_cid, CidVerificationStatus,
+    MAX_CID_STRING_LEN,
 };
 
 fn enc(value: &CborValue) -> Vec<u8> {
@@ -50,8 +51,8 @@ fn verify_matching_cid() {
     let bytes = enc(&v);
     let cid = compute_cid_dag_cbor(&bytes);
 
-    let (ok, _, _) = verify_dag_cbor_cid(&cid, &bytes);
-    assert!(ok);
+    let verification = verify_dag_cbor_cid(&cid, &bytes).unwrap();
+    assert_eq!(verification.status(), CidVerificationStatus::Match);
 }
 
 #[test]
@@ -61,11 +62,11 @@ fn verify_rejects_invalid_uppercase_base32_payload() {
     let mut invalid_upper_payload = cid.clone();
     invalid_upper_payload.replace_range(1.., &cid[1..].to_ascii_uppercase());
 
-    let (ok, expected, actual) = verify_dag_cbor_cid(&invalid_upper_payload, &bytes);
+    let verification = verify_dag_cbor_cid(&invalid_upper_payload, &bytes).unwrap();
 
-    assert!(!ok);
-    assert_eq!(expected, cid);
-    assert!(actual.is_empty());
+    assert_eq!(verification.status(), CidVerificationStatus::NonCanonical);
+    assert_eq!(verification.expected_cid(), cid);
+    assert_eq!(verification.actual_cid(), cid);
 }
 
 #[test]
@@ -75,15 +76,15 @@ fn verify_rejects_base32_upper_cid_string() {
     let parsed = Cid::try_from(canonical.as_str()).unwrap();
     let base32_upper = parsed.to_string_of_base(Base::Base32Upper).unwrap();
 
-    let (ok, expected, actual) = verify_dag_cbor_cid(&base32_upper, &bytes);
+    let verification = verify_dag_cbor_cid(&base32_upper, &bytes).unwrap();
 
-    assert!(!ok);
-    assert_eq!(expected, canonical);
-    assert!(actual.is_empty());
+    assert_eq!(verification.status(), CidVerificationStatus::NonCanonical);
+    assert_eq!(verification.expected_cid(), canonical);
+    assert_eq!(verification.actual_cid(), canonical);
 }
 
 #[test]
-fn verify_accepts_valid_alternate_multibase_cid_strings() {
+fn verify_rejects_valid_alternate_multibase_cid_strings() {
     let bytes = enc(&CborValue::Map(vec![(
         "cid".into(),
         CborValue::String("alternate multibase".into()),
@@ -92,12 +93,28 @@ fn verify_accepts_valid_alternate_multibase_cid_strings() {
     let parsed = Cid::try_from(canonical.as_str()).unwrap();
     let base58 = parsed.to_string_of_base(Base::Base58Btc).unwrap();
     let base16 = parsed.to_string_of_base(Base::Base16Lower).unwrap();
+    let base2 = parsed.to_string_of_base(Base::Base2).unwrap();
+    let emoji = parsed.to_string_of_base(Base::Base256Emoji).unwrap();
 
-    for alternate in [base58, base16] {
-        let (ok, expected, actual) = verify_dag_cbor_cid(&alternate, &bytes);
-        assert!(ok);
-        assert_eq!(expected, canonical);
-        assert_eq!(actual, canonical);
+    for alternate in [base58, base16, base2, emoji] {
+        let verification = verify_dag_cbor_cid(&alternate, &bytes).unwrap();
+        assert_eq!(verification.status(), CidVerificationStatus::NonCanonical);
+        assert_eq!(verification.expected_cid(), canonical);
+        assert_eq!(verification.actual_cid(), canonical);
+    }
+}
+
+#[test]
+fn verification_rejects_non_dag_cbor_payloads() {
+    for payload in [
+        &[][..],
+        &[0xff][..],
+        &[0xa2, 0x61, 0x62, 0x01, 0x61, 0x61, 0x02][..],
+        &[0x18, 0x01][..],
+        &[0xf6, 0xf6][..],
+    ] {
+        let cid = compute_cid_dag_cbor(payload);
+        assert!(verify_dag_cbor_cid(&cid, payload).is_err());
     }
 }
 
@@ -107,9 +124,8 @@ fn detect_cid_mismatch() {
     let b2 = enc(&CborValue::Int(2));
 
     let cid_wrong = compute_cid_dag_cbor(&b2);
-    let (ok, _, _) = verify_dag_cbor_cid(&cid_wrong, &b1);
-
-    assert!(!ok);
+    let verification = verify_dag_cbor_cid(&cid_wrong, &b1).unwrap();
+    assert_eq!(verification.status(), CidVerificationStatus::Mismatch);
 }
 
 #[test]
@@ -119,6 +135,18 @@ fn cid_syntax_validation() {
 
     assert!(is_valid_cid_string(&cid));
     assert!(!is_valid_cid_string("not-a-cid"));
+}
+
+#[test]
+fn cidv0_is_only_accepted_in_its_bare_base58_form() {
+    let hash = dag_cbor_multihash(&enc(&CborValue::Int(42)));
+    let cid = Cid::new_v0(multihash::Multihash::from_bytes(&hash.to_bytes()).unwrap()).unwrap();
+    let bare = cid.to_string();
+    assert!(is_valid_cid_string(&bare));
+    assert!(try_parse_cid(&bare).is_some());
+    let wrapped = format!("z{bare}");
+    assert!(!is_valid_cid_string(&wrapped));
+    assert!(try_parse_cid(&wrapped).is_none());
 }
 
 #[test]
@@ -156,19 +184,25 @@ fn cid_parsers_reject_trailing_binary_data_and_paths() {
     ] {
         assert!(!is_valid_cid_string(&invalid));
         assert!(try_parse_cid(&invalid).is_none());
-        assert_eq!(
-            verify_dag_cbor_cid(&invalid, &payload),
-            (false, canonical.clone(), String::new())
-        );
+        let verification = verify_dag_cbor_cid(&invalid, &payload).unwrap();
+        assert_eq!(verification.status(), CidVerificationStatus::InvalidCid);
+        assert_eq!(verification.expected_cid(), canonical);
+        assert!(verification.actual_cid().is_empty());
     }
 }
 
 #[test]
 fn cid_parsers_preserve_versions_and_alternate_bases() {
     let hash = dag_cbor_multihash(b"version compatibility");
-    let v0 = Cid::new_v0(hash).unwrap();
-    assert_eq!(try_parse_cid(&v0.to_string()), Some(v0));
-    let v1 = Cid::new_v1(0x71, hash);
+    let v0 = Cid::new_v0(multihash::Multihash::from_bytes(&hash.to_bytes()).unwrap()).unwrap();
+    assert_eq!(
+        try_parse_cid(&v0.to_string()).map(|cid| cid.to_string()),
+        Some(v0.to_string())
+    );
+    let v1 = Cid::new_v1(
+        0x71,
+        multihash::Multihash::from_bytes(&hash.to_bytes()).unwrap(),
+    );
     for base in [
         Base::Base2,
         Base::Base8,
@@ -188,7 +222,10 @@ fn cid_parsers_preserve_versions_and_alternate_bases() {
         Base::Base256Emoji,
     ] {
         let text = v1.to_string_of_base(base).unwrap();
-        assert_eq!(try_parse_cid(&text), Some(v1));
+        assert_eq!(
+            try_parse_cid(&text).map(|cid| cid.to_string()),
+            Some(v1.to_string())
+        );
     }
     let mut invalid_v0 = v0.to_bytes();
     invalid_v0.push(0);
@@ -197,7 +234,10 @@ fn cid_parsers_preserve_versions_and_alternate_bases() {
 
 #[test]
 fn cid_parsers_reject_nonminimal_varints_and_oversized_text() {
-    let cid = Cid::new_v1(0x71, dag_cbor_multihash(b"minimal"));
+    let cid = Cid::new_v1(
+        0x71,
+        multihash::Multihash::from_bytes(&dag_cbor_multihash(b"minimal").to_bytes()).unwrap(),
+    );
     let canonical = cid.to_bytes();
     for index in 0..4 {
         let mut nonminimal = canonical.clone();
@@ -209,7 +249,11 @@ fn cid_parsers_reject_nonminimal_varints_and_oversized_text() {
         let oversized = format!("{prefix}{}", "1".repeat(MAX_CID_STRING_LEN));
         assert!(try_parse_cid(&oversized).is_none());
         assert!(!is_valid_cid_string(&oversized));
-        assert!(!verify_dag_cbor_cid(&oversized, b"payload").0);
+        let payload = enc(&CborValue::Null);
+        assert_eq!(
+            verify_dag_cbor_cid(&oversized, &payload).unwrap().status(),
+            CidVerificationStatus::InvalidCid
+        );
     }
     let largest = Cid::new_v1(
         u64::MAX,
@@ -217,5 +261,8 @@ fn cid_parsers_reject_nonminimal_varints_and_oversized_text() {
     );
     let base2 = largest.to_string_of_base(Base::Base2).unwrap();
     assert!(base2.len() <= MAX_CID_STRING_LEN);
-    assert_eq!(try_parse_cid(&base2), Some(largest));
+    assert_eq!(
+        try_parse_cid(&base2).map(|cid| cid.to_string()),
+        Some(largest.to_string())
+    );
 }

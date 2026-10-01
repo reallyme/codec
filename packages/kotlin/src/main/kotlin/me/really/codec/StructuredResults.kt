@@ -112,7 +112,7 @@ public class ReallyMePemEncodeOptions @JvmOverloads public constructor(
     public val lineEnding: ReallyMePemLineEnding? = null,
 ) {
     init {
-        if (maxDerLen < 0 || lineWidth < 0) {
+        if (maxDerLen < 0 || lineWidth < 0 || lineWidth > 76) {
             throw ReallyMeCodecException.InvalidInput()
         }
     }

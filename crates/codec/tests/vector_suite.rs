@@ -4,6 +4,17 @@
 
 #![allow(missing_docs)]
 #![allow(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
+#![cfg(all(
+    feature = "base64",
+    feature = "base64url",
+    feature = "cbor",
+    feature = "hex",
+    feature = "jcs",
+    feature = "multibase",
+    feature = "multicodec",
+    feature = "multikey",
+    feature = "pem"
+))]
 
 use reallyme_codec::{
     base64::base64_to_bytes,
@@ -172,7 +183,7 @@ fn shared_vectors_include_deterministic_cbor_literals() {
     let vectors = Vectors::load();
     assert_eq!(
         vectors.value["deterministicCbor"]["profile"].as_str(),
-        Some("rfc8949-core-deterministic-reallyme-0.2.0")
+        Some("rfc8949-length-first-deterministic-reallyme-0.2.0")
     );
     let golden_vectors = vectors.deterministic_cbor_array("positive");
 
@@ -385,7 +396,28 @@ fn deterministic_cbor_semantics_consume_literal_vectors() {
 
     for vector in vectors.deterministic_cbor_array("negative") {
         let bytes = decode_hex(vector["hex"].as_str().expect("negative vector hex"));
-        assert!(decode_deterministic_cbor(&bytes).is_err());
+        let expected = match vector["reason"].as_str().expect("negative vector reason") {
+            "duplicate-key" => DeterministicCborError::DuplicateMapKey,
+            "non-minimal-integer" | "non-minimal-length" => {
+                DeterministicCborError::NonCanonicalInteger
+            }
+            "unsupported-integer" => DeterministicCborError::NegativeIntegerOutOfRange,
+            "map-key-order" => DeterministicCborError::MapKeysOutOfOrder,
+            "indefinite-length" => DeterministicCborError::UnsupportedAdditionalInfo,
+            "trailing-data" => DeterministicCborError::TrailingBytes,
+            "invalid-utf8" => DeterministicCborError::InvalidUtf8,
+            "unsupported-type" if vector["name"] == "unsupported-tag" => {
+                DeterministicCborError::UnsupportedMajorType
+            }
+            "unsupported-type" => DeterministicCborError::UnsupportedSimpleValue,
+            reason => panic!("unknown negative vector reason: {reason}"),
+        };
+        assert_eq!(
+            decode_deterministic_cbor(&bytes).err(),
+            Some(expected),
+            "negative vector {}",
+            vector["name"]
+        );
     }
 
     for vector in vectors.deterministic_cbor_array("equivalentInputOrders") {

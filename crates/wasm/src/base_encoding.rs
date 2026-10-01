@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use codec_core::scalar_ops::{
+use codec_adapter::scalar_ops::{
     decode_base64, decode_base64url, decode_lower_hex, encode_base64, encode_base64url,
     encode_lower_hex, HexError,
 };
@@ -11,14 +11,14 @@ use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 use zeroize::Zeroizing;
 
-use crate::boundary::{zeroizing_bytes, zeroizing_string};
+use crate::boundary::{js_string_from_owned, zeroizing_bytes, zeroizing_string};
 use crate::map_error::{invalid_input, non_canonical, provider_failure};
 
 #[wasm_bindgen(js_name = base64Encode)]
 /// Encode bytes using canonical padded RFC 4648 base64.
-pub fn base64_encode(bytes: &Uint8Array) -> Result<String, JsValue> {
+pub fn base64_encode(bytes: &Uint8Array) -> Result<JsString, JsValue> {
     let input = zeroizing_bytes(bytes)?;
-    Ok(encode_base64(input.as_slice()))
+    Ok(js_string_from_owned(encode_base64(input.as_slice())))
 }
 
 #[wasm_bindgen(js_name = base64Decode)]
@@ -31,9 +31,9 @@ pub fn base64_decode(encoded: &JsString) -> Result<Uint8Array, JsValue> {
 
 #[wasm_bindgen(js_name = base64urlEncode)]
 /// Encode bytes using unpadded RFC 4648 URL-safe base64.
-pub fn base64url_encode(bytes: &Uint8Array) -> Result<String, JsValue> {
+pub fn base64url_encode(bytes: &Uint8Array) -> Result<JsString, JsValue> {
     let input = zeroizing_bytes(bytes)?;
-    Ok(encode_base64url(input.as_slice()))
+    Ok(js_string_from_owned(encode_base64url(input.as_slice())))
 }
 
 #[wasm_bindgen(js_name = base64urlDecode)]
@@ -46,9 +46,9 @@ pub fn base64url_decode(encoded: &JsString) -> Result<Uint8Array, JsValue> {
 
 #[wasm_bindgen(js_name = bytesToLowerHex)]
 /// Encode bytes as canonical lowercase hexadecimal.
-pub fn bytes_to_lower_hex_wasm(bytes: &Uint8Array) -> Result<String, JsValue> {
+pub fn bytes_to_lower_hex_wasm(bytes: &Uint8Array) -> Result<JsString, JsValue> {
     let input = zeroizing_bytes(bytes)?;
-    Ok(encode_lower_hex(input.as_slice()))
+    Ok(js_string_from_owned(encode_lower_hex(input.as_slice())))
 }
 
 #[wasm_bindgen(js_name = lowerHexToBytes)]

@@ -46,6 +46,9 @@ if (options.length === 2) {
   if (!/^[A-Za-z0-9._/-]+$/.test(value)) {
     fail("local artifact path contains unsupported characters");
   }
+  if (value.split("/").some((component) => component === ".." || component === ".")) {
+    fail("local artifact path must not contain ancestor or current-directory components");
+  }
   const normalized = posix.normalize(value);
   if (normalized === "." || normalized.startsWith("../") || normalized.includes("/../")) {
     fail("local artifact path must stay inside the package root");

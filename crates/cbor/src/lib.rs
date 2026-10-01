@@ -4,7 +4,7 @@
 
 //! Deterministic generic CBOR and a DAG-CBOR subset with content-ID helpers.
 //!
-//! Both profiles reject non-canonical
+//! Both profiles use length-first key ordering (RFC 8949 §4.2.3) and reject non-canonical
 //! integers, indefinite-length items, floats, tags, out-of-order map keys,
 //! and trailing bytes, so a given value has exactly one accepted encoding.
 //! DAG-CBOR supports text map keys and signed 64-bit integers. Generic CBOR
@@ -25,20 +25,27 @@ mod value;
 ///
 /// Limits recursive traversal of caller-controlled containers. Runtime
 /// adapters may enforce stricter transport limits.
-pub const MAX_NESTING_DEPTH: usize = 128;
+pub const MAX_NESTING_DEPTH: usize = 64;
+
+/// Maximum semantic nodes accepted by the DAG-CBOR profile.
+pub const MAX_DAG_CBOR_NODES: usize = 65_536;
+
+/// Maximum entries in one DAG-CBOR array or map.
+pub const MAX_DAG_CBOR_CONTAINER_ENTRIES: usize = 16_384;
 
 /// Maximum encoded DAG-CBOR byte length accepted by encode and decode.
 ///
 /// This is a defense-in-depth bound for authoritative signed documents. It is
 /// intentionally much larger than expected production payloads while keeping
 /// parser and allocation work predictable under hostile input. Borrowed-byte
-/// hash and CID helpers do not enforce this cap or validate CBOR syntax.
-pub const MAX_DAG_CBOR_INPUT_LEN: usize = 1024 * 1024;
+/// hash and CID computation helpers do not enforce this cap or validate CBOR
+/// syntax; CID verification does validate the block.
+pub const MAX_DAG_CBOR_INPUT_LEN: usize = 1_048_576;
 
 pub use cid::{
     compute_cid_dag_cbor, dag_cbor_multihash, is_valid_cid_string, sha2_256_content_hash,
-    try_parse_cid, verify_dag_cbor_cid, ContentHash, DagCborMultihash, DAG_CBOR_CODEC,
-    MAX_CID_STRING_LEN,
+    try_parse_cid, verify_dag_cbor_cid, CidVerificationStatus, ContentHash, DagCborCidVerification,
+    DagCborMultihash, ParsedCid, DAG_CBOR_CODEC, MAX_CID_STRING_LEN,
 };
 pub use decode_dag_cbor::decode_dag_cbor;
 pub use decode_deterministic_cbor::decode_deterministic_cbor;

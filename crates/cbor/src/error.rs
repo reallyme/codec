@@ -99,4 +99,12 @@ pub enum CborError {
     /// Bounds recursion so a deeply nested input cannot overflow the stack.
     #[error("CBOR: nesting depth limit exceeded")]
     DepthExceeded,
+
+    /// A document contained more semantic nodes than the profile allows.
+    #[error("CBOR: node limit exceeded")]
+    NodeLimitExceeded,
+
+    /// One array or map contained more entries than the profile allows.
+    #[error("CBOR: container entry limit exceeded")]
+    ContainerEntriesExceeded,
 }

@@ -9,14 +9,24 @@ import java.security.MessageDigest
 import java.util.zip.ZipFile
 
 plugins {
-    id("com.android.library") version "9.4.0"
-    id("com.android.application") version "9.4.0" apply false
+    id("com.android.library") version "9.4.1"
+    id("com.android.application") version "9.4.1" apply false
     `maven-publish`
     signing
 }
 
 group = "me.really"
-version = "0.2.3"
+version = "0.3.0"
+
+// AGP's publication component reads these generated configurations, rather
+// than releaseApiElements/releaseRuntimeElements. Keep the implicit identity
+// and the shared duplicate-class capability in both published variants.
+configurations.matching {
+    it.name in setOf("releaseVariantReleaseApiPublication", "releaseVariantReleaseRuntimePublication")
+}.configureEach {
+    outgoing.capability("me.really:codec-android:${project.version}")
+    outgoing.capability("me.really:codec-classes:${project.version}")
+}
 
 dependencyLocking {
     lockAllConfigurations()
@@ -167,8 +177,8 @@ android {
 }
 
 dependencies {
-    api("com.google.protobuf:protobuf-javalite:4.36.1")
-    api("com.google.protobuf:protobuf-kotlin-lite:4.36.1")
+    api("com.google.protobuf:protobuf-javalite:4.36.2")
+    api("com.google.protobuf:protobuf-kotlin-lite:4.36.2")
 }
 
 val generateAndroidNativeManifest = tasks.register("generateAndroidNativeManifest") {

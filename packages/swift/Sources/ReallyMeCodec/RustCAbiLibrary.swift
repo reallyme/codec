@@ -13,10 +13,14 @@ public final class ReallyMeCodecRustCAbiLibrary: @unchecked Sendable {
 
     public init(path: String) throws {
         #if canImport(Darwin)
-        guard FileManager.default.fileExists(atPath: path) else {
+        guard (path as NSString).isAbsolutePath else {
             throw ReallyMeCodecError.dynamicLibraryNotFound
         }
-        guard let loadedHandle = dlopen(path, RTLD_NOW | RTLD_LOCAL) else {
+        let resolvedPath = URL(fileURLWithPath: path).resolvingSymlinksInPath().path
+        guard FileManager.default.fileExists(atPath: resolvedPath) else {
+            throw ReallyMeCodecError.dynamicLibraryNotFound
+        }
+        guard let loadedHandle = dlopen(resolvedPath, RTLD_NOW | RTLD_LOCAL) else {
             throw ReallyMeCodecError.dynamicLibraryLoadFailed
         }
         handle = loadedHandle

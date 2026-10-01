@@ -3,14 +3,14 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use codec_runtime::operation_contract::{
-    process_operation_response, process_operation_response_json,
+    process_operation_response, process_operation_response_json, resource_limit_operation_response,
 };
 
 use crate::guard::ffi_guard;
 use crate::pointer::{read_slice, validate_input_scalar_output};
 use crate::status::{CodecStatus, CODEC_OK};
 
-use super::{initialize_output_length, validate_proto_boundary_input_length, write_output};
+use super::{initialize_output_length, write_output};
 
 /// Returns the authoritative maximum encoded operation-response size.
 ///
@@ -101,8 +101,13 @@ fn process_operation_boundary(
     if output_status != CODEC_OK {
         return output_status;
     }
-    if let Err(status) = validate_proto_boundary_input_length(request_len, max_request_len) {
-        return status;
+    if request_len > max_request_len {
+        return write_output(
+            output_ptr,
+            output_len,
+            len_out,
+            resource_limit_operation_response(),
+        );
     }
     // SAFETY: The request follows the caller-owned pointer/length operation
     // contract documented by the exported operation functions.

@@ -3,14 +3,26 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 // The recursive deterministic-CBOR protobuf tree adds wrapper and length-prefix
-// bytes around a semantic document. These transport constants deliberately
-// duplicate the frozen semantic maxima instead of depending on the codec crate:
-// protobuf is a lower-level transport package and must not acquire a semantic
-// implementation dependency. Compile-time assertions below and repository
-// readiness checks keep the duplicated values synchronized.
-const CODEC_PROTO_DETERMINISTIC_CBOR_TEXT_BYTES: usize = 1024 * 1024;
-const CODEC_PROTO_DETERMINISTIC_CBOR_BYTE_STRING_BYTES: usize = 1024 * 1024;
+// bytes around a semantic document. The values are generated from
+// scripts/codec_limits.json alongside the semantic and SDK ceilings. Protobuf
+// is a lower-level transport package and must not acquire a semantic codec
+// dependency. Compile-time assertions below and the generation check guard
+// these values against drift.
+const CODEC_PROTO_DETERMINISTIC_CBOR_TEXT_BYTES: usize = 1_048_576;
+const CODEC_PROTO_DETERMINISTIC_CBOR_BYTE_STRING_BYTES: usize = 1_048_576;
 const CODEC_PROTO_DETERMINISTIC_CBOR_NODES: usize = 65_536;
+pub(crate) const MAX_CODEC_PROTO_SEMANTIC_NODES: usize = CODEC_PROTO_DETERMINISTIC_CBOR_NODES;
+// An integer-key/integer-value map entry uses 17 ProtoJSON tokens for two
+// semantic nodes. Round up to nine tokens per node, with fixed operation
+// framing, so the pre-scan accepts the full documented CBOR node limit while
+// still bounding empty-object expansion before deserialization.
+const CODEC_PROTO_JSON_TOKENS_PER_CBOR_NODE: usize = 9;
+const CODEC_PROTO_JSON_FIXED_OPERATION_TOKENS: usize = 128;
+pub(crate) const MAX_CODEC_PROTO_JSON_TOKENS: usize = max_codec_proto_json_tokens_const();
+// Buffa charges repeated elements but not every boxed oneof payload.
+pub(crate) const MAX_CODEC_PROTO_ELEMENT_MEMORY_BYTES: usize =
+    CODEC_PROTO_DETERMINISTIC_CBOR_NODES * CODEC_PROTO_ELEMENT_MEMORY_BYTES_PER_NODE;
+const CODEC_PROTO_ELEMENT_MEMORY_BYTES_PER_NODE: usize = 256;
 
 // Each semantic node is allowed 128 bytes of protobuf/ProtoJSON structure.
 // The largest generated leaf and map-entry paths are substantially smaller;
@@ -18,7 +30,7 @@ const CODEC_PROTO_DETERMINISTIC_CBOR_NODES: usize = 65_536;
 // field name, punctuation, and the map-entry wrapper not counted as a semantic
 // node. Keep the margin explicit so generator naming changes remain bounded.
 const CODEC_PROTO_MAX_STRUCTURAL_BYTES_PER_CBOR_NODE: usize = 128;
-const CODEC_PROTO_MAX_FIXED_OPERATION_BYTES: usize = 4096;
+const CODEC_PROTO_MAX_FIXED_OPERATION_BYTES: usize = 4_096;
 const CODEC_PROTO_JSON_MAX_TEXT_ESCAPE_EXPANSION: usize = 6;
 
 /// Maximum accepted binary protobuf message size at codec wire boundaries.
@@ -37,6 +49,18 @@ pub const MAX_CODEC_PROTO_ERROR_ENVELOPE_BYTES: usize = 4096;
 /// for byte strings, recursive generated field structure, and fixed operation
 /// framing. Semantic validation still applies the smaller CBOR profile limits.
 pub const MAX_CODEC_PROTO_JSON_BYTES: usize = max_codec_proto_json_bytes_const();
+
+const fn max_codec_proto_json_tokens_const() -> usize {
+    let Some(node_tokens) =
+        CODEC_PROTO_DETERMINISTIC_CBOR_NODES.checked_mul(CODEC_PROTO_JSON_TOKENS_PER_CBOR_NODE)
+    else {
+        return 0;
+    };
+    match node_tokens.checked_add(CODEC_PROTO_JSON_FIXED_OPERATION_TOKENS) {
+        Some(limit) => limit,
+        None => 0,
+    }
+}
 
 const fn max_codec_proto_message_bytes_const() -> usize {
     let Some(payload_bytes) = CODEC_PROTO_DETERMINISTIC_CBOR_TEXT_BYTES
@@ -135,5 +159,6 @@ const fn codec_proto_json_nesting_depth() -> usize {
 
 const _: () = assert!(CODEC_PROTO_RECURSION_LIMIT != 0);
 const _: () = assert!(MAX_CODEC_PROTO_JSON_NESTING_DEPTH != 0);
+const _: () = assert!(MAX_CODEC_PROTO_JSON_TOKENS != 0);
 const _: () = assert!(MAX_CODEC_PROTO_MESSAGE_BYTES == 10_489_856);
 const _: () = assert!(MAX_CODEC_PROTO_JSON_BYTES == 16_082_264);

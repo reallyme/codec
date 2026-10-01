@@ -7,11 +7,31 @@ import test from "node:test";
 
 import {
   ReleaseAttestationError,
+  requiredWorkflowsForRelease,
   requireLatestSuccessfulRun,
   run,
 } from "./verify_release_attestation.mjs";
 
 const releaseSha = "a".repeat(40);
+
+test("every release lane requires the global registry preflight", () => {
+  for (const lane of [
+    "crates-package-preflight.yml",
+    "swift-package-preflight.yml",
+    "kotlin-android-package-preflight.yml",
+    "npm-package-preflight.yml",
+  ]) {
+    const required = requiredWorkflowsForRelease(lane);
+    assert(required.includes("crates-package-preflight.yml"));
+    assert(required.includes(lane));
+    assert.equal(required.length, new Set(required).size);
+  }
+  assert.throws(
+    () => requiredWorkflowsForRelease("unrecognized-preflight.yml"),
+    (error) => error instanceof ReleaseAttestationError &&
+      error.code === "unsupported-release-attestation-preflight-workflow",
+  );
+});
 
 const workflowRun = (overrides = {}) => ({
   attempt: 1,

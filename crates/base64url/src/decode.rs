@@ -5,7 +5,7 @@
 use base64::{decoded_len_estimate, engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use zeroize::Zeroizing;
 
-use crate::Base64UrlError;
+use crate::{Base64UrlError, MAX_BASE64URL_INPUT_LEN};
 
 /// Decode RFC 4648 section 5 Base64URL without padding.
 pub fn base64url_to_bytes(s: &str) -> Result<Vec<u8>, Base64UrlError> {
@@ -18,6 +18,9 @@ pub fn base64url_to_bytes(s: &str) -> Result<Vec<u8>, Base64UrlError> {
 /// split as bytes. It avoids requiring callers to first prove UTF-8 just to
 /// decode an ASCII Base64URL alphabet.
 pub fn base64url_bytes_to_bytes(bytes: &[u8]) -> Result<Vec<u8>, Base64UrlError> {
+    if bytes.len() > MAX_BASE64URL_INPUT_LEN {
+        return Err(Base64UrlError::InputTooLarge);
+    }
     // Retain the partially decoded allocation until validation completes so
     // malformed input cannot leave decoded material in a freed heap block.
     let mut output = Zeroizing::new(vec![0_u8; decoded_len_estimate(bytes.len())]);

@@ -12,7 +12,7 @@ discriminated binary `CodecOperationResponse`.
 
 ```toml
 [dependencies]
-reallyme-codec-proto = { version = "0.2.3", features = ["generated"] }
+reallyme-codec-proto = { version = "0.3.0", features = ["generated"] }
 ```
 
 The protobuf source is published with this crate at
@@ -28,3 +28,14 @@ which accepts one
 
 Dual-licensed under the MIT License or Apache License, Version 2.0, at your
 option. See [LICENSE](LICENSE) for both license texts.
+
+## Generated runtime compatibility
+
+The `generated` feature exposes message types produced by the pinned Buffa
+runtime. Those types and the public `encode_protobuf` and `decode_protobuf`
+functions implement Buffa traits, so a Buffa version change can alter this
+crate's source API even when the protobuf schema is unchanged. Treat such a
+runtime upgrade as a compatibility review, regenerate every language binding,
+and run downstream compile tests before publishing. The wire schema remains
+the cross-language contract; callers should not depend on Buffa-owned fields
+or views for long-lived domain models.

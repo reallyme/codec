@@ -7,8 +7,5 @@
 mod lookup;
 mod table;
 
-pub use lookup::{lookup_codec_prefix, strip_codec_prefix, CodecLookupResult};
-pub use table::{
-    CodecSpec, CodecTag, KeyMaterialKind, FIXED_LENGTH_NOT_APPLICABLE, MULTICODEC_TABLE,
-    VARIABLE_KEY_LENGTH,
-};
+pub use lookup::{lookup_codec_prefix, strip_codec_prefix, CodecLookupResult, CodecPrefixError};
+pub use table::{CodecSpec, CodecTag, KeyLength, KeyMaterialKind, MULTICODEC_TABLE};

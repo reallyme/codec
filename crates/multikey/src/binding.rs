@@ -5,7 +5,40 @@
 use crate::error::{
     classify_binding_algorithm, classify_binding_type, classify_multikey_codec, MultikeyError,
 };
-use crate::parse::ParsedMultikey;
+use crate::parse::{parse_multikey, ParsedMultikey};
+
+/// Validate binding metadata against the encoded multikey itself.
+///
+/// Parsing inside this boundary prevents a caller from forging the public
+/// fields of [`ParsedMultikey`] to claim another codec or algorithm.
+///
+/// ```
+/// use codec_multikey::{encode_multikey, validate_multikey_binding, KeyBindingInput};
+/// let encoded = encode_multikey("ed25519-pub", &[7_u8; 32])?;
+/// validate_multikey_binding(
+///     KeyBindingInput { binding_type: "Multikey", algorithm: None },
+///     &encoded,
+/// )?;
+/// # Ok::<(), codec_multikey::MultikeyError>(())
+/// ```
+///
+/// ```compile_fail
+/// use codec_multikey::{validate_multikey_binding, KeyBindingInput, ParsedMultikey};
+/// fn validate(binding: KeyBindingInput<'_>, forged: &ParsedMultikey) {
+///     let _ = validate_multikey_binding(binding, forged);
+/// }
+/// ```
+///
+/// # Errors
+///
+/// Returns a typed parsing or binding mismatch error.
+pub fn validate_multikey_binding(
+    binding: KeyBindingInput<'_>,
+    encoded_multikey: &str,
+) -> Result<(), MultikeyError> {
+    let parsed = parse_multikey(encoded_multikey)?;
+    validate_binding_fields(binding, &parsed)
+}
 
 /// Generic binding compatibility rules.
 /// Binding labels are protocol-facing metadata and are validated here
@@ -67,19 +100,26 @@ pub fn validate_key_binding(
     binding: KeyBindingInput<'_>,
     parsed: &ParsedMultikey,
 ) -> Result<(), MultikeyError> {
-    if !binding_type_matches_codec(binding.binding_type, parsed.codec_name) {
+    validate_binding_fields(binding, parsed)
+}
+
+fn validate_binding_fields(
+    binding: KeyBindingInput<'_>,
+    parsed: &ParsedMultikey,
+) -> Result<(), MultikeyError> {
+    if !binding_type_matches_codec(binding.binding_type, parsed.codec_name()) {
         return Err(MultikeyError::BindingTypeCodecMismatch {
             binding_type: classify_binding_type(binding.binding_type),
-            codec: classify_multikey_codec(parsed.codec_name),
-            algorithm: classify_binding_algorithm(parsed.alg),
+            codec: classify_multikey_codec(parsed.codec_name()),
+            algorithm: classify_binding_algorithm(parsed.algorithm_name()),
         });
     }
 
     if let Some(binding_alg) = binding.algorithm {
-        if binding_alg != parsed.alg {
+        if binding_alg != parsed.algorithm_name() {
             return Err(MultikeyError::BindingAlgorithmMismatch {
                 binding_alg: classify_binding_algorithm(binding_alg),
-                codec_algorithm: classify_binding_algorithm(parsed.alg),
+                codec_algorithm: classify_binding_algorithm(parsed.algorithm_name()),
             });
         }
     } else if binding.binding_type != "Multikey" {

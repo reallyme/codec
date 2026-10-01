@@ -50,70 +50,51 @@ fn operation_ffi_exports_return_resource_limit_responses_for_oversized_input() {
     ];
 
     for (process, limit) in cases {
-        let oversized = vec![0_u8; limit + 1];
-        let mut produced_len = 0_usize;
-        // SAFETY: The input pointer covers the entire caller-owned buffer,
-        // and the null output is valid for a zero-length first-pass query.
-        let status = unsafe {
-            process(
-                oversized.as_ptr(),
-                oversized.len(),
-                core::ptr::null_mut(),
-                0,
-                &mut produced_len,
-            )
-        };
+        for excess in [1_usize, 16_usize] {
+            let oversized = vec![0_u8; limit + excess];
+            let mut produced_len = 0_usize;
+            // SAFETY: The input pointer covers the entire caller-owned buffer,
+            // and the null output is valid for a zero-length first-pass query.
+            let status = unsafe {
+                process(
+                    oversized.as_ptr(),
+                    oversized.len(),
+                    core::ptr::null_mut(),
+                    0,
+                    &mut produced_len,
+                )
+            };
 
-        assert_eq!(status, CODEC_BUFFER_TOO_SMALL);
-        assert!(produced_len > 0);
+            assert_eq!(status, CODEC_BUFFER_TOO_SMALL);
+            assert!(produced_len > 0);
 
-        let mut output = vec![0_u8; produced_len];
-        // SAFETY: The input, output, and produced-length storage are
-        // distinct caller-owned allocations valid for this call.
-        let status = unsafe {
-            process(
-                oversized.as_ptr(),
-                oversized.len(),
-                output.as_mut_ptr(),
-                output.len(),
-                &mut produced_len,
-            )
-        };
-        assert_eq!(status, CODEC_OK);
-        output.truncate(produced_len);
+            let mut output = vec![0_u8; produced_len];
+            // SAFETY: The input, output, and produced-length storage are
+            // distinct caller-owned allocations valid for this call.
+            let status = unsafe {
+                process(
+                    oversized.as_ptr(),
+                    oversized.len(),
+                    output.as_mut_ptr(),
+                    output.len(),
+                    &mut produced_len,
+                )
+            };
+            assert_eq!(status, CODEC_OK);
+            output.truncate(produced_len);
 
-        assert_generated_error(
-            &output,
-            CodecWireErrorBranch::Boundary,
-            CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED,
-            CodecErrorOrigin::CODEC_ERROR_ORIGIN_CALLER,
-        );
+            assert_generated_error(
+                &output,
+                CodecWireErrorBranch::Boundary,
+                CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED,
+                CodecErrorOrigin::CODEC_ERROR_ORIGIN_CALLER,
+            );
+        }
     }
 }
 
 #[test]
-fn operation_ffi_exports_reject_inputs_above_bounded_sentinel() {
-    let oversized = vec![0_u8; codec_proto::MAX_CODEC_PROTO_JSON_BYTES + 2];
-
-    for process in [rm_codec_process_operation, rm_codec_process_operation_json] {
-        let mut produced_len = 0_usize;
-        // SAFETY: The input pointer covers the caller-owned buffer and the
-        // null output is valid for a zero-length first-pass query.
-        let status = unsafe {
-            process(
-                oversized.as_ptr(),
-                oversized.len(),
-                core::ptr::null_mut(),
-                0,
-                &mut produced_len,
-            )
-        };
-        assert_eq!(status, CODEC_INVALID_ARGUMENT);
-        assert_eq!(produced_len, 0);
-    }
-}
-
-#[test]
+#[allow(clippy::unwrap_used)]
 fn operation_error_is_carried_in_the_discriminated_response() {
     let request = CodecOperationRequest {
         operation: Some(CodecOperation::MultikeyParse(Box::new(
@@ -124,7 +105,7 @@ fn operation_error_is_carried_in_the_discriminated_response() {
         ))),
         __buffa_unknown_fields: Default::default(),
     };
-    let input = encode_protobuf(&request);
+    let input = encode_protobuf(&request).unwrap();
     let mut produced_len = 0_usize;
 
     // SAFETY: The input vector and produced-length output are valid for
@@ -166,6 +147,7 @@ fn operation_error_is_carried_in_the_discriminated_response() {
 }
 
 #[test]
+#[allow(clippy::unwrap_used)]
 fn operation_ffi_returns_a_fully_discriminated_generated_response() {
     let request = CodecOperationRequest {
         operation: Some(
@@ -177,7 +159,7 @@ fn operation_ffi_returns_a_fully_discriminated_generated_response() {
         ),
         __buffa_unknown_fields: Default::default(),
     };
-    let input = encode_protobuf(&request);
+    let input = encode_protobuf(&request).unwrap();
     let mut produced_len = 0_usize;
 
     // SAFETY: The input and produced-length storage remain valid for this

@@ -13,12 +13,15 @@ fn multikey_parse_dispatch_matches_primitive_parser() {
 
     let result = result_payload(&binary);
     let parsed = decode_protobuf::<CodecMultikeyParseResult>(result.bytes()).unwrap();
-    assert_eq!(parsed.codec_name, primitive.codec_name);
-    assert_eq!(parsed.algorithm_name, primitive.alg);
-    assert_eq!(parsed.public_key, primitive.public_key.as_slice());
+    assert_eq!(parsed.codec_name, primitive.codec_name());
+    assert_eq!(parsed.algorithm_name, primitive.algorithm_name());
+    assert_eq!(parsed.public_key, primitive.public_key());
     assert_eq!(
         parsed.expected_public_key_length,
-        u32::try_from(primitive.key_length).unwrap()
+        match primitive.key_length() {
+            codec_multicodec::KeyLength::Fixed(length) => u32::try_from(length).unwrap(),
+            codec_multicodec::KeyLength::Variable | codec_multicodec::KeyLength::NotApplicable => 0,
+        }
     );
     assert!(!parsed.variable_public_key_length);
 }
@@ -70,16 +73,62 @@ fn multikey_parse_dispatch_rejects_unknown_prefix() {
 fn dag_cbor_verify_cid_dispatch_matches_primitive_verifier() {
     let payload = vec![0xa0];
     let cid = codec_cbor::compute_cid_dag_cbor(&payload);
-    let primitive = codec_cbor::verify_dag_cbor_cid(&cid, &payload);
+    let primitive = codec_cbor::verify_dag_cbor_cid(&cid, &payload).unwrap();
     let request = dag_cbor_verify_cid_request(&cid, &payload);
 
     let binary = process_binary_and_proto_json(&request);
 
     let result = result_payload(&binary);
     let verified = decode_protobuf::<CodecDagCborVerifyCidResult>(result.bytes()).unwrap();
-    assert_eq!(verified.valid, primitive.0);
-    assert_eq!(verified.expected_cid, primitive.1);
-    assert_eq!(verified.actual_cid, primitive.2);
+    assert_eq!(
+        verified.valid,
+        primitive.status() == codec_cbor::CidVerificationStatus::Match
+    );
+    assert_eq!(verified.expected_cid, primitive.expected_cid());
+    assert_eq!(verified.actual_cid, primitive.actual_cid());
+}
+
+#[test]
+fn dag_cbor_verify_cid_rejects_invalid_blocks_before_hash_comparison() {
+    let cases: [(&[u8], CodecErrorReason); 7] = [
+        (&[], CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_INVALID_CBOR),
+        (&[0xff], CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_INVALID_CBOR),
+        (
+            &[0xa2, 0x61, 0x62, 0x01, 0x61, 0x61, 0x02],
+            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_CBOR_MAP_KEYS_OUT_OF_ORDER,
+        ),
+        (&[0x18, 0x01], CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_NON_MINIMAL_CBOR_INTEGER),
+        (&[0xf6, 0xf6], CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_CBOR_TRAILING_BYTES),
+        (
+            &[0xfb, 0x3f, 0xf8, 0, 0, 0, 0, 0, 0],
+            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE,
+        ),
+        (
+            &[0xd8, 0x2a, 0x41, 0],
+            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE,
+        ),
+    ];
+    for (payload, expected_reason) in cases {
+        let cid = codec_cbor::compute_cid_dag_cbor(payload);
+        let request = dag_cbor_verify_cid_request(&cid, payload);
+        let error = codec_error_payload(&process_binary_and_proto_json(&request));
+        assert_eq!(error.branch(), CodecWireErrorBranch::Canonicalization);
+        assert_eq!(error.reason(), expected_reason);
+    }
+}
+
+#[test]
+fn dag_cbor_verify_cid_rejects_alternate_text_for_matching_cid() {
+    let payload = [0xa0];
+    let canonical = codec_cbor::compute_cid_dag_cbor(&payload);
+    let parsed = codec_cbor::try_parse_cid(&canonical).unwrap();
+    let alternate = codec_multibase::bytes_to_multibase58btc(&parsed.to_bytes()).unwrap();
+    let request = dag_cbor_verify_cid_request(&alternate, &payload);
+    let result = result_payload(&process_binary_and_proto_json(&request));
+    let verified = decode_protobuf::<CodecDagCborVerifyCidResult>(result.bytes()).unwrap();
+    assert!(!verified.valid);
+    assert_eq!(verified.expected_cid, canonical);
+    assert_eq!(verified.actual_cid, canonical);
 }
 
 #[test]
@@ -293,7 +342,14 @@ fn pem_generated_result_takes_semantic_der_ownership() {
         codec_pem::PemEncodeOptions::default(),
     )
     .unwrap();
-    let decoded = decode_pem(&pem, PemDecodePolicy::default()).unwrap();
+    let decoded = decode_pem(
+        &pem,
+        PemDecodePolicy {
+            allowed_labels: &[PemLabel::PrivateKey],
+            ..PemDecodePolicy::default()
+        },
+    )
+    .unwrap();
     let der_allocation = decoded.der().as_ptr();
 
     let result = pem_decode_result_proto(decoded).unwrap();
@@ -316,6 +372,37 @@ fn pem_decode_dispatch_preserves_label_mismatch_error() {
     assert_eq!(
         error.reason(),
         CodecErrorReason::CODEC_ERROR_REASON_PEM_LABEL_MISMATCH
+    );
+}
+
+#[test]
+fn pem_empty_input_has_a_specific_wire_reason() {
+    let request = pem_decode_request(b"", None);
+    let error = codec_error_payload(&process_binary_and_proto_json(&request));
+    assert_eq!(error.branch(), CodecWireErrorBranch::Pem);
+    assert_eq!(
+        error.reason(),
+        CodecErrorReason::CODEC_ERROR_REASON_PEM_EMPTY_INPUT
+    );
+}
+
+#[test]
+fn pem_decode_rejects_excess_allowed_labels_in_binary_and_json() {
+    let request = pem_decode_request(
+        b"-----BEGIN PUBLIC KEY-----\nAA==\n-----END PUBLIC KEY-----\n",
+        Some(CodecPemDecodeOptions {
+            allowed_labels: vec![
+                EnumValue::from(CodecPemLabel::CODEC_PEM_LABEL_PUBLIC_KEY);
+                4
+            ],
+            ..Default::default()
+        }),
+    );
+    let error = codec_error_payload(&process_binary_and_proto_json(&request));
+    assert_eq!(error.branch(), CodecWireErrorBranch::Boundary);
+    assert_eq!(
+        error.reason(),
+        CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED
     );
 }
 
@@ -426,6 +513,67 @@ fn malformed_binary_is_a_structured_boundary_error() {
     assert_eq!(
         error.reason(),
         CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF
+    );
+}
+
+#[test]
+fn duplicate_binary_secret_fields_are_rejected_before_protobuf_merge() {
+    // Field 4000 is pem_decode; its nested field 1 is the secret-bearing PEM
+    // byte string. A second occurrence would replace the first Buffa owner.
+    let duplicate_pem = [0x82, 0xfa, 0x01, 0x06, 0x0a, 0x01, b'A', 0x0a, 0x01, b'B'];
+    let error = codec_error_payload(&process_operation_response(&duplicate_pem));
+    assert_eq!(error.branch(), CodecWireErrorBranch::Boundary);
+    assert_eq!(
+        error.reason(),
+        CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF
+    );
+}
+
+#[test]
+fn binary_pem_label_preflight_stops_repeated_enum_allocation() {
+    let request = CodecOperationRequest {
+        operation: Some(CodecPemDecodeRequest {
+            pem: b"-----BEGIN PUBLIC KEY-----\nAQ==\n-----END PUBLIC KEY-----\n".to_vec(),
+            options: buffa::MessageField::some(CodecPemDecodeOptions {
+                allowed_labels: vec![
+                    CodecPemLabel::CODEC_PEM_LABEL_PUBLIC_KEY.into();
+                    4
+                ],
+                ..Default::default()
+            }),
+            __buffa_unknown_fields: Default::default(),
+        }.into()),
+        __buffa_unknown_fields: Default::default(),
+    };
+    let bytes = encode_protobuf(&request).unwrap();
+    let error = preflight_binary_request(bytes.as_slice()).unwrap_err();
+    assert_eq!(error.branch(), CodecWireErrorBranch::Boundary);
+    assert_eq!(error.reason(), CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED);
+}
+
+#[test]
+fn pem_encode_output_cap_rejects_expansion_before_building_armor() {
+    use codec_proto::generated::proto::reallyme::codec::v1::CodecPemEncodeRequest;
+
+    let request = CodecOperationRequest {
+        operation: Some(CodecPemEncodeRequest {
+            label: CodecPemLabel::CODEC_PEM_LABEL_PUBLIC_KEY.into(),
+            der: vec![0x01; 8 * 1024 * 1024],
+            options: buffa::MessageField::some(CodecPemEncodeOptions {
+                max_der_len: 8 * 1024 * 1024,
+                line_width: 1,
+                ..Default::default()
+            }),
+            __buffa_unknown_fields: Default::default(),
+        }.into()),
+        __buffa_unknown_fields: Default::default(),
+    };
+    let bytes = encode_protobuf(&request).unwrap();
+    let error = codec_error_payload(&process_operation_response(bytes.as_slice()));
+    assert_eq!(error.branch(), CodecWireErrorBranch::Boundary);
+    assert_eq!(
+        error.reason(),
+        CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED
     );
 }
 

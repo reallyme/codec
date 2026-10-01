@@ -8,7 +8,7 @@ use serde_json::Value;
 use zeroize::Zeroizing;
 
 use crate::error::JcsError;
-use crate::parse_json::{parse_json_text, SensitiveJsonValue};
+use crate::parse_json::{parse_json_text, SensitiveJsonValue, SensitiveNumber};
 
 const MAX_INTEROPERABLE_INTEGER: u64 = 9_007_199_254_740_991;
 const MIN_INTEROPERABLE_INTEGER: i64 = -9_007_199_254_740_991;
@@ -135,6 +135,34 @@ fn write_canonical_number(value: &serde_json::Number, output: &mut String) -> Re
     Ok(())
 }
 
+fn write_sensitive_number(value: &SensitiveNumber, output: &mut String) -> Result<(), JcsError> {
+    match value {
+        SensitiveNumber::Unsigned(unsigned) => {
+            if *unsigned > MAX_INTEROPERABLE_INTEGER {
+                return Err(JcsError::IntegerOutsideInteroperableRange);
+            }
+            let mut buffer = itoa::Buffer::new();
+            output.push_str(buffer.format(*unsigned));
+        }
+        SensitiveNumber::Signed(signed) => {
+            if *signed < MIN_INTEROPERABLE_INTEGER {
+                return Err(JcsError::IntegerOutsideInteroperableRange);
+            }
+            let mut buffer = itoa::Buffer::new();
+            output.push_str(buffer.format(*signed));
+        }
+        SensitiveNumber::Float(float) => {
+            if !float.is_finite() {
+                return Err(JcsError::NonFiniteNumber);
+            }
+            validate_interoperable_float_integer(*float)?;
+            let mut buffer = ryu_js::Buffer::new();
+            output.push_str(buffer.format_finite(*float));
+        }
+    }
+    Ok(())
+}
+
 fn write_canonical_array(
     values: &[Value],
     depth: usize,
@@ -183,7 +211,7 @@ fn write_sensitive_canonical(
         SensitiveJsonValue::Null => output.push_str("null"),
         SensitiveJsonValue::Bool(false) => output.push_str("false"),
         SensitiveJsonValue::Bool(true) => output.push_str("true"),
-        SensitiveJsonValue::Number(value) => write_canonical_number(value, output)?,
+        SensitiveJsonValue::Number(value) => write_sensitive_number(value, output)?,
         SensitiveJsonValue::String(value) => write_escaped_string(value, output),
         SensitiveJsonValue::Array(values) => {
             let child_depth = descend(depth)?;
@@ -225,7 +253,7 @@ fn canonicalized_sensitive_len(
         SensitiveJsonValue::Null => Ok("null".len()),
         SensitiveJsonValue::Bool(false) => Ok("false".len()),
         SensitiveJsonValue::Bool(true) => Ok("true".len()),
-        SensitiveJsonValue::Number(value) => canonical_number_len(value),
+        SensitiveJsonValue::Number(value) => canonical_sensitive_number_len(value),
         SensitiveJsonValue::String(value) => escaped_string_len(value),
         SensitiveJsonValue::Array(values) => canonical_sensitive_array_len(values, depth),
         SensitiveJsonValue::Object(values) => canonical_sensitive_object_len(values, depth),
@@ -233,7 +261,7 @@ fn canonicalized_sensitive_len(
 }
 
 fn canonical_sensitive_array_len(
-    values: &[SensitiveJsonValue],
+    values: &[Box<SensitiveJsonValue>],
     depth: usize,
 ) -> Result<usize, JcsError> {
     let child_depth = descend(depth)?;
@@ -356,6 +384,33 @@ fn canonical_number_len(value: &serde_json::Number) -> Result<usize, JcsError> {
     Ok(buffer.format_finite(float).len())
 }
 
+fn canonical_sensitive_number_len(value: &SensitiveNumber) -> Result<usize, JcsError> {
+    match value {
+        SensitiveNumber::Unsigned(unsigned) => {
+            if *unsigned > MAX_INTEROPERABLE_INTEGER {
+                return Err(JcsError::IntegerOutsideInteroperableRange);
+            }
+            let mut buffer = itoa::Buffer::new();
+            Ok(buffer.format(*unsigned).len())
+        }
+        SensitiveNumber::Signed(signed) => {
+            if *signed < MIN_INTEROPERABLE_INTEGER {
+                return Err(JcsError::IntegerOutsideInteroperableRange);
+            }
+            let mut buffer = itoa::Buffer::new();
+            Ok(buffer.format(*signed).len())
+        }
+        SensitiveNumber::Float(float) => {
+            if !float.is_finite() {
+                return Err(JcsError::NonFiniteNumber);
+            }
+            validate_interoperable_float_integer(*float)?;
+            let mut buffer = ryu_js::Buffer::new();
+            Ok(buffer.format_finite(*float).len())
+        }
+    }
+}
+
 fn validate_interoperable_float_integer(value: f64) -> Result<(), JcsError> {
     if value.fract() == 0.0
         && !(MIN_INTEROPERABLE_INTEGER_F64..=MAX_INTEROPERABLE_INTEGER_F64).contains(&value)
@@ -371,6 +426,10 @@ fn escaped_string_len(value: &str) -> Result<usize, JcsError> {
         .checked_add("\"".len())
         .ok_or(JcsError::SerializationError)?;
     for character in value.chars() {
+        let scalar = u32::from(character);
+        if (0xfdd0..=0xfdef).contains(&scalar) || scalar & 0xfffe == 0xfffe {
+            return Err(JcsError::Noncharacter);
+        }
         length = length
             .checked_add(escaped_character_len(character))
             .ok_or(JcsError::SerializationError)?;

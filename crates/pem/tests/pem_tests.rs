@@ -12,6 +12,30 @@ use codec_pem::{
 const DER: &[u8] = b"not really der, only armor bytes";
 
 #[test]
+fn empty_inputs_and_invalid_options_have_distinct_reasons() {
+    assert!(matches!(
+        decode_pem("", PemDecodePolicy::default()),
+        Err(PemError::EmptyInput)
+    ));
+    assert_eq!(
+        encode_pem(PemLabel::PublicKey, &[], PemEncodeOptions::default()).unwrap_err(),
+        PemError::EmptyDer
+    );
+    assert_eq!(
+        encode_pem(
+            PemLabel::PublicKey,
+            DER,
+            PemEncodeOptions {
+                line_width: 77,
+                ..Default::default()
+            },
+        )
+        .unwrap_err(),
+        PemError::InvalidOptions
+    );
+}
+
+#[test]
 fn encode_emits_exact_label_boundaries_and_line_width() -> Result<(), PemError> {
     let pem = encode_pem(
         PemLabel::PublicKey,
@@ -37,9 +61,28 @@ fn pem_round_trips_known_labels() -> Result<(), PemError> {
         PemLabel::PublicKey,
     ] {
         let pem = encode_pem(label, DER, PemEncodeOptions::default())?;
-        let decoded = decode_pem(pem.as_str(), PemDecodePolicy::default())?;
+        let allowed_labels = [label];
+        let decoded = decode_pem(
+            pem.as_str(),
+            PemDecodePolicy {
+                allowed_labels: &allowed_labels,
+                ..PemDecodePolicy::default()
+            },
+        )?;
         assert_eq!(decoded.label, label);
         assert_eq!(decoded.der.as_slice(), DER);
+    }
+    Ok(())
+}
+
+#[test]
+fn default_policy_rejects_private_key_labels() -> Result<(), PemError> {
+    for label in [PemLabel::PrivateKey, PemLabel::EcPrivateKey] {
+        let pem = encode_pem(label, DER, PemEncodeOptions::default())?;
+        assert!(matches!(
+            decode_pem(pem.as_str(), PemDecodePolicy::default()),
+            Err(PemError::UnsupportedLabel)
+        ));
     }
     Ok(())
 }
@@ -88,7 +131,7 @@ fn decode_rejects_missing_begin_and_missing_end() {
             "YWJj\n-----END PUBLIC KEY-----\n",
             PemDecodePolicy::default()
         ),
-        Err(PemError::MissingBegin | PemError::InvalidBoundary)
+        Err(PemError::MissingBegin)
     ));
     assert!(matches!(
         decode_pem(
@@ -168,6 +211,89 @@ fn decode_rejects_oversized_input_and_der() {
         decode_pem(pem.as_str(), der_policy),
         Err(PemError::DerTooLarge)
     ));
+}
+
+#[test]
+fn decode_input_cap_accepts_exact_length_and_rejects_one_more() -> Result<(), PemError> {
+    let pem = encode_pem(PemLabel::PublicKey, DER, PemEncodeOptions::default())?;
+    let exact_policy = PemDecodePolicy {
+        max_input_len: pem.len(),
+        ..Default::default()
+    };
+    assert!(decode_pem(&pem, exact_policy).is_ok());
+
+    let short_policy = PemDecodePolicy {
+        max_input_len: pem.len().checked_sub(1).ok_or(PemError::InvalidOptions)?,
+        ..Default::default()
+    };
+    assert!(matches!(
+        decode_pem(&pem, short_policy),
+        Err(PemError::InputTooLarge)
+    ));
+    Ok(())
+}
+
+#[test]
+fn decode_rejects_each_invalid_policy_field_independently() {
+    let input = "-----BEGIN PUBLIC KEY-----\nYWJj\n-----END PUBLIC KEY-----\n";
+    assert!(matches!(
+        decode_pem(
+            input,
+            PemDecodePolicy {
+                max_der_len: 0,
+                ..Default::default()
+            }
+        ),
+        Err(PemError::InvalidOptions)
+    ));
+    assert!(matches!(
+        decode_pem(
+            input,
+            PemDecodePolicy {
+                allowed_labels: &[],
+                ..Default::default()
+            }
+        ),
+        Err(PemError::InvalidOptions)
+    ));
+}
+
+#[test]
+fn decode_encoded_and_der_caps_have_distinct_exact_boundaries() -> Result<(), PemError> {
+    let policy = PemDecodePolicy {
+        max_der_len: 3,
+        ..Default::default()
+    };
+    let exact = "-----BEGIN PUBLIC KEY-----\nYWJj\n-----END PUBLIC KEY-----\n";
+    assert_eq!(decode_pem(exact, policy)?.der.as_slice(), b"abc");
+
+    // Invalid base64 beyond the encoded-length cap must be rejected by the
+    // length guard before the base64 parser examines the body.
+    let over_encoded = "-----BEGIN PUBLIC KEY-----\n========\n-----END PUBLIC KEY-----\n";
+    assert!(matches!(
+        decode_pem(over_encoded, policy),
+        Err(PemError::DerTooLarge)
+    ));
+    Ok(())
+}
+
+#[test]
+fn decode_checks_exact_der_size_after_base64_decoding() -> Result<(), PemError> {
+    // Base64 rounds multiple DER lengths into the same encoded width. These
+    // cases reach the post-decode bound instead of the earlier text estimate.
+    for maximum in [2_usize, 4, 5] {
+        let der = vec![0x30; maximum + 1];
+        let pem = encode_pem(PemLabel::PublicKey, &der, PemEncodeOptions::default())?;
+        let policy = PemDecodePolicy {
+            max_der_len: maximum,
+            ..Default::default()
+        };
+        assert!(matches!(
+            decode_pem(pem.as_str(), policy),
+            Err(PemError::DerTooLarge)
+        ));
+    }
+    Ok(())
 }
 
 #[test]

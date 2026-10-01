@@ -27,6 +27,8 @@ import {
   readBytesOutput,
   readStringOutput,
   snapshotBoundedBytesInput,
+  snapshotProviderBytes,
+  withSnapshotBytesInput,
 } from "./readOutput.js";
 import { requireReallyMeCodecWasmProvider } from "./wasmProvider.js";
 
@@ -130,7 +132,7 @@ const readMulticodecMetadata = (
     alg: value.algorithmName,
     tag: sdkTag(value.tag),
     keyMaterial: sdkKeyMaterial(value.keyMaterialKind),
-    prefix: value.prefix.slice(),
+    prefix: snapshotProviderBytes(value.prefix),
   };
   if (value.variableLength || value.fixedLength === 0) {
     return metadata;
@@ -150,8 +152,9 @@ const validateMulticodecMetadata = (
 };
 
 export const base58btcEncode = (bytes: Uint8Array): string => {
-  ensureBytesInput(bytes);
-  return readStringOutput(requireReallyMeCodecWasmProvider().base58btcEncode(bytes));
+  return withSnapshotBytesInput(bytes, (snapshot) =>
+    readStringOutput(requireReallyMeCodecWasmProvider().base58btcEncode(snapshot)),
+  );
 };
 
 export const base58btcDecode = (encoded: string): Uint8Array => {
@@ -160,16 +163,14 @@ export const base58btcDecode = (encoded: string): Uint8Array => {
 };
 
 export const multibaseBase64urlEncode = (bytes: Uint8Array): string => {
-  ensureBytesInput(bytes);
-  return readStringOutput(
-    requireReallyMeCodecWasmProvider().multibaseBase64urlEncode(bytes),
+  return withSnapshotBytesInput(bytes, (snapshot) =>
+    readStringOutput(requireReallyMeCodecWasmProvider().multibaseBase64urlEncode(snapshot)),
   );
 };
 
 export const multibaseBase58btcEncode = (bytes: Uint8Array): string => {
-  ensureBytesInput(bytes);
-  return readStringOutput(
-    requireReallyMeCodecWasmProvider().multibaseBase58btcEncode(bytes),
+  return withSnapshotBytesInput(bytes, (snapshot) =>
+    readStringOutput(requireReallyMeCodecWasmProvider().multibaseBase58btcEncode(snapshot)),
   );
 };
 
@@ -251,8 +252,9 @@ const multicodecLookupPrefixRequest = (
   });
 
 export const multicodecStripPrefix = (bytes: Uint8Array): Uint8Array => {
-  ensureBytesInput(bytes);
-  return readBytesOutput(requireReallyMeCodecWasmProvider().multicodecStripPrefix(bytes));
+  return withSnapshotBytesInput(bytes, (snapshot) =>
+    readBytesOutput(requireReallyMeCodecWasmProvider().multicodecStripPrefix(snapshot)),
+  );
 };
 
 export const multicodecTable = (): ReallyMeMulticodecTable => {
@@ -290,9 +292,8 @@ const multicodecTableRequest = () => create(CodecOperationRequestSchema, {
 
 export const multikeyEncode = (codecName: string, publicKey: Uint8Array): string => {
   ensureStringInput(codecName);
-  ensureBytesInput(publicKey);
-  return readStringOutput(
-    requireReallyMeCodecWasmProvider().multikeyEncode(codecName, publicKey),
+  return withSnapshotBytesInput(publicKey, (snapshot) =>
+    readStringOutput(requireReallyMeCodecWasmProvider().multikeyEncode(codecName, snapshot)),
   );
 };
 
@@ -309,7 +310,7 @@ export const multikeyParse = (multikey: string): ReallyMeParsedMultikey => {
     const parsed = {
       codecName: result.codecName,
       algorithmName: result.algorithmName,
-      publicKey: result.publicKey.slice(),
+      publicKey: snapshotProviderBytes(result.publicKey),
     };
     if (result.variablePublicKeyLength || result.expectedPublicKeyLength === 0) {
       return parsed;
@@ -350,10 +351,20 @@ export const validateKeyBinding = (
     ensureStringInput(algorithm);
   }
   ensureStringInput(multikey);
-  requireReallyMeCodecWasmProvider().validateKeyBinding(bindingType, algorithm, multikey);
+  requireVoidProviderOutput(
+    requireReallyMeCodecWasmProvider().validateKeyBinding(bindingType, algorithm, multikey),
+  );
 };
 
 export const requireSupportedMulticodec = (codecName: string): void => {
   ensureStringInput(codecName);
-  requireReallyMeCodecWasmProvider().requireSupportedMulticodec(codecName);
+  requireVoidProviderOutput(
+    requireReallyMeCodecWasmProvider().requireSupportedMulticodec(codecName),
+  );
+};
+
+const requireVoidProviderOutput = (value: unknown): void => {
+  if (value !== undefined) {
+    throw new ReallyMeCodecError("provider-failure");
+  }
 };

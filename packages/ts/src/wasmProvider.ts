@@ -4,6 +4,7 @@
 
 import { ReallyMeCodecError } from "./errors.js";
 import type { ReallyMeCodecErrorCode } from "./errors.js";
+import * as bundledWasm from "../dist/wasm/reallyme_codec_wasm.js";
 
 type BytesToStringFn = (bytes: Uint8Array) => unknown;
 type StringToBytesFn = (text: string) => unknown;
@@ -79,8 +80,10 @@ export type ReallyMeCodecWasmProvider = Readonly<{
 }>;
 
 let installedProvider: ReallyMeCodecWasmProvider | undefined;
+let providerPoisoned = false;
+const DAG_CBOR_CODEC_CODE = 0x71;
 
-const wasmErrorCode = (error: unknown): ReallyMeCodecErrorCode => {
+const wasmErrorCode = (error: unknown): ReallyMeCodecErrorCode | undefined => {
   switch (error) {
     case "invalid-input":
       return "invalid-input";
@@ -88,10 +91,22 @@ const wasmErrorCode = (error: unknown): ReallyMeCodecErrorCode => {
       return "non-canonical";
     case "unsupported-codec":
       return "unsupported-codec";
+    case "unsupported-ipld-value":
+      return "unsupported-ipld-value";
     case "provider-failure":
-    default:
       return "provider-failure";
+    default:
+      return undefined;
   }
+};
+
+const isWasmRuntimeError = (error: unknown): boolean => {
+  const wasm: unknown = Reflect.get(globalThis, "WebAssembly");
+  if (typeof wasm !== "object" || wasm === null) {
+    return false;
+  }
+  const runtimeError: unknown = Reflect.get(wasm, "RuntimeError");
+  return typeof runtimeError === "function" && error instanceof runtimeError;
 };
 
 const requireObject = (module: unknown): object => {
@@ -119,10 +134,22 @@ const requireFunction = (module: object, name: string): WasmCallable => {
     throw new ReallyMeCodecError("provider-failure");
   }
   return (...args: ReadonlyArray<WasmArgument>): unknown => {
+    if (providerPoisoned) {
+      throw new ReallyMeCodecError("provider-failure");
+    }
     try {
       return candidate(...args);
     } catch (error: unknown) {
-      throw new ReallyMeCodecError(wasmErrorCode(error));
+      const code = wasmErrorCode(error);
+      if (code === undefined) {
+        // A WASM trap may leave the instance partially unwound. Host-side
+        // errors do not prove that the instance is unusable.
+        if (isWasmRuntimeError(error)) {
+          providerPoisoned = true;
+        }
+        throw new ReallyMeCodecError("provider-failure");
+      }
+      throw new ReallyMeCodecError(code);
     }
   };
 };
@@ -176,7 +203,29 @@ export const installReallyMeCodecWasmProvider = (module: unknown): void => {
   if (installedProvider !== undefined) {
     throw new ReallyMeCodecError("provider-failure");
   }
+  // The generated ES module namespace is immutable. Identity pins the public
+  // installer to the Rust build shipped in this package instead of accepting
+  // a structurally compatible object supplied by another script.
+  if (module !== bundledWasm) {
+    throw new ReallyMeCodecError("provider-failure");
+  }
   const providerModule = requireObject(module);
+  // This zero-argument export accesses the initialized WASM module but does
+  // not handle caller data. Reject pre-init installation before making the
+  // install-once provider visible; a later initialized attempt can succeed.
+  const probe = Object.getOwnPropertyDescriptor(providerModule, "dagCborCodecCode")?.value;
+  if (typeof probe !== "function") {
+    throw new ReallyMeCodecError("provider-failure");
+  }
+  let codecCode: unknown;
+  try {
+    codecCode = probe();
+  } catch {
+    throw new ReallyMeCodecError("provider-failure");
+  }
+  if (codecCode !== DAG_CBOR_CODEC_CODE) {
+    throw new ReallyMeCodecError("provider-failure");
+  }
   installedProvider = {
     base64Decode: stringFunction1(providerModule, "base64Decode"),
     base64Encode: bytesFunction1(providerModule, "base64Encode"),
@@ -222,7 +271,7 @@ export const installReallyMeCodecWasmProvider = (module: unknown): void => {
 };
 
 export const requireReallyMeCodecWasmProvider = (): ReallyMeCodecWasmProvider => {
-  if (installedProvider === undefined) {
+  if (installedProvider === undefined || providerPoisoned) {
     throw new ReallyMeCodecError("provider-failure");
   }
   return installedProvider;

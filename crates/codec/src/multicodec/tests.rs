@@ -7,9 +7,8 @@
 use super::{
     is_canonical_u64_varint, lookup_prefix, prefix_for_name, semantic_codec_tag,
     semantic_key_material_kind, strip_prefix, supported_table, table_entries_with_capacity,
-    validate_registry_entries, CodecSpec, CodecTag, KeyMaterialKind, MulticodecLength,
+    validate_registry_entries, CodecSpec, CodecTag, KeyLength, KeyMaterialKind, MulticodecLength,
     MulticodecOperationError, PrimitiveCodecTag, PrimitiveKeyMaterialKind, MULTICODEC_TABLE,
-    VARIABLE_KEY_LENGTH,
 };
 
 #[test]
@@ -51,17 +50,46 @@ fn lookup_prefix_rejects_unknown_prefix() {
 
 #[test]
 fn strip_prefix_removes_known_prefix() {
-    let stripped = strip_prefix(&[0xed, 0x01, 0xaa, 0xbb]).unwrap();
+    let mut prefixed = vec![0xed, 0x01];
+    prefixed.extend([0xaa; 32]);
+    let stripped = strip_prefix(&prefixed).unwrap();
 
-    assert_eq!(stripped, &[0xaa, 0xbb]);
+    assert_eq!(stripped, &[0xaa; 32]);
 }
 
 #[test]
-fn strip_prefix_preserves_unknown_prefix() {
+fn strip_prefix_rejects_unknown_prefix() {
     let input = [0, 0, 7];
-    let stripped = strip_prefix(&input).unwrap();
+    assert_eq!(
+        strip_prefix(&input),
+        Err(MulticodecOperationError::InvalidPrefix)
+    );
+}
 
-    assert_eq!(stripped, input);
+#[test]
+fn strip_prefix_rejects_raw_keys_and_incomplete_public_keys() {
+    let mut raw = [0x5a_u8; 32];
+    raw[0] = 0x12;
+    assert_eq!(
+        strip_prefix(&raw),
+        Err(MulticodecOperationError::InvalidPrefix)
+    );
+
+    let mut short = vec![0xed, 0x01];
+    short.extend([0x5a; 31]);
+    assert_eq!(
+        strip_prefix(&short),
+        Err(MulticodecOperationError::InvalidPrefix)
+    );
+
+    let mut complete = vec![0xed, 0x01];
+    complete.extend([0x5a; 32]);
+    let once = strip_prefix(&complete).unwrap();
+    assert_eq!(once.len(), 32);
+    assert_eq!(
+        strip_prefix(once),
+        Err(MulticodecOperationError::InvalidPrefix)
+    );
 }
 
 #[test]
@@ -94,12 +122,10 @@ fn every_semantic_entry_preserves_primitive_registry_metadata() {
     assert_eq!(table.entries().len(), MULTICODEC_TABLE.len());
 
     for ((primitive_name, primitive), semantic) in MULTICODEC_TABLE.iter().zip(table.entries()) {
-        let expected_length = if primitive.key_length != VARIABLE_KEY_LENGTH {
-            MulticodecLength::Fixed(primitive.key_length)
-        } else if primitive.key_material == PrimitiveKeyMaterialKind::NotKey {
-            MulticodecLength::NotApplicable
-        } else {
-            MulticodecLength::Variable
+        let expected_length = match primitive.key_length {
+            KeyLength::Fixed(length) => MulticodecLength::Fixed(length),
+            KeyLength::Variable => MulticodecLength::Variable,
+            KeyLength::NotApplicable => MulticodecLength::NotApplicable,
         };
 
         assert_eq!(semantic.name(), *primitive_name);
@@ -122,7 +148,16 @@ fn every_semantic_entry_preserves_primitive_registry_metadata() {
         assert_eq!(lookup.name(), *primitive_name);
         assert_eq!(lookup.prefix_length(), primitive.codec.len());
         assert_eq!(lookup.metadata(), semantic);
-        assert_eq!(strip_prefix(&prefixed_value).unwrap(), &[0xa5]);
+        if primitive.key_material == PrimitiveKeyMaterialKind::PublicKey
+            && primitive.key_length == KeyLength::Variable
+        {
+            assert_eq!(strip_prefix(&prefixed_value), Ok(&[0xa5][..]));
+        } else {
+            assert_eq!(
+                strip_prefix(&prefixed_value),
+                Err(MulticodecOperationError::InvalidPrefix)
+            );
+        }
     }
 }
 
@@ -130,7 +165,7 @@ fn every_semantic_entry_preserves_primitive_registry_metadata() {
 fn registry_varint_validation_rejects_ambiguous_or_out_of_range_encodings() {
     assert!(is_canonical_u64_varint(&[0]));
     assert!(is_canonical_u64_varint(&[0x80, 0x01]));
-    assert!(is_canonical_u64_varint(&[
+    assert!(!is_canonical_u64_varint(&[
         0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01,
     ]));
 
@@ -159,7 +194,7 @@ fn registry_validation_fails_closed_for_malformed_metadata() {
             key_material,
             alg: algorithm,
             codec: prefix,
-            key_length: VARIABLE_KEY_LENGTH,
+            key_length: KeyLength::Variable,
         }
     }
 

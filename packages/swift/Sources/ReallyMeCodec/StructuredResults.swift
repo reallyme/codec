@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 import Foundation
-import ReallyMeCodecProto
 import SwiftProtobuf
 
 public enum ReallyMeMulticodecTag: Sendable {
@@ -22,7 +21,7 @@ public enum ReallyMeKeyMaterialKind: Sendable {
 }
 
 public struct ReallyMeMulticodecMetadata:
-    Sendable, CustomStringConvertible, CustomDebugStringConvertible
+    Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable
 {
     public let name: String
     public let algorithmName: String
@@ -38,10 +37,12 @@ public struct ReallyMeMulticodecMetadata:
     public var debugDescription: String {
         description
     }
+
+    public var customMirror: Mirror { Mirror(self, children: []) }
 }
 
 public struct ReallyMeMulticodecLookupResult:
-    Sendable, CustomStringConvertible, CustomDebugStringConvertible
+    Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable
 {
     public let name: String
     public let prefixLength: UInt32
@@ -54,10 +55,12 @@ public struct ReallyMeMulticodecLookupResult:
     public var debugDescription: String {
         description
     }
+
+    public var customMirror: Mirror { Mirror(self, children: []) }
 }
 
 public struct ReallyMeMulticodecTable:
-    Sendable, CustomStringConvertible, CustomDebugStringConvertible
+    Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable
 {
     public let entries: [ReallyMeMulticodecMetadata]
 
@@ -68,10 +71,12 @@ public struct ReallyMeMulticodecTable:
     public var debugDescription: String {
         description
     }
+
+    public var customMirror: Mirror { Mirror(self, children: []) }
 }
 
 public struct ReallyMeParsedMultikey:
-    Sendable, CustomStringConvertible, CustomDebugStringConvertible
+    Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable
 {
     public let codecName: String
     public let algorithmName: String
@@ -85,10 +90,12 @@ public struct ReallyMeParsedMultikey:
     public var debugDescription: String {
         description
     }
+
+    public var customMirror: Mirror { Mirror(self, children: []) }
 }
 
 public struct ReallyMeDagCborCidVerification:
-    Sendable, CustomStringConvertible, CustomDebugStringConvertible
+    Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable
 {
     public let valid: Bool
     public let expectedCid: String
@@ -101,6 +108,8 @@ public struct ReallyMeDagCborCidVerification:
     public var debugDescription: String {
         description
     }
+
+    public var customMirror: Mirror { Mirror(self, children: []) }
 }
 
 public enum ReallyMePemLabel: String, Sendable {
@@ -147,7 +156,7 @@ public struct ReallyMePemEncodeOptions: Sendable {
 }
 
 public final class ReallyMePemDocument:
-    @unchecked Sendable, CustomStringConvertible, CustomDebugStringConvertible
+    @unchecked Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable
 {
     public let label: ReallyMePemLabel
     private var derBytes: [UInt8]
@@ -171,6 +180,10 @@ public final class ReallyMePemDocument:
 
     public var debugDescription: String {
         description
+    }
+
+    public var customMirror: Mirror {
+        Mirror(self, children: [])
     }
 }
 

@@ -17,7 +17,7 @@ mod policy;
 mod types;
 
 pub use decode::decode_pem;
-pub use encode::encode_pem;
+pub use encode::{encode_pem, preflight_pem_encoded_length};
 pub use error::PemError;
 pub use label::PemLabel;
 pub use policy::{PemDecodePolicy, PemEncodeOptions, PemLineEnding};

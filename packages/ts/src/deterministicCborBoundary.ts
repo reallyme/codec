@@ -10,10 +10,9 @@ export const MAX_DETERMINISTIC_CBOR_CONTAINER_ENTRIES = 16_384;
 export const MAX_DETERMINISTIC_CBOR_AGGREGATE_TEXT_BYTES = 1_048_576;
 export const MAX_DETERMINISTIC_CBOR_AGGREGATE_BYTE_STRING_BYTES = 1_048_576;
 // A nested map expands to Value -> Map -> MapEntry on the protobuf wire. The
-// five additional layers cover the result/request and deepest scalar wrapper.
-// Buf's default recursion limit of 100 cannot represent semantic depth 64.
-export const MAX_DETERMINISTIC_CBOR_PROTO_RECURSION_DEPTH =
-  MAX_DETERMINISTIC_CBOR_NESTING_DEPTH * 3 + 5;
+// protobuf-es counts the root message in addition to the wire's five outer
+// layers. Depth 64 maps therefore require one more level than Buffa.
+export const MAX_DETERMINISTIC_CBOR_PROTO_RECURSION_DEPTH = 198;
 export const DETERMINISTIC_CBOR_U64_MAX = (1n << 64n) - 1n;
 export const DETERMINISTIC_CBOR_I64_MIN = -(1n << 63n);
 export const DETERMINISTIC_CBOR_NEGATIVE_MAX = -1n;

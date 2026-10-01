@@ -18,10 +18,13 @@ own empty `[workspace]` so it does not inherit lint settings that libFuzzer's
 | `multicodec` | multicodec varint prefix | `codec_multicodec::{lookup_codec_prefix, strip_codec_prefix}` |
 | `multikey` | multikey (multibase+multicodec+binding) | `codec_multikey::parse_multikey` |
 | `base64url` | unpadded base64url decode | `codec_base64url::base64url_to_bytes` |
+| `base64` | padded base64 decode and canonical re-encode | `codec_base64::{base64_to_bytes, bytes_to_base64}` |
+| `hex` | lowercase hexadecimal decode and canonical re-encode | `codec_hex::{lower_hex_to_bytes, bytes_to_lower_hex}` |
+| `pem_decode` | PEM envelope decode and re-encode | `codec_pem::{decode_pem, encode_pem}` |
 | `dag_cbor` | DAG-CBOR decode + canonical re-encode + CID parse/verify | `codec_cbor::{decode_dag_cbor, encode_dag_cbor, try_parse_cid, verify_dag_cbor_cid}` |
 | `deterministic_cbor` | generic deterministic-CBOR decode + canonical re-encode | `codec_cbor::{decode_deterministic_cbor, encode_deterministic_cbor}` |
 | `operation_contract` | executable protobuf + generated ProtoJSON dispatch | `reallyme_codec::operation_contract::{process_operation_response, process_operation_response_json}` |
-| `jcs_text` | strict JSON parsing + RFC 8785 canonicalization | `codec_jcs::canonicalize_json_text` |
+| `jcs_text` | strict JSON parsing and canonicalization idempotence | `codec_jcs::canonicalize_json_text` |
 
 ## Running
 

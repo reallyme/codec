@@ -12,6 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.CodedInputStream;
+import com.google.protobuf.UnsafeByteOperations;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -20,10 +22,31 @@ import java.util.regex.Pattern;
 import me.really.codec.v1.CodecDeterministicCborText;
 import me.really.codec.v1.CodecOperationResponse;
 import me.really.codec.v1.CodecPemDecodeResult;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 final class ReallyMeCodecJavaTest {
     private static final String TEST_LIBRARY_PROPERTY = "reallyme.codec.testLibraryPath";
+
+    @Test
+    void javaCallersCanUseTheFullUnsignedCborRange() {
+        ReallyMeDeterministicCborValue value =
+            ReallyMeDeterministicCbor.unsignedDecimal("18446744073709551615");
+        ReallyMeDeterministicCborInteger integer =
+            ((ReallyMeDeterministicCborValue.Integer) value).getValue();
+        assertEquals(
+            "18446744073709551615",
+            ((ReallyMeDeterministicCborInteger.Unsigned) integer).toUnsignedDecimalString()
+        );
+        assertThrows(
+            ReallyMeCodecException.InvalidInput.class,
+            () -> ReallyMeDeterministicCbor.unsignedDecimal("18446744073709551616")
+        );
+        assertThrows(
+            ReallyMeCodecException.InvalidInput.class,
+            () -> ReallyMeDeterministicCbor.unsignedDecimal("01")
+        );
+    }
 
     @Test
     void javaCallersUseStaticFacadeBackedByRustCodec() {
@@ -66,7 +89,9 @@ final class ReallyMeCodecJavaTest {
 
         byte[] der = new byte[] {0x30, 0x03, 0x02, 0x01, 0x01};
         byte[] pem = ReallyMeCodec.encodePem(ReallyMePemLabel.PRIVATE_KEY, der);
-        ReallyMePemDocument decoded = ReallyMeCodec.decodePem(pem);
+        ReallyMePemDocument decoded = ReallyMeCodec.decodePem(
+                pem,
+                new ReallyMePemDecodeOptions(java.util.List.of(ReallyMePemLabel.PRIVATE_KEY), 0, 0));
 
         assertTrue(new String(pem, StandardCharsets.UTF_8).contains("BEGIN PRIVATE KEY"));
         assertEquals(ReallyMePemLabel.PRIVATE_KEY, decoded.getLabel());
@@ -132,6 +157,38 @@ final class ReallyMeCodecJavaTest {
             ReallyMeCodecException.ProviderFailure.class,
             () -> ReallyMeCodecRustNativeProvider.loadLibrary("/tmp/reallyme-codec-missing-library.dylib")
         );
+    }
+
+    @Test
+    void loadedProviderRejectsASecondExternalPath() throws Exception {
+        String libraryPath = System.getProperty(TEST_LIBRARY_PROPERTY);
+        Assumptions.assumeTrue(libraryPath != null && !libraryPath.isEmpty());
+        ReallyMeCodecRustNativeProvider.loadLibrary(libraryPath);
+        File differentPath = Files.createTempFile("reallyme-codec-other-native-", ".so").toFile();
+        try {
+            assertThrows(
+                ReallyMeCodecException.ProviderFailure.class,
+                () -> ReallyMeCodecRustNativeProvider.loadLibrary(differentPath.getAbsolutePath())
+            );
+        } finally {
+            Files.deleteIfExists(differentPath.toPath());
+        }
+    }
+
+    @Test
+    void protobufBytesCanAliasTheOwnedResponseUntilItIsWiped() throws Exception {
+        CodecPemDecodeResult encoded = CodecPemDecodeResult.newBuilder()
+            .setDer(ByteString.copyFrom(new byte[] {0x31, 0x42, 0x53}))
+            .build();
+        byte[] responseBytes = encoded.toByteArray();
+        CodedInputStream input = UnsafeByteOperations.unsafeWrap(responseBytes).newCodedInput();
+        input.enableAliasing(true);
+        CodecPemDecodeResult parsed = CodecPemDecodeResult.parseFrom(input);
+        assertEquals(0x31, parsed.getDer().byteAt(0));
+        for (int index = 0; index < responseBytes.length; index++) {
+            responseBytes[index] = 0;
+        }
+        assertEquals(0, parsed.getDer().byteAt(0));
     }
 
     private static void loadConfiguredLibrary() {

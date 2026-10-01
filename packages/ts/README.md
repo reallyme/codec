@@ -33,13 +33,16 @@ const encoded = ReallyMeCodec.base64urlEncode(new Uint8Array([1, 2, 3]));
 const decoded = ReallyMeCodec.base64urlDecode(encoded);
 ```
 
+The installer accepts only this package's generated WASM module namespace.
+Initialize that module with the bundled `.wasm` file before installing it.
+
 ## Surface
 
 | Family | APIs |
 |---|---|
 | Base encodings | `base64Encode`, `base64Decode`, `base64urlEncode`, `base64urlDecode`, `base64urlDecodeBytes`, `bytesToLowerHex`, `lowerHexToBytes` |
 | Multiformats | `base58btcEncode`, `base58btcDecode`, `multibase*`, `multicodec*`, `multikey*`, binding validation |
-| Deterministic CBOR | typed `deterministicCborEncode` and `deterministicCborDecode` for the bounded RFC 8949 profile |
+| Deterministic CBOR | typed `deterministicCborEncode` and `deterministicCborDecode` for the bounded RFC 8949 §4.2.3 length-first profile |
 | DAG-CBOR and CID | `dagCborEncode`, `dagCborDecode`, `dagCborComputeCid`, `dagCborVerifyCid`, content hash and multihash helpers |
 | JCS | `canonicalizeJson`, `canonicalizeJsonText` |
 | PEM | wipeable `Uint8Array` armor through `encodePem`, `decodePem`, with strict label and size policy |
@@ -81,14 +84,23 @@ helpers; deterministic CBOR additionally supports integer-key maps and the
 complete documented `u64`/`i64` integer ranges. `Uint8Array` is the canonical
 mutable-byte boundary for browser, Node, and WASM callers. Pass ordinary
 `Uint8Array` views; subclasses (including Node `Buffer`), proxies, and overridden
-byte metadata or copy methods are rejected. Create a plain `Uint8Array` copy
+byte metadata are rejected. The facade copies bytes through captured prototype
+methods and does not invoke a caller-owned copy method. Create a plain `Uint8Array` copy
 when adapting other byte containers.
 
-JCS rejects duplicate properties, unpaired UTF-16 surrogates, and integer-valued
-numbers outside the exact JavaScript integer range. CID validation accepts
+JCS is a strict RFC 8785 subset. It rejects duplicate properties, unpaired
+UTF-16 surrogates, Unicode noncharacters, and integer-valued numbers outside
+the exact JavaScript integer range; this includes the RFC example `1e19`.
+CID validation accepts
 CIDv0 and supported multibase CIDv1 strings up to 1024 UTF-8 bytes; paths and
 trailing decoded bytes are rejected. CID computation uses DAG-CBOR/SHA-256
 CIDv1 in lowercase base32 and hashes the supplied bytes without parsing CBOR.
+CID verification validates one canonical DAG-CBOR block before comparing the
+CID and requires the supplied CID text to use that canonical lowercase base32
+form. `dagCborVerifyCid` returns a boolean; `dagCborVerifyCidDetails` returns
+the canonical CID diagnostics. Invalid DAG-CBOR returns a typed canonicalization
+error. IPLD links and floating-point values outside this package's closed
+DAG-CBOR model return `unsupported-ipld-value`.
 
 Encoded CBOR and decoded byte-string values can contain the complete sensitive
 document. Returned buffers belong to the caller and should be cleared with

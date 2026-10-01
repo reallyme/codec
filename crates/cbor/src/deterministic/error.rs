@@ -78,7 +78,7 @@ pub enum DeterministicCborError {
     #[error("deterministic CBOR: duplicate map key")]
     DuplicateMapKey,
 
-    /// Map keys were not in RFC 8949 deterministic order.
+    /// Map keys were not in the RFC 8949 §4.2.3 length-first order.
     #[error("deterministic CBOR: map keys out of deterministic order")]
     MapKeysOutOfOrder,
 

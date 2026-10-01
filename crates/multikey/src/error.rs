@@ -207,6 +207,18 @@ pub enum MultikeyError {
     #[error("multikey: unknown multicodec prefix")]
     UnknownCodecPrefix,
 
+    /// The prefix identifies private or symmetric key material.
+    #[error("multikey: key material is not public")]
+    NonPublicKeyMaterial,
+
+    /// A variable-length public-key payload was empty.
+    #[error("multikey: empty public key")]
+    EmptyKey,
+
+    /// A compressed EC point did not start with a compressed SEC1 tag.
+    #[error("multikey: invalid compressed EC point tag")]
+    InvalidCompressedPoint,
+
     /// The given codec name is not one of the supported names.
     #[error("multikey: unknown codec name: {reason}")]
     UnknownCodecName {

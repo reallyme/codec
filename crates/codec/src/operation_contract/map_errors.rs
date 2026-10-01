@@ -24,6 +24,11 @@ fn dag_cbor_boundary_error(error: DagCborOperationError) -> CodecWireError {
             CodecWireErrorBranch::Boundary,
             CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED,
         ),
+        DagCborOperationError::InvalidPayload(reason) => dag_cbor_cbor_wire_error(reason),
+        DagCborOperationError::UnsupportedIpldValue => wire_error(
+            CodecWireErrorBranch::Canonicalization,
+            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE,
+        ),
     }
 }
 
@@ -34,16 +39,27 @@ fn dag_cbor_cbor_wire_error(error: CborError) -> CodecWireError {
         | CborError::OffsetOverflow
         | CborError::LengthTooLarge
         | CborError::ContainerLengthExceedsInput
-        | CborError::DepthExceeded => wire_error(
+        | CborError::DepthExceeded
+        | CborError::NodeLimitExceeded
+        | CborError::ContainerEntriesExceeded => wire_error(
             CodecWireErrorBranch::Boundary,
             CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED,
         ),
-        CborError::NonCanonicalInteger
-        | CborError::DuplicateMapKey
-        | CborError::MapKeysOutOfOrder
-        | CborError::TrailingBytes => wire_error(
+        CborError::NonCanonicalInteger => wire_error(
             CodecWireErrorBranch::Canonicalization,
-            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_NON_CANONICAL_CBOR,
+            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_NON_MINIMAL_CBOR_INTEGER,
+        ),
+        CborError::DuplicateMapKey => wire_error(
+            CodecWireErrorBranch::Canonicalization,
+            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_DUPLICATE_CBOR_MAP_KEY,
+        ),
+        CborError::MapKeysOutOfOrder => wire_error(
+            CodecWireErrorBranch::Canonicalization,
+            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_CBOR_MAP_KEYS_OUT_OF_ORDER,
+        ),
+        CborError::TrailingBytes => wire_error(
+            CodecWireErrorBranch::Canonicalization,
+            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_CBOR_TRAILING_BYTES,
         ),
         CborError::UnexpectedEnd
         | CborError::IntegerOutOfRange
@@ -63,6 +79,14 @@ fn dag_cbor_cbor_wire_error(error: CborError) -> CodecWireError {
 
 fn pem_boundary_error(error: PemOperationError) -> CodecWireError {
     match error {
+        PemOperationError::EmptyInput => wire_error(
+            CodecWireErrorBranch::Pem,
+            CodecErrorReason::CODEC_ERROR_REASON_PEM_EMPTY_INPUT,
+        ),
+        PemOperationError::EmptyDer => wire_error(
+            CodecWireErrorBranch::Pem,
+            CodecErrorReason::CODEC_ERROR_REASON_PEM_EMPTY_DER,
+        ),
         PemOperationError::InputTooLarge => wire_error(
             CodecWireErrorBranch::BaseEncoding,
             CodecErrorReason::CODEC_ERROR_REASON_BASE_INPUT_TOO_LARGE,
@@ -71,9 +95,21 @@ fn pem_boundary_error(error: PemOperationError) -> CodecWireError {
             CodecWireErrorBranch::Pem,
             CodecErrorReason::CODEC_ERROR_REASON_PEM_DER_TOO_LARGE,
         ),
-        PemOperationError::InvalidBoundary | PemOperationError::InvalidPolicy => wire_error(
+        PemOperationError::InvalidBoundary => wire_error(
             CodecWireErrorBranch::Pem,
             CodecErrorReason::CODEC_ERROR_REASON_PEM_INVALID_BOUNDARY,
+        ),
+        PemOperationError::MissingBegin => wire_error(
+            CodecWireErrorBranch::Pem,
+            CodecErrorReason::CODEC_ERROR_REASON_PEM_MISSING_BEGIN,
+        ),
+        PemOperationError::MissingEnd => wire_error(
+            CodecWireErrorBranch::Pem,
+            CodecErrorReason::CODEC_ERROR_REASON_PEM_MISSING_END,
+        ),
+        PemOperationError::InvalidPolicy => wire_error(
+            CodecWireErrorBranch::Pem,
+            CodecErrorReason::CODEC_ERROR_REASON_PEM_INVALID_OPTIONS,
         ),
         PemOperationError::LabelMismatch => wire_error(
             CodecWireErrorBranch::Pem,
@@ -86,6 +122,10 @@ fn pem_boundary_error(error: PemOperationError) -> CodecWireError {
         PemOperationError::InvalidBody => wire_error(
             CodecWireErrorBranch::Pem,
             CodecErrorReason::CODEC_ERROR_REASON_PEM_INVALID_BODY,
+        ),
+        PemOperationError::InvalidBase64 => wire_error(
+            CodecWireErrorBranch::Pem,
+            CodecErrorReason::CODEC_ERROR_REASON_PEM_INVALID_BASE64,
         ),
         _ => internal_wire_error(),
     }
@@ -118,12 +158,21 @@ fn deterministic_cbor_wire_error(error: DeterministicCborError) -> CodecWireErro
             CodecWireErrorBranch::Boundary,
             CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED,
         ),
-        DeterministicCborError::NonCanonicalInteger
-        | DeterministicCborError::DuplicateMapKey
-        | DeterministicCborError::MapKeysOutOfOrder
-        | DeterministicCborError::TrailingBytes => wire_error(
+        DeterministicCborError::NonCanonicalInteger => wire_error(
             CodecWireErrorBranch::Canonicalization,
-            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_NON_CANONICAL_CBOR,
+            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_NON_MINIMAL_CBOR_INTEGER,
+        ),
+        DeterministicCborError::DuplicateMapKey => wire_error(
+            CodecWireErrorBranch::Canonicalization,
+            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_DUPLICATE_CBOR_MAP_KEY,
+        ),
+        DeterministicCborError::MapKeysOutOfOrder => wire_error(
+            CodecWireErrorBranch::Canonicalization,
+            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_CBOR_MAP_KEYS_OUT_OF_ORDER,
+        ),
+        DeterministicCborError::TrailingBytes => wire_error(
+            CodecWireErrorBranch::Canonicalization,
+            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_CBOR_TRAILING_BYTES,
         ),
         DeterministicCborError::PreflightLengthMismatch
         | DeterministicCborError::OffsetOverflow
@@ -162,6 +211,6 @@ fn malformed_request_wire_error() -> CodecWireError {
 fn wire_error(branch: CodecWireErrorBranch, reason: CodecErrorReason) -> CodecWireError {
     match CodecWireError::try_new(branch, reason) {
         Ok(error) => error,
-        Err(_) => CodecWireError::malformed_protobuf(),
+        Err(_) => CodecWireError::internal(),
     }
 }

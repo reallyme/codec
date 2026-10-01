@@ -8,12 +8,14 @@ import {
   ensureStringValue,
   readBytesOutput,
   readStringOutput,
+  withSnapshotBytesInput,
 } from "./readOutput.js";
 import { requireReallyMeCodecWasmProvider } from "./wasmProvider.js";
 
 export const base64Encode = (bytes: Uint8Array): string => {
-  ensureBytesInput(bytes);
-  return readStringOutput(requireReallyMeCodecWasmProvider().base64Encode(bytes));
+  return withSnapshotBytesInput(bytes, (snapshot) =>
+    readStringOutput(requireReallyMeCodecWasmProvider().base64Encode(snapshot)),
+  );
 };
 
 export const base64Decode = (encoded: string): Uint8Array => {
@@ -22,8 +24,9 @@ export const base64Decode = (encoded: string): Uint8Array => {
 };
 
 export const base64urlEncode = (bytes: Uint8Array): string => {
-  ensureBytesInput(bytes);
-  return readStringOutput(requireReallyMeCodecWasmProvider().base64urlEncode(bytes));
+  return withSnapshotBytesInput(bytes, (snapshot) =>
+    readStringOutput(requireReallyMeCodecWasmProvider().base64urlEncode(snapshot)),
+  );
 };
 
 export const base64urlDecode = (encoded: string): Uint8Array => {
@@ -37,8 +40,9 @@ export const base64urlDecodeBytes = (encoded: Uint8Array): Uint8Array => {
 };
 
 export const bytesToLowerHex = (bytes: Uint8Array): string => {
-  ensureBytesInput(bytes);
-  return readStringOutput(requireReallyMeCodecWasmProvider().bytesToLowerHex(bytes));
+  return withSnapshotBytesInput(bytes, (snapshot) =>
+    readStringOutput(requireReallyMeCodecWasmProvider().bytesToLowerHex(snapshot)),
+  );
 };
 
 export const lowerHexToBytes = (encoded: string): Uint8Array => {

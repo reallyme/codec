@@ -58,6 +58,8 @@ import {
   readBytesOutput,
   readStringOutput,
   readNumberOutput,
+  snapshotBoundedBytesInput,
+  snapshotProviderBytes,
 } from "./readOutput.js";
 import { requireReallyMeCodecWasmProvider } from "./wasmProvider.js";
 
@@ -146,7 +148,7 @@ export const ReallyMeDeterministicCbor = {
 
   bytes(value: Uint8Array): ReallyMeDeterministicCborValue {
     ensureBytesInput(value);
-    return { type: "bytes", value: value.slice() };
+    return { type: "bytes", value: snapshotBoundedBytesInput(value) };
   },
 
   array(
@@ -265,7 +267,7 @@ export const ReallyMeDagCbor = {
 
   bytes(value: Uint8Array): ReallyMeCborValue {
     ensureBytesInput(value);
-    return { type: "bytes", value: value.slice() };
+    return { type: "bytes", value: snapshotBoundedBytesInput(value) };
   },
 
   array(value: ReadonlyArray<ReallyMeCborValue>): ReallyMeCborValue {
@@ -468,7 +470,7 @@ const validateCborValue = (
           throw new ReallyMeCodecError("invalid-input");
         }
         state.byteStringBytes += child.length;
-        return { type: "bytes", value: child.slice() };
+        return { type: "bytes", value: snapshotBoundedBytesInput(child) };
       }
       case "array": {
         const children = snapshotArray(
@@ -1236,7 +1238,10 @@ const deterministicCborValueFromProto = (
         bytes.length,
         MAX_DETERMINISTIC_CBOR_AGGREGATE_BYTE_STRING_BYTES,
       );
-      const copy = bytes.slice();
+      const copy = snapshotProviderBytes(
+        bytes,
+        MAX_DETERMINISTIC_CBOR_AGGREGATE_BYTE_STRING_BYTES,
+      );
       state.ownedBytes.push(copy);
       return { type: "bytes", value: copy };
     }
@@ -1405,7 +1410,10 @@ const dagCborValueToProto = (
         },
       });
     case "bytes": {
-      const bytes = value.value.slice();
+      const bytes = snapshotDeterministicCborBytes(
+        value.value,
+        MAX_DETERMINISTIC_CBOR_AGGREGATE_BYTE_STRING_BYTES,
+      );
       try {
         const bytesValue = create(CodecDeterministicCborBytesSchema, { value: bytes });
         return create(CodecDeterministicCborValueSchema, {
@@ -1496,7 +1504,13 @@ const dagCborValueFromDeterministic = (
     case "text":
       return { type: "string", value: value.value };
     case "bytes":
-      return { type: "bytes", value: value.value.slice() };
+      return {
+        type: "bytes",
+        value: snapshotProviderBytes(
+          value.value,
+          MAX_DETERMINISTIC_CBOR_AGGREGATE_BYTE_STRING_BYTES,
+        ),
+      };
     case "array": {
       const values: ReallyMeCborValue[] = [];
       try {
@@ -1576,7 +1590,7 @@ export const dagCborEncode = (value: ReallyMeCborValue): Uint8Array => {
       ) {
         return providerFailure();
       }
-      return result.encoded.slice();
+      return snapshotProviderBytes(result.encoded, maxDagCborInputLength);
     } catch (error: unknown) {
       if (error instanceof ReallyMeCodecError) {
         throw error;
@@ -1664,7 +1678,7 @@ export const deterministicCborEncode = (value: unknown): Uint8Array => {
       ) {
         throw new ReallyMeCodecError("provider-failure");
       }
-      return result.encoded.slice();
+      return snapshotProviderBytes(result.encoded, MAX_DETERMINISTIC_CBOR_OUTPUT_LEN);
     } finally {
       result.encoded.fill(0);
     }
@@ -1718,10 +1732,15 @@ export const deterministicCborDecode = (
 
 export const dagCborComputeCid = (bytes: Uint8Array): string => {
   ensureBytesInput(bytes);
-  return readStringOutput(requireReallyMeCodecWasmProvider().dagCborComputeCid(bytes));
+  const snapshot = snapshotDeterministicCborBytes(bytes, maxDagCborInputLength);
+  try {
+    return readStringOutput(requireReallyMeCodecWasmProvider().dagCborComputeCid(snapshot));
+  } finally {
+    snapshot.fill(0);
+  }
 };
 
-export const dagCborVerifyCid = (
+export const dagCborVerifyCidDetails = (
   cid: string,
   bytes: Uint8Array,
 ): ReallyMeDagCborCidVerification => {
@@ -1748,6 +1767,13 @@ export const dagCborVerifyCid = (
   }
 };
 
+/** Verify one CID and return a boolean that is safe to use directly in a condition. */
+export const dagCborVerifyCid = (cid: string, bytes: Uint8Array): boolean =>
+  dagCborVerifyCidDetails(cid, bytes).valid;
+
+/** Alias for callers that prefer an explicit comparison name. */
+export const dagCborCidMatches = dagCborVerifyCid;
+
 const dagCborVerifyCidRequest = (
   cid: string,
   bytes: Uint8Array,
@@ -1763,12 +1789,22 @@ const dagCborVerifyCidRequest = (
 
 export const dagCborSha256ContentHash = (bytes: Uint8Array): Uint8Array => {
   ensureBytesInput(bytes);
-  return readBytesOutput(requireReallyMeCodecWasmProvider().dagCborSha256ContentHash(bytes));
+  const snapshot = snapshotDeterministicCborBytes(bytes, maxDagCborInputLength);
+  try {
+    return readBytesOutput(requireReallyMeCodecWasmProvider().dagCborSha256ContentHash(snapshot));
+  } finally {
+    snapshot.fill(0);
+  }
 };
 
 export const dagCborMultihash = (bytes: Uint8Array): Uint8Array => {
   ensureBytesInput(bytes);
-  return readBytesOutput(requireReallyMeCodecWasmProvider().dagCborMultihash(bytes));
+  const snapshot = snapshotDeterministicCborBytes(bytes, maxDagCborInputLength);
+  try {
+    return readBytesOutput(requireReallyMeCodecWasmProvider().dagCborMultihash(snapshot));
+  } finally {
+    snapshot.fill(0);
+  }
 };
 
 export const isValidCidString = (cid: string): boolean => {
@@ -1781,12 +1817,19 @@ export const isValidCidString = (cid: string): boolean => {
 };
 
 export const tryParseCid = (cid: string): string | undefined => {
-  ensureStringValue(cid);
-  const value = requireReallyMeCodecWasmProvider().tryParseCid(cid);
-  if (value === undefined) {
-    return undefined;
+  try {
+    ensureStringValue(cid);
+    const value = requireReallyMeCodecWasmProvider().tryParseCid(cid);
+    if (value === undefined) {
+      return undefined;
+    }
+    return readStringOutput(value);
+  } catch (error: unknown) {
+    if (error instanceof ReallyMeCodecError && error.code === "invalid-input") {
+      return undefined;
+    }
+    throw error;
   }
-  return readStringOutput(value);
 };
 
 export const dagCborCodecCode = (): number =>

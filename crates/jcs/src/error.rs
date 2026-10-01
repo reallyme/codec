@@ -33,4 +33,13 @@ pub enum JcsError {
     /// `serde_json::Value` without the parser's own depth limit.
     #[error("jcs: nesting depth limit exceeded")]
     DepthExceeded,
+
+    /// A dependency feature changed JSON number visitation, making a number
+    /// indistinguishable from a caller-supplied object during parsing.
+    #[error("jcs: JSON number representation is unsupported")]
+    UnsupportedNumberRepresentation,
+
+    /// I-JSON forbids Unicode noncharacters in string values and names.
+    #[error("jcs: Unicode noncharacter is not allowed")]
+    Noncharacter,
 }

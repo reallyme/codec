@@ -39,6 +39,9 @@ fn process_pem_decode(
     let defaults = PemDecodePolicy::default();
     let mut labels = Vec::new();
     if let Some(options) = options {
+        if options.allowed_labels.len() > MAX_PEM_ALLOWED_LABELS {
+            return Err(pem_label_limit_error());
+        }
         labels
             .try_reserve(options.allowed_labels.len())
             .map_err(|_| internal_wire_error())?;
@@ -81,10 +84,13 @@ fn process_pem_encode(
         options.map_or(0, |value| value.max_der_len),
         defaults.max_der_len,
     )?;
-    let line_width = option_limit(
-        options.map_or(0, |value| value.line_width),
-        defaults.line_width,
-    )?;
+    let line_width = option_limit(options.map_or(0, |value| value.line_width), defaults.line_width)?;
+    if !(1..=76).contains(&line_width) {
+        return Err(wire_error(
+            CodecWireErrorBranch::Pem,
+            CodecErrorReason::CODEC_ERROR_REASON_PEM_INVALID_OPTIONS,
+        ));
+    }
     let configured_line_ending = options
         .map(|value| value.line_ending.as_known().ok_or_else(malformed_request_wire_error))
         .transpose()?;
@@ -93,15 +99,28 @@ fn process_pem_encode(
         Some(CodecPemLineEnding::CODEC_PEM_LINE_ENDING_LF) => PemLineEnding::Lf,
         Some(CodecPemLineEnding::CODEC_PEM_LINE_ENDING_CRLF) => PemLineEnding::Crlf,
     };
-    let encoded = encode_pem(
-        pem_label(label)?,
-        der,
-        PemEncodeOptions {
-            max_der_len,
-            line_width,
-            line_ending,
-        },
-    )
+    let label = pem_label(label)?;
+    let options = PemEncodeOptions {
+        max_der_len,
+        line_width,
+        line_ending,
+    };
+    let output_length = preflight_pem_encoded_length(label, der.len(), options)
+        .map_err(|error| pem_boundary_error(match error {
+            codec_pem::PemError::DerTooLarge => PemOperationError::DerTooLarge,
+            codec_pem::PemError::EmptyDer => PemOperationError::EmptyDer,
+            _ => PemOperationError::InvalidPolicy,
+        }))?;
+    let max_pem_bytes = MAX_CODEC_PROTO_MESSAGE_BYTES
+        .checked_sub(128)
+        .ok_or_else(internal_wire_error)?;
+    if output_length > max_pem_bytes {
+        return Err(wire_error(
+            CodecWireErrorBranch::Boundary,
+            CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED,
+        ));
+    }
+    let encoded = encode_pem(label, der, options)
     .map_err(pem_boundary_error)?;
     Ok(pem_encode_result_proto(encoded))
 }

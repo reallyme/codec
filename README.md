@@ -9,7 +9,7 @@
 [![npm codec](https://img.shields.io/npm/v/@reallyme/codec?label=npm%20codec&color=0f766e)](https://www.npmjs.com/package/@reallyme/codec)
 [![Maven codec](https://img.shields.io/maven-central/v/me.really/codec?label=maven%20codec&color=0f766e)](https://central.sonatype.com/artifact/me.really/codec)
 [![Security Policy](https://img.shields.io/badge/security-policy-0f766e)](SECURITY.md)
-[![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE-MIT)
 
 </div>
 
@@ -70,7 +70,7 @@ lockstep ReallyMe Codec release line.
 | Base encodings | base64, unpadded base64url, lowercase hex, base58btc |
 | Multiformats | multibase, multicodec, multikey, key-binding validation |
 | Canonical data | deterministic generic CBOR, DAG-CBOR, CID helpers, SHA-256 content hash, multihash helpers, JCS |
-| PEM | strict PEM decode and encode with label, size, line-width, and line-ending policy |
+| PEM | PEM decode and encode with label, size, line-width, and line-ending policy; decoding permits public keys by default |
 | Protobuf | `reallyme.codec.v1` generated operation requests, generated ProtoJSON, and codec error envelopes |
 
 ## Install
@@ -86,7 +86,7 @@ every primitive codec family. Consumers that need a smaller dependency surface c
 only the families they use:
 
 ```toml
-reallyme-codec = { version = "0.2.3", default-features = false, features = [
+reallyme-codec = { version = "0.3.0", default-features = false, features = [
   "base64url",
   "multikey",
 ] }
@@ -101,7 +101,7 @@ feature enables the base64url field adapters.
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.2.3"
+    from: "0.3.0"
 )
 ```
 
@@ -113,7 +113,7 @@ feature enables the base64url field adapters.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.2.3")
+    implementation("me.really:codec:0.3.0")
 }
 ```
 
@@ -121,7 +121,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.2.3")
+    implementation("me.really:codec-android:0.3.0")
 }
 ```
 
@@ -138,14 +138,14 @@ revisions so codec behavior remains identical across all language lanes.
 
 ReallyMe Codec is pre-1.0. We follow the Rust community convention for
 [0.x compatibility](https://doc.rust-lang.org/cargo/reference/semver.html):
-breaking changes increment the minor version, such as `0.1.x` to `0.2.0`, and
-additive compatible changes increment the patch version, such as `0.2.0` to
-`0.2.3`.
+breaking changes increment the minor version, such as `0.2.x` to `0.3.0`, and
+additive compatible changes increment the patch version, such as `0.3.0` to
+`0.3.1`.
 
 For Rust consumers, pin to the minor line you have reviewed, for example
-`reallyme-codec = "0.2"`. A full version written by `cargo add`, such as
-`reallyme-codec = "0.2.0"`, uses Cargo caret semantics and remains on the same
-`0.2.x` compatibility line. For npm, Maven, SwiftPM, and release artifacts used
+`reallyme-codec = "0.3"`. A full version written by `cargo add`, such as
+`reallyme-codec = "0.3.0"`, uses Cargo caret semantics and remains on the same
+`0.3.x` compatibility line. For npm, Maven, SwiftPM, and release artifacts used
 in production, prefer exact versions or locked dependency files so every
 language lane runs the same reviewed codec release.
 
@@ -156,9 +156,12 @@ Rust:
 ```rust
 use reallyme_codec::base64url::{base64url_to_bytes, bytes_to_base64url};
 
-let encoded = bytes_to_base64url(b"hello");
-let decoded = base64url_to_bytes(&encoded)?;
-# Ok::<(), reallyme_codec::base64url::Base64UrlError>(())
+fn round_trip() -> Result<(), reallyme_codec::base64url::Base64UrlError> {
+    let encoded = bytes_to_base64url(b"hello");
+    let decoded = base64url_to_bytes(&encoded)?;
+    assert_eq!(decoded, b"hello");
+    Ok(())
+}
 ```
 
 Swift:
@@ -238,6 +241,11 @@ limits. The generic profile permits at most 64 nested containers, 65,536 nodes
 are each capped at 1 MiB; aggregate UTF-8 text and aggregate byte-string content
 are each capped at 1 MiB.
 
+Map keys use RFC 8949 §4.2.3 length-first ordering. This profile differs from
+the bytewise ordering in RFC 8949 §4.2.1 when keys have different encoded
+lengths. JCS is a strict RFC 8785 subset: integer-valued binary64 numbers
+outside the interoperable ±(2⁵³−1) range are rejected, including `1e19`.
+
 DAG-CBOR remains a separate profile with CID helpers; the supported subset
 uses text map keys and signed 64-bit integers, with no floats or tags. Its structured
 encode/decode methods use the same generated operation boundary and Rust
@@ -284,7 +292,7 @@ The generated proto surfaces are available through:
 | Language | Proto surface | Generic execution |
 |---|---|---|
 | Rust | `reallyme-codec-proto` | `process_operation_response`, `process_operation_response_json` |
-| Swift | `ReallyMeCodecProto` | `processOperation`, `processOperationJson` |
+| Swift | Internal generated wire types | `processOperation`, `processOperationJson` |
 | Kotlin / Java | `me.really.codec.v1` | `processOperation`, `processOperationJson` |
 | TypeScript | `@reallyme/codec/proto` | `processOperation`, `processOperationJson` |
 

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use zeroize::Zeroizing;
+use zeroize::{ZeroizeOnDrop, Zeroizing};
 
 use crate::PemLabel;
 
@@ -13,3 +13,8 @@ pub struct PemDocument {
     /// The decoded DER payload.
     pub der: Zeroizing<Vec<u8>>,
 }
+
+// The DER owner already wipes its full capacity on drop. Exposing the marker
+// lets generic secret-owner code enforce that lifetime guarantee at compile
+// time without making the document Clone or Debug.
+impl ZeroizeOnDrop for PemDocument {}

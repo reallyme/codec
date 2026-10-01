@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use codec_multibase::bytes_to_multibase58btc;
-use codec_multicodec::{KeyMaterialKind, MULTICODEC_TABLE, VARIABLE_KEY_LENGTH};
+use codec_multicodec::{KeyLength, KeyMaterialKind, MULTICODEC_TABLE};
 
 use crate::error::{classify_multikey_codec, CodecNameReason, MultikeyError};
 
@@ -32,12 +32,21 @@ pub fn encode_multikey(codec_name: &str, public_key: &[u8]) -> Result<String, Mu
         });
     }
 
-    if spec.key_length == VARIABLE_KEY_LENGTH && public_key.is_empty() {
-        return Err(MultikeyError::KeyLengthMismatch {
-            codec: classify_multikey_codec(canonical_codec_name),
-            expected: spec.key_length,
-            actual: public_key.len(),
-        });
+    match spec.key_length {
+        KeyLength::Fixed(expected) if public_key.len() != expected => {
+            return Err(MultikeyError::KeyLengthMismatch {
+                codec: classify_multikey_codec(canonical_codec_name),
+                expected,
+                actual: public_key.len(),
+            });
+        }
+        KeyLength::Variable if public_key.is_empty() => return Err(MultikeyError::EmptyKey),
+        KeyLength::NotApplicable => {
+            return Err(MultikeyError::UnknownCodecName {
+                reason: CodecNameReason::Unsupported,
+            });
+        }
+        KeyLength::Fixed(_) | KeyLength::Variable => {}
     }
 
     if *canonical_codec_name == "rsa-pub" && public_key.len() > MAX_RSA_PUBLIC_KEY_DER_LEN {
@@ -48,23 +57,19 @@ pub fn encode_multikey(codec_name: &str, public_key: &[u8]) -> Result<String, Mu
         });
     }
 
-    if spec.key_length != VARIABLE_KEY_LENGTH && public_key.len() != spec.key_length {
-        return Err(MultikeyError::KeyLengthMismatch {
-            codec: classify_multikey_codec(canonical_codec_name),
-            expected: spec.key_length,
-            actual: public_key.len(),
-        });
+    if matches!(
+        *canonical_codec_name,
+        "p256-pub" | "p384-pub" | "p521-pub" | "secp256k1-pub"
+    ) && !matches!(public_key.first(), Some(0x02 | 0x03))
+    {
+        return Err(MultikeyError::InvalidCompressedPoint);
     }
 
-    let capacity =
-        spec.codec
-            .len()
-            .checked_add(public_key.len())
-            .ok_or(MultikeyError::KeyLengthMismatch {
-                codec: classify_multikey_codec(canonical_codec_name),
-                expected: spec.key_length,
-                actual: public_key.len(),
-            })?;
+    let capacity = spec
+        .codec
+        .len()
+        .checked_add(public_key.len())
+        .ok_or(MultikeyError::EncodedPayloadTooLarge)?;
     let mut payload = Vec::with_capacity(capacity);
     payload.extend_from_slice(spec.codec);
     payload.extend_from_slice(public_key);

@@ -22,10 +22,15 @@ This document defines the baseline memory-safety and boundary model for the
 Codec operations may carry sensitive data even though they do not manage keys.
 Internal temporary buffers use zeroizing owners where practical. Callers own
 their inputs and returned bytes, strings, and value trees, and remain responsible
-for their lifetime and cleanup. For example, Rust `CborValue` supports `Zeroize`
-and can be held in `Zeroizing<CborValue>`; it does not wipe itself on drop.
-Managed-runtime strings and protobuf copies cannot guarantee complete erasure.
-Codec APIs avoid logging or embedding raw input in errors.
+for their lifetime and cleanup. Rust `CborValue` wipes its owned text and byte
+buffers on drop and also supports explicit `Zeroize`. Managed-runtime strings
+and protobuf copies cannot guarantee complete erasure. Codec APIs avoid logging
+or embedding raw input in errors.
+
+Generated SwiftProtobuf messages may contain sensitive fields. Their concrete
+debug and reflection views are redacted, but SwiftProtobuf's generic `Message`
+text-format API traverses the fields. Do not log these messages through a
+generic `Message` reference or call generic `textFormatString()` on them.
 
 ## Native Boundary
 

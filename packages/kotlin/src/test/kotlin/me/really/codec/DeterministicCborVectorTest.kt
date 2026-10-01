@@ -25,11 +25,65 @@ class DeterministicCborVectorTest {
     }
 
     @Test
+    fun exactNodeAndContainerLimitsAreAccepted() {
+        val codec = configuredCodec()
+        val counts = listOf(16_384, 16_383, 16_383, 16_381)
+        val children = counts.map { count ->
+            ReallyMeDeterministicCborValue.Array(
+                List(count) { ReallyMeDeterministicCborValue.Null },
+            )
+        }
+        val encoded = codec.deterministicCborEncode(
+            ReallyMeDeterministicCborValue.Array(children),
+        )
+        try {
+            val decoded = assertIs<ReallyMeDeterministicCborValue.Array>(
+                codec.deterministicCborDecode(encoded),
+            )
+            assertEquals(counts, decoded.values.map { child ->
+                assertIs<ReallyMeDeterministicCborValue.Array>(child).values.size
+            })
+        } finally {
+            encoded.fill(0)
+        }
+    }
+
+    @Test
+    fun integerKeyedMapAtMaximumDepthRoundTrips() {
+        val codec = configuredCodec()
+        var value: ReallyMeDeterministicCborValue = ReallyMeDeterministicCborValue.Null
+        repeat(64) {
+            value = ReallyMeDeterministicCborValue.Map(
+                listOf(
+                    ReallyMeDeterministicCborMapEntry(
+                        ReallyMeDeterministicCborMapKey.Integer(
+                            ReallyMeDeterministicCborInteger.Unsigned(0uL),
+                        ),
+                        value,
+                    ),
+                ),
+            )
+        }
+        val encoded = codec.deterministicCborEncode(value)
+        try {
+            val decoded = codec.deterministicCborDecode(encoded)
+            val reencoded = codec.deterministicCborEncode(decoded)
+            try {
+                assertContentEquals(encoded, reencoded)
+            } finally {
+                reencoded.fill(0)
+            }
+        } finally {
+            encoded.fill(0)
+        }
+    }
+
+    @Test
     fun sharedPositiveNegativeAndEquivalentVectors() {
         val codec = configuredCodec()
         val vectors = deterministicCborVectors()
         assertEquals(
-            "rfc8949-core-deterministic-reallyme-0.2.0",
+            "rfc8949-length-first-deterministic-reallyme-0.2.0",
             vectors.requiredString("profile"),
         )
         val fixtureClasses = vectors.requiredObject("fixtureClasses")
@@ -50,10 +104,15 @@ class DeterministicCborVectorTest {
 
         for (vectorElement in vectors.requiredArray("negative")) {
             val vector = vectorElement.requiredObject()
-            assertFailsWith<ReallyMeCodecException.InvalidInput>(
-                message = vector.requiredString("name") + ":" + vector.requiredString("reason"),
-            ) {
-                codec.deterministicCborDecode(vector.requiredString("hex").hexToByteArray())
+            val context = vector.requiredString("name") + ":" + vector.requiredString("reason")
+            when (vector.requiredString("errorClass")) {
+                "non-canonical" -> assertFailsWith<ReallyMeCodecException.NonCanonical>(message = context) {
+                    codec.deterministicCborDecode(vector.requiredString("hex").hexToByteArray())
+                }
+                "invalid-input" -> assertFailsWith<ReallyMeCodecException.InvalidInput>(message = context) {
+                    codec.deterministicCborDecode(vector.requiredString("hex").hexToByteArray())
+                }
+                else -> error("unsupported vector error class")
             }
         }
 

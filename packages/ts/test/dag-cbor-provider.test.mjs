@@ -5,12 +5,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { create, toBinary } from "@bufbuild/protobuf";
-import * as wasm from "../dist/wasm/reallyme_codec_wasm.js";
-import {
+import "./wasm-module-test-hook.mjs";
+const wasm = await import("../dist/wasm/reallyme_codec_wasm.js");
+const {
   ReallyMeCodecError,
   dagCborDecode,
   installReallyMeCodecWasmProvider,
-} from "../dist/index.js";
+} = await import("../dist/index.js");
 import {
   CodecDagCborDecodeResultSchema,
   CodecDeterministicCborArraySchema,
@@ -28,9 +29,7 @@ import {
 
 let currentResult = create(CodecDagCborDecodeResultSchema);
 
-const provider = {
-  ...wasm,
-  processOperation() {
+wasm.setOperationHandler(() => {
     return toBinary(
       CodecOperationResponseSchema,
       create(CodecOperationResponseSchema, {
@@ -45,10 +44,9 @@ const provider = {
         },
       }),
     );
-  },
-};
+});
 
-installReallyMeCodecWasmProvider(provider);
+installReallyMeCodecWasmProvider(wasm);
 
 const nullValue = () =>
   create(CodecDeterministicCborValueSchema, {

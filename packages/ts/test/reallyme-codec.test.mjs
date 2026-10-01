@@ -33,6 +33,8 @@ import {
   dagCborMultihash,
   dagCborSha256ContentHash,
   dagCborVerifyCid,
+  dagCborVerifyCidDetails,
+  dagCborCidMatches,
   deterministicCborDecode,
   deterministicCborEncode,
   decodePem,
@@ -91,7 +93,31 @@ const codecVectors = codecVectorManifest.vectors;
 const deterministicCborVectors = codecVectorManifest.deterministicCbor;
 
 wasm.initSync({ module: wasmBytes });
+assert.throws(
+  () => installReallyMeCodecWasmProvider({ ...wasm }),
+  (error) => error instanceof ReallyMeCodecError && error.code === "provider-failure",
+);
 installReallyMeCodecWasmProvider(wasm);
+
+test("provider internals are absent from the public package exports", async () => {
+  const publicApi = await import("../dist/index.js");
+  assert.equal(Object.hasOwn(publicApi, "requireReallyMeCodecWasmProvider"), false);
+});
+
+test("CBOR byte input never invokes a caller-owned slice method", () => {
+  const value = Uint8Array.of(0x01, 0x02);
+  let sliceCalled = false;
+  Object.defineProperty(value, "slice", {
+    value: () => {
+      sliceCalled = true;
+      return Uint8Array.of(0xff);
+    },
+  });
+  const encoded = dagCborEncode({ type: "bytes", value });
+  assert.deepEqual(encoded, Uint8Array.of(0x42, 0x01, 0x02));
+  assert.equal(sliceCalled, false);
+  encoded.fill(0);
+});
 
 const hasOnlyUnicodeScalars = (value) => {
   for (let index = 0; index < value.length; index += 1) {
@@ -134,7 +160,12 @@ const jsonValueArbitrary = fc.letrec((tie) => ({
 
 const bytes = (...values) => Uint8Array.from(values);
 const hex = (value) => Buffer.from(value).toString("hex");
-const bytesFromHex = (value) => Uint8Array.from(Buffer.from(value, "hex"));
+const bytesFromHex = (value) => {
+  if (typeof value !== "string" || !/^(?:[0-9a-fA-F]{2})*$/.test(value)) {
+    throw new TypeError("invalid hex fixture");
+  }
+  return Uint8Array.from(Buffer.from(value, "hex"));
+};
 const utf8 = (value) => new TextEncoder().encode(value);
 const dagCborVectorValue = () => ({
   type: "map",
@@ -154,10 +185,6 @@ const assertCodecError = (operation, code) => {
 
 const assertWasmError = (operation, code) => {
   assert.throws(operation, (error) => error === code);
-};
-
-const assertCodecRejected = (operation) => {
-  assert.throws(operation, (error) => error instanceof ReallyMeCodecError);
 };
 
 const deterministicFixtureInteger = (value) => {
@@ -323,6 +350,57 @@ test("byte boundaries reject substituted subarray contents and preserve ordinary
   assert.deepEqual(backing, Uint8Array.of(0x00, 0xa5, 0xff));
 });
 
+test("detached scalar inputs never poison later WASM calls", () => {
+  const detached = Uint8Array.of(0x12, 0x34);
+  structuredClone(detached.buffer, { transfer: [detached.buffer] });
+  const operations = [
+    () => base64Encode(detached),
+    () => base64urlEncode(detached),
+    () => bytesToLowerHex(detached),
+    () => base58btcEncode(detached),
+    () => multibaseBase64urlEncode(detached),
+    () => multibaseBase58btcEncode(detached),
+    () => multicodecStripPrefix(detached),
+    () => multikeyEncode("ed25519-pub", detached),
+  ];
+  for (let attempt = 0; attempt < 1_100; attempt += 1) {
+    assertCodecError(operations[attempt % operations.length], "invalid-input");
+  }
+  assert.equal(base64Encode(Uint8Array.of(0x12)), "Eg==");
+});
+
+test("raw WASM byte calls catch detached views without poisoning the instance", () => {
+  const detached = Uint8Array.of(0x12);
+  structuredClone(detached.buffer, { transfer: [detached.buffer] });
+  for (let attempt = 0; attempt < 1_100; attempt += 1) {
+    assertWasmError(() => wasm.base64Encode(detached), "invalid-input");
+  }
+  assert.equal(wasm.base64Encode(Uint8Array.of(0x12)), "Eg==");
+});
+
+test("raw WASM nullish byte calls fail without exhausting the instance", () => {
+  for (let attempt = 0; attempt < 1_100; attempt += 1) {
+    assertWasmError(() => wasm.base64Encode(null), "invalid-input");
+    assertWasmError(() => wasm.base64Encode(undefined), "invalid-input");
+  }
+  assert.equal(wasm.base64Encode(Uint8Array.of(0x12)), "Eg==");
+});
+
+test("depth-64 map responses are accepted by both CBOR profiles", () => {
+  const deterministic = new Uint8Array(129);
+  const dag = new Uint8Array(129);
+  for (let depth = 0; depth < 64; depth += 1) {
+    deterministic[depth * 2] = 0xa1;
+    deterministic[depth * 2 + 1] = 0x00;
+    dag[depth * 2] = 0xa1;
+    dag[depth * 2 + 1] = 0x60;
+  }
+  deterministic[128] = 0x00;
+  dag[128] = 0x00;
+  assert.deepEqual(deterministicCborEncode(deterministicCborDecode(deterministic)), deterministic);
+  assert.deepEqual(dagCborEncode(dagCborDecode(dag)), dag);
+});
+
 test("ReallyMeCodec object exposes every codec family", () => {
   assert.deepEqual(
     Object.keys(ReallyMeCodec).sort(),
@@ -341,12 +419,14 @@ test("ReallyMeCodec object exposes every codec family", () => {
       "ReallyMeDagCbor",
       "ReallyMeDeterministicCbor",
       "dagCborCodecCode",
+      "dagCborCidMatches",
       "dagCborComputeCid",
       "dagCborDecode",
       "dagCborEncode",
       "dagCborMultihash",
       "dagCborSha256ContentHash",
       "dagCborVerifyCid",
+      "dagCborVerifyCidDetails",
       "deterministicCborDecode",
       "deterministicCborEncode",
       "decodePem",
@@ -402,6 +482,12 @@ test("shared codec vector suite covers TypeScript public methods", () => {
   const lookup = multicodecLookupPrefix(prefixed);
   assert.equal(lookup.name, codecVectors.ed25519CodecName);
   assert.deepEqual(multicodecStripPrefix(prefixed), publicKey);
+  assertCodecError(() => multicodecStripPrefix(Uint8Array.of(0x99, 0x01, 0x01)), "unsupported-codec");
+  assertCodecError(
+    () => multicodecStripPrefix(Uint8Array.of(0x80, 0x26, ...publicKey)),
+    "unsupported-codec",
+  );
+  assertCodecError(() => multicodecStripPrefix(prefixed.subarray(0, prefixed.length - 1)), "unsupported-codec");
   assert.ok(multicodecTable().entries.some((entry) => entry.name === codecVectors.multicodecTableRequiredName));
 
   assert.equal(
@@ -409,6 +495,7 @@ test("shared codec vector suite covers TypeScript public methods", () => {
     codecVectors.ed25519Multikey,
   );
   const parsed = multikeyParse(codecVectors.ed25519Multikey);
+  assertCodecError(() => multikeyParse(codecVectors.ed25519PrivateMultikey), "invalid-input");
   assert.equal(parsed.codecName, codecVectors.ed25519CodecName);
   assert.equal(parsed.algorithmName, codecVectors.ed25519AlgorithmName);
   assert.deepEqual(parsed.publicKey, publicKey);
@@ -424,6 +511,10 @@ test("shared codec vector suite covers TypeScript public methods", () => {
     undefined,
     codecVectors.ed25519Multikey,
   );
+  assertCodecError(
+    () => validateKeyBinding("P256Key2024", undefined, codecVectors.p256Multikey),
+    "invalid-input",
+  );
   requireSupportedMulticodec(codecVectors.ed25519CodecName);
   assertCodecError(
     () => validateKeyBinding(
@@ -431,6 +522,18 @@ test("shared codec vector suite covers TypeScript public methods", () => {
       codecVectors.mismatchedBindingAlgorithm,
       codecVectors.ed25519Multikey,
     ),
+    "invalid-input",
+  );
+  assertCodecError(
+    () => validateKeyBinding(
+      codecVectors.multikeyBindingType,
+      codecVectors.mismatchedBindingAlgorithm,
+      codecVectors.ed25519Multikey,
+    ),
+    "invalid-input",
+  );
+  assertCodecError(
+    () => validateKeyBinding("P256Key2024", codecVectors.emptyBindingAlgorithm, codecVectors.p256Multikey),
     "invalid-input",
   );
 
@@ -445,7 +548,7 @@ test("shared codec vector suite covers TypeScript public methods", () => {
   assert.equal(tryParseCid(codecVectors.dagCborCid), codecVectors.dagCborCid);
   assert.equal(isValidCidString(codecVectors.invalidCid), false);
   assert.equal(tryParseCid(codecVectors.invalidCid), undefined);
-  assert.equal(dagCborVerifyCid(codecVectors.dagCborCid, encoded).valid, true);
+  assert.equal(dagCborVerifyCid(codecVectors.dagCborCid, encoded), true);
 
   const deterministic = {
     type: "map",
@@ -505,7 +608,10 @@ test("shared codec vector suite covers TypeScript public methods", () => {
     encodePem(codecVectors.pemPrivateLabel, privateDer),
     utf8(codecVectors.pemPrivatePem),
   );
-  const decodedPem = decodePem(utf8(codecVectors.pemPrivatePem));
+  const decodedPem = decodePem(utf8(codecVectors.pemPrivatePem), {
+    allowedLabels: ["PRIVATE KEY"],
+  });
+  assertCodecError(() => decodePem(utf8(codecVectors.pemPrivatePem)), "invalid-input");
   assert.equal(decodedPem.label, codecVectors.pemPrivateLabel);
   assert.deepEqual(decodedPem.der, privateDer);
   assert.deepEqual(
@@ -535,29 +641,29 @@ test("shared codec vector suite covers TypeScript public methods", () => {
 });
 
 test("shared codec vector suite rejects non-canonical inputs in TypeScript", () => {
-  assertCodecRejected(() => base64Decode(codecVectors.base64MissingPadding));
-  assertCodecRejected(() => base64Decode(codecVectors.base64NonCanonicalTrailingBits));
-  assertCodecRejected(() => base64Decode(codecVectors.base64Whitespace));
-  assertCodecRejected(() => base64urlDecode(codecVectors.base64urlPadded));
-  assertCodecRejected(() => base64urlDecode(codecVectors.base64urlNonCanonicalTrailingBits));
-  assertCodecRejected(() => base64urlDecode(codecVectors.base64urlInvalidLength));
-  assertCodecRejected(() => base64urlDecode(codecVectors.base64urlWhitespace));
-  assertCodecRejected(() => multibaseDecode(codecVectors.unsupportedMultibase));
-  assertCodecRejected(() => multibaseDecode(codecVectors.multibaseMultibytePrefix));
-  assertCodecRejected(() => multikeyParse(codecVectors.nonCanonicalBase64urlMultikey));
-  assertCodecRejected(() =>
-    dagCborDecode(bytesFromHex(codecVectors.dagCborNonCanonicalIntegerHex))
+  assertCodecError(() => base64Decode(codecVectors.base64MissingPadding), "invalid-input");
+  assertCodecError(() => base64Decode(codecVectors.base64NonCanonicalTrailingBits), "invalid-input");
+  assertCodecError(() => base64Decode(codecVectors.base64Whitespace), "invalid-input");
+  assertCodecError(() => base64urlDecode(codecVectors.base64urlPadded), "invalid-input");
+  assertCodecError(() => base64urlDecode(codecVectors.base64urlNonCanonicalTrailingBits), "invalid-input");
+  assertCodecError(() => base64urlDecode(codecVectors.base64urlInvalidLength), "invalid-input");
+  assertCodecError(() => base64urlDecode(codecVectors.base64urlWhitespace), "invalid-input");
+  assertCodecError(() => multibaseDecode(codecVectors.unsupportedMultibase), "invalid-input");
+  assertCodecError(() => multibaseDecode(codecVectors.multibaseMultibytePrefix), "invalid-input");
+  assertCodecError(() => multikeyParse(codecVectors.nonCanonicalBase64urlMultikey), "invalid-input");
+  assertCodecError(() =>
+    dagCborDecode(bytesFromHex(codecVectors.dagCborNonCanonicalIntegerHex)), "non-canonical"
   );
-  assertCodecRejected(() =>
-    dagCborDecode(bytesFromHex(codecVectors.dagCborDuplicateKeyHex))
+  assertCodecError(() =>
+    dagCborDecode(bytesFromHex(codecVectors.dagCborDuplicateKeyHex)), "non-canonical"
   );
-  assertCodecRejected(() =>
-    dagCborDecode(bytesFromHex(codecVectors.dagCborOutOfOrderKeyHex))
+  assertCodecError(() =>
+    dagCborDecode(bytesFromHex(codecVectors.dagCborOutOfOrderKeyHex)), "non-canonical"
   );
-  assertCodecRejected(() => deterministicCborDecode(bytes(0x18, 0x00)));
-  assertCodecRejected(() => canonicalizeJsonText(codecVectors.jcsDuplicateMemberJson));
-  assertCodecRejected(() => canonicalizeJsonText(codecVectors.jcsNonInteroperableIntegerJson));
-  assertCodecRejected(() => canonicalizeJsonText(codecVectors.jcsLoneSurrogateJson));
+  assertCodecError(() => deterministicCborDecode(bytes(0x18, 0x00)), "non-canonical");
+  assertCodecError(() => canonicalizeJsonText(codecVectors.jcsDuplicateMemberJson), "non-canonical");
+  assertCodecError(() => canonicalizeJsonText(codecVectors.jcsNonInteroperableIntegerJson), "invalid-input");
+  assertCodecError(() => canonicalizeJsonText(codecVectors.jcsLoneSurrogateJson), "invalid-input");
   assert.equal(
     canonicalizeJsonText(codecVectors.jcsUtf16KeyOrderInputJson),
     codecVectors.jcsUtf16KeyOrderCanonicalJson,
@@ -567,7 +673,7 @@ test("shared codec vector suite rejects non-canonical inputs in TypeScript", () 
 test("shared deterministic-CBOR literals and idkit fixture match byte for byte", () => {
   assert.equal(
     deterministicCborVectors.profile,
-    "rfc8949-core-deterministic-reallyme-0.2.0",
+    "rfc8949-length-first-deterministic-reallyme-0.2.0",
   );
   assert.equal(deterministicCborVectors.fixtureClasses.positive, "golden");
   assert.equal(deterministicCborVectors.fixtureClasses.negative, "rejection-fixture");
@@ -587,7 +693,7 @@ test("shared deterministic-CBOR literals and idkit fixture match byte for byte",
   for (const vector of deterministicCborVectors.negative) {
     assertCodecError(
       () => deterministicCborDecode(bytesFromHex(vector.hex)),
-      "invalid-input",
+      vector.errorClass,
     );
   }
   for (const vector of deterministicCborVectors.equivalentInputOrders) {
@@ -662,7 +768,7 @@ test("CBOR helper builders preserve canonical bytes", () => {
   const encoded = dagCborEncode(dag);
   assert.equal(hex(encoded), codecVectors.dagCborEncodedHex);
   assert.equal(dagCborComputeCid(encoded), codecVectors.dagCborCid);
-  assert.equal(dagCborVerifyCid(codecVectors.dagCborCid, encoded).valid, true);
+  assert.equal(dagCborVerifyCid(codecVectors.dagCborCid, encoded), true);
 
   const dagConvenience = ReallyMeDagCbor.mapText([
     ["b", ReallyMeDagCbor.unsigned(2)],
@@ -779,6 +885,20 @@ test("shared deterministic-CBOR resource recipes fail at the TypeScript boundary
       }),
     "invalid-input",
   );
+});
+
+test("deterministic CBOR accepts the exact node and container limits", () => {
+  const nullValue = ReallyMeDeterministicCbor.null();
+  const children = [16_384, 16_383, 16_383, 16_381].map((count) => ({
+    type: "array",
+    value: Array.from({ length: count }, () => nullValue),
+  }));
+  const encoded = deterministicCborEncode({ type: "array", value: children });
+  const decoded = deterministicCborDecode(encoded);
+  assert.equal(decoded.type, "array");
+  assert.deepEqual(decoded.value.map((child) => child.value.length), [
+    16_384, 16_383, 16_383, 16_381,
+  ]);
 });
 
 test("deterministic CBOR reaches the exact semantic byte boundary through WASM", () => {
@@ -1067,8 +1187,8 @@ test("multibase, multicodec, and multikey round-trip through Rust WASM", () => {
 
   assertCodecError(() => multikeyParse("not-a-key"), "invalid-input");
   const unknownPrefixMultikey = multibaseBase58btcEncode(bytes(0, 0, 7));
-  assertCodecError(() => multikeyParse(unknownPrefixMultikey), "invalid-input");
-  assertCodecError(() => multicodecPrefixForName("not-a-codec"), "invalid-input");
+  assertCodecError(() => multikeyParse(unknownPrefixMultikey), "unsupported-codec");
+  assertCodecError(() => multicodecPrefixForName("not-a-codec"), "unsupported-codec");
 });
 
 test("DAG-CBOR encode/decode and CID helpers use the Rust codec", () => {
@@ -1099,23 +1219,45 @@ test("DAG-CBOR encode/decode and CID helpers use the Rust codec", () => {
   assert.equal(tryParseCid(cid), cid);
   assert.equal(isValidCidString(""), false);
   assert.equal(tryParseCid(""), undefined);
+  assert.equal(tryParseCid(cid.padEnd(1_025, "a")), undefined);
+  assert.equal(dagCborCidMatches(cid, encoded), true);
   assert.equal(dagCborCodecCode(), 0x71);
-  assert.equal(dagCborVerifyCid(cid, encoded).valid, true);
+  assert.equal(dagCborVerifyCid(cid, encoded), true);
+  const alternateCid = multibaseBase58btcEncode(
+    Uint8Array.of(0x01, 0x71, ...dagCborMultihash(encoded)),
+  );
+  assert.equal(dagCborVerifyCid(alternateCid, encoded), false);
+  const alternateVerification = dagCborVerifyCidDetails(alternateCid, encoded);
+  assert.equal(alternateVerification.valid, false);
+  assert.equal(alternateVerification.actualCid, cid);
   const invalidUpperPayloadCid = `${cid[0]}${cid.slice(1).toUpperCase()}`;
-  const invalidVerification = dagCborVerifyCid(invalidUpperPayloadCid, encoded);
+  const invalidVerification = dagCborVerifyCidDetails(invalidUpperPayloadCid, encoded);
   assert.equal(invalidVerification.valid, false);
+  assert.equal(dagCborCidMatches(invalidUpperPayloadCid, encoded), false);
   assert.equal(invalidVerification.expectedCid, cid);
-  assert.equal(invalidVerification.actualCid, "");
-  const emptyCidVerification = dagCborVerifyCid("", encoded);
+  assert.equal(invalidVerification.actualCid, cid);
+  const emptyCidVerification = dagCborVerifyCidDetails("", encoded);
   assert.equal(emptyCidVerification.valid, false);
   assert.equal(emptyCidVerification.expectedCid, cid);
   assert.equal(emptyCidVerification.actualCid, "");
+  for (const [invalidBlock, errorClass] of [
+    [bytes(0xff), "invalid-input"],
+    [bytes(0x18, 0x01), "non-canonical"],
+    [bytes(0xf6, 0xf6), "non-canonical"],
+    [bytes(0xfb, 0x3f, 0xf8, 0, 0, 0, 0, 0, 0), "unsupported-ipld-value"],
+    [bytes(0xd8, 0x2a, 0x41, 0), "unsupported-ipld-value"],
+  ]) {
+    assertCodecError(
+      () => dagCborVerifyCid(dagCborComputeCid(invalidBlock), invalidBlock),
+      errorClass,
+    );
+  }
 
   const largeInteger = { type: "int", value: 9_007_199_254_740_993n };
   assert.deepEqual(dagCborDecode(dagCborEncode(largeInteger)), largeInteger);
   assert.equal(hex(dagCborSha256ContentHash(encoded)).length, 64);
   assert.ok(dagCborMultihash(encoded).length > 32);
-  assertCodecRejected(() => dagCborDecode(bytes(0xa2, 0x61, 0x62, 0x01, 0x61, 0x61, 0x02)));
+  assertCodecError(() => dagCborDecode(bytes(0xa2, 0x61, 0x62, 0x01, 0x61, 0x61, 0x02)), "non-canonical");
 
   const oversizedCbor = new Uint8Array(1024 * 1024 + 1);
   assertCodecError(() => dagCborDecode(oversizedCbor), "invalid-input");
@@ -1170,7 +1312,7 @@ test("JCS canonicalization is stable for supported JSON values", () => {
   assert.equal(canonicalizeJson({ b: 2, a: 1 }), "{\"a\":1,\"b\":2}");
   assert.equal(canonicalizeJsonText("{\"b\":2,\"a\":1}"), "{\"a\":1,\"b\":2}");
   assertCodecError(() => canonicalizeJsonText("{"), "invalid-input");
-  assertCodecError(() => canonicalizeJsonText("{\"a\":1,\"a\":2}"), "invalid-input");
+  assertCodecError(() => canonicalizeJsonText("{\"a\":1,\"a\":2}"), "non-canonical");
   assertCodecError(() => canonicalizeJsonText("18446744073709551615"), "invalid-input");
   assertCodecError(() => canonicalizeJsonText("1e19"), "invalid-input");
 });
@@ -1195,7 +1337,7 @@ test("CID validation rejects paths and extra decoded bytes across WASM and proto
   for (const invalid of [withSuffix, `/ipfs/${canonical}`, `https://example.invalid/ipfs/${canonical}`, `z${"1".repeat(1024)}`]) {
     assert.equal(isValidCidString(invalid), false);
     assert.equal(wasm.isValidCidString(invalid), false);
-    const result = dagCborVerifyCid(invalid, payload);
+    const result = dagCborVerifyCidDetails(invalid, payload);
     assert.equal(result.valid, false);
     assert.equal(result.actualCid, "");
     assert.equal(result.expectedCid, canonical);
@@ -1276,11 +1418,13 @@ test("JCS canonicalization rejects non-JSON JavaScript values with typed errors"
   assertCodecError(() => canonicalizeJson(accessorArray), "invalid-input");
   assert.equal(arrayGetterInvoked, false);
 
-  const oversizedText = "a".repeat(1_048_577);
+  const exactJsonText = `"${"a".repeat(1_048_574)}"`;
+  assert.equal(canonicalizeJsonText(exactJsonText), exactJsonText);
+  const oversizedText = `"${"a".repeat(1_048_575)}"`;
   assertCodecError(() => canonicalizeJson({ value: oversizedText }), "invalid-input");
   assertCodecError(() => canonicalizeJsonText(oversizedText), "invalid-input");
   assertCodecError(
-    () => base64urlDecodeBytes(new Uint8Array(1_048_577)),
+    () => base64urlDecodeBytes(new Uint8Array(1_048_578).fill(0x41)),
     "invalid-input",
   );
 });
@@ -1458,13 +1602,18 @@ test("WASM string boundaries enforce UTF-8 byte length before Rust string copy",
 });
 
 test("WASM operation boundaries enforce oversized operation inputs", () => {
-  assertCodecError(
-    () => processOperation(new Uint8Array(MAX_CODEC_PROTO_MESSAGE_BYTES + 1)),
-    "invalid-input",
-  );
+  for (const excess of [1, 16]) {
+    const binaryInput = new Uint8Array(MAX_CODEC_PROTO_MESSAGE_BYTES + excess);
+    const binaryOutput = processOperation(binaryInput);
+    assert.deepEqual(binaryOutput, wasm.processOperation(binaryInput));
+    const binary = fromBinary(CodecOperationResponseSchema, binaryOutput);
+    assert.equal(binary.outcome.case, "error");
+    assert.equal(binary.outcome.value.error.case, "boundary");
+    assert.equal(binary.outcome.value.error.value.reason, CodecErrorReason.BOUNDARY_RESOURCE_LIMIT_EXCEEDED);
 
-  assertCodecError(
-    () => processOperationJson(new Uint8Array(MAX_CODEC_PROTO_JSON_BYTES + 1)),
-    "invalid-input",
-  );
+    const jsonInput = new Uint8Array(MAX_CODEC_PROTO_JSON_BYTES + excess);
+    const jsonOutput = processOperationJson(jsonInput);
+    assert.deepEqual(jsonOutput, wasm.processOperationJson(jsonInput));
+    assert.deepEqual(jsonOutput, binaryOutput);
+  }
 });

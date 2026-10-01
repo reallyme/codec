@@ -10,7 +10,16 @@ package me.really.codec
  */
 public sealed class ReallyMeCodecException(message: String) : RuntimeException(message) {
     /** Input had the wrong shape, encoding, label, or canonical form. */
-    public class InvalidInput : ReallyMeCodecException("invalid input")
+    public open class InvalidInput : ReallyMeCodecException("invalid input")
+
+    /** The input parses but violates a canonical encoding rule. */
+    public class NonCanonical : InvalidInput()
+
+    /** A multicodec name or prefix is not supported by this release. */
+    public class UnsupportedCodec : InvalidInput()
+
+    /** An IPLD value type is outside the SDK's closed DAG-CBOR value model. */
+    public class UnsupportedIpldValue : InvalidInput()
 
     /** The backing Rust provider failed internally. */
     public class ProviderFailure : ReallyMeCodecException("provider failure")

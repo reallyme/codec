@@ -105,12 +105,12 @@ pub fn ffi_guard<F>(operation: F) -> CodecStatus
 where
     F: FnOnce() -> CodecStatus,
 {
-    with_redacted_panic_hook(|| {
-        match std::panic::catch_unwind(std::panic::AssertUnwindSafe(operation)) {
-            Ok(status) => status,
-            Err(_payload) => CODEC_INTERNAL_ERROR,
-        }
-    })
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        with_redacted_panic_hook(operation)
+    })) {
+        Ok(status) => status,
+        Err(_payload) => CODEC_INTERNAL_ERROR,
+    }
 }
 
 #[cfg(test)]

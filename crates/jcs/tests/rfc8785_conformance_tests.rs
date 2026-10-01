@@ -86,6 +86,21 @@ fn non_interoperable_integers_are_rejected() {
 }
 
 #[test]
+fn large_ecmascript_number_examples_are_rejected_by_local_profile() {
+    // RFC 8785 would serialize these values, but this codec deliberately
+    // rejects integer-valued binary64 numbers outside I-JSON's interoperable
+    // integer range. Keep representative values explicit so this deviation is
+    // visible when reviewing a profile change.
+    for source in ["1e20", "1e21", "1e23", r#"{"y":1e21}"#] {
+        assert_eq!(
+            canonicalize_json_text(source),
+            Err(JcsError::IntegerOutsideInteroperableRange),
+            "source {source}"
+        );
+    }
+}
+
+#[test]
 fn non_integer_binary64_number_tokens_follow_ecmascript_rounding() {
     assert_eq!(
         canonicalize_json_text("333333333.33333329").unwrap(),
@@ -137,9 +152,8 @@ fn nested_structure_is_fully_canonicalized() {
 
 #[test]
 fn non_finite_numbers_rejected() {
-    // serde_json cannot even hold NaN/Infinity in a Value via json!, so
-    // construct through an f64 that is finite here; this asserts the API
-    // contract that only finite numbers are accepted. (Non-finite values
-    // cannot appear in valid JSON input and are rejected at parse time.)
-    assert!(canonicalize_trusted_json_value(&json!(1.0)).is_ok());
+    // These tokens are outside JSON and must fail at the text boundary.
+    for source in ["NaN", "Infinity", "-Infinity", "1e400"] {
+        assert_eq!(canonicalize_json_text(source), Err(JcsError::InvalidJson));
+    }
 }

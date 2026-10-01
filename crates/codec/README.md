@@ -14,7 +14,7 @@ Canonicalization Scheme helpers.
 
 ```toml
 [dependencies]
-reallyme-codec = "0.2.3"
+reallyme-codec = "0.3.0"
 ```
 
 The default feature set enables every primitive codec family. Consumers that need a
@@ -22,7 +22,7 @@ smaller dependency surface can select only the families they use:
 
 ```toml
 [dependencies]
-reallyme-codec = { version = "0.2.3", default-features = false, features = ["base64url", "multikey"] }
+reallyme-codec = { version = "0.3.0", default-features = false, features = ["base64url", "multikey"] }
 ```
 
 ## Quick Start
@@ -77,4 +77,4 @@ primitive surface and accepts the same lockstep ReallyMe Codec release line.
 ## License
 
 Dual-licensed under the MIT License or Apache License, Version 2.0, at your
-option. See [LICENSE](LICENSE) for both license texts.
+option. See the crate's `LICENSE` file for both license texts.

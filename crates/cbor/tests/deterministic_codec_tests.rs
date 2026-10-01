@@ -10,6 +10,7 @@ use codec_cbor::{
     DeterministicCborInteger, DeterministicCborMapEntry, DeterministicCborMapKey,
     DeterministicCborValue, MAX_DETERMINISTIC_CBOR_CONTAINER_ENTRIES,
     MAX_DETERMINISTIC_CBOR_INPUT_LEN, MAX_DETERMINISTIC_CBOR_NESTING_DEPTH,
+    MAX_DETERMINISTIC_CBOR_NODES,
 };
 use std::sync::{Arc, Barrier};
 
@@ -344,6 +345,99 @@ fn generic_cbor_decoder_enforces_node_container_and_depth_recipes() {
     assert_eq!(
         decode_deterministic_cbor(&excessive_depth_bytes).unwrap_err(),
         DeterministicCborError::DepthExceeded
+    );
+}
+
+#[test]
+fn nested_declared_map_nodes_are_rejected_before_recursive_reservation() {
+    // Each map's first entry contains the next map. The remaining bytes make
+    // each individual declared count plausible, but the declarations cannot
+    // all fit in the global semantic node budget.
+    let mut bytes = vec![0xb9, 0x40, 0x00, 0x00, 0xb9, 0x40, 0x00];
+    bytes.extend(core::iter::repeat_n(0xf6, 32_768));
+    assert_eq!(
+        decode_deterministic_cbor(&bytes).unwrap_err(),
+        DeterministicCborError::NodeLimitExceeded
+    );
+}
+
+#[test]
+fn deterministic_node_budget_accepts_exact_limit_and_rejects_one_more() {
+    // Four bounded child arrays keep the container-entry limit out of the
+    // result, so only the aggregate semantic node budget decides this test.
+    let child_lengths = [16_383, 16_383, 16_383, 16_382];
+    let node_count = 1 + child_lengths.len() + child_lengths.iter().sum::<usize>();
+    assert_eq!(node_count, MAX_DETERMINISTIC_CBOR_NODES);
+
+    let exact = DeterministicCborValue::Array(
+        child_lengths
+            .iter()
+            .map(|length| {
+                DeterministicCborValue::Array(
+                    core::iter::repeat_with(|| DeterministicCborValue::Null)
+                        .take(*length)
+                        .collect(),
+                )
+            })
+            .collect(),
+    );
+    let encoded = encode_deterministic_cbor(&exact).unwrap();
+    assert!(decode_deterministic_cbor(&encoded).is_ok());
+
+    let mut over_limit = exact;
+    if let DeterministicCborValue::Array(children) = &mut over_limit {
+        if let Some(DeterministicCborValue::Array(last)) = children.last_mut() {
+            last.push(DeterministicCborValue::Null);
+        }
+    }
+    assert_eq!(
+        encode_deterministic_cbor(&over_limit).unwrap_err(),
+        DeterministicCborError::NodeLimitExceeded
+    );
+
+    // A directly constructed wire value exercises the decoder's independent
+    // accounting even though the encoder correctly refuses the same tree.
+    let mut over_limit_bytes = Vec::with_capacity(encoded.len().checked_add(1).unwrap());
+    over_limit_bytes.push(0x84);
+    for length in [16_383_usize, 16_383, 16_383, 16_383] {
+        over_limit_bytes.push(0x99);
+        over_limit_bytes.extend_from_slice(&u16::try_from(length).unwrap().to_be_bytes());
+        over_limit_bytes.extend(core::iter::repeat_n(0xf6, length));
+    }
+    assert_eq!(
+        decode_deterministic_cbor(&over_limit_bytes).unwrap_err(),
+        DeterministicCborError::NodeLimitExceeded
+    );
+}
+
+#[test]
+fn deterministic_container_budget_accepts_exact_limit_and_rejects_one_more() {
+    let exact = DeterministicCborValue::Array(
+        core::iter::repeat_with(|| DeterministicCborValue::Null)
+            .take(MAX_DETERMINISTIC_CBOR_CONTAINER_ENTRIES)
+            .collect(),
+    );
+    let encoded = encode_deterministic_cbor(&exact).unwrap();
+    assert!(decode_deterministic_cbor(&encoded).is_ok());
+
+    let over_limit_count = MAX_DETERMINISTIC_CBOR_CONTAINER_ENTRIES
+        .checked_add(1)
+        .unwrap();
+    let mut over_limit_bytes = Vec::with_capacity(encoded.len().checked_add(1).unwrap());
+    over_limit_bytes.extend_from_slice(&[0x99, 0x40, 0x01]);
+    over_limit_bytes.extend(core::iter::repeat_n(0xf6, over_limit_count));
+    assert_eq!(
+        decode_deterministic_cbor(&over_limit_bytes).unwrap_err(),
+        DeterministicCborError::ContainerEntriesExceeded
+    );
+
+    let mut over_limit = exact;
+    if let DeterministicCborValue::Array(values) = &mut over_limit {
+        values.push(DeterministicCborValue::Null);
+    }
+    assert_eq!(
+        encode_deterministic_cbor(&over_limit).unwrap_err(),
+        DeterministicCborError::ContainerEntriesExceeded
     );
 }
 

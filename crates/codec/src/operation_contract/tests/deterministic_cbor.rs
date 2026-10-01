@@ -148,6 +148,32 @@ fn deterministic_cbor_allocation_failure_is_a_provider_failure() {
 }
 
 #[test]
+fn deterministic_cbor_canonical_errors_keep_distinct_wire_reasons() {
+    for (source, expected) in [
+        (
+            DeterministicCborError::NonCanonicalInteger,
+            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_NON_MINIMAL_CBOR_INTEGER,
+        ),
+        (
+            DeterministicCborError::DuplicateMapKey,
+            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_DUPLICATE_CBOR_MAP_KEY,
+        ),
+        (
+            DeterministicCborError::MapKeysOutOfOrder,
+            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_CBOR_MAP_KEYS_OUT_OF_ORDER,
+        ),
+        (
+            DeterministicCborError::TrailingBytes,
+            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_CBOR_TRAILING_BYTES,
+        ),
+    ] {
+        let error = deterministic_cbor_wire_error(source);
+        assert_eq!(error.branch(), CodecWireErrorBranch::Canonicalization);
+        assert_eq!(error.reason(), expected);
+    }
+}
+
+#[test]
 fn deterministic_cbor_maximum_depth_matches_binary_and_proto_json_lanes() {
     let encode_request = CodecOperationRequest {
         operation: Some(

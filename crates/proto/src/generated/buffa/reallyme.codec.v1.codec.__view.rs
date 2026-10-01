@@ -2283,7 +2283,7 @@ impl<'a> ::buffa::MessageName for CodecDagCborDecodeResultView<'a> {
 ::buffa::impl_default_view_instance!(CodecDagCborDecodeResultView);
 ::buffa::impl_view_reborrow!(CodecDagCborDecodeResultView);
 /// Zero limits select the documented codec defaults. An empty allowed-label list
-/// selects the default PRIVATE KEY, EC PRIVATE KEY, and PUBLIC KEY set.
+/// selects PUBLIC KEY only; private-key labels require an explicit allowlist.
 #[derive(Clone, Debug, Default)]
 pub struct CodecPemDecodeOptionsView<'a> {
     /// Field 1: `allowed_labels`
@@ -3166,8 +3166,9 @@ impl ::serde::Serialize for CodecPemEncodeOptionsOwnedView {
 pub struct CodecPemEncodeRequestView<'a> {
     /// Field 1: `label`
     pub label: ::buffa::EnumValue<super::super::CodecPemLabel>,
-    /// DER may contain private-key material. Generated owners are hardened to
-    /// wipe this field on every success and failure path.
+    /// DER may contain private-key material. Generated owned-message drop wipes
+    /// the retained field; transport decoders may create temporary copies that
+    /// cannot be reliably wiped. Use binary requests for secret-bearing DER.
     ///
     /// Field 2: `der`
     pub der: &'a [u8],

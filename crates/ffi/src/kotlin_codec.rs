@@ -2,6 +2,9 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+#![allow(unsafe_code)]
+#![allow(clippy::missing_safety_doc)]
+
 //! JNI bridge for the Kotlin ReallyMe codec package.
 //!
 //! The Kotlin codec facade deliberately delegates to the Rust codec crates
@@ -17,13 +20,29 @@ use crate::codec::{
 };
 use crate::guard::with_redacted_panic_hook;
 use crate::status::{
-    CODEC_BUFFER_TOO_SMALL, CODEC_INTERNAL_ERROR, CODEC_INVALID_ARGUMENT, CODEC_OK,
+    CODEC_BUFFER_TOO_SMALL, CODEC_INTERNAL_ERROR, CODEC_INVALID_ARGUMENT,
+    CODEC_INVALID_MULTICODEC_PREFIX, CODEC_NON_CANONICAL_HEX, CODEC_NON_CANONICAL_JSON, CODEC_OK,
+    CODEC_UNKNOWN_MULTICODEC,
 };
 use codec_proto::{MAX_CODEC_PROTO_JSON_BYTES, MAX_CODEC_PROTO_MESSAGE_BYTES};
+use codec_runtime::operation_contract::resource_limit_operation_response;
 use jni::objects::{JByteArray, JObject};
 use jni::sys::{jbyteArray, jint, jlong};
 use jni::{EnvUnowned, Outcome};
 use std::ptr;
+
+fn guarded_jni_call<F, T>(operation: F) -> Option<T>
+where
+    F: FnOnce() -> T,
+{
+    // Hook installation happens before the JNI crate's own panic conversion.
+    // Keep it inside an unwind guard so an installation failure cannot cross
+    // the exported JNI boundary.
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        with_redacted_panic_hook(operation)
+    }))
+    .ok()
+}
 use zeroize::Zeroizing;
 
 type CodecProcessCFunction = unsafe extern "C" fn(
@@ -152,14 +171,23 @@ fn process_operation_output<'local>(
     max_request_len: usize,
     process: CodecOperationProcessCFunction,
 ) -> jbyteArray {
-    let outcome = with_redacted_panic_hook(|| {
+    let Some(outcome) = guarded_jni_call(|| {
         env.with_env(|env| -> jni::errors::Result<jbyteArray> {
-            let request = bounded_proto_request_bytes(env, request, max_request_len)?;
+            if request.len(env)? > max_request_len {
+                let response = resource_limit_operation_response();
+                return env
+                    .byte_array_from_slice(response.as_slice())
+                    .map(|value| value.into_raw());
+            }
+            let request = snapshot_proto_request_bytes(env, request)?;
             let output = call_operation_boundary(env, request.as_slice(), process)?;
             env.byte_array_from_slice(output.as_slice())
                 .map(|value| value.into_raw())
         })
-    });
+    }) else {
+        throw_provider_failure_if_clear(&mut env);
+        return ptr::null_mut();
+    };
     match outcome.into_outcome() {
         Outcome::Ok(value) => value,
         Outcome::Err(_) | Outcome::Panic(_) => {
@@ -177,14 +205,17 @@ fn process_with_function<'local>(
     third: JByteArray<'local>,
     process: CodecProcessCFunction,
 ) -> jbyteArray {
-    let outcome = with_redacted_panic_hook(|| {
+    let Some(outcome) = guarded_jni_call(|| {
         env.with_env(|env| -> jni::errors::Result<jbyteArray> {
             let output =
                 process_output_with_function(env, operation, first, second, third, process)?;
             env.byte_array_from_slice(&output.bytes)
                 .map(|value| value.into_raw())
         })
-    });
+    }) else {
+        throw_provider_failure_if_clear(&mut env);
+        return ptr::null_mut();
+    };
 
     match outcome.into_outcome() {
         Outcome::Ok(value) => value,
@@ -241,25 +272,12 @@ fn call_operation_boundary<'local>(
     Ok(output)
 }
 
-fn bounded_proto_request_bytes<'local>(
+fn snapshot_proto_request_bytes<'local>(
     env: &mut jni::Env<'local>,
     request: JByteArray<'local>,
-    max_request_len: usize,
 ) -> jni::errors::Result<Zeroizing<Vec<u8>>> {
-    let request_len = match request.len(env) {
-        Ok(value) => value,
-        Err(_) => return throw_provider_failure(env),
-    };
-    if request_len > max_request_len {
-        // Resource-limit failures belong in the generated operation response. A
-        // bounded over-limit sentinel asks the native boundary to construct
-        // that envelope without copying an attacker-sized managed array.
-        let sentinel_len = match max_request_len.checked_add(1) {
-            Some(value) => value,
-            None => return throw_provider_failure(env),
-        };
-        return Ok(Zeroizing::new(vec![0_u8; sentinel_len]));
-    }
+    // The caller checks the Java array length against the wire cap before
+    // copying. Keep that check at the only allocation site for this request.
     match env.convert_byte_array(&request) {
         Ok(value) => Ok(Zeroizing::new(value)),
         Err(_) => throw_provider_failure(env),
@@ -358,7 +376,7 @@ pub extern "system" fn Java_me_really_codec_ReallyMeCodecNative_processBoolNativ
     first: JByteArray<'local>,
     second: JByteArray<'local>,
 ) -> jint {
-    let outcome = with_redacted_panic_hook(|| {
+    let Some(outcome) = guarded_jni_call(|| {
         env.with_env(|env| -> jni::errors::Result<jint> {
             let operation = match u32::try_from(operation) {
                 Ok(value) => value,
@@ -408,7 +426,10 @@ pub extern "system" fn Java_me_really_codec_ReallyMeCodecNative_processBoolNativ
             }
             Ok(result)
         })
-    });
+    }) else {
+        throw_provider_failure_if_clear(&mut env);
+        return -1;
+    };
 
     match outcome.into_outcome() {
         Outcome::Ok(value) => value,
@@ -459,9 +480,25 @@ fn throw_provider_failure_if_clear(env: &mut EnvUnowned<'_>) {
 fn throw_for_status<'local, T>(env: &mut jni::Env<'local>, status: i32) -> jni::errors::Result<T> {
     match status {
         CODEC_INVALID_ARGUMENT => throw_invalid_input(env),
+        CODEC_NON_CANONICAL_HEX | CODEC_NON_CANONICAL_JSON => throw_non_canonical(env),
+        CODEC_INVALID_MULTICODEC_PREFIX | CODEC_UNKNOWN_MULTICODEC => throw_unsupported_codec(env),
         CODEC_INTERNAL_ERROR => throw_provider_failure(env),
         _ => throw_provider_failure(env),
     }
+}
+
+fn throw_unsupported_codec<'local, T>(env: &mut jni::Env<'local>) -> jni::errors::Result<T> {
+    env.throw_new_void(jni::jni_str!(
+        "me/really/codec/ReallyMeCodecException$UnsupportedCodec"
+    ))?;
+    Err(jni::errors::Error::JavaException)
+}
+
+fn throw_non_canonical<'local, T>(env: &mut jni::Env<'local>) -> jni::errors::Result<T> {
+    env.throw_new_void(jni::jni_str!(
+        "me/really/codec/ReallyMeCodecException$NonCanonical"
+    ))?;
+    Err(jni::errors::Error::JavaException)
 }
 
 fn throw_invalid_input<'local, T>(env: &mut jni::Env<'local>) -> jni::errors::Result<T> {

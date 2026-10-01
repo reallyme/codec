@@ -13,13 +13,7 @@ pub fn encode_pem(
     der: &[u8],
     options: PemEncodeOptions,
 ) -> Result<Zeroizing<String>, PemError> {
-    if der.is_empty() || der.len() > options.max_der_len {
-        return Err(PemError::DerTooLarge);
-    }
-    if options.line_width == 0 || options.line_width > 76 {
-        return Err(PemError::InvalidOptions);
-    }
-
+    let output_length = preflight_pem_encoded_length(label, der.len(), options)?;
     let encoded_length = encoded_len(der.len(), true).ok_or(PemError::InvalidOptions)?;
     let mut encoded = Zeroizing::new(vec![0_u8; encoded_length]);
     let written = STANDARD
@@ -30,12 +24,6 @@ pub fn encode_pem(
     }
 
     let newline = options.line_ending.as_str();
-    let output_length = encoded_pem_length(
-        label.as_str().len(),
-        encoded_length,
-        options.line_width,
-        newline.len(),
-    )?;
     // Allocate the final secret-bearing buffer once. Growing a String after
     // private-key armor has been written would free prior allocations without
     // wiping them; an exact capacity prevents that remanence path.
@@ -61,6 +49,35 @@ pub fn encode_pem(
     }
 
     Ok(output)
+}
+
+/// Compute the exact PEM output length before allocating or copying DER.
+///
+/// # Errors
+///
+/// Returns a typed error for empty/oversized DER, invalid line width, or
+/// arithmetic overflow.
+pub fn preflight_pem_encoded_length(
+    label: PemLabel,
+    der_length: usize,
+    options: PemEncodeOptions,
+) -> Result<usize, PemError> {
+    if der_length == 0 {
+        return Err(PemError::EmptyDer);
+    }
+    if der_length > options.max_der_len {
+        return Err(PemError::DerTooLarge);
+    }
+    if options.line_width == 0 || options.line_width > 76 {
+        return Err(PemError::InvalidOptions);
+    }
+    let encoded_length = encoded_len(der_length, true).ok_or(PemError::InvalidOptions)?;
+    encoded_pem_length(
+        label.as_str().len(),
+        encoded_length,
+        options.line_width,
+        options.line_ending.as_str().len(),
+    )
 }
 
 fn encoded_pem_length(

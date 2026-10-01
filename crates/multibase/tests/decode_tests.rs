@@ -67,3 +67,13 @@ fn valid_base64url_prefix_round_trips() {
     let decoded = multibase_to_bytes("uaGVsbG8").expect("valid base64url multibase");
     assert_eq!(decoded, b"hello");
 }
+
+#[test]
+fn multibase_u_input_cap_has_its_own_typed_failure() {
+    let mut over = String::from("u");
+    over.push_str(&"A".repeat(codec_base64url::MAX_BASE64URL_INPUT_LEN + 1));
+    assert!(matches!(
+        multibase_to_bytes(&over),
+        Err(MultibaseError::InputTooLarge)
+    ));
+}

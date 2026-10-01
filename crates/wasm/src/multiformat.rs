@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use codec_adapter::scalar_ops::{
+    binding_matches_codec, decode_base58btc, decode_multibase, encode_base58btc,
+    encode_multibase_base58btc, encode_multibase_base64url, encode_multikey,
+    validate_encoded_binding, MultikeyError,
+};
 use codec_core::multicodec::{
     prefix_for_name as semantic_multicodec_prefix_for_name,
     strip_prefix as semantic_multicodec_strip_prefix, MulticodecOperationError,
-};
-use codec_core::scalar_ops::{
-    binding_matches_codec, decode_base58btc, decode_multibase, encode_base58btc,
-    encode_multibase_base58btc, encode_multibase_base64url, encode_multikey, parse_multikey_value,
-    validate_binding, MultikeyError,
 };
 use js_sys::{JsString, Uint8Array};
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -17,7 +17,8 @@ use wasm_bindgen::JsValue;
 use zeroize::Zeroizing;
 
 use crate::boundary::{
-    validate_input_lengths, validate_js_inputs, zeroizing_bytes, zeroizing_string,
+    js_string_from_owned, validate_input_lengths, validate_js_inputs, zeroizing_bytes,
+    zeroizing_string,
 };
 use crate::map_error::{invalid_input, provider_failure, unsupported_codec};
 
@@ -28,6 +29,9 @@ fn map_multikey_boundary_error(error: MultikeyError) -> JsValue {
         }
         MultikeyError::InvalidMultibase
         | MultikeyError::DecodedTooShort(_)
+        | MultikeyError::NonPublicKeyMaterial
+        | MultikeyError::EmptyKey
+        | MultikeyError::InvalidCompressedPoint
         | MultikeyError::KeyLengthMismatch { .. }
         | MultikeyError::KeyTooLarge { .. }
         | MultikeyError::EncodedPayloadTooLarge
@@ -50,9 +54,11 @@ fn map_multicodec_boundary_error(error: MulticodecOperationError) -> JsValue {
 
 #[wasm_bindgen(js_name = base58btcEncode)]
 /// Encode bytes using the base58btc alphabet without a multibase prefix.
-pub fn base58btc_encode_wasm(bytes: &Uint8Array) -> Result<String, JsValue> {
+pub fn base58btc_encode_wasm(bytes: &Uint8Array) -> Result<JsString, JsValue> {
     let input = zeroizing_bytes(bytes)?;
-    encode_base58btc(input.as_slice()).map_err(|_| invalid_input())
+    encode_base58btc(input.as_slice())
+        .map(js_string_from_owned)
+        .map_err(|_| invalid_input())
 }
 
 #[wasm_bindgen(js_name = base58btcDecode)]
@@ -65,16 +71,20 @@ pub fn base58btc_decode_wasm(encoded: &JsString) -> Result<Uint8Array, JsValue> 
 
 #[wasm_bindgen(js_name = multibaseBase64urlEncode)]
 /// Encode bytes with the multibase base64url prefix.
-pub fn multibase_base64url_encode(bytes: &Uint8Array) -> Result<String, JsValue> {
+pub fn multibase_base64url_encode(bytes: &Uint8Array) -> Result<JsString, JsValue> {
     let input = zeroizing_bytes(bytes)?;
-    encode_multibase_base64url(input.as_slice()).map_err(|_| invalid_input())
+    encode_multibase_base64url(input.as_slice())
+        .map(js_string_from_owned)
+        .map_err(|_| invalid_input())
 }
 
 #[wasm_bindgen(js_name = multibaseBase58btcEncode)]
 /// Encode bytes with the multibase base58btc prefix.
-pub fn multibase_base58btc_encode(bytes: &Uint8Array) -> Result<String, JsValue> {
+pub fn multibase_base58btc_encode(bytes: &Uint8Array) -> Result<JsString, JsValue> {
     let input = zeroizing_bytes(bytes)?;
-    encode_multibase_base58btc(input.as_slice()).map_err(|_| invalid_input())
+    encode_multibase_base58btc(input.as_slice())
+        .map(js_string_from_owned)
+        .map_err(|_| invalid_input())
 }
 
 #[wasm_bindgen(js_name = multibaseDecode)]
@@ -86,7 +96,7 @@ pub fn multibase_decode(encoded: &JsString) -> Result<Uint8Array, JsValue> {
 }
 
 #[wasm_bindgen(js_name = multicodecStripPrefix)]
-/// Strip a known multicodec prefix, or return the original bytes when none is found.
+/// Strip a known multicodec prefix, or return a typed error for an unknown prefix.
 pub fn multicodec_strip_prefix(bytes: &Uint8Array) -> Result<Uint8Array, JsValue> {
     let bytes = zeroizing_bytes(bytes)?;
     let stripped = semantic_multicodec_strip_prefix(bytes.as_slice())
@@ -96,12 +106,17 @@ pub fn multicodec_strip_prefix(bytes: &Uint8Array) -> Result<Uint8Array, JsValue
 
 #[wasm_bindgen(js_name = multikeyEncode)]
 /// Encode a public key as a multibase base58btc multikey.
-pub fn multikey_encode(codec_name: &JsString, public_key: &Uint8Array) -> Result<String, JsValue> {
+pub fn multikey_encode(
+    codec_name: &JsString,
+    public_key: &Uint8Array,
+) -> Result<JsString, JsValue> {
     validate_js_inputs(&[codec_name], &[public_key])?;
     let codec_name = zeroizing_string(codec_name)?;
     let public_key = zeroizing_bytes(public_key)?;
     validate_input_lengths(&[codec_name.len(), public_key.len()])?;
-    encode_multikey(&codec_name, public_key.as_slice()).map_err(map_multikey_boundary_error)
+    encode_multikey(&codec_name, public_key.as_slice())
+        .map(js_string_from_owned)
+        .map_err(map_multikey_boundary_error)
 }
 
 #[wasm_bindgen(js_name = bindingTypeMatchesCodec)]
@@ -133,11 +148,10 @@ pub fn validate_key_binding_wasm(
     let multikey = zeroizing_string(multikey)?;
     let algorithm_len = algorithm.as_ref().map_or(0, |value| value.len());
     validate_input_lengths(&[binding_type.len(), algorithm_len, multikey.len()])?;
-    let parsed = parse_multikey_value(&multikey).map_err(|_| invalid_input())?;
-    validate_binding(
+    validate_encoded_binding(
         &binding_type,
         algorithm.as_ref().map(|value| value.as_str()),
-        &parsed,
+        &multikey,
     )
     .map_err(|_| invalid_input())?;
     Ok(())

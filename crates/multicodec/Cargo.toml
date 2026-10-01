@@ -4,7 +4,7 @@
 
 [package]
 name = "reallyme-codec-multicodec"
-version = "0.2.3"
+version = "0.3.0"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -17,6 +17,7 @@ include = ["/src/**/*.rs", "/tests/**/*.rs", "/Cargo.toml", "/LICENSE", "/NOTICE
 name = "codec_multicodec"
 
 [dependencies]
+thiserror.workspace = true
 
 [lints]
 workspace = true
