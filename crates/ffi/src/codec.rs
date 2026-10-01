@@ -2,16 +2,19 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use codec_runtime::multicodec::{
-    prefix_for_name as multicodec_prefix_for_name, strip_prefix as multicodec_strip_prefix,
-    MulticodecOperationError,
-};
-use codec_runtime::scalar_ops::{
+#![allow(unsafe_code)]
+#![allow(clippy::missing_safety_doc)]
+
+use codec_adapter::scalar_ops::{
     binding_matches_codec, canonicalize_json, compute_dag_cbor_cid, dag_cbor_codec_code,
     dag_cbor_content_hash, dag_cbor_multihash_value, decode_base58btc, decode_base64,
     decode_base64url, decode_lower_hex, decode_multibase, encode_base58btc, encode_base64,
     encode_base64url, encode_lower_hex, encode_multibase_base58btc, encode_multibase_base64url,
-    encode_multikey, parse_cid, parse_multikey_value, valid_cid, validate_binding,
+    encode_multikey, parse_cid, valid_cid, validate_encoded_binding, HexError, JcsError,
+};
+use codec_runtime::multicodec::{
+    prefix_for_name as multicodec_prefix_for_name, strip_prefix as multicodec_strip_prefix,
+    MulticodecOperationError,
 };
 use zeroize::{Zeroize, Zeroizing};
 
@@ -21,7 +24,9 @@ use crate::pointer::{
     write_slice,
 };
 use crate::status::{
-    CodecStatus, CODEC_BUFFER_TOO_SMALL, CODEC_INTERNAL_ERROR, CODEC_INVALID_ARGUMENT, CODEC_OK,
+    CodecStatus, CODEC_BUFFER_TOO_SMALL, CODEC_INTERNAL_ERROR, CODEC_INVALID_ARGUMENT,
+    CODEC_INVALID_MULTICODEC_PREFIX, CODEC_NON_CANONICAL_HEX, CODEC_NON_CANONICAL_JSON, CODEC_OK,
+    CODEC_UNKNOWN_MULTICODEC,
 };
 
 /// Maximum aggregate caller-controlled input accepted by the generic C ABI.
@@ -42,7 +47,7 @@ pub(crate) const MAX_CODEC_FFI_OUTPUT_BYTES: usize = 64 * 1024 * 1024;
 ///
 /// SDKs must reject a library that does not expose this exact value before
 /// casting or calling any other dynamically resolved symbol.
-pub const CODEC_ABI_VERSION: u32 = 5;
+pub const CODEC_ABI_VERSION: u32 = 6;
 
 const CODEC_BASE64_ENCODE: u32 = 1;
 const CODEC_BASE64_DECODE: u32 = 2;
@@ -72,6 +77,7 @@ const CODEC_CANONICALIZE_JSON: u32 = 27;
 const CODEC_PEM_DECODE: u32 = 28;
 const CODEC_PEM_ENCODE: u32 = 29;
 const CODEC_VALIDATE_KEY_BINDING: u32 = 30;
+const CODEC_VALIDATE_KEY_BINDING_NO_ALGORITHM: u32 = 31;
 
 const CODEC_BOOL_BINDING_TYPE_MATCHES_CODEC: u32 = 1;
 const CODEC_BOOL_IS_VALID_CID_STRING: u32 = 2;
@@ -91,6 +97,31 @@ pub use operation::{
 #[no_mangle]
 pub extern "C" fn rm_codec_abi_version() -> u32 {
     CODEC_ABI_VERSION
+}
+
+// The package version is separate from the ABI version: a release can change
+// codec behaviour without changing C signatures. SDKs check both before
+// accepting a provider so a stale binary cannot silently serve new sources.
+fn package_version_component(value: &'static str) -> u32 {
+    value.parse::<u32>().unwrap_or(u32::MAX)
+}
+
+/// Returns the major version of the compiled FFI crate package.
+#[no_mangle]
+pub extern "C" fn rm_codec_package_version_major() -> u32 {
+    package_version_component(env!("CARGO_PKG_VERSION_MAJOR"))
+}
+
+/// Returns the minor version of the compiled FFI crate package.
+#[no_mangle]
+pub extern "C" fn rm_codec_package_version_minor() -> u32 {
+    package_version_component(env!("CARGO_PKG_VERSION_MINOR"))
+}
+
+/// Returns the patch version of the compiled FFI crate package.
+#[no_mangle]
+pub extern "C" fn rm_codec_package_version_patch() -> u32 {
+    package_version_component(env!("CARGO_PKG_VERSION_PATCH"))
 }
 
 /// Returns the authoritative generic C ABI aggregate input limit.
@@ -128,19 +159,6 @@ fn validate_boundary_input_lengths(lengths: &[usize]) -> Result<(), CodecStatus>
         if aggregate > MAX_CODEC_FFI_INPUT_BYTES {
             return Err(CODEC_INVALID_ARGUMENT);
         }
-    }
-    Ok(())
-}
-
-fn validate_proto_boundary_input_length(
-    request_len: usize,
-    maximum: usize,
-) -> Result<(), CodecStatus> {
-    // Native SDKs use one bounded byte beyond the transport limit as a
-    // sentinel so the core can return its stable resource-limit envelope.
-    let sentinel_maximum = maximum.checked_add(1).ok_or(CODEC_INVALID_ARGUMENT)?;
-    if request_len > sentinel_maximum {
-        return Err(CODEC_INVALID_ARGUMENT);
     }
     Ok(())
 }
@@ -209,9 +227,8 @@ fn text_bytes(value: String) -> CodecOutput {
 
 fn multicodec_status(error: MulticodecOperationError) -> CodecStatus {
     match error {
-        MulticodecOperationError::UnknownName | MulticodecOperationError::InvalidPrefix => {
-            CODEC_INVALID_ARGUMENT
-        }
+        MulticodecOperationError::UnknownName => CODEC_UNKNOWN_MULTICODEC,
+        MulticodecOperationError::InvalidPrefix => CODEC_INVALID_MULTICODEC_PREFIX,
         MulticodecOperationError::RegistryInvariant
         | MulticodecOperationError::AllocationFailure => CODEC_INTERNAL_ERROR,
         _ => CODEC_INTERNAL_ERROR,
@@ -256,7 +273,11 @@ fn process(
             let text = core::str::from_utf8(first).map_err(|_| CODEC_INVALID_ARGUMENT)?;
             decode_lower_hex(text)
                 .map(output_bytes)
-                .map_err(|_| CODEC_INVALID_ARGUMENT)
+                .map_err(|error| match error {
+                    HexError::Uppercase => CODEC_NON_CANONICAL_HEX,
+                    HexError::OddLength | HexError::InvalidCharacter => CODEC_INVALID_ARGUMENT,
+                    _ => CODEC_INTERNAL_ERROR,
+                })
         }
         CODEC_BASE58BTC_ENCODE => encode_base58btc(first)
             .map(text_bytes)
@@ -320,24 +341,37 @@ fn process(
             let text = core::str::from_utf8(first).map_err(|_| CODEC_INVALID_ARGUMENT)?;
             canonicalize_json(text)
                 .map(text_bytes)
-                .map_err(|_| CODEC_INVALID_ARGUMENT)
+                .map_err(|error| match error {
+                    JcsError::DuplicateProperty => CODEC_NON_CANONICAL_JSON,
+                    JcsError::SerializationError | JcsError::UnsupportedNumberRepresentation => {
+                        CODEC_INTERNAL_ERROR
+                    }
+                    JcsError::InvalidJson
+                    | JcsError::NonFiniteNumber
+                    | JcsError::IntegerOutsideInteroperableRange
+                    | JcsError::DepthExceeded
+                    | JcsError::Noncharacter => CODEC_INVALID_ARGUMENT,
+                    _ => CODEC_INTERNAL_ERROR,
+                })
         }
-        CODEC_VALIDATE_KEY_BINDING => {
+        CODEC_VALIDATE_KEY_BINDING | CODEC_VALIDATE_KEY_BINDING_NO_ALGORITHM => {
             let binding_type = core::str::from_utf8(first).map_err(|_| CODEC_INVALID_ARGUMENT)?;
             let algorithm = empty_or_text(second_ptr, second_len)?;
             let multikey = empty_or_text(third_ptr, third_len)?;
-            let parsed = parse_multikey_value(multikey).map_err(|_| CODEC_INVALID_ARGUMENT)?;
-            validate_binding(
-                binding_type,
+            let algorithm = if operation == CODEC_VALIDATE_KEY_BINDING {
                 if algorithm.is_empty() {
-                    None
-                } else {
-                    Some(algorithm)
-                },
-                &parsed,
-            )
-            .map(|()| output_bytes(Vec::new()))
-            .map_err(|_| CODEC_INVALID_ARGUMENT)
+                    return Err(CODEC_INVALID_ARGUMENT);
+                }
+                Some(algorithm)
+            } else {
+                if !algorithm.is_empty() {
+                    return Err(CODEC_INVALID_ARGUMENT);
+                }
+                None
+            };
+            validate_encoded_binding(binding_type, algorithm, multikey)
+                .map(|()| output_bytes(Vec::new()))
+                .map_err(|_| CODEC_INVALID_ARGUMENT)
         }
         _ => Err(CODEC_INVALID_ARGUMENT),
     }

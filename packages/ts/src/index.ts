@@ -39,12 +39,14 @@ export type {
 } from "./multiformat.js";
 export {
   dagCborCodecCode,
+  dagCborCidMatches,
   dagCborComputeCid,
   dagCborDecode,
   dagCborEncode,
   dagCborMultihash,
   dagCborSha256ContentHash,
   dagCborVerifyCid,
+  dagCborVerifyCidDetails,
   deterministicCborDecode,
   deterministicCborEncode,
   isValidCidString,
@@ -74,7 +76,6 @@ export type {
 export {
   REALLYME_CODEC_WASM_EXPORTS,
   installReallyMeCodecWasmProvider,
-  requireReallyMeCodecWasmProvider,
 } from "./wasmProvider.js";
 export type { ReallyMeCodecWasmProvider } from "./wasmProvider.js";
 
@@ -89,12 +90,14 @@ import {
 } from "./baseEncoding.js";
 import {
   dagCborCodecCode,
+  dagCborCidMatches,
   dagCborComputeCid,
   dagCborDecode,
   dagCborEncode,
   dagCborMultihash,
   dagCborSha256ContentHash,
   dagCborVerifyCid,
+  dagCborVerifyCidDetails,
   deterministicCborDecode,
   deterministicCborEncode,
   isValidCidString,
@@ -145,12 +148,14 @@ export const ReallyMeCodec = {
   requireSupportedMulticodec,
   validateKeyBinding,
   dagCborCodecCode,
+  dagCborCidMatches,
   dagCborComputeCid,
   dagCborDecode,
   dagCborEncode,
   dagCborMultihash,
   dagCborSha256ContentHash,
   dagCborVerifyCid,
+  dagCborVerifyCidDetails,
   deterministicCborDecode,
   deterministicCborEncode,
   isValidCidString,

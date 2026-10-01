@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 #![allow(missing_docs)]
+#![allow(deprecated)]
 #![allow(
     clippy::expect_used,
     clippy::panic,
@@ -11,8 +12,44 @@
 )]
 use codec_multikey::{
     binding_type_matches_codec, encode_multikey, parse_multikey, validate_key_binding,
-    KeyBindingInput,
+    validate_multikey_binding, KeyBindingInput, MultikeyError,
 };
+
+#[test]
+fn encoded_binding_reparses_key_and_checks_required_algorithm() {
+    let mut point = [0_u8; 33];
+    point[0] = 0x02;
+    let encoded = encode_multikey("p256-pub", &point).unwrap();
+    let binding = KeyBindingInput {
+        binding_type: "P256Key2024",
+        algorithm: Some("P-256"),
+    };
+    assert!(validate_multikey_binding(binding, &encoded).is_ok());
+
+    let missing = validate_multikey_binding(
+        KeyBindingInput {
+            binding_type: "P256Key2024",
+            algorithm: None,
+        },
+        &encoded,
+    );
+    assert!(matches!(
+        missing,
+        Err(MultikeyError::BindingAlgorithmMissing { .. })
+    ));
+
+    let wrong = validate_multikey_binding(
+        KeyBindingInput {
+            binding_type: "P256Key2024",
+            algorithm: Some("Ed25519"),
+        },
+        &encoded,
+    );
+    assert!(matches!(
+        wrong,
+        Err(MultikeyError::BindingAlgorithmMismatch { .. })
+    ));
+}
 
 #[test]
 fn binding_type_compatibility() {
@@ -264,12 +301,14 @@ fn validate_binding_algorithm_mismatch() {
     let mk = encode_multikey("ed25519-pub", &pk).unwrap();
     let parsed = parse_multikey(&mk).unwrap();
 
-    assert!(validate_key_binding(
-        KeyBindingInput {
-            binding_type: "Multikey",
-            algorithm: Some("P256"),
-        },
-        &parsed,
-    )
-    .is_err());
+    assert!(matches!(
+        validate_key_binding(
+            KeyBindingInput {
+                binding_type: "Multikey",
+                algorithm: Some("P256"),
+            },
+            &parsed,
+        ),
+        Err(MultikeyError::BindingAlgorithmMismatch { .. })
+    ));
 }

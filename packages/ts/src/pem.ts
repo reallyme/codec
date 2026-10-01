@@ -212,6 +212,9 @@ const snapshotEncodeOptions = (
   const snapshot = snapshotOptionsRecord(options, pemEncodeOptionFields);
   const maxDerLen = readPositiveIntegerOption(snapshot, "maxDerLen");
   const lineWidth = readPositiveIntegerOption(snapshot, "lineWidth");
+  if (lineWidth !== undefined && (lineWidth < 1 || lineWidth > 76)) {
+    throw new ReallyMeCodecError("invalid-input");
+  }
   const lineEndingValue = readSnapshotProperty(snapshot, "lineEnding");
   let lineEnding: ReallyMePemLineEnding | undefined;
   if (lineEndingValue !== undefined) {

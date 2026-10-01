@@ -31,7 +31,8 @@ use reallyme_codec_proto::generated::{
     CODEC_PROTO_PACKAGE,
 };
 use reallyme_codec_proto::{
-    decode_json, CodecWireErrorBranch, MAX_CODEC_PROTO_JSON_BYTES, MAX_CODEC_PROTO_MESSAGE_BYTES,
+    decode_json, decode_protobuf, CodecWireErrorBranch, MAX_CODEC_PROTO_JSON_BYTES,
+    MAX_CODEC_PROTO_MESSAGE_BYTES,
 };
 
 #[test]
@@ -194,6 +195,116 @@ fn generated_proto_json_applies_bounded_structural_nesting() {
     )
     .unwrap();
     assert_eq!(request.name, "braces inside strings do not count: [[{{");
+}
+
+#[test]
+fn proto_json_rejects_fractional_integer_tokens_without_rounding() {
+    for number in ["2.9999999999999999", "1.0", "1e2", "-1E0"] {
+        let json = format!("{{\"maxDerLen\":{number}}}");
+        let error = decode_json::<
+            reallyme_codec_proto::generated::proto::reallyme::codec::v1::CodecPemDecodeOptions,
+        >(json.as_bytes())
+        .unwrap_err();
+        assert_eq!(
+            error.reason(),
+            CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_MALFORMED_JSON,
+        );
+    }
+}
+
+#[test]
+fn proto_json_rejects_empty_object_amplification_before_decode() {
+    let mut json = Vec::from(&b"["[..]);
+    for index in 0..600_000_usize {
+        if index != 0 {
+            json.push(b',');
+        }
+        json.extend_from_slice(b"{}");
+    }
+    json.push(b']');
+    let error = decode_json::<CodecOperationRequest>(&json).unwrap_err();
+    assert_eq!(
+        error.reason(),
+        CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED,
+    );
+}
+
+#[test]
+fn proto_json_accepts_maximum_nodes_with_distinct_integer_map_keys() {
+    // Three maps with 10,922 key/value pairs each plus the array and map
+    // containers total exactly 65,536 semantic nodes. Integer-key/integer-
+    // value entries are the densest valid ProtoJSON token shape per node.
+    const MAP_COUNT: usize = 3;
+    const ENTRIES_PER_MAP: u64 = 10_922;
+    assert_eq!(1 + MAP_COUNT + MAP_COUNT * 2 * 10_922, 65_536);
+
+    let maps = (0..MAP_COUNT)
+        .map(|_| CodecDeterministicCborValue {
+            value: Some(
+                CodecDeterministicCborMap {
+                    entries: (0..ENTRIES_PER_MAP)
+                        .map(|key| CodecDeterministicCborMapEntry {
+                            key: buffa::MessageField::some(CodecDeterministicCborMapKey {
+                                key: Some(
+                                    CodecDeterministicCborInteger {
+                                        value: Some(
+                                            CodecDeterministicCborUnsignedInteger {
+                                                value: key,
+                                                __buffa_unknown_fields: Default::default(),
+                                            }
+                                            .into(),
+                                        ),
+                                        __buffa_unknown_fields: Default::default(),
+                                    }
+                                    .into(),
+                                ),
+                                __buffa_unknown_fields: Default::default(),
+                            }),
+                            value: buffa::MessageField::some(deterministic_cbor_unsigned_value(
+                                key,
+                            )),
+                            __buffa_unknown_fields: Default::default(),
+                        })
+                        .collect(),
+                    __buffa_unknown_fields: Default::default(),
+                }
+                .into(),
+            ),
+            __buffa_unknown_fields: Default::default(),
+        })
+        .collect();
+    let request = CodecOperationRequest {
+        operation: Some(
+            CodecDeterministicCborEncodeRequest {
+                value: buffa::MessageField::some(CodecDeterministicCborValue {
+                    value: Some(
+                        CodecDeterministicCborArray {
+                            values: maps,
+                            __buffa_unknown_fields: Default::default(),
+                        }
+                        .into(),
+                    ),
+                    __buffa_unknown_fields: Default::default(),
+                }),
+                __buffa_unknown_fields: Default::default(),
+            }
+            .into(),
+        ),
+        __buffa_unknown_fields: Default::default(),
+    };
+    let json = serde_json::to_vec(&request).unwrap();
+    let binary = request.encode_to_vec();
+
+    assert!(json.len() < MAX_CODEC_PROTO_JSON_BYTES);
+    assert!(binary.len() < MAX_CODEC_PROTO_MESSAGE_BYTES);
+    assert_eq!(
+        decode_json::<CodecOperationRequest>(&json).unwrap(),
+        request
+    );
+    assert_eq!(
+        decode_protobuf::<CodecOperationRequest>(&binary).unwrap(),
+        request
+    );
 }
 
 #[test]

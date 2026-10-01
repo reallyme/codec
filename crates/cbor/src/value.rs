@@ -2,14 +2,13 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use zeroize::Zeroize;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// A decoded DAG-CBOR value.
 ///
-/// Values retain the movable public enum API. Callers handling sensitive
-/// documents can wrap them in [`zeroize::Zeroizing`] or call [`Zeroize::zeroize`]
-/// when finished; codec-owned temporary values use wiping owners internally.
-#[derive(Debug, Clone, PartialEq)]
+/// Values wipe owned text and byte buffers on drop. Callers can also call
+/// [`Zeroize::zeroize`] to clear a value before its owner is dropped.
+#[derive(PartialEq)]
 #[non_exhaustive]
 pub enum CborValue {
     /// CBOR null.
@@ -28,8 +27,22 @@ pub enum CborValue {
     Map(Vec<(String, CborValue)>),
 }
 
-// Preserve the public movable enum API while allowing adapters and callers to
-// install a Zeroizing owner for identity-bearing documents.
+impl core::fmt::Debug for CborValue {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let kind = match self {
+            Self::Null => "Null",
+            Self::Bool(_) => "Bool",
+            Self::Int(_) => "Int",
+            Self::String(_) => "String",
+            Self::Bytes(_) => "Bytes",
+            Self::Array(_) => "Array",
+            Self::Map(_) => "Map",
+        };
+        formatter.debug_tuple("CborValue").field(&kind).finish()
+    }
+}
+
+// Zeroize nested fields before the enum releases owned buffers.
 impl Zeroize for CborValue {
     fn zeroize(&mut self) {
         match self {
@@ -43,3 +56,11 @@ impl Zeroize for CborValue {
         }
     }
 }
+
+impl Drop for CborValue {
+    fn drop(&mut self) {
+        self.zeroize();
+    }
+}
+
+impl ZeroizeOnDrop for CborValue {}

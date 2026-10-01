@@ -98,7 +98,7 @@ try {
   try {
     codec.deterministicCborDecode(new Uint8Array([0x18, 0x01]));
   } catch (error) {
-    rejected = error instanceof codec.ReallyMeCodecError && error.code === "invalid-input";
+    rejected = error instanceof codec.ReallyMeCodecError && error.code === "non-canonical";
   }
   assert(rejected, "deterministic-invalid-browser-rejection");
 

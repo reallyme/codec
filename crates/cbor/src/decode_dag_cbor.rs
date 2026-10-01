@@ -2,7 +2,10 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use crate::{CborError, CborValue, MAX_DAG_CBOR_INPUT_LEN, MAX_NESTING_DEPTH};
+use crate::{
+    CborError, CborValue, MAX_DAG_CBOR_CONTAINER_ENTRIES, MAX_DAG_CBOR_INPUT_LEN,
+    MAX_DAG_CBOR_NODES, MAX_NESTING_DEPTH,
+};
 use std::cmp::Ordering;
 use std::str;
 use zeroize::Zeroizing;
@@ -13,13 +16,53 @@ const MT_BYTES: u8 = 2;
 const MT_STRING: u8 = 3;
 const MT_ARRAY: u8 = 4;
 const MT_MAP: u8 = 5;
-const CONTAINER_INITIAL_RESERVE: usize = 8;
 
 /// Smallest possible encoding of one array element or map key/value: a
 /// single header byte (e.g. a small integer, or an empty string/array).
 /// Used to reject a declared container length that the remaining input
 /// could never satisfy, before any capacity is reserved.
 const MIN_ELEMENT_ENCODED_LEN: usize = 1;
+
+#[derive(Default)]
+struct DecodeBudget {
+    seen: usize,
+    pending: usize,
+}
+
+impl DecodeBudget {
+    fn enter(&mut self) -> Result<(), CborError> {
+        if self.seen != 0 {
+            self.pending = self
+                .pending
+                .checked_sub(1)
+                .ok_or(CborError::NodeLimitExceeded)?;
+        }
+        self.seen = self
+            .seen
+            .checked_add(1)
+            .ok_or(CborError::NodeLimitExceeded)?;
+        if self.seen > MAX_DAG_CBOR_NODES {
+            return Err(CborError::NodeLimitExceeded);
+        }
+        Ok(())
+    }
+
+    fn reserve_children(&mut self, count: usize) -> Result<(), CborError> {
+        let pending = self
+            .pending
+            .checked_add(count)
+            .ok_or(CborError::NodeLimitExceeded)?;
+        let total = self
+            .seen
+            .checked_add(pending)
+            .ok_or(CborError::NodeLimitExceeded)?;
+        if total > MAX_DAG_CBOR_NODES {
+            return Err(CborError::NodeLimitExceeded);
+        }
+        self.pending = pending;
+        Ok(())
+    }
+}
 
 /// Decode canonical DAG-CBOR bytes into a CborValue.
 ///
@@ -34,7 +77,8 @@ pub fn decode_dag_cbor(bytes: &[u8]) -> Result<CborValue, CborError> {
     if bytes.len() > MAX_DAG_CBOR_INPUT_LEN {
         return Err(CborError::InputTooLarge);
     }
-    let (value, offset) = decode_value(bytes, 0, 0)?;
+    let mut budget = DecodeBudget::default();
+    let (value, offset) = decode_value(bytes, 0, 0, &mut budget)?;
     let mut value = Zeroizing::new(value);
     if offset != bytes.len() {
         return Err(CborError::TrailingBytes);
@@ -49,10 +93,12 @@ fn decode_value(
     bytes: &[u8],
     mut offset: usize,
     depth: usize,
+    budget: &mut DecodeBudget,
 ) -> Result<(CborValue, usize), CborError> {
     if offset >= bytes.len() {
         return Err(CborError::UnexpectedEnd);
     }
+    budget.enter()?;
 
     let first = bytes[offset];
     offset = offset.checked_add(1).ok_or(CborError::OffsetOverflow)?;
@@ -108,11 +154,16 @@ fn decode_value(
             // rejected before allocating (prevents OOM from a crafted
             // header such as `9B 7F FF …`).
             bounded_capacity(item_count, bytes.len(), offset)?;
-            let capacity = initial_container_capacity(item_count);
-            let mut items = Zeroizing::new(Vec::with_capacity(capacity));
+            if item_count > MAX_DAG_CBOR_CONTAINER_ENTRIES {
+                return Err(CborError::ContainerEntriesExceeded);
+            }
+            budget.reserve_children(item_count)?;
+            // The global pending-node budget bounds aggregate reservations;
+            // exact capacity avoids reallocating secret-bearing elements.
+            let mut items = Zeroizing::new(Vec::with_capacity(item_count));
             let mut off = offset;
             for _ in 0..item_count {
-                let (v, next) = decode_value(bytes, off, child_depth)?;
+                let (v, next) = decode_value(bytes, off, child_depth, budget)?;
                 items.push(v);
                 off = next;
             }
@@ -128,13 +179,19 @@ fn decode_value(
                 .checked_mul(2)
                 .ok_or(CborError::OffsetOverflow)?;
             bounded_capacity_with_min(entry_count, bytes.len(), offset, entry_min)?;
-            let capacity = initial_container_capacity(entry_count);
-            let mut entries = Zeroizing::new(Vec::with_capacity(capacity));
+            if entry_count > MAX_DAG_CBOR_CONTAINER_ENTRIES {
+                return Err(CborError::ContainerEntriesExceeded);
+            }
+            let child_count = entry_count
+                .checked_mul(2)
+                .ok_or(CborError::NodeLimitExceeded)?;
+            budget.reserve_children(child_count)?;
+            let mut entries = Zeroizing::new(Vec::with_capacity(entry_count));
             let mut off = offset;
             let mut last_key_bytes: Option<Zeroizing<Vec<u8>>> = None;
 
             for _ in 0..entry_count {
-                let (key_val, key_off) = decode_value(bytes, off, child_depth)?;
+                let (key_val, key_off) = decode_value(bytes, off, child_depth, budget)?;
                 off = key_off;
 
                 let mut key_val = Zeroizing::new(key_val);
@@ -153,7 +210,7 @@ fn decode_value(
                 }
                 last_key_bytes = Some(key_bytes);
 
-                let (val, val_off) = decode_value(bytes, off, child_depth)?;
+                let (val, val_off) = decode_value(bytes, off, child_depth, budget)?;
                 off = val_off;
 
                 entries.push((core::mem::take(&mut *key), val));
@@ -297,14 +354,6 @@ fn bounded_capacity_with_min(
         return Err(CborError::ContainerLengthExceedsInput);
     }
     Ok(count)
-}
-
-fn initial_container_capacity(count: usize) -> usize {
-    // The declared element count is only a promise by untrusted input. Reserving
-    // it eagerly lets each nested ancestor retain a large allocation before the
-    // decoder discovers the promised siblings are absent. Start small and let
-    // Vec grow only for elements that have actually been decoded.
-    count.min(CONTAINER_INITIAL_RESERVE)
 }
 
 fn compare_bytes(a: &[u8], b: &[u8]) -> Ordering {

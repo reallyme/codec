@@ -2,22 +2,25 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use codec_core::scalar_ops::{
+use codec_adapter::scalar_ops::{
     compute_dag_cbor_cid, dag_cbor_codec_code as scalar_dag_cbor_codec_code, dag_cbor_content_hash,
     dag_cbor_multihash_value, parse_cid, valid_cid,
 };
 use js_sys::{JsString, Uint8Array};
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
+use zeroize::Zeroizing;
 
-use crate::boundary::{zeroizing_bytes, zeroizing_string};
+use crate::boundary::{js_string_from_owned, zeroizing_bytes, zeroizing_string};
 use crate::map_error::invalid_input;
 
 #[wasm_bindgen(js_name = dagCborComputeCid)]
 /// Compute a CIDv1 dag-cbor/sha2-256 string for already-canonical DAG-CBOR bytes.
-pub fn dag_cbor_compute_cid(bytes: &Uint8Array) -> Result<String, JsValue> {
+pub fn dag_cbor_compute_cid(bytes: &Uint8Array) -> Result<JsString, JsValue> {
     let input = zeroizing_bytes(bytes)?;
-    compute_dag_cbor_cid(input.as_slice()).map_err(|_| invalid_input())
+    compute_dag_cbor_cid(input.as_slice())
+        .map(js_string_from_owned)
+        .map_err(|_| invalid_input())
 }
 
 #[wasm_bindgen(js_name = dagCborSha256ContentHash)]
@@ -48,7 +51,10 @@ pub fn is_valid_cid_string_wasm(cid: &JsString) -> Result<bool, JsValue> {
 pub fn try_parse_cid_wasm(cid: &JsString) -> Result<JsValue, JsValue> {
     let cid = zeroizing_string(cid)?;
     Ok(match parse_cid(&cid) {
-        Some(parsed) => JsValue::from_str(&parsed),
+        Some(parsed) => {
+            let parsed = Zeroizing::new(parsed);
+            JsValue::from_str(&parsed)
+        }
         None => JsValue::UNDEFINED,
     })
 }

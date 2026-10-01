@@ -2,7 +2,12 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use crate::status::{CodecStatus, CODEC_BUFFER_TOO_SMALL, CODEC_INVALID_ARGUMENT};
+#![allow(unsafe_code)]
+#![allow(clippy::missing_safety_doc)]
+
+#[cfg(test)]
+use crate::status::CODEC_BUFFER_TOO_SMALL;
+use crate::status::{CodecStatus, CODEC_INVALID_ARGUMENT};
 
 const MAX_FFI_SLICE_LEN: usize = isize::MAX.unsigned_abs();
 
@@ -104,7 +109,7 @@ fn validate_disjoint_ranges(
 ///
 /// When `len != 0`, `ptr` must point to `len` initialized bytes that remain
 /// valid and unmutated for the lifetime `'a` of the returned slice.
-pub unsafe fn read_slice<'a>(ptr: *const u8, len: usize) -> Result<&'a [u8], CodecStatus> {
+pub(crate) unsafe fn read_slice<'a>(ptr: *const u8, len: usize) -> Result<&'a [u8], CodecStatus> {
     validate_read_pair(ptr, len)?;
     if len == 0 {
         return Ok(&[]);
@@ -128,7 +133,10 @@ pub unsafe fn read_slice<'a>(ptr: *const u8, len: usize) -> Result<&'a [u8], Cod
 /// When `len != 0`, `ptr` must point to `len` bytes of writable, properly
 /// aligned memory that stays valid and exclusively borrowed for the lifetime
 /// `'a` of the returned slice.
-pub unsafe fn write_slice<'a>(ptr: *mut u8, len: usize) -> Result<&'a mut [u8], CodecStatus> {
+pub(crate) unsafe fn write_slice<'a>(
+    ptr: *mut u8,
+    len: usize,
+) -> Result<&'a mut [u8], CodecStatus> {
     validate_write_pair(ptr, len)?;
     if len == 0 {
         return Ok(&mut []);
@@ -147,7 +155,8 @@ pub unsafe fn write_slice<'a>(ptr: *mut u8, len: usize) -> Result<&'a mut [u8], 
 ///
 /// When `len != 0`, `ptr` must point to at least `len` bytes of writable,
 /// properly aligned memory valid for the duration of the call.
-pub unsafe fn write_fixed(ptr: *mut u8, len: usize, value: &[u8]) -> CodecStatus {
+#[cfg(test)]
+pub(crate) unsafe fn write_fixed(ptr: *mut u8, len: usize, value: &[u8]) -> CodecStatus {
     if validate_write_pair(ptr, len).is_err() {
         return CODEC_INVALID_ARGUMENT;
     }
@@ -171,7 +180,7 @@ pub unsafe fn write_fixed(ptr: *mut u8, len: usize, value: &[u8]) -> CodecStatus
 ///
 /// Variable-length FFI operations call this before mutating byte outputs so a
 /// bad produced-length pointer cannot produce a partial success value.
-pub fn validate_len_output(ptr: *mut usize) -> CodecStatus {
+pub(crate) fn validate_len_output(ptr: *mut usize) -> CodecStatus {
     if validate_output_ptr(ptr).is_err() {
         return CODEC_INVALID_ARGUMENT;
     }
@@ -180,7 +189,7 @@ pub fn validate_len_output(ptr: *mut usize) -> CodecStatus {
 
 /// Validates that a byte output buffer and its produced-length pointer are
 /// individually valid and do not overlap.
-pub fn validate_output_len_pair(
+pub(crate) fn validate_output_len_pair(
     output_ptr: *mut u8,
     output_len: usize,
     len_out: *mut usize,
@@ -204,7 +213,8 @@ pub fn validate_output_len_pair(
 }
 
 /// Validates that two byte output buffers are individually valid and disjoint.
-pub fn validate_disjoint_output_pair(
+#[cfg(test)]
+pub(crate) fn validate_disjoint_output_pair(
     first_ptr: *mut u8,
     first_len: usize,
     second_ptr: *mut u8,
@@ -217,7 +227,8 @@ pub fn validate_disjoint_output_pair(
 }
 
 /// Validates that two produced-length output pointers are valid and disjoint.
-pub fn validate_disjoint_len_outputs(first: *mut usize, second: *mut usize) -> CodecStatus {
+#[cfg(test)]
+pub(crate) fn validate_disjoint_len_outputs(first: *mut usize, second: *mut usize) -> CodecStatus {
     let first_status = validate_len_output(first);
     if first_status != crate::status::CODEC_OK {
         return first_status;
@@ -245,7 +256,7 @@ pub fn validate_disjoint_len_outputs(first: *mut usize, second: *mut usize) -> C
 ///
 /// `ptr`, when non-null, must point to a writable, properly aligned `usize`
 /// valid for the duration of the call.
-pub unsafe fn write_len(ptr: *mut usize, value: usize) -> CodecStatus {
+pub(crate) unsafe fn write_len(ptr: *mut usize, value: usize) -> CodecStatus {
     if validate_output_ptr(ptr).is_err() {
         return CODEC_INVALID_ARGUMENT;
     }
@@ -266,7 +277,7 @@ pub unsafe fn write_len(ptr: *mut usize, value: usize) -> CodecStatus {
 ///
 /// `ptr`, when non-null, must point to a writable, properly aligned `i32`
 /// valid for the duration of the call.
-pub unsafe fn write_i32(ptr: *mut i32, value: i32) -> CodecStatus {
+pub(crate) unsafe fn write_i32(ptr: *mut i32, value: i32) -> CodecStatus {
     if validate_output_ptr(ptr).is_err() {
         return CODEC_INVALID_ARGUMENT;
     }
@@ -376,9 +387,11 @@ mod tests {
     #[test]
     fn write_fixed_rejects_overlapping_input_and_output_ranges() {
         let mut storage = [1_u8, 2, 3, 4, 0xA5, 0xA5, 0xA5, 0xA5];
-        let input_ptr = storage.as_ptr();
-        let output_ptr = unsafe { storage.as_mut_ptr().add(2) };
-        let input = unsafe { core::slice::from_raw_parts(input_ptr, 4) };
+        // Derive both raw pointers from one mutable provenance before creating
+        // the shared slice. The rejected call never dereferences the output.
+        let base_ptr = storage.as_mut_ptr();
+        let output_ptr = unsafe { base_ptr.add(2) };
+        let input = unsafe { core::slice::from_raw_parts(base_ptr.cast_const(), 4) };
 
         let status = unsafe { write_fixed(output_ptr, 4, input) };
 

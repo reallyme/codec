@@ -38,4 +38,10 @@ pub enum PemError {
     /// The encode options were invalid.
     #[error("pem: invalid options")]
     InvalidOptions,
+    /// The PEM text was empty.
+    #[error("pem: empty input")]
+    EmptyInput,
+    /// The DER body supplied for encoding was empty.
+    #[error("pem: empty der body")]
+    EmptyDer,
 }

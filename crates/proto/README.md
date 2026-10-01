@@ -9,7 +9,7 @@ discriminated binary `CodecOperationResponse`.
 
 ```toml
 [dependencies]
-reallyme-codec-proto = { version = "0.2.3", features = ["generated"] }
+reallyme-codec-proto = { version = "0.3.0", features = ["generated"] }
 ```
 
 The protobuf source is published with this crate at
@@ -25,3 +25,7 @@ which accepts one
 
 Dual-licensed under the MIT License or Apache License, Version 2.0, at your
 option. See [LICENSE](LICENSE) for both license texts.
+
+## Generated runtime compatibility
+
+Generated types implement Buffa traits. Keep the matching runtime version. When a message implements `Drop`, borrow its fields or use builders and `mem::take` to transfer ownership.

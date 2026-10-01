@@ -13,7 +13,7 @@ public inline fun codecPemDecodeOptions(block: me.really.codec.v1.CodecPemDecode
 /**
  * ```
  * Zero limits select the documented codec defaults. An empty allowed-label list
- * selects the default PRIVATE KEY, EC PRIVATE KEY, and PUBLIC KEY set.
+ * selects PUBLIC KEY only; private-key labels require an explicit allowlist.
  * ```
  *
  * Protobuf type `reallyme.codec.v1.CodecPemDecodeOptions`

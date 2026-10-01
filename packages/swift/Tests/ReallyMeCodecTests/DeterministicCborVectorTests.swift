@@ -31,6 +31,7 @@ private struct DeterministicCborNegativeVector: Decodable {
     let name: String
     let hex: String
     let reason: String
+    let errorClass: String
 }
 
 private struct DeterministicCborEquivalentVector: Decodable {
@@ -200,7 +201,7 @@ final class DeterministicCborVectorTests: XCTestCase {
     func testSharedPositiveNegativeAndEquivalentVectors() throws {
         let codec = try Self.configuredCodec()
         let vectors = try Self.vectors()
-        XCTAssertEqual(vectors.profile, "rfc8949-core-deterministic-reallyme-0.2.0")
+        XCTAssertEqual(vectors.profile, "rfc8949-length-first-deterministic-reallyme-0.2.0")
         XCTAssertEqual(vectors.fixtureClasses["positive"], "golden")
         XCTAssertEqual(vectors.fixtureClasses["negative"], "rejection-fixture")
         XCTAssertEqual(vectors.fixtureClasses["resourceRejections"], "construction-recipe")
@@ -215,8 +216,10 @@ final class DeterministicCborVectorTests: XCTestCase {
         }
 
         for vector in vectors.negative {
-            Self.assertInvalidInput(
-                try codec.deterministicCborDecode(Self.hexBytes(vector.hex)),
+            let encoded = try Self.hexBytes(vector.hex)
+            Self.assertCodecError(
+                vector.errorClass == "non-canonical" ? .nonCanonical : .invalidInput,
+                try codec.deterministicCborDecode(encoded),
                 vector.name + ":" + vector.reason
             )
         }
@@ -251,6 +254,22 @@ final class DeterministicCborVectorTests: XCTestCase {
             try codec.dagCborEncode(dag),
             try Self.hexBytes("a2616143000102616202")
         )
+    }
+
+    func testIntegerKeyedMapAtMaximumDepthRoundTrips() throws {
+        let codec = try Self.configuredCodec()
+        var value = ReallyMeDeterministicCborValue.null
+        for _ in 0..<64 {
+            value = .map([
+                ReallyMeDeterministicCborMapEntry(
+                    key: .integer(.unsigned(0)),
+                    value: value
+                )
+            ])
+        }
+        let encoded = try codec.deterministicCborEncode(value)
+        let decoded = try codec.deterministicCborDecode(encoded)
+        XCTAssertEqual(try codec.deterministicCborEncode(decoded), encoded)
     }
 
     func testSharedResourceRecipesAndSemanticMaximum() throws {
@@ -320,6 +339,23 @@ final class DeterministicCborVectorTests: XCTestCase {
             return XCTFail("maximum deterministic-CBOR value decoded to the wrong branch")
         }
         XCTAssertEqual(bytes.count, payloadCount)
+
+        let atLimitCounts = [16_384, 16_383, 16_383, 16_381]
+        let atLimitChildren: [ReallyMeDeterministicCborValue] = atLimitCounts.map { count in
+            .array(Array(repeating: .null, count: count))
+        }
+        let nodeLimitEncoded = try codec.deterministicCborEncode(.array(atLimitChildren))
+        let nodeLimitDecoded = try codec.deterministicCborDecode(nodeLimitEncoded)
+        guard case .array(let decodedChildren) = nodeLimitDecoded else {
+            return XCTFail("node-limit value decoded to the wrong branch")
+        }
+        XCTAssertEqual(decodedChildren.count, atLimitCounts.count)
+        for (child, expectedCount) in zip(decodedChildren, atLimitCounts) {
+            guard case .array(let leaves) = child else {
+                return XCTFail("node-limit child decoded to the wrong branch")
+            }
+            XCTAssertEqual(leaves.count, expectedCount)
+        }
     }
 
     func testIdkitInteroperabilityFixtureRoundTripsThroughTypedSdk() throws {
@@ -355,6 +391,9 @@ final class DeterministicCborVectorTests: XCTestCase {
     }
 
     private static func configuredCodec() throws -> ReallyMeCodec {
+        #if REALLYME_CODEC_LINKED_FFI
+        return try ReallyMeCodec()
+        #else
         let environmentPath = ProcessInfo.processInfo.environment["REALLYME_CODEC_FFI_LIBRARY_PATH"]
         let libraryPath: String
         if let environmentPath, !environmentPath.isEmpty {
@@ -378,6 +417,7 @@ final class DeterministicCborVectorTests: XCTestCase {
         return try ReallyMeCodec(
             rustCAbiLibrary: ReallyMeCodecRustCAbiLibrary(path: libraryPath)
         )
+        #endif
     }
 
     private static func vectors() throws -> DeterministicCborVectors {
@@ -484,6 +524,16 @@ final class DeterministicCborVectorTests: XCTestCase {
             index = next
         }
         return result
+    }
+
+    private static func assertCodecError(
+        _ expected: ReallyMeCodecError,
+        _ operation: @autoclosure () throws -> Any,
+        _ context: String
+    ) {
+        XCTAssertThrowsError(try operation(), context) { error in
+            XCTAssertEqual(error as? ReallyMeCodecError, expected, context)
+        }
     }
 
     private static func assertInvalidInput(

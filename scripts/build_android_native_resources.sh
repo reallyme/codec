@@ -8,7 +8,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 JNI_LIBS_ROOT="${1:-${ROOT_DIR}/packages/kotlin-android/build/generated/android-jniLibs}"
 ANDROID_API="${ANDROID_API:-24}"
-FFI_RUSTFLAGS="${RUSTFLAGS:+${RUSTFLAGS} }-C panic=unwind"
+FFI_RUSTFLAGS="${RUSTFLAGS:+${RUSTFLAGS} }-C panic=unwind -C link-arg=-Wl,-z,max-page-size=16384"
+MIN_ANDROID_PAGE_ALIGNMENT=0x4000
 
 if [ -z "${ANDROID_NDK_HOME:-}" ]; then
   printf 'ANDROID_NDK_HOME must point to an installed Android NDK\n' >&2
@@ -53,6 +54,21 @@ build_android_target() {
   cp "${ROOT_DIR}/target/${rust_target}/release/libreallyme_codec_ffi.so" \
     "${staged_library}"
   "${TOOLCHAIN_BIN}/llvm-strip" --strip-debug "${staged_library}"
+  local program_headers
+  program_headers="$("${TOOLCHAIN_BIN}/llvm-readelf" -W -l "${staged_library}")"
+  local load_segments=0
+  local alignment
+  while IFS= read -r alignment; do
+    ((load_segments += 1))
+    if ((alignment < MIN_ANDROID_PAGE_ALIGNMENT)); then
+      printf 'Android %s LOAD segment is below 16 KB page alignment\n' "${abi}" >&2
+      exit 1
+    fi
+  done < <(awk '$1 == "LOAD" { print $NF }' <<<"${program_headers}")
+  if ((load_segments == 0)); then
+    printf 'Android %s library has no LOAD segments\n' "${abi}" >&2
+    exit 1
+  fi
 }
 
 build_android_target \

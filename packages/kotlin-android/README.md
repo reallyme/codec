@@ -6,7 +6,7 @@ The `me.really:codec-android` AAR includes the Kotlin API and native JNI librari
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.2.3")
+    implementation("me.really:codec-android:0.3.0")
 }
 ```
 
@@ -45,4 +45,4 @@ The runtime test requires the Android SDK, configured NDK and a running emulator
 ## License
 
 Dual-licensed under the MIT License or Apache License, Version 2.0, at your
-option. See [LICENSE](../../LICENSE) for both license texts.
+option. See [MIT](../../LICENSE-MIT) and [Apache 2.0](../../LICENSE-APACHE).

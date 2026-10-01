@@ -22,6 +22,9 @@ readonly LOG_TAG="ReallyMeCodecR8Gate"
 readonly JNILIBS_DIR="$REPO_ROOT/build/android-jniLibs"
 readonly NATIVE_ASSETS_DIR="$REPO_ROOT/build/android-native-assets"
 readonly APK_PATH="$REPO_ROOT/packages/kotlin-android/consumer-r8-runtime/build/outputs/apk/release/consumer-r8-runtime-release.apk"
+readonly LOG_DIR="$(mktemp -d "${TMPDIR:-/tmp}/reallyme-codec-r8.XXXXXXXX")"
+readonly EMULATOR_LOG="$LOG_DIR/emulator.log"
+readonly AVDMANAGER_LOG="$LOG_DIR/avdmanager.log"
 
 emulator_pid=""
 export ANDROID_AVD_HOME="$ANDROID_AVD_HOME_VALUE"
@@ -31,12 +34,14 @@ cleanup() {
         "$ADB" emu kill >/dev/null 2>&1 || true
         wait "$emulator_pid" >/dev/null 2>&1 || true
     fi
+    rm -f -- "$EMULATOR_LOG" "$AVDMANAGER_LOG"
+    rmdir -- "$LOG_DIR"
 }
 trap cleanup EXIT
 
 dump_emulator_log() {
-    if [[ -f /tmp/reallyme-codec-r8-emulator.log ]]; then
-        tail -200 /tmp/reallyme-codec-r8-emulator.log >&2 || true
+    if [[ -f "$EMULATOR_LOG" ]]; then
+        tail -200 "$EMULATOR_LOG" >&2 || true
     fi
 }
 
@@ -68,7 +73,7 @@ ensure_avd_exists() {
     fi
 
     { yes 2>/dev/null || true; } | "$SDKMANAGER" "emulator" "$ANDROID_R8_PLATFORM" "$ANDROID_R8_SYSTEM_IMAGE" >/dev/null
-    printf 'no\n' | "$AVDMANAGER" create avd --force -n "$AVD_NAME" -k "$ANDROID_R8_SYSTEM_IMAGE" --device "pixel" >/tmp/reallyme-codec-r8-avdmanager.log
+    printf 'no\n' | "$AVDMANAGER" create avd --force -n "$AVD_NAME" -k "$ANDROID_R8_SYSTEM_IMAGE" --device "pixel" >"$AVDMANAGER_LOG"
 
     while IFS= read -r existing_avd; do
         if [[ "$existing_avd" == "$AVD_NAME" ]]; then
@@ -76,8 +81,8 @@ ensure_avd_exists() {
         fi
     done < <("$EMULATOR" -list-avds)
 
-    if [[ -f /tmp/reallyme-codec-r8-avdmanager.log ]]; then
-        cat /tmp/reallyme-codec-r8-avdmanager.log >&2 || true
+    if [[ -f "$AVDMANAGER_LOG" ]]; then
+        cat "$AVDMANAGER_LOG" >&2 || true
     fi
     "$EMULATOR" -list-avds >&2 || true
     fail "Android AVD was not available after creation"
@@ -88,7 +93,7 @@ ensure_avd_exists() {
 
 if [[ -n "$AVD_NAME" ]]; then
     ensure_avd_exists
-    "$EMULATOR" -avd "$AVD_NAME" -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect >/tmp/reallyme-codec-r8-emulator.log 2>&1 &
+    "$EMULATOR" -avd "$AVD_NAME" -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect >"$EMULATOR_LOG" 2>&1 &
     emulator_pid="$!"
 fi
 
@@ -115,6 +120,26 @@ while [[ "$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" !
 done
 
 ANDROID_NDK_HOME="$ANDROID_NDK_HOME_VALUE" "$REPO_ROOT/scripts/build_android_native_resources.sh" "$JNILIBS_DIR"
+
+case "$(uname -s)" in
+    Darwin) ndk_host_tag="darwin-x86_64" ;;
+    Linux) ndk_host_tag="linux-x86_64" ;;
+    *) fail "unsupported host for Android ELF verification" ;;
+esac
+readonly LLVM_READELF="$ANDROID_NDK_HOME_VALUE/toolchains/llvm/prebuilt/$ndk_host_tag/bin/llvm-readelf"
+[[ -x "$LLVM_READELF" ]] || fail "Android NDK llvm-readelf is required"
+for abi in arm64-v8a armeabi-v7a x86_64 x86; do
+    library="$JNILIBS_DIR/$abi/libreallyme_codec_ffi.so"
+    [[ -f "$library" ]] || fail "Android native library is missing for $abi"
+    program_headers="$("$LLVM_READELF" -W -l "$library")"
+    load_segments=0
+    while IFS= read -r alignment; do
+        ((load_segments += 1))
+        ((alignment >= 0x4000)) || fail "Android $abi LOAD segment is below 16 KB page alignment"
+    done < <(awk '$1 == "LOAD" { print $NF }' <<<"$program_headers")
+    ((load_segments > 0)) || fail "Android $abi library has no LOAD segments"
+done
+
 node "$REPO_ROOT/scripts/write_native_manifest.mjs" "$JNILIBS_DIR" "$NATIVE_ASSETS_DIR/reallyme-codec/native-manifest.json"
 
 ANDROID_NDK_HOME="$ANDROID_NDK_HOME_VALUE" "$REPO_ROOT/packages/kotlin/gradlew" \

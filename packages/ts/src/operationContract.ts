@@ -29,6 +29,8 @@ import type { ReallyMeCodecErrorCode } from "./errors.js";
 import {
   CodecErrorOrigin,
   CodecErrorReason,
+  CodecErrorSchema,
+  CodecBoundaryErrorSchema,
   CodecOperationResponseSchema,
   CodecOperationRequestSchema,
 } from "./proto/generated/reallyme/codec/v1/codec_pb.js";
@@ -41,14 +43,35 @@ import type {
   CodecOperationResult,
 } from "./proto/generated/reallyme/codec/v1/codec_pb.js";
 import {
+  ensureBytesInput,
   readIndependentBoundedBytesOutput,
   snapshotBoundedBytesInput,
+  snapshotProviderBytes,
 } from "./readOutput.js";
 import { requireReallyMeCodecWasmProvider } from "./wasmProvider.js";
 
 const PROTO_REQUEST_OVERHEAD_BUDGET = 64;
 const DETERMINISTIC_CBOR_PROTO_NODE_OVERHEAD_BUDGET = 16;
 const DAG_CBOR_I64_MAX = (1n << 63n) - 1n;
+
+const resourceLimitOperationResponse = (): Uint8Array =>
+  toBinary(
+    CodecOperationResponseSchema,
+    create(CodecOperationResponseSchema, {
+      outcome: {
+        case: "error",
+        value: create(CodecErrorSchema, {
+          error: {
+            case: "boundary",
+            value: create(CodecBoundaryErrorSchema, {
+              reason: CodecErrorReason.BOUNDARY_RESOURCE_LIMIT_EXCEEDED,
+            }),
+          },
+          origin: CodecErrorOrigin.CALLER,
+        }),
+      },
+    }),
+  );
 
 type GeneratedDeterministicCborBudget = {
   nodes: number;
@@ -626,11 +649,14 @@ const validateGeneratedOperationRequest = (
  * Execute one binary generated-protobuf request and return the fully
  * discriminated binary `CodecOperationResponse`.
  *
- * Oversized requests are rejected before the provider call. Malformed and
- * unsupported in-limit requests are represented by the response error oneof
- * rather than a boundary-local exception.
+ * Oversized and malformed requests are represented by the response error
+ * oneof. Caller-owned oversized bytes are not copied into WASM.
  */
 export const processOperation = (requestBytes: Uint8Array): Uint8Array => {
+  ensureBytesInput(requestBytes);
+  if (requestBytes.length > MAX_CODEC_PROTO_MESSAGE_BYTES) {
+    return resourceLimitOperationResponse();
+  }
   const requestSnapshot = snapshotBoundedBytesInput(
     requestBytes,
     MAX_CODEC_PROTO_MESSAGE_BYTES,
@@ -651,6 +677,10 @@ export const processOperation = (requestBytes: Uint8Array): Uint8Array => {
  * binary response used by `processOperation`.
  */
 export const processOperationJson = (requestJson: Uint8Array): Uint8Array => {
+  ensureBytesInput(requestJson);
+  if (requestJson.length > MAX_CODEC_PROTO_JSON_BYTES) {
+    return resourceLimitOperationResponse();
+  }
   const requestSnapshot = snapshotBoundedBytesInput(
     requestJson,
     MAX_CODEC_PROTO_JSON_BYTES,
@@ -752,38 +782,38 @@ const detachGeneratedOperationResultBytes = (
 ): void => {
   switch (result.result.case) {
     case "multicodecPrefixForName":
-      result.result.value.prefix = result.result.value.prefix.slice();
+      result.result.value.prefix = snapshotProviderBytes(result.result.value.prefix);
       break;
     case "multicodecLookupPrefix":
       if (result.result.value.metadata !== undefined) {
         result.result.value.metadata.prefix =
-          result.result.value.metadata.prefix.slice();
+          snapshotProviderBytes(result.result.value.metadata.prefix);
       }
       break;
     case "multicodecTable":
       for (const entry of result.result.value.entries) {
-        entry.prefix = entry.prefix.slice();
+        entry.prefix = snapshotProviderBytes(entry.prefix);
       }
       break;
     case "multikeyParse":
-      result.result.value.publicKey = result.result.value.publicKey.slice();
+      result.result.value.publicKey = snapshotProviderBytes(result.result.value.publicKey);
       break;
     case "dagCborVerifyCid":
       break;
     case "dagCborEncode":
-      result.result.value.encoded = result.result.value.encoded.slice();
+      result.result.value.encoded = snapshotProviderBytes(result.result.value.encoded);
       break;
     case "dagCborDecode":
       detachGeneratedCborValueBytes(result.result.value.value);
       break;
     case "pemDecode":
-      result.result.value.der = result.result.value.der.slice();
+      result.result.value.der = snapshotProviderBytes(result.result.value.der);
       break;
     case "pemEncode":
-      result.result.value.pem = result.result.value.pem.slice();
+      result.result.value.pem = snapshotProviderBytes(result.result.value.pem);
       break;
     case "deterministicCborEncode":
-      result.result.value.encoded = result.result.value.encoded.slice();
+      result.result.value.encoded = snapshotProviderBytes(result.result.value.encoded);
       break;
     case "deterministicCborDecode":
       detachGeneratedCborValueBytes(result.result.value.value);
@@ -801,7 +831,7 @@ const detachGeneratedCborValueBytes = (
   }
   switch (value.value.case) {
     case "bytesValue":
-      value.value.value.value = value.value.value.value.slice();
+      value.value.value.value = snapshotProviderBytes(value.value.value.value);
       break;
     case "arrayValue":
       for (const child of value.value.value.values) {
@@ -958,7 +988,24 @@ const errorCodeForCodecErrorMessage = (
   if (error.origin !== expectedOrigin) {
     return "provider-failure";
   }
-  return error.origin === CodecErrorOrigin.CALLER
-    ? "invalid-input"
-    : "provider-failure";
+  if (error.origin !== CodecErrorOrigin.CALLER) {
+    return "provider-failure";
+  }
+  switch (reason) {
+    case CodecErrorReason.MULTIFORMAT_UNKNOWN_MULTICODEC:
+    case CodecErrorReason.MULTIFORMAT_INVALID_MULTICODEC_PREFIX:
+      return "unsupported-codec";
+    case CodecErrorReason.CANONICAL_UNSUPPORTED_IPLD_VALUE:
+      return "unsupported-ipld-value";
+    case CodecErrorReason.BASE_NON_CANONICAL_HEX:
+    case CodecErrorReason.CANONICAL_NON_CANONICAL_CBOR:
+    case CodecErrorReason.CANONICAL_NON_CANONICAL_JSON:
+    case CodecErrorReason.CANONICAL_NON_MINIMAL_CBOR_INTEGER:
+    case CodecErrorReason.CANONICAL_DUPLICATE_CBOR_MAP_KEY:
+    case CodecErrorReason.CANONICAL_CBOR_MAP_KEYS_OUT_OF_ORDER:
+    case CodecErrorReason.CANONICAL_CBOR_TRAILING_BYTES:
+      return "non-canonical";
+    default:
+      return "invalid-input";
+  }
 };

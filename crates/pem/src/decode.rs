@@ -13,7 +13,10 @@ const BOUNDARY_SUFFIX: &str = "-----";
 
 /// Decode PEM text armor into a label and DER body.
 pub fn decode_pem(input: &str, policy: PemDecodePolicy<'_>) -> Result<PemDocument, PemError> {
-    if input.is_empty() || input.len() > policy.max_input_len {
+    if input.is_empty() {
+        return Err(PemError::EmptyInput);
+    }
+    if input.len() > policy.max_input_len {
         return Err(PemError::InputTooLarge);
     }
     if policy.max_der_len == 0 || policy.allowed_labels.is_empty() {
@@ -24,6 +27,9 @@ pub fn decode_pem(input: &str, policy: PemDecodePolicy<'_>) -> Result<PemDocumen
     let mut lines = normalized.split('\n');
 
     let begin_line = next_nonempty_line(&mut lines).ok_or(PemError::MissingBegin)?;
+    if !begin_line.starts_with(BEGIN_PREFIX) {
+        return Err(PemError::MissingBegin);
+    }
     let begin_label = parse_boundary_label(begin_line, BEGIN_PREFIX)?;
     let label = PemLabel::parse(begin_label)?;
     if !policy.allowed_labels.contains(&label) {

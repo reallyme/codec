@@ -3,21 +3,65 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use codec_multibase::multibase_to_bytes;
-use codec_multicodec::{lookup_codec_prefix, KeyMaterialKind, VARIABLE_KEY_LENGTH};
+use codec_multicodec::{lookup_codec_prefix, KeyLength, KeyMaterialKind};
 
 use crate::encode::MAX_RSA_PUBLIC_KEY_DER_LEN;
 use crate::error::{classify_multikey_codec, MultikeyError};
+use zeroize::Zeroizing;
 
 /// A multikey decoded into its codec metadata and raw public key bytes.
+///
+/// Its metadata cannot be replaced after parsing: binding validation relies
+/// on the codec and algorithm being the ones established by the parser.
+///
+/// ```compile_fail
+/// use codec_multikey::parse_multikey;
+///
+/// if let Ok(mut parsed) = parse_multikey("invalid") {
+///     parsed.alg = "Ed25519";
+/// }
+/// ```
 pub struct ParsedMultikey {
     /// Canonical multicodec name of the key type (e.g. `ed25519-pub`).
-    pub codec_name: &'static str,
+    codec_name: &'static str,
     /// Human-readable algorithm name implied by the codec (e.g. `Ed25519`).
-    pub alg: &'static str,
+    alg: &'static str,
     /// Raw public key bytes with the multicodec prefix stripped.
-    pub public_key: Vec<u8>,
+    public_key: Vec<u8>,
     /// Expected public key length for the codec.
-    pub key_length: usize,
+    key_length: KeyLength,
+}
+
+impl ParsedMultikey {
+    /// Returns the canonical multicodec name established by parsing.
+    #[must_use]
+    pub const fn codec_name(&self) -> &'static str {
+        self.codec_name
+    }
+
+    /// Returns the algorithm name associated with the parsed codec.
+    #[must_use]
+    pub const fn algorithm_name(&self) -> &'static str {
+        self.alg
+    }
+
+    /// Borrows the validated public key bytes.
+    #[must_use]
+    pub fn public_key(&self) -> &[u8] {
+        &self.public_key
+    }
+
+    /// Returns the length policy associated with the parsed codec.
+    #[must_use]
+    pub const fn key_length(&self) -> KeyLength {
+        self.key_length
+    }
+
+    /// Transfers ownership of the validated public key bytes.
+    #[must_use]
+    pub fn into_public_key(self) -> Vec<u8> {
+        self.public_key
+    }
 }
 
 /// Parses a multibase-encoded multikey string into its codec and key bytes.
@@ -36,7 +80,9 @@ pub fn parse_multikey(multibase_key: &str) -> Result<ParsedMultikey, MultikeyErr
     }
 
     // 1) multibase decode
-    let raw = multibase_to_bytes(multibase_key).map_err(|_| MultikeyError::InvalidMultibase)?;
+    let raw = Zeroizing::new(
+        multibase_to_bytes(multibase_key).map_err(|_| MultikeyError::InvalidMultibase)?,
+    );
 
     if raw.len() < 2 {
         return Err(MultikeyError::DecodedTooShort(raw.len()));
@@ -46,18 +92,23 @@ pub fn parse_multikey(multibase_key: &str) -> Result<ParsedMultikey, MultikeyErr
     let found = lookup_codec_prefix(&raw).ok_or(MultikeyError::UnknownCodecPrefix)?;
 
     if found.key_material != KeyMaterialKind::PublicKey {
-        return Err(MultikeyError::UnknownCodecPrefix);
+        return Err(MultikeyError::NonPublicKeyMaterial);
     }
 
     let public_key = raw[found.codec.len()..].to_vec();
 
     // 3) key length validation
-    if found.key_length == VARIABLE_KEY_LENGTH && public_key.is_empty() {
-        return Err(MultikeyError::KeyLengthMismatch {
-            codec: classify_multikey_codec(found.name),
-            expected: found.key_length,
-            actual: public_key.len(),
-        });
+    match found.key_length {
+        KeyLength::Fixed(expected) if public_key.len() != expected => {
+            return Err(MultikeyError::KeyLengthMismatch {
+                codec: classify_multikey_codec(found.name),
+                expected,
+                actual: public_key.len(),
+            });
+        }
+        KeyLength::Variable if public_key.is_empty() => return Err(MultikeyError::EmptyKey),
+        KeyLength::NotApplicable => return Err(MultikeyError::NonPublicKeyMaterial),
+        KeyLength::Fixed(_) | KeyLength::Variable => {}
     }
 
     if found.name == "rsa-pub" && public_key.len() > MAX_RSA_PUBLIC_KEY_DER_LEN {
@@ -68,12 +119,12 @@ pub fn parse_multikey(multibase_key: &str) -> Result<ParsedMultikey, MultikeyErr
         });
     }
 
-    if found.key_length != VARIABLE_KEY_LENGTH && public_key.len() != found.key_length {
-        return Err(MultikeyError::KeyLengthMismatch {
-            codec: classify_multikey_codec(found.name),
-            expected: found.key_length,
-            actual: public_key.len(),
-        });
+    if matches!(
+        found.name,
+        "p256-pub" | "p384-pub" | "p521-pub" | "secp256k1-pub"
+    ) && !matches!(public_key.first(), Some(0x02 | 0x03))
+    {
+        return Err(MultikeyError::InvalidCompressedPoint);
     }
 
     Ok(ParsedMultikey {

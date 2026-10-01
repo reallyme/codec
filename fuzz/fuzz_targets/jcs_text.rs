@@ -9,6 +9,11 @@ use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
     if let Ok(json) = core::str::from_utf8(data) {
-        let _ = canonicalize_json_text(json);
+        if let Ok(canonical) = canonicalize_json_text(json) {
+            assert_eq!(
+                canonicalize_json_text(&canonical).as_deref(),
+                Ok(canonical.as_str())
+            );
+        }
     }
 });

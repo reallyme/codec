@@ -2,6 +2,17 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+fn encode_test_protobuf<M: buffa::Message>(message: &M) -> Zeroizing<Vec<u8>> {
+    encode_protobuf(message).unwrap()
+}
+
+#[test]
+fn fixed_internal_error_response_matches_generated_wire_format() {
+    let response = operation_response_from_result(Err(internal_wire_error()));
+    let encoded = encode_test_protobuf(&response);
+    assert_eq!(encoded.as_slice(), INTERNAL_ERROR_OPERATION_RESPONSE);
+}
+
 fn result_payload(response_bytes: &[u8]) -> TestOperationPayload {
     let mut response = decode_protobuf::<CodecOperationResponse>(response_bytes).unwrap();
     let outcome = response.outcome.take();
@@ -16,27 +27,27 @@ fn result_payload(response_bytes: &[u8]) -> TestOperationPayload {
     };
     let bytes = match result.result.take().unwrap() {
         codec_operation_result::Result::MulticodecPrefixForName(value) => {
-            encode_protobuf(value.as_ref())
+            encode_test_protobuf(value.as_ref())
         }
         codec_operation_result::Result::MulticodecLookupPrefix(value) => {
-            encode_protobuf(value.as_ref())
+            encode_test_protobuf(value.as_ref())
         }
         codec_operation_result::Result::MulticodecTable(value) => {
-            encode_protobuf(value.as_ref())
+            encode_test_protobuf(value.as_ref())
         }
-        codec_operation_result::Result::MultikeyParse(value) => encode_protobuf(value.as_ref()),
+        codec_operation_result::Result::MultikeyParse(value) => encode_test_protobuf(value.as_ref()),
         codec_operation_result::Result::DagCborVerifyCid(value) => {
-            encode_protobuf(value.as_ref())
+            encode_test_protobuf(value.as_ref())
         }
-        codec_operation_result::Result::DagCborEncode(value) => encode_protobuf(value.as_ref()),
-        codec_operation_result::Result::DagCborDecode(value) => encode_protobuf(value.as_ref()),
-        codec_operation_result::Result::PemDecode(value) => encode_protobuf(value.as_ref()),
-        codec_operation_result::Result::PemEncode(value) => encode_protobuf(value.as_ref()),
+        codec_operation_result::Result::DagCborEncode(value) => encode_test_protobuf(value.as_ref()),
+        codec_operation_result::Result::DagCborDecode(value) => encode_test_protobuf(value.as_ref()),
+        codec_operation_result::Result::PemDecode(value) => encode_test_protobuf(value.as_ref()),
+        codec_operation_result::Result::PemEncode(value) => encode_test_protobuf(value.as_ref()),
         codec_operation_result::Result::DeterministicCborEncode(value) => {
-            encode_protobuf(value.as_ref())
+            encode_test_protobuf(value.as_ref())
         }
         codec_operation_result::Result::DeterministicCborDecode(value) => {
-            encode_protobuf(value.as_ref())
+            encode_test_protobuf(value.as_ref())
         }
     };
     TestOperationPayload { bytes }

@@ -3,8 +3,101 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 #![allow(missing_docs)]
-use codec_jcs::{canonicalize_json_text, canonicalize_trusted_json_value, JcsError};
+use codec_jcs::{
+    canonicalize_json_text, canonicalize_trusted_json_value, JcsError, MAX_NESTING_DEPTH,
+};
+
+#[test]
+fn private_number_token_never_collides_with_numeric_json() {
+    let number = canonicalize_json_text(r#"{"a":1.5}"#);
+    let literal = canonicalize_json_text(r#"{"a":{"$serde_json::private::Number":"1.5"}}"#);
+    let valid = match (&number, &literal) {
+        (Ok(number), Ok(literal)) => number != literal,
+        (
+            Err(JcsError::UnsupportedNumberRepresentation),
+            Err(JcsError::UnsupportedNumberRepresentation),
+        ) => true,
+        _ => false,
+    };
+    assert!(
+        valid,
+        "unexpected number representation: {number:?}, {literal:?}"
+    );
+}
+
+#[test]
+fn rejects_ijson_noncharacters_in_names_and_values() {
+    for input in [
+        r#"{"a":"\uFFFF"}"#,
+        r#"{"\uFDD0":1}"#,
+        r#"{"a":"\uDBFF\uDFFF"}"#,
+    ] {
+        assert_eq!(canonicalize_json_text(input), Err(JcsError::Noncharacter));
+    }
+}
 use serde_json::json;
+
+#[test]
+fn trusted_value_depth_accepts_exact_limit_and_rejects_one_more() {
+    // This entry point accepts caller-built values, which do not pass through
+    // the text parser's independent recursion guard.
+    let mut exact = serde_json::Value::Null;
+    for _ in 0..MAX_NESTING_DEPTH {
+        exact = serde_json::Value::Array(vec![exact]);
+    }
+    let expected = format!(
+        "{}null{}",
+        "[".repeat(MAX_NESTING_DEPTH),
+        "]".repeat(MAX_NESTING_DEPTH)
+    );
+    assert_eq!(canonicalize_trusted_json_value(&exact), Ok(expected));
+
+    let over_limit = serde_json::Value::Array(vec![exact]);
+    assert_eq!(
+        canonicalize_trusted_json_value(&over_limit),
+        Err(JcsError::DepthExceeded)
+    );
+}
+
+#[test]
+fn json_text_depth_guard_accepts_limit_and_rejects_deeper_inputs() {
+    let exact_array = format!(
+        "{}null{}",
+        "[".repeat(MAX_NESTING_DEPTH),
+        "]".repeat(MAX_NESTING_DEPTH)
+    );
+    assert_eq!(
+        canonicalize_json_text(&exact_array),
+        Ok(exact_array.clone())
+    );
+
+    let over_array = format!("[{exact_array}]");
+    assert_eq!(
+        canonicalize_json_text(&over_array),
+        Err(JcsError::DepthExceeded)
+    );
+
+    let over_object = format!(
+        "{}null{}",
+        "{\"a\":".repeat(MAX_NESTING_DEPTH + 1),
+        "}".repeat(MAX_NESTING_DEPTH + 1)
+    );
+    assert_eq!(
+        canonicalize_json_text(&over_object),
+        Err(JcsError::DepthExceeded)
+    );
+
+    // The guard must stop adversarial depth before serde or Rust recurses far
+    // enough to exhaust a WASM or FFI stack.
+    assert_eq!(
+        canonicalize_json_text(&"[".repeat(100_000)),
+        Err(JcsError::DepthExceeded)
+    );
+    assert_eq!(
+        canonicalize_json_text(&"{\"a\":".repeat(100_000)),
+        Err(JcsError::DepthExceeded)
+    );
+}
 
 #[test]
 fn canonicalizes_null() -> Result<(), JcsError> {

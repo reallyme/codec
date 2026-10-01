@@ -82,8 +82,8 @@ class ReallyMeCodecTest {
 
     @Test
     fun nativeAbiVersionAndLimitValidationFailsClosed() {
-        assertTrue(ReallyMeCodecRustNativeProvider.isCompatibleAbiVersion(5))
-        assertFalse(ReallyMeCodecRustNativeProvider.isCompatibleAbiVersion(4))
+        assertTrue(ReallyMeCodecRustNativeProvider.isCompatibleAbiVersion(6))
+        assertFalse(ReallyMeCodecRustNativeProvider.isCompatibleAbiVersion(5))
         assertFalse(ReallyMeCodecRustNativeProvider.isCompatibleAbiVersion(0))
 
         assertTrue(ReallyMeCodecRustNativeProvider.isValidNativeLimit(1))
@@ -97,17 +97,19 @@ class ReallyMeCodecTest {
 
     @Test
     fun managedBoundariesRejectOversizedInputsBeforeSerialization() {
-        val oversizedText = "a".repeat(MAX_FFI_REQUEST_BYTES + 1)
+        val oversizedBase64 = "A".repeat(MAX_FFI_REQUEST_BYTES + 4)
+        val oversizedJson = "\"" + "a".repeat(MAX_FFI_REQUEST_BYTES - 1) + "\""
+        val oversizedOperationName = "a".repeat(10_485_761)
 
-        assertFailsWith<ReallyMeCodecException.InvalidInput> {
-            ReallyMeCodec.base64Decode(oversizedText)
-        }
-        assertFailsWith<ReallyMeCodecException.InvalidInput> {
-            ReallyMeCodec.canonicalizeJson(oversizedText)
-        }
-        assertFailsWith<ReallyMeCodecException.InvalidInput> {
-            ReallyMeCodec.multicodecPrefixForName(oversizedText)
-        }
+        assertEquals(ReallyMeCodecException.InvalidInput::class, assertFailsWith<ReallyMeCodecException.InvalidInput> {
+            ReallyMeCodec.base64Decode(oversizedBase64)
+        }::class)
+        assertEquals(ReallyMeCodecException.InvalidInput::class, assertFailsWith<ReallyMeCodecException.InvalidInput> {
+            ReallyMeCodec.canonicalizeJson(oversizedJson)
+        }::class)
+        assertEquals(ReallyMeCodecException.InvalidInput::class, assertFailsWith<ReallyMeCodecException.InvalidInput> {
+            ReallyMeCodec.multicodecPrefixForName(oversizedOperationName)
+        }::class)
         assertFailsWith<ReallyMeCodecException.InvalidInput> {
             ReallyMeCodec.canonicalizeJson("\uD800")
         }
@@ -186,31 +188,16 @@ class ReallyMeCodecTest {
         assertTrue(ReallyMeCodecRustNativeProvider.isTrustedPosixTempOwner("root", "codec"))
         assertTrue(ReallyMeCodecRustNativeProvider.isTrustedPosixTempOwner("codec", "codec"))
         assertFalse(ReallyMeCodecRustNativeProvider.isTrustedPosixTempOwner("attacker", "codec"))
-        assertTrue(
-            ReallyMeCodecRustNativeProvider.isTrustedAclPrincipal(
-                "DESKTOP\\codec",
-                "codec",
-            ),
-        )
-        assertTrue(
-            ReallyMeCodecRustNativeProvider.isTrustedAclPrincipal(
-                "NT AUTHORITY\\SYSTEM",
-                "codec",
-            ),
-        )
-        assertTrue(
-            ReallyMeCodecRustNativeProvider.isTrustedAclPrincipal(
-                "Administratoren",
-                "codec",
-                "Administratoren (S-1-5-32-544)",
-            ),
-        )
-        assertFalse(
-            ReallyMeCodecRustNativeProvider.isTrustedAclPrincipal(
-                "DESKTOP\\attacker",
-                "codec",
-            ),
-        )
+        val current = java.nio.file.attribute.UserPrincipal { "DOMAIN\\codec" }
+        val system = java.nio.file.attribute.UserPrincipal { "NT AUTHORITY\\SYSTEM" }
+        val administrators = java.nio.file.attribute.UserPrincipal { "BUILTIN\\Administrators" }
+        val spoofedCurrent = java.nio.file.attribute.UserPrincipal { "OTHER\\codec" }
+        val spoofedSid = java.nio.file.attribute.UserPrincipal { "Administrators (S-1-5-32-544)" }
+        assertTrue(ReallyMeCodecRustNativeProvider.isTrustedAclPrincipal(current, current, system, administrators))
+        assertTrue(ReallyMeCodecRustNativeProvider.isTrustedAclPrincipal(system, current, system, administrators))
+        assertTrue(ReallyMeCodecRustNativeProvider.isTrustedAclPrincipal(administrators, current, system, administrators))
+        assertFalse(ReallyMeCodecRustNativeProvider.isTrustedAclPrincipal(spoofedCurrent, current, system, administrators))
+        assertFalse(ReallyMeCodecRustNativeProvider.isTrustedAclPrincipal(spoofedSid, current, system, administrators))
     }
 
     @Test
@@ -274,7 +261,7 @@ class ReallyMeCodecTest {
         assertFailsWith<ReallyMeCodecException.InvalidInput> {
             codec.base64urlDecode("AAEC-_8=")
         }
-        assertFailsWith<ReallyMeCodecException.InvalidInput> {
+        assertFailsWith<ReallyMeCodecException.NonCanonical> {
             codec.lowerHexToBytes("DEADBEEF")
         }
         assertFailsWith<ReallyMeCodecException.InvalidInput> {
@@ -344,6 +331,15 @@ class ReallyMeCodecTest {
         val lookup = codec.multicodecLookupPrefix(prefixedPublicKey)
         assertEquals(vectors.string("ed25519CodecName"), lookup.name)
         assertContentEquals(publicKey, codec.multicodecStripPrefix(prefixedPublicKey))
+        assertFailsWith<ReallyMeCodecException.UnsupportedCodec> {
+            codec.multicodecStripPrefix(byteArrayOf(0x99.toByte(), 0x01, 0x01))
+        }
+        assertFailsWith<ReallyMeCodecException.UnsupportedCodec> {
+            codec.multicodecStripPrefix(byteArrayOf(0x80.toByte(), 0x26) + publicKey)
+        }
+        assertFailsWith<ReallyMeCodecException.UnsupportedCodec> {
+            codec.multicodecStripPrefix(prefixedPublicKey.copyOf(prefixedPublicKey.size - 1))
+        }
         assertTrue(codec.multicodecTable().entries.any { it.name == vectors.string("multicodecTableRequiredName") })
 
         assertEquals(
@@ -351,6 +347,9 @@ class ReallyMeCodecTest {
             codec.multikeyEncode(vectors.string("ed25519CodecName"), publicKey),
         )
         val parsed = codec.multikeyParse(vectors.string("ed25519Multikey"))
+        assertFailsWith<ReallyMeCodecException.InvalidInput> {
+            codec.multikeyParse(vectors.string("ed25519PrivateMultikey"))
+        }
         assertEquals(vectors.string("ed25519CodecName"), parsed.codecName)
         assertEquals(vectors.string("ed25519AlgorithmName"), parsed.algorithmName)
         assertContentEquals(publicKey, parsed.publicKey())
@@ -358,11 +357,24 @@ class ReallyMeCodecTest {
         codec.requireSupportedMulticodec(vectors.string("ed25519CodecName"))
         codec.validateKeyBinding(vectors.string("multikeyBindingType"), null, vectors.string("ed25519Multikey"))
         assertFailsWith<ReallyMeCodecException.InvalidInput> {
+            codec.validateKeyBinding("P256Key2024", null, vectors.string("p256Multikey"))
+        }
+        assertFailsWith<ReallyMeCodecException.InvalidInput> {
             codec.validateKeyBinding(
                 vectors.string("mismatchedBindingType"),
                 vectors.string("mismatchedBindingAlgorithm"),
                 vectors.string("ed25519Multikey"),
             )
+        }
+        assertFailsWith<ReallyMeCodecException.InvalidInput> {
+            codec.validateKeyBinding(
+                vectors.string("multikeyBindingType"),
+                vectors.string("mismatchedBindingAlgorithm"),
+                vectors.string("ed25519Multikey"),
+            )
+        }
+        assertFailsWith<ReallyMeCodecException.InvalidInput> {
+            codec.validateKeyBinding("P256Key2024", vectors.string("emptyBindingAlgorithm"), vectors.string("p256Multikey"))
         }
 
         val dagCborBytes = codec.dagCborEncode(dagCborVectorValue())
@@ -386,7 +398,13 @@ class ReallyMeCodecTest {
             vectors.string("pemPrivatePem").toByteArray(Charsets.UTF_8),
             codec.encodePem(pemLabel(vectors.string("pemPrivateLabel")), privateDer),
         )
-        val decodedPem = codec.decodePem(vectors.string("pemPrivatePem").toByteArray(Charsets.UTF_8))
+        val decodedPem = codec.decodePem(
+            vectors.string("pemPrivatePem").toByteArray(Charsets.UTF_8),
+            ReallyMePemDecodeOptions(allowedLabels = listOf(ReallyMePemLabel.PRIVATE_KEY)),
+        )
+        assertFailsWith<ReallyMeCodecException.InvalidInput> {
+            codec.decodePem(vectors.string("pemPrivatePem").toByteArray(Charsets.UTF_8))
+        }
         assertEquals(ReallyMePemLabel.PRIVATE_KEY, decodedPem.label)
         assertContentEquals(privateDer, decodedPem.der())
         assertContentEquals(
@@ -415,17 +433,34 @@ class ReallyMeCodecTest {
                 .any { it.name == vectors.string("multicodecTableRequiredName") },
         )
 
-        for (oversizedResponse in listOf(
-            codec.processOperation(ByteArray(MAX_PROTOBUF_REQUEST_BYTES + 1)),
-            codec.processOperationJson(ByteArray(MAX_PROTO_JSON_REQUEST_BYTES + 1)),
-        )) {
-            val response = CodecOperationResponse.parseFrom(oversizedResponse)
-            assertEquals(CodecOperationResponse.OutcomeCase.ERROR, response.outcomeCase)
-            assertEquals(
-                CodecErrorReason.CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED,
-                response.error.boundary.reason,
-            )
+        for (excess in listOf(1, 16)) {
+            for (oversizedResponse in listOf(
+                codec.processOperation(ByteArray(MAX_PROTOBUF_REQUEST_BYTES + excess)),
+                codec.processOperationJson(ByteArray(MAX_PROTO_JSON_REQUEST_BYTES + excess)),
+            )) {
+                val response = CodecOperationResponse.parseFrom(oversizedResponse)
+                assertEquals(CodecOperationResponse.OutcomeCase.ERROR, response.outcomeCase)
+                assertEquals(
+                    CodecErrorReason.CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED,
+                    response.error.boundary.reason,
+                )
+            }
         }
+
+        val exactBinaryCap = CodecOperationResponse.parseFrom(
+            codec.processOperation(ByteArray(MAX_PROTOBUF_REQUEST_BYTES)),
+        )
+        assertEquals(
+            CodecErrorReason.CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF,
+            exactBinaryCap.error.boundary.reason,
+        )
+        val exactJsonCap = CodecOperationResponse.parseFrom(
+            codec.processOperationJson(ByteArray(MAX_PROTO_JSON_REQUEST_BYTES)),
+        )
+        assertEquals(
+            CodecErrorReason.CODEC_ERROR_REASON_BOUNDARY_MALFORMED_JSON,
+            exactJsonCap.error.boundary.reason,
+        )
     }
 
     @Test
@@ -470,8 +505,10 @@ class ReallyMeCodecTest {
                 codec.dagCborDecode(vectors.hexBytes(key))
             }
         }
+        assertFailsWith<ReallyMeCodecException.NonCanonical> {
+            codec.canonicalizeJson(vectors.string("jcsDuplicateMemberJson"))
+        }
         for (key in listOf(
-            "jcsDuplicateMemberJson",
             "jcsNonInteroperableIntegerJson",
             "jcsLoneSurrogateJson",
         )) {
@@ -538,7 +575,7 @@ class ReallyMeCodecTest {
         codec.requireSupportedMulticodec("ed25519-pub")
         codec.validateKeyBinding("Multikey", null, multikey)
 
-        assertFailsWith<ReallyMeCodecException.InvalidInput> {
+        assertFailsWith<ReallyMeCodecException.UnsupportedCodec> {
             codec.requireSupportedMulticodec("not-a-codec")
         }
         assertFailsWith<ReallyMeCodecException.InvalidInput> {
@@ -565,13 +602,33 @@ class ReallyMeCodecTest {
 
         assertTrue(codec.dagCborVerifyCid(cid, encoded).valid)
 
+        val alternateCid = codec.multibaseBase58btcEncode(byteArrayOf(0x01, 0x71) + codec.dagCborMultihash(encoded))
+        val alternateVerification = codec.dagCborVerifyCid(alternateCid, encoded)
+        assertFalse(alternateVerification.valid)
+        assertEquals(cid, alternateVerification.actualCid)
+
         val invalidUpperPayloadCid = cid.take(1) + cid.drop(1).uppercase()
         val invalidVerification = codec.dagCborVerifyCid(invalidUpperPayloadCid, encoded)
         assertFalse(invalidVerification.valid)
-        assertEquals("", invalidVerification.actualCid)
+        assertEquals(cid, invalidVerification.actualCid)
         val emptyCidResult = codec.dagCborVerifyCid("", encoded)
         assertFalse(emptyCidResult.valid)
         assertEquals(cid, emptyCidResult.expectedCid)
+        for (invalidBlock in listOf(byteArrayOf(0xff.toByte()), byteArrayOf(0x18, 0x01), byteArrayOf(0xf6.toByte(), 0xf6.toByte()))) {
+            val invalidCid = codec.dagCborComputeCid(invalidBlock)
+            assertFailsWith<ReallyMeCodecException.InvalidInput> {
+                codec.dagCborVerifyCid(invalidCid, invalidBlock)
+            }
+        }
+        for (unsupportedBlock in listOf(
+            byteArrayOf(0xfb.toByte(), 0x3f, 0xf8.toByte(), 0, 0, 0, 0, 0, 0),
+            byteArrayOf(0xd8.toByte(), 0x2a, 0x41, 0),
+        )) {
+            val unsupportedCid = codec.dagCborComputeCid(unsupportedBlock)
+            assertFailsWith<ReallyMeCodecException.UnsupportedIpldValue> {
+                codec.dagCborVerifyCid(unsupportedCid, unsupportedBlock)
+            }
+        }
 
         assertEquals(32, codec.dagCborSha256ContentHash(encoded).size)
         assertTrue(codec.dagCborMultihash(encoded).size > 32)
@@ -776,7 +833,10 @@ class ReallyMeCodecTest {
         val pem = codec.encodePem(ReallyMePemLabel.PRIVATE_KEY, der)
 
         assertTrue(pem.toString(Charsets.UTF_8).contains("-----BEGIN PRIVATE KEY-----"))
-        val decoded = codec.decodePem(pem)
+        val decoded = codec.decodePem(
+            pem,
+            ReallyMePemDecodeOptions(allowedLabels = listOf(ReallyMePemLabel.PRIVATE_KEY)),
+        )
         assertEquals(ReallyMePemLabel.PRIVATE_KEY, decoded.label)
         assertContentEquals(der, decoded.der())
         decoded.close()

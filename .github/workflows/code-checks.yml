@@ -7,21 +7,9 @@ name: Code Checks
 on:
   workflow_dispatch:
   pull_request:
-    paths-ignore:
-      - "**/*.md"
-      - "docs/**"
-      - "LICENSE"
-      - "NOTICE"
-      - ".github/renovate.json"
   push:
     branches:
       - main
-    paths-ignore:
-      - "**/*.md"
-      - "docs/**"
-      - "LICENSE"
-      - "NOTICE"
-      - ".github/renovate.json"
 
 permissions:
   contents: read
@@ -33,6 +21,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master
@@ -67,7 +57,7 @@ jobs:
       - name: Install wasm-bindgen-cli
         uses: taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b # wasm-bindgen-cli
         with:
-          tool: wasm-bindgen-cli@0.2.127
+          tool: wasm-bindgen-cli@0.2.129
 
       - name: Install Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -80,16 +70,26 @@ jobs:
         run: cargo fmt --check
 
       - name: Check all features
-        run: cargo check --workspace --all-features
+        run: cargo check --workspace --all-features --locked
 
       - name: Check warnings as errors
-        run: RUSTFLAGS=-Dwarnings cargo check --workspace --all-features
+        run: RUSTFLAGS=-Dwarnings cargo check --workspace --all-features --locked
 
       - name: Clippy
-        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 
       - name: Test
-        run: cargo nextest run --workspace --all-features
+        run: cargo nextest run --workspace --all-features --locked
+
+      - name: Check codec feature subsets
+        run: |
+          cargo test -p reallyme-codec --no-default-features --all-targets --locked
+          for feature in base64 base64url cbor hex jcs multibase multicodec multikey pem operation-contract serde; do
+            cargo test -p reallyme-codec --no-default-features --features "$feature" --all-targets --locked
+          done
+
+      - name: Test JCS under serde_json feature unification
+        run: cargo test --manifest-path probes/jcs-feature-unification/Cargo.toml --locked
 
       - name: Doc build
         run: cargo doc --workspace --no-deps --all-features
@@ -97,13 +97,16 @@ jobs:
           RUSTDOCFLAGS: -D warnings
 
       - name: Doctests
-        run: cargo test --workspace --all-features --doc
+        run: cargo test --workspace --all-features --doc --locked
 
       - name: Check codec WASM crate
-        run: cargo check -p reallyme-codec-wasm --target wasm32-unknown-unknown
+        run: cargo check -p reallyme-codec-wasm --target wasm32-unknown-unknown --locked
 
       - name: Install TypeScript codec package dependencies
         run: npm ci --prefix packages/ts
+
+      - name: Audit production npm dependencies
+        run: npm audit --prefix packages/ts --omit=dev --audit-level=high
 
       - name: Test TypeScript codec package
         run: npm --prefix packages/ts test
@@ -122,6 +125,15 @@ jobs:
 
       - name: Test release attestation policy
         run: node --test scripts/verify_release_attestation.test.mjs
+
+      - name: Test release version policy
+        run: node --test scripts/verify_release_version.test.mjs
+
+      - name: Test release availability policy
+        run: node --test scripts/verify_release_availability.test.mjs
+
+      - name: Test Maven Central upload protocol
+        run: node --test scripts/upload_maven_central_bundle.test.mjs
 
       - name: Test Swift release artifact verification
         run: node --test scripts/verify_swift_release_artifact.test.mjs
@@ -144,6 +156,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install Rust sanitizer toolchain
         uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master
@@ -153,12 +167,53 @@ jobs:
       - name: Test native sanitizer lanes
         run: scripts/test_native_sanitizers.sh
 
+  ffi-abi-artifact:
+    name: FFI release artifact and C sanitizer
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master
+        with:
+          toolchain: 1.98.1
+
+      - name: Verify release artifact through C sanitizer harness
+        run: scripts/test_ffi_abi_release_artifact.sh
+
+  ffi-miri:
+    name: FFI Miri tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pinned Miri toolchain
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master
+        with:
+          toolchain: nightly-2026-07-01
+          components: miri
+
+      - name: Run FFI Miri tests
+        # Cap-sized allocation tests run under nextest; Miri targets the unsafe
+        # pointer and unwind boundaries where its interpreter adds coverage.
+        run: |
+          cargo +nightly-2026-07-01 miri test -p reallyme-codec-ffi --lib pointer::tests --locked
+          cargo +nightly-2026-07-01 miri test -p reallyme-codec-ffi --lib guard::tests --locked
+
   swift:
     name: swift codec package
     runs-on: macos-26
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master
@@ -185,6 +240,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Verify Gradle dependency provenance
+        run: python3 scripts/verify_gradle_checksum_provenance.py
 
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@67621b124fd2e251c5e8a0e6e3b91318f2287669 # v6.3.0

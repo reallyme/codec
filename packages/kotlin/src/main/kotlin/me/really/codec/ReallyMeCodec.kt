@@ -5,7 +5,6 @@
 package me.really.codec
 
 import com.google.protobuf.ByteString
-import com.google.protobuf.CodedInputStream
 import com.google.protobuf.InvalidProtocolBufferException
 import com.google.protobuf.UnsafeByteOperations
 import me.really.codec.v1.CodecDagCborDecodeRequest
@@ -66,6 +65,7 @@ private object CodecOperation {
     const val DAG_CBOR_CODEC_CODE: Int = 26
     const val CANONICALIZE_JSON: Int = 27
     const val VALIDATE_KEY_BINDING: Int = 30
+    const val VALIDATE_KEY_BINDING_NO_ALGORITHM: Int = 31
 }
 
 private object CodecBoolOperation {
@@ -88,8 +88,7 @@ private const val MAX_CODEC_PROTO_MESSAGE_BYTES: Int =
 // One semantic map level expands to Value -> Map -> MapEntry. Five outer/key
 // wrappers cover the deepest generated request/result path. Java Protobuf
 // Lite's default of 100 cannot carry the documented semantic depth of 64.
-private const val MAX_DETERMINISTIC_CBOR_PROTO_MESSAGE_DEPTH: Int =
-    (MAX_DETERMINISTIC_CBOR_NESTING_DEPTH * 3) + 5
+private const val MAX_DETERMINISTIC_CBOR_PROTO_MESSAGE_DEPTH: Int = 197
 
 /**
  * Kotlin facade for ReallyMe codec operations backed by the Rust codec crates.
@@ -153,20 +152,22 @@ public object ReallyMeCodec {
 
     @JvmStatic
     public fun multicodecPrefixForName(name: String): ReallyMeMulticodecMetadata {
-        val result = processOperation(multicodecPrefixForNameRequest(name))
-        if (result.resultCase != CodecOperationResult.ResultCase.MULTICODEC_PREFIX_FOR_NAME) {
-            throw ReallyMeCodecException.ProviderFailure()
+        return processOperation(multicodecPrefixForNameRequest(name)) { result ->
+            if (result.resultCase != CodecOperationResult.ResultCase.MULTICODEC_PREFIX_FOR_NAME) {
+                throw ReallyMeCodecException.ProviderFailure()
+            }
+            sdkMulticodecMetadata(result.multicodecPrefixForName)
         }
-        return sdkMulticodecMetadata(result.multicodecPrefixForName)
     }
 
     @JvmStatic
     public fun multicodecLookupPrefix(bytes: ByteArray): ReallyMeMulticodecLookupResult {
-        val result = processOperation(multicodecLookupPrefixRequest(bytes))
-        if (result.resultCase != CodecOperationResult.ResultCase.MULTICODEC_LOOKUP_PREFIX) {
-            throw ReallyMeCodecException.ProviderFailure()
+        return processOperation(multicodecLookupPrefixRequest(bytes)) { result ->
+            if (result.resultCase != CodecOperationResult.ResultCase.MULTICODEC_LOOKUP_PREFIX) {
+                throw ReallyMeCodecException.ProviderFailure()
+            }
+            sdkMulticodecLookupResult(result.multicodecLookupPrefix)
         }
-        return sdkMulticodecLookupResult(result.multicodecLookupPrefix)
     }
 
     @JvmStatic
@@ -175,11 +176,12 @@ public object ReallyMeCodec {
 
     @JvmStatic
     public fun multicodecTable(): ReallyMeMulticodecTable {
-        val result = processOperation(multicodecTableRequest())
-        if (result.resultCase != CodecOperationResult.ResultCase.MULTICODEC_TABLE) {
-            throw ReallyMeCodecException.ProviderFailure()
+        return processOperation(multicodecTableRequest()) { result ->
+            if (result.resultCase != CodecOperationResult.ResultCase.MULTICODEC_TABLE) {
+                throw ReallyMeCodecException.ProviderFailure()
+            }
+            sdkMulticodecTable(result.multicodecTable)
         }
-        return sdkMulticodecTable(result.multicodecTable)
     }
 
     @JvmStatic
@@ -190,11 +192,12 @@ public object ReallyMeCodec {
 
     @JvmStatic
     public fun multikeyParse(multikey: String): ReallyMeParsedMultikey {
-        val result = processOperation(multikeyParseRequest(multikey))
-        if (result.resultCase != CodecOperationResult.ResultCase.MULTIKEY_PARSE) {
-            throw ReallyMeCodecException.ProviderFailure()
+        return processOperation(multikeyParseRequest(multikey)) { result ->
+            if (result.resultCase != CodecOperationResult.ResultCase.MULTIKEY_PARSE) {
+                throw ReallyMeCodecException.ProviderFailure()
+            }
+            sdkParsedMultikey(result.multikeyParse)
         }
-        return sdkParsedMultikey(result.multikeyParse)
     }
 
     @JvmStatic
@@ -216,10 +219,13 @@ public object ReallyMeCodec {
 
     @JvmStatic
     public fun validateKeyBinding(bindingType: String, algorithm: String?, multikey: String) {
+        if (algorithm != null && algorithm.isEmpty()) {
+            throw ReallyMeCodecException.InvalidInput()
+        }
         withTextBytes(bindingType, algorithm ?: "", multikey) {
                 encodedBindingType, encodedAlgorithm, encodedMultikey ->
             process(
-                CodecOperation.VALIDATE_KEY_BINDING,
+                if (algorithm == null) CodecOperation.VALIDATE_KEY_BINDING_NO_ALGORITHM else CodecOperation.VALIDATE_KEY_BINDING,
                 encodedBindingType,
                 encodedAlgorithm,
                 encodedMultikey,
@@ -230,15 +236,16 @@ public object ReallyMeCodec {
     @JvmStatic
     public fun dagCborEncode(value: ReallyMeDeterministicCborValue): ByteArray {
         validateDeterministicCborValue(value)
-        val operationResult = processOperation(dagCborEncodeRequest(value))
-        if (operationResult.resultCase != CodecOperationResult.ResultCase.DAG_CBOR_ENCODE) {
-            throw ReallyMeCodecException.ProviderFailure()
+        return processOperation(dagCborEncodeRequest(value)) { operationResult ->
+            if (operationResult.resultCase != CodecOperationResult.ResultCase.DAG_CBOR_ENCODE) {
+                throw ReallyMeCodecException.ProviderFailure()
+            }
+            val result = operationResult.dagCborEncode
+            if (result.reallyMeHasUnknownFieldsForValidation()) {
+                throw ReallyMeCodecException.ProviderFailure()
+            }
+            result.encoded.toByteArray()
         }
-        val result = operationResult.dagCborEncode
-        if (result.reallyMeHasUnknownFieldsForValidation()) {
-            throw ReallyMeCodecException.ProviderFailure()
-        }
-        return result.encoded.toByteArray()
     }
 
     @JvmStatic
@@ -246,16 +253,17 @@ public object ReallyMeCodec {
         requireBoundaryAggregate(bytes.size)
         val ownedBytes = bytes.copyOf()
         return try {
-            val operationResult = processOperation(dagCborDecodeRequest(ownedBytes))
-            if (operationResult.resultCase != CodecOperationResult.ResultCase.DAG_CBOR_DECODE) {
-                throw ReallyMeCodecException.ProviderFailure()
+            processOperation(dagCborDecodeRequest(ownedBytes)) { operationResult ->
+                if (operationResult.resultCase != CodecOperationResult.ResultCase.DAG_CBOR_DECODE) {
+                    throw ReallyMeCodecException.ProviderFailure()
+                }
+                val result = operationResult.dagCborDecode
+                if (result.reallyMeHasUnknownFieldsForValidation() || !result.hasValue()) {
+                    throw ReallyMeCodecException.ProviderFailure()
+                }
+                validateProviderDeterministicCborValue(result.value)
+                sdkValue(result.value)
             }
-            val result = operationResult.dagCborDecode
-            if (result.reallyMeHasUnknownFieldsForValidation() || !result.hasValue()) {
-                throw ReallyMeCodecException.ProviderFailure()
-            }
-            validateProviderDeterministicCborValue(result.value)
-            sdkValue(result.value)
         } finally {
             ownedBytes.fill(0)
         }
@@ -270,11 +278,12 @@ public object ReallyMeCodec {
         cid: String,
         bytes: ByteArray,
     ): ReallyMeDagCborCidVerification {
-        val result = processOperation(dagCborVerifyCidRequest(cid, bytes))
-        if (result.resultCase != CodecOperationResult.ResultCase.DAG_CBOR_VERIFY_CID) {
-            throw ReallyMeCodecException.ProviderFailure()
+        return processOperation(dagCborVerifyCidRequest(cid, bytes)) { result ->
+            if (result.resultCase != CodecOperationResult.ResultCase.DAG_CBOR_VERIFY_CID) {
+                throw ReallyMeCodecException.ProviderFailure()
+            }
+            sdkDagCborCidVerification(result.dagCborVerifyCid)
         }
-        return sdkDagCborCidVerification(result.dagCborVerifyCid)
     }
 
     @JvmStatic
@@ -310,15 +319,16 @@ public object ReallyMeCodec {
     @JvmStatic
     public fun deterministicCborEncode(value: ReallyMeDeterministicCborValue): ByteArray {
         validateDeterministicCborValue(value)
-        val operationResult = processOperation(deterministicCborEncodeRequest(value))
-        if (operationResult.resultCase != CodecOperationResult.ResultCase.DETERMINISTIC_CBOR_ENCODE) {
-            throw ReallyMeCodecException.ProviderFailure()
+        return processOperation(deterministicCborEncodeRequest(value)) { operationResult ->
+            if (operationResult.resultCase != CodecOperationResult.ResultCase.DETERMINISTIC_CBOR_ENCODE) {
+                throw ReallyMeCodecException.ProviderFailure()
+            }
+            val result = operationResult.deterministicCborEncode
+            if (result.reallyMeHasUnknownFieldsForValidation()) {
+                throw ReallyMeCodecException.ProviderFailure()
+            }
+            result.encoded.toByteArray()
         }
-        val result = operationResult.deterministicCborEncode
-        if (result.reallyMeHasUnknownFieldsForValidation()) {
-            throw ReallyMeCodecException.ProviderFailure()
-        }
-        return result.encoded.toByteArray()
     }
 
     @JvmStatic
@@ -328,19 +338,20 @@ public object ReallyMeCodec {
         // and serialize one SDK-owned snapshot, then wipe that same owner.
         val ownedBytes = bytes.copyOf()
         return try {
-            val operationResult = processOperation(deterministicCborDecodeRequest(ownedBytes))
-            if (
-                operationResult.resultCase !=
-                CodecOperationResult.ResultCase.DETERMINISTIC_CBOR_DECODE
-            ) {
-                throw ReallyMeCodecException.ProviderFailure()
+            processOperation(deterministicCborDecodeRequest(ownedBytes)) { operationResult ->
+                if (
+                    operationResult.resultCase !=
+                    CodecOperationResult.ResultCase.DETERMINISTIC_CBOR_DECODE
+                ) {
+                    throw ReallyMeCodecException.ProviderFailure()
+                }
+                val result = operationResult.deterministicCborDecode
+                if (result.reallyMeHasUnknownFieldsForValidation() || !result.hasValue()) {
+                    throw ReallyMeCodecException.ProviderFailure()
+                }
+                validateProviderDeterministicCborValue(result.value)
+                sdkValue(result.value)
             }
-            val result = operationResult.deterministicCborDecode
-            if (result.reallyMeHasUnknownFieldsForValidation() || !result.hasValue()) {
-                throw ReallyMeCodecException.ProviderFailure()
-            }
-            validateProviderDeterministicCborValue(result.value)
-            sdkValue(result.value)
         } finally {
             ownedBytes.fill(0)
         }
@@ -391,11 +402,12 @@ public object ReallyMeCodec {
         pem: ByteArray,
         options: ReallyMePemDecodeOptions = ReallyMePemDecodeOptions(),
     ): ReallyMePemDocument {
-        val result = processOperation(pemDecodeRequest(pem, options))
-        if (result.resultCase != CodecOperationResult.ResultCase.PEM_DECODE) {
-            throw ReallyMeCodecException.ProviderFailure()
+        return processOperation(pemDecodeRequest(pem, options)) { result ->
+            if (result.resultCase != CodecOperationResult.ResultCase.PEM_DECODE) {
+                throw ReallyMeCodecException.ProviderFailure()
+            }
+            sdkPemDocument(result.pemDecode)
         }
-        return sdkPemDocument(result.pemDecode)
     }
 
     @JvmStatic
@@ -405,15 +417,16 @@ public object ReallyMeCodec {
         der: ByteArray,
         options: ReallyMePemEncodeOptions = ReallyMePemEncodeOptions(),
     ): ByteArray {
-        val result = processOperation(pemEncodeRequest(label, der, options))
-        if (result.resultCase != CodecOperationResult.ResultCase.PEM_ENCODE) {
-            throw ReallyMeCodecException.ProviderFailure()
+        return processOperation(pemEncodeRequest(label, der, options)) { result ->
+            if (result.resultCase != CodecOperationResult.ResultCase.PEM_ENCODE) {
+                throw ReallyMeCodecException.ProviderFailure()
+            }
+            val pem = result.pemEncode
+            if (pem.reallyMeHasUnknownFieldsForValidation()) {
+                throw ReallyMeCodecException.ProviderFailure()
+            }
+            pem.pem.toByteArray()
         }
-        val pem = result.pemEncode
-        if (pem.reallyMeHasUnknownFieldsForValidation()) {
-            throw ReallyMeCodecException.ProviderFailure()
-        }
-        return pem.pem.toByteArray()
     }
 
     private fun process(
@@ -438,7 +451,10 @@ public object ReallyMeCodec {
      * are wiped on every path. Each public method must still require its exact
      * generated result case before converting to an SDK domain value.
      */
-    private fun processOperation(request: CodecOperationRequest): CodecOperationResult {
+    private fun <T> processOperation(
+        request: CodecOperationRequest,
+        consume: (CodecOperationResult) -> T,
+    ): T {
         ReallyMeCodecRustNativeProvider.requireLoaded()
         val serializedSize = request.serializedSize
         if (serializedSize < 0) {
@@ -460,7 +476,11 @@ public object ReallyMeCodec {
             requestBytes.fill(0)
         }
         return try {
-            val input = CodedInputStream.newInstance(responseBytes)
+            // Parse from the response owner without making detached ByteString
+            // copies. The consumer must finish before the finally block wipes
+            // that owner; domain values copy only the bytes they return.
+            val input = UnsafeByteOperations.unsafeWrap(responseBytes).newCodedInput()
+            input.enableAliasing(true)
             input.setRecursionLimit(MAX_DETERMINISTIC_CBOR_PROTO_MESSAGE_DEPTH)
             val response = CodecOperationResponse.parseFrom(input)
             if (response.reallyMeHasUnknownFieldsForValidation()) {
@@ -475,7 +495,7 @@ public object ReallyMeCodec {
                     ) {
                         throw ReallyMeCodecException.ProviderFailure()
                     }
-                    result
+                    consume(result)
                 }
                 CodecOperationResponse.OutcomeCase.ERROR ->
                     throw exceptionForCodecError(response.error)
@@ -554,10 +574,36 @@ public object ReallyMeCodec {
         if (codecError.origin != expectedOrigin) {
             return ReallyMeCodecException.ProviderFailure()
         }
-        return if (expectedOrigin == CodecErrorOrigin.CODEC_ERROR_ORIGIN_CALLER) {
-            ReallyMeCodecException.InvalidInput()
+        if (expectedOrigin != CodecErrorOrigin.CODEC_ERROR_ORIGIN_CALLER) {
+            return ReallyMeCodecException.ProviderFailure()
+        }
+        val reason = when (codecError.errorCase) {
+            CodecError.ErrorCase.BASE_ENCODING -> codecError.baseEncoding.reason
+            CodecError.ErrorCase.CANONICALIZATION -> codecError.canonicalization.reason
+            CodecError.ErrorCase.MULTIFORMAT -> codecError.multiformat.reason
+            else -> null
+        }
+        if (reason == CodecErrorReason.CODEC_ERROR_REASON_MULTIFORMAT_UNKNOWN_MULTICODEC ||
+            reason == CodecErrorReason.CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTICODEC_PREFIX
+        ) {
+            return ReallyMeCodecException.UnsupportedCodec()
+        }
+        if (reason == CodecErrorReason.CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE) {
+            return ReallyMeCodecException.UnsupportedIpldValue()
+        }
+        return if (reason in setOf(
+                CodecErrorReason.CODEC_ERROR_REASON_BASE_NON_CANONICAL_HEX,
+                CodecErrorReason.CODEC_ERROR_REASON_CANONICAL_NON_CANONICAL_CBOR,
+                CodecErrorReason.CODEC_ERROR_REASON_CANONICAL_NON_CANONICAL_JSON,
+                CodecErrorReason.CODEC_ERROR_REASON_CANONICAL_NON_MINIMAL_CBOR_INTEGER,
+                CodecErrorReason.CODEC_ERROR_REASON_CANONICAL_DUPLICATE_CBOR_MAP_KEY,
+                CodecErrorReason.CODEC_ERROR_REASON_CANONICAL_CBOR_MAP_KEYS_OUT_OF_ORDER,
+                CodecErrorReason.CODEC_ERROR_REASON_CANONICAL_CBOR_TRAILING_BYTES,
+            )
+        ) {
+            ReallyMeCodecException.NonCanonical()
         } else {
-            ReallyMeCodecException.ProviderFailure()
+            ReallyMeCodecException.InvalidInput()
         }
     }
 

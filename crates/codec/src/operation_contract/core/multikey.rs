@@ -9,7 +9,7 @@
 //! independently classify primitive multikey failures or expose primitive
 //! representation details.
 
-use codec_multicodec::VARIABLE_KEY_LENGTH;
+use codec_multicodec::KeyLength;
 use codec_multikey::{parse_multikey as parse_primitive_multikey, MultikeyError};
 
 /// Semantic failure reasons for structured multikey parsing.
@@ -78,16 +78,16 @@ impl ParsedMultikey {
 /// Parse a canonical multibase multikey into structured semantic data.
 pub fn parse_multikey(multikey: &str) -> Result<ParsedMultikey, MultikeyOperationError> {
     let parsed = parse_primitive_multikey(multikey).map_err(multikey_operation_error)?;
-    let expected_public_key_length = if parsed.key_length == VARIABLE_KEY_LENGTH {
-        None
-    } else {
-        Some(parsed.key_length)
+    let expected_public_key_length = match parsed.key_length() {
+        KeyLength::Fixed(length) => Some(length),
+        KeyLength::Variable => None,
+        KeyLength::NotApplicable => return Err(MultikeyOperationError::OperationInvariant),
     };
 
     Ok(ParsedMultikey {
-        codec_name: parsed.codec_name,
-        algorithm_name: parsed.alg,
-        public_key: parsed.public_key,
+        codec_name: parsed.codec_name(),
+        algorithm_name: parsed.algorithm_name(),
+        public_key: parsed.into_public_key(),
         expected_public_key_length,
     })
 }
@@ -98,6 +98,9 @@ fn multikey_operation_error(error: MultikeyError) -> MultikeyOperationError {
             MultikeyOperationError::UnknownCodec
         }
         MultikeyError::InvalidMultibase
+        | MultikeyError::NonPublicKeyMaterial
+        | MultikeyError::EmptyKey
+        | MultikeyError::InvalidCompressedPoint
         | MultikeyError::DecodedTooShort(_)
         | MultikeyError::KeyLengthMismatch { .. }
         | MultikeyError::KeyTooLarge { .. }
@@ -113,6 +116,7 @@ fn multikey_operation_error(error: MultikeyError) -> MultikeyOperationError {
 mod tests {
     #![allow(clippy::unwrap_used)]
 
+    use codec_multicodec::KeyLength;
     use codec_multikey::encode_multikey;
 
     use super::{parse_multikey, parse_primitive_multikey, MultikeyOperationError};
@@ -124,12 +128,15 @@ mod tests {
         let primitive = parse_primitive_multikey(&multikey).unwrap();
         let parsed = parse_multikey(&multikey).unwrap();
 
-        assert_eq!(parsed.codec_name(), primitive.codec_name);
-        assert_eq!(parsed.algorithm_name(), primitive.alg);
-        assert_eq!(parsed.public_key(), primitive.public_key.as_slice());
+        assert_eq!(parsed.codec_name(), primitive.codec_name());
+        assert_eq!(parsed.algorithm_name(), primitive.algorithm_name());
+        assert_eq!(parsed.public_key(), primitive.public_key());
         assert_eq!(
             parsed.expected_public_key_length(),
-            Some(primitive.key_length)
+            Some(match primitive.key_length() {
+                KeyLength::Fixed(length) => length,
+                KeyLength::Variable | KeyLength::NotApplicable => 0,
+            })
         );
         assert!(!parsed.variable_public_key_length());
     }

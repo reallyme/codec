@@ -8,7 +8,7 @@
 // SwiftPM and Xcode only read `Package.swift` at the repository root when a
 // package is consumed by URL, e.g.
 //
-//     .package(url: "https://github.com/reallyme/codec", from: "0.2.3")
+//     .package(url: "https://github.com/reallyme/codec", from: "0.3.0")
 //     .product(name: "ReallyMeCodec", package: "codec")
 //
 // The Swift sources live under `packages/swift/` to keep symmetry with the
@@ -23,15 +23,32 @@ let ffiArtifactChecksumPlaceholder =
 let ffiArtifactChecksum = "348d6525669c530ee846f7989aadb861233e125422b7759f5cdde8e8715de9cf"
 let ffiArtifactVersion = "0.2.1"
 let ffiArtifactLocalPathOverride = ""
-let hasReleasedFfiArtifact = ffiArtifactChecksum != ffiArtifactChecksumPlaceholder
+let packageVersion = "0.3.0"
+let hasReleasedFfiArtifact =
+    ffiArtifactChecksum != ffiArtifactChecksumPlaceholder && ffiArtifactVersion == packageVersion
 let useRuntimeFfiProvider =
     ProcessInfo.processInfo.environment["REALLYME_CODEC_SWIFTPM_RUNTIME_FFI"] == "1"
+let runtimeFfiLibraryPath =
+    ProcessInfo.processInfo.environment["REALLYME_CODEC_FFI_LIBRARY_PATH"] ?? ""
+var runtimeFfiPathIsDirectory: ObjCBool = false
+let runtimeFfiPathExists = FileManager.default.fileExists(
+    atPath: runtimeFfiLibraryPath,
+    isDirectory: &runtimeFfiPathIsDirectory
+)
+
+// The runtime override is for explicit local integration tests. A stray
+// environment flag must not silently remove the binary dependency from a
+// consumer's package graph.
+if useRuntimeFfiProvider &&
+    (runtimeFfiLibraryPath.isEmpty ||
+     !runtimeFfiPathExists || runtimeFfiPathIsDirectory.boolValue) {
+    fputs("REALLYME_CODEC_SWIFTPM_RUNTIME_FFI requires an existing FFI library file.\n", stderr)
+    exit(1)
+}
 
 var codecTargetDependencies: [Target.Dependency] = []
 var codecSwiftSettings: [SwiftSetting] = []
 var packageTargets: [Target] = []
-
-codecTargetDependencies.append("ReallyMeCodecProto")
 
 if hasReleasedFfiArtifact && !useRuntimeFfiProvider {
     codecTargetDependencies.append("ReallyMeCodecFFI")
@@ -67,22 +84,11 @@ packageTargets.append(
     )
 )
 packageTargets.append(
-    .target(
-        name: "ReallyMeCodecProto",
-        dependencies: [
-            .product(name: "SwiftProtobuf", package: "swift-protobuf"),
-        ],
-        path: "gen/swift"
-    )
-)
-packageTargets.append(
     .testTarget(
         name: "ReallyMeCodecTests",
-        dependencies: [
-            "ReallyMeCodec",
-            "ReallyMeCodecProto",
-        ],
-        path: "packages/swift/Tests/ReallyMeCodecTests"
+        dependencies: ["ReallyMeCodec"],
+        path: "packages/swift/Tests/ReallyMeCodecTests",
+        swiftSettings: codecSwiftSettings
     )
 )
 
@@ -96,10 +102,6 @@ let package = Package(
         .library(
             name: "ReallyMeCodec",
             targets: ["ReallyMeCodec"]
-        ),
-        .library(
-            name: "ReallyMeCodecProto",
-            targets: ["ReallyMeCodecProto"]
         ),
     ],
     dependencies: [

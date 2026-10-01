@@ -21,6 +21,12 @@ use zeroize::Zeroizing;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 #[non_exhaustive]
 pub enum PemOperationError {
+    /// The caller supplied no PEM text.
+    #[error("empty pem input")]
+    EmptyInput,
+    /// The caller supplied no DER bytes.
+    #[error("empty der body")]
+    EmptyDer,
     /// The PEM input exceeded the configured input size.
     #[error("pem input too large")]
     InputTooLarge,
@@ -30,6 +36,12 @@ pub enum PemOperationError {
     /// The PEM boundaries were malformed or incomplete.
     #[error("invalid pem boundary")]
     InvalidBoundary,
+    /// The PEM text did not contain a BEGIN boundary.
+    #[error("missing pem begin boundary")]
+    MissingBegin,
+    /// The PEM text did not contain an END boundary.
+    #[error("missing pem end boundary")]
+    MissingEnd,
     /// The BEGIN and END labels did not match.
     #[error("pem label mismatch")]
     LabelMismatch,
@@ -39,6 +51,9 @@ pub enum PemOperationError {
     /// The PEM body is malformed.
     #[error("invalid pem body")]
     InvalidBody,
+    /// The PEM base64 body was malformed.
+    #[error("invalid pem base64")]
+    InvalidBase64,
     /// The adapter supplied an invalid decode policy.
     #[error("invalid pem policy")]
     InvalidPolicy,
@@ -75,6 +90,7 @@ impl DecodedPem {
     }
 
     /// Return the decoded DER payload.
+    #[cfg(test)]
     pub fn der(&self) -> &[u8] {
         self.der.as_slice()
     }
@@ -114,14 +130,17 @@ pub fn encode_pem(
 
 fn pem_operation_error(error: PemError) -> PemOperationError {
     match error {
+        PemError::EmptyInput => PemOperationError::EmptyInput,
+        PemError::EmptyDer => PemOperationError::EmptyDer,
         PemError::InputTooLarge => PemOperationError::InputTooLarge,
         PemError::DerTooLarge => PemOperationError::DerTooLarge,
-        PemError::MissingBegin | PemError::MissingEnd | PemError::InvalidBoundary => {
-            PemOperationError::InvalidBoundary
-        }
+        PemError::MissingBegin => PemOperationError::MissingBegin,
+        PemError::MissingEnd => PemOperationError::MissingEnd,
+        PemError::InvalidBoundary => PemOperationError::InvalidBoundary,
         PemError::LabelMismatch => PemOperationError::LabelMismatch,
         PemError::UnsupportedLabel => PemOperationError::UnsupportedLabel,
-        PemError::InvalidBase64 | PemError::InvalidBody => PemOperationError::InvalidBody,
+        PemError::InvalidBase64 => PemOperationError::InvalidBase64,
+        PemError::InvalidBody => PemOperationError::InvalidBody,
         PemError::InvalidOptions => PemOperationError::InvalidPolicy,
         _ => PemOperationError::OperationInvariant,
     }

@@ -9,7 +9,10 @@
 //! PEM text armor.
 //! SHA-256 is used for content identifiers. This crate does not expose signing,
 //! encryption, or key generation.
-
+//!
+//! # Usage examples
+//!
+#![cfg_attr(feature = "base64url", doc = include_str!("../README.md"))]
 #![forbid(unsafe_code)]
 
 /// Standard (RFC 4648) base64 encode/decode.
@@ -35,10 +38,11 @@ pub mod cbor {
     pub use codec_cbor::{
         compute_cid_dag_cbor, dag_cbor_multihash, decode_dag_cbor, decode_deterministic_cbor,
         encode_dag_cbor, encode_deterministic_cbor, is_valid_cid_string, sha2_256_content_hash,
-        try_parse_cid, verify_dag_cbor_cid, CborError, CborValue, ContentHash, DagCborMultihash,
-        DeterministicCborError, DeterministicCborInteger, DeterministicCborMapEntry,
-        DeterministicCborMapKey, DeterministicCborNegativeInteger, DeterministicCborProfileError,
-        DeterministicCborValue, DAG_CBOR_CODEC, DETERMINISTIC_CBOR_NEGATIVE_MAX,
+        try_parse_cid, verify_dag_cbor_cid, CborError, CborValue, CidVerificationStatus,
+        ContentHash, DagCborCidVerification, DagCborMultihash, DeterministicCborError,
+        DeterministicCborInteger, DeterministicCborMapEntry, DeterministicCborMapKey,
+        DeterministicCborNegativeInteger, DeterministicCborProfileError, DeterministicCborValue,
+        ParsedCid, DAG_CBOR_CODEC, DETERMINISTIC_CBOR_NEGATIVE_MAX,
         DETERMINISTIC_CBOR_NEGATIVE_MIN, MAX_DETERMINISTIC_CBOR_AGGREGATE_BYTE_STRING_BYTES,
         MAX_DETERMINISTIC_CBOR_AGGREGATE_TEXT_BYTES, MAX_DETERMINISTIC_CBOR_CONTAINER_ENTRIES,
         MAX_DETERMINISTIC_CBOR_INPUT_LEN, MAX_DETERMINISTIC_CBOR_NESTING_DEPTH,
@@ -74,9 +78,10 @@ pub mod multicodec;
 /// Multikey encoding/parsing that binds an algorithm to opaque key bytes.
 #[cfg(feature = "multikey")]
 pub mod multikey {
+    #[allow(deprecated)]
     pub use codec_multikey::{
         binding_type_matches_codec, encode_multikey, parse_multikey, validate_key_binding,
-        KeyBindingInput, MultikeyError, ParsedMultikey,
+        validate_multikey_binding, KeyBindingInput, MultikeyError, ParsedMultikey,
     };
 }
 
@@ -92,8 +97,3 @@ pub mod pem {
 /// Generated protobuf operation contract lane.
 #[cfg(feature = "operation-contract")]
 pub mod operation_contract;
-
-/// Adapter-facing semantic layer for scalar and raw-byte operations.
-#[cfg(feature = "operation-contract")]
-#[doc(hidden)]
-pub mod scalar_ops;

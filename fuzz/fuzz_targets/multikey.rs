@@ -12,6 +12,15 @@ use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
     if let Ok(text) = core::str::from_utf8(data) {
-        let _ = codec_multikey::parse_multikey(text);
+        if codec_multikey::parse_multikey(text).is_ok() {
+            assert!(codec_multikey::validate_multikey_binding(
+                codec_multikey::KeyBindingInput {
+                    binding_type: "Multikey",
+                    algorithm: None,
+                },
+                text,
+            )
+            .is_ok());
+        }
     }
 });

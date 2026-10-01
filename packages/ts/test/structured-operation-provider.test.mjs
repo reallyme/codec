@@ -4,9 +4,10 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { create, toBinary } from "@bufbuild/protobuf";
-import * as wasm from "../dist/wasm/reallyme_codec_wasm.js";
-import {
+import { create, fromBinary, toBinary } from "@bufbuild/protobuf";
+import "./wasm-module-test-hook.mjs";
+const wasm = await import("../dist/wasm/reallyme_codec_wasm.js");
+const {
   ReallyMeCodecError,
   installReallyMeCodecWasmProvider,
   multicodecLookupPrefix,
@@ -14,7 +15,7 @@ import {
   multicodecTable,
   processOperation,
   processOperationJson,
-} from "../dist/index.js";
+} = await import("../dist/index.js");
 import {
   MAX_CODEC_PROTO_JSON_BYTES,
   MAX_CODEC_PROTO_MESSAGE_BYTES,
@@ -26,6 +27,8 @@ import {
   CodecMulticodecTableResultSchema,
   CodecOperationResponseSchema,
   CodecOperationResultSchema,
+  CodecErrorReason,
+  CodecErrorOrigin,
   CodecTag,
 } from "../dist/proto.js";
 
@@ -35,9 +38,7 @@ let currentResult = create(CodecOperationResultSchema);
 let lastProviderInput = new Uint8Array(0);
 let lastProviderOutput = new Uint8Array(0);
 
-const provider = {
-  ...wasm,
-  processOperation(request) {
+const operationHandler = (request) => {
     lastProviderInput = request;
     lastProviderOutput = toBinary(
       CodecOperationResponseSchema,
@@ -49,23 +50,10 @@ const provider = {
       }),
     );
     return lastProviderOutput;
-  },
-  processOperationJson(request) {
-    lastProviderInput = request;
-    lastProviderOutput = toBinary(
-      CodecOperationResponseSchema,
-      create(CodecOperationResponseSchema, {
-        outcome: {
-          case: "result",
-          value: currentResult,
-        },
-      }),
-    );
-    return lastProviderOutput;
-  },
 };
 
-installReallyMeCodecWasmProvider(provider);
+wasm.setOperationHandler(operationHandler);
+installReallyMeCodecWasmProvider(wasm);
 
 const metadata = (prefix = Uint8Array.of(0xed, 0x01)) =>
   create(CodecMulticodecSpecSchema, {
@@ -116,11 +104,36 @@ test("public contract processors pass providers a wiped SDK-owned snapshot", () 
 
 test("public contract processors reject oversized input before provider invocation", () => {
   lastProviderInput = Uint8Array.of(0xa5);
-  assertInvalidInput(() => processOperation(new Uint8Array(MAX_CODEC_PROTO_MESSAGE_BYTES + 1)));
-  assert.deepEqual(lastProviderInput, Uint8Array.of(0xa5));
+  for (const excess of [1, 16]) {
+    const binary = fromBinary(
+      CodecOperationResponseSchema,
+      processOperation(new Uint8Array(MAX_CODEC_PROTO_MESSAGE_BYTES + excess)),
+    );
+    assert.equal(binary.outcome.case, "error");
+    assert.equal(binary.outcome.value.error.case, "boundary");
+    assert.equal(binary.outcome.value.error.value.reason, CodecErrorReason.BOUNDARY_RESOURCE_LIMIT_EXCEEDED);
+    assert.equal(binary.outcome.value.origin, CodecErrorOrigin.CALLER);
+    assert.deepEqual(lastProviderInput, Uint8Array.of(0xa5));
 
-  assertInvalidInput(() => processOperationJson(new Uint8Array(MAX_CODEC_PROTO_JSON_BYTES + 1)));
-  assert.deepEqual(lastProviderInput, Uint8Array.of(0xa5));
+    const json = fromBinary(
+      CodecOperationResponseSchema,
+      processOperationJson(new Uint8Array(MAX_CODEC_PROTO_JSON_BYTES + excess)),
+    );
+    assert.deepEqual(json, binary);
+    assert.deepEqual(lastProviderInput, Uint8Array.of(0xa5));
+  }
+});
+
+test("public contract processors pass exact-cap requests to providers", () => {
+  const binary = processOperation(new Uint8Array(MAX_CODEC_PROTO_MESSAGE_BYTES));
+  assert.equal(lastProviderInput.length, MAX_CODEC_PROTO_MESSAGE_BYTES);
+  assert.ok(lastProviderInput.every((byte) => byte === 0));
+  binary.fill(0);
+
+  const json = processOperationJson(new Uint8Array(MAX_CODEC_PROTO_JSON_BYTES));
+  assert.equal(lastProviderInput.length, MAX_CODEC_PROTO_JSON_BYTES);
+  assert.ok(lastProviderInput.every((byte) => byte === 0));
+  json.fill(0);
 });
 
 test("structured SDK methods reject a valid result for the wrong operation", () => {

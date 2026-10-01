@@ -18,7 +18,7 @@ on:
         description: Release version without leading v
         required: true
         type: string
-        default: 0.2.3
+        default: 0.3.0
 
 permissions:
   contents: read
@@ -37,6 +37,7 @@ jobs:
       - name: Checkout main for release SHA resolution
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           ref: main
           fetch-depth: 0
 
@@ -71,6 +72,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ needs.verify-source-sha.outputs.release_sha }}
 
       - name: Install Rust toolchain
@@ -87,6 +89,18 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
+
+      - name: Verify release version across package manifests
+        run: node scripts/verify_release_version.mjs "${RELEASE_VERSION}"
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+
+      - name: Verify unused release slot across registries
+        run: node scripts/verify_release_availability.mjs "${RELEASE_VERSION}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_VERSION: ${{ inputs.version }}
 
       - name: Check workspace metadata
         run: cargo metadata --format-version 1 --no-deps

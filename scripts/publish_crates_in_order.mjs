@@ -3,6 +3,9 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
@@ -10,6 +13,7 @@ const MODE_INSPECT = "inspect";
 const MODE_PUBLISH = "publish";
 const args = process.argv.slice(2);
 const mode = args[0] ?? MODE_INSPECT;
+const PUBLISH_RETRY_ATTEMPTS = 12;
 const allowDirty = args.includes("--allow-dirty");
 const unknownArgs = args.slice(1).filter((arg) => arg !== "--allow-dirty");
 
@@ -56,7 +60,7 @@ function retryAfterMs(output) {
   return Math.max(delayMs, 10000);
 }
 
-const metadataResult = run("cargo", ["metadata", "--format-version", "1", "--no-deps"], {
+const metadataResult = run("cargo", ["metadata", "--format-version", "1", "--no-deps", "--locked"], {
   capture: true,
 });
 
@@ -82,52 +86,10 @@ function isWorkspacePathDependency(dep) {
   return dep.source === null && typeof dep.path === "string" && publishable.has(dep.name);
 }
 
-function parseVersion(version) {
-  const parts = version.split(".");
-  if (parts.length !== 3) {
-    return null;
-  }
-
-  const parsed = parts.map((part) => Number.parseInt(part, 10));
-  if (parsed.some((part) => !Number.isSafeInteger(part) || part < 0)) {
-    return null;
-  }
-
-  return {
-    major: parsed[0],
-    minor: parsed[1],
-    patch: parsed[2],
-  };
-}
-
-function isCaretReqSatisfied(req, version) {
-  if (!req.startsWith("^")) {
-    return req === `=${version}` || req === version;
-  }
-
-  const minimum = parseVersion(req.slice(1));
-  const actual = parseVersion(version);
-  if (minimum === null || actual === null) {
-    return false;
-  }
-
-  if (actual.major !== minimum.major) {
-    return false;
-  }
-
-  if (minimum.major === 0 && actual.minor !== minimum.minor) {
-    return false;
-  }
-
-  if (actual.minor < minimum.minor) {
-    return false;
-  }
-
-  if (actual.minor === minimum.minor && actual.patch < minimum.patch) {
-    return false;
-  }
-
-  return true;
+// A published crate must not silently resolve a different release of an
+// internal dependency after the next lockstep version becomes available.
+function matchesReleasedVersion(req, version) {
+  return req === `=${version}`;
 }
 
 function checkPathDependencyVersions() {
@@ -139,7 +101,7 @@ function checkPathDependencyVersions() {
       }
 
       const target = publishable.get(dep.name);
-      if (!isCaretReqSatisfied(dep.req, target.version)) {
+      if (!matchesReleasedVersion(dep.req, target.version)) {
         failures.push(
           `${pkg.name} depends on ${dep.name} with ${dep.req}; local version is ${target.version}`,
         );
@@ -222,6 +184,11 @@ function isEarlierWorkspaceDependency(pkg, depName) {
   return depIndex !== undefined && pkgIndex !== undefined && depIndex < pkgIndex;
 }
 
+function awaitsWorkspaceDependency(pkg, output) {
+  const missing = unresolvedRegistryPackages(output);
+  return missing.length !== 0 && missing.every((depName) => isEarlierWorkspaceDependency(pkg, depName));
+}
+
 function inspectPackage(pkg) {
   const listArgs = ["package", "-p", pkg.name, "--list"];
   if (allowDirty) {
@@ -258,10 +225,86 @@ function inspectPackage(pkg) {
   process.exit(dryRunResult.status ?? 1);
 }
 
-function publishPackage(pkg) {
-  const args = ["publish", "-p", pkg.name, "--locked"];
+function packageChecksum(pkg) {
+  // No build script or proc macro runs while a publishing token is present.
+  for (let attempt = 1; attempt <= PUBLISH_RETRY_ATTEMPTS; attempt += 1) {
+    const result = run("cargo", ["package", "-p", pkg.name, "--locked", "--no-verify"], {
+      capture: true,
+    });
+    process.stdout.write(result.stdout);
+    process.stderr.write(result.stderr);
+    if (result.status === 0) {
+      const archive = join(metadata.target_directory, "package", `${pkg.name}-${pkg.version}.crate`);
+      return createHash("sha256").update(readFileSync(archive)).digest("hex");
+    }
+    const combined = `${result.stdout}\n${result.stderr}`;
+    if (!awaitsWorkspaceDependency(pkg, combined) || attempt === PUBLISH_RETRY_ATTEMPTS) {
+      process.exit(result.status ?? 1);
+    }
+    const delayMs = attempt * 15_000;
+    console.log(`crates.io index has not observed an ordered dependency; retrying package ${pkg.name} in ${delayMs / 1000}s...`);
+    sleepMs(delayMs);
+  }
+  throw new Error(`package-retry-state-invalid: ${pkg.name}`);
+}
 
-  for (let attempt = 1; attempt <= 12; attempt += 1) {
+async function publishedChecksum(pkg) {
+  const response = await fetch(
+    `https://crates.io/api/v1/crates/${encodeURIComponent(pkg.name)}/${encodeURIComponent(pkg.version)}`,
+    { headers: { "User-Agent": "reallyme-codec-release/0.3.0" }, signal: AbortSignal.timeout(20000) },
+  );
+  if (response.status === 404) {
+    return null;
+  }
+  if (!response.ok) {
+    throw new Error(`registry-version-query-failed: ${response.status}`);
+  }
+  const body = await response.json();
+  const checksum = body?.version?.checksum;
+  if (typeof checksum !== "string" || !/^[0-9a-f]{64}$/u.test(checksum)) {
+    throw new Error("registry-version-checksum-missing");
+  }
+  return checksum;
+}
+
+async function previouslyPublishedMatches(pkg, localChecksum) {
+  const registryChecksum = await publishedChecksum(pkg);
+  if (registryChecksum === null) {
+    return false;
+  }
+  if (registryChecksum !== localChecksum) {
+    throw new Error(`published-crate-checksum-mismatch: ${pkg.name} ${pkg.version}`);
+  }
+  console.log(`${pkg.name} ${pkg.version} already has the verified release checksum`);
+  return true;
+}
+
+async function waitForPublishedChecksum(pkg, localChecksum) {
+  // Cargo can time out after crates.io accepted the upload. The version API
+  // may also lag the upload response, so allow bounded propagation before
+  // deciding that the release state cannot be verified.
+  const verificationAttempts = 12;
+  const verificationDelayMs = 15_000;
+  for (let attempt = 1; attempt <= verificationAttempts; attempt += 1) {
+    if (await previouslyPublishedMatches(pkg, localChecksum)) {
+      return;
+    }
+    if (attempt < verificationAttempts) {
+      sleepMs(verificationDelayMs);
+    }
+  }
+  throw new Error(`published-crate-not-verifiable: ${pkg.name} ${pkg.version}`);
+}
+
+async function publishPackage(pkg) {
+  const localChecksum = packageChecksum(pkg);
+  if (await previouslyPublishedMatches(pkg, localChecksum)) {
+    return;
+  }
+  // Package verification already ran in the uncredentialed preflight job.
+  const args = ["publish", "-p", pkg.name, "--locked", "--no-verify"];
+
+  for (let attempt = 1; attempt <= PUBLISH_RETRY_ATTEMPTS; attempt += 1) {
     const result = run("cargo", args, { capture: true });
     process.stdout.write(result.stdout);
     process.stderr.write(result.stderr);
@@ -271,14 +314,16 @@ function publishPackage(pkg) {
     }
 
     const combined = `${result.stdout}\n${result.stderr}`;
-    if (combined.includes("already uploaded") || combined.includes("already exists")) {
-      console.error(
-        `${pkg.name} ${pkg.version} is already published; refusing to treat a prior upload as this release's attested publish.`,
-      );
-      process.exit(result.status ?? 1);
+    const lowerCombined = combined.toLowerCase();
+    if (
+      lowerCombined.includes("already uploaded") ||
+      lowerCombined.includes("already exists") ||
+      (lowerCombined.includes("timed out") && lowerCombined.includes("publish"))
+    ) {
+      await waitForPublishedChecksum(pkg, localChecksum);
+      return;
     }
 
-    const lowerCombined = combined.toLowerCase();
     const rateLimitDelayMs = retryAfterMs(combined);
     if (lowerCombined.includes("too many requests") && rateLimitDelayMs !== null) {
       console.log(
@@ -288,7 +333,7 @@ function publishPackage(pkg) {
       continue;
     }
 
-    if (!combined.includes("no matching package named") || attempt === 12) {
+    if (!awaitsWorkspaceDependency(pkg, combined) || attempt === PUBLISH_RETRY_ATTEMPTS) {
       process.exit(result.status ?? 1);
     }
 
@@ -311,5 +356,5 @@ for (const pkg of ordered) {
     continue;
   }
 
-  publishPackage(pkg);
+  await publishPackage(pkg);
 }

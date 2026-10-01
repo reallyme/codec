@@ -8,7 +8,11 @@ public enum ReallyMeCodecError: Error, Equatable, Sendable {
     case unsupportedPlatform
     case dynamicLibraryNotFound
     case dynamicLibraryLoadFailed
+    case providerUnavailable
     case symbolNotFound
     case invalidInput
+    case unsupportedCodec
+    case unsupportedIpldValue
+    case nonCanonical
     case providerFailure
 }

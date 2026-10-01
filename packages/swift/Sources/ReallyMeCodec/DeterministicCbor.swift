@@ -3,11 +3,10 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 import Foundation
-import ReallyMeCodecProto
 import SwiftProtobuf
 
 public struct ReallyMeDeterministicCborNegativeInteger:
-    Sendable, CustomStringConvertible, CustomDebugStringConvertible
+    Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable
 {
     public let value: Int64
 
@@ -32,10 +31,12 @@ public struct ReallyMeDeterministicCborNegativeInteger:
     public var debugDescription: String {
         description
     }
+
+    public var customMirror: Mirror { Mirror(self, children: []) }
 }
 
 public enum ReallyMeDeterministicCborInteger:
-    Sendable, CustomStringConvertible, CustomDebugStringConvertible
+    Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable
 {
     case unsigned(UInt64)
     case negative(ReallyMeDeterministicCborNegativeInteger)
@@ -47,10 +48,12 @@ public enum ReallyMeDeterministicCborInteger:
     public var debugDescription: String {
         description
     }
+
+    public var customMirror: Mirror { Mirror(self, children: []) }
 }
 
 public enum ReallyMeDeterministicCborMapKey:
-    Sendable, CustomStringConvertible, CustomDebugStringConvertible
+    Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable
 {
     case integer(ReallyMeDeterministicCborInteger)
     case text(String)
@@ -62,10 +65,12 @@ public enum ReallyMeDeterministicCborMapKey:
     public var debugDescription: String {
         description
     }
+
+    public var customMirror: Mirror { Mirror(self, children: []) }
 }
 
 public struct ReallyMeDeterministicCborMapEntry:
-    Sendable, CustomStringConvertible, CustomDebugStringConvertible
+    Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable
 {
     public let key: ReallyMeDeterministicCborMapKey
     public let value: ReallyMeDeterministicCborValue
@@ -82,10 +87,12 @@ public struct ReallyMeDeterministicCborMapEntry:
     public var debugDescription: String {
         description
     }
+
+    public var customMirror: Mirror { Mirror(self, children: []) }
 }
 
 public indirect enum ReallyMeDeterministicCborValue:
-    Sendable, CustomStringConvertible, CustomDebugStringConvertible
+    Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable
 {
     case null
     case bool(Bool)
@@ -102,6 +109,8 @@ public indirect enum ReallyMeDeterministicCborValue:
     public var debugDescription: String {
         description
     }
+
+    public var customMirror: Mirror { Mirror(self, children: []) }
 }
 
 public enum ReallyMeDeterministicCbor {
@@ -251,9 +260,8 @@ private let maxDeterministicCborProtoMessageBytes =
 // wrappers cover the deepest generated request/result path. SwiftProtobuf's
 // default of 100 cannot carry the documented semantic depth of 64. The fully
 // discriminated response adds OperationResponse and OperationResult outside
-// the operation-specific result, so Swift requires seven outer/key wrappers.
-let maxDeterministicCborProtoMessageDepth =
-    (maxDeterministicCborNestingDepth * 3) + 7
+// the operation-specific result; the generated limit includes that path.
+let maxDeterministicCborProtoMessageDepth = 198
 
 private struct DeterministicCborValidationState {
     var nodes = 0
@@ -785,22 +793,26 @@ private func clearProtoDecodeResult(
     clearProtoValue(&value)
 }
 
-// SwiftProtobuf recursive messages are value types with copy-on-write storage.
-// The reliable cleanup boundary is the serialized request/result byte owner;
-// this walk first detaches oneof parents, then wipes the surviving local owner
-// so Data/array copy-on-write does not preserve the dropped generated storage.
+// SwiftProtobuf recursive messages use copy-on-write storage. Move each oneof
+// out of its parent and release the switch source before mutating a byte field.
+// A live second owner would make Data allocate a copy and leave the original
+// bytes unwiped. The serialized request/result buffer has a separate wipe;
+// managed-runtime ownership outside this tree cannot be guaranteed here.
 private func clearProtoValue(_ value: inout ReallyMeProtoCodecDeterministicCborValue) {
-    let detachedValue = value.value
-    value.value = nil
+    var detachedValue: ReallyMeProtoCodecDeterministicCborValue.OneOf_Value? = nil
+    swap(&value.value, &detachedValue)
     switch detachedValue {
     case .bytesValue(var bytes):
+        detachedValue = nil
         ReallyMeCodecMemory.clearOwned(&bytes.value)
     case .arrayValue(var array):
+        detachedValue = nil
         for index in array.values.indices {
             clearProtoValue(&array.values[index])
         }
         array.values.removeAll(keepingCapacity: false)
     case .mapValue(var map):
+        detachedValue = nil
         for index in map.entries.indices {
             clearProtoMapEntry(&map.entries[index])
         }

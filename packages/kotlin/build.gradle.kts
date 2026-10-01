@@ -6,22 +6,45 @@ import org.gradle.api.publish.maven.tasks.PublishToMavenLocal
 import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
 import org.gradle.external.javadoc.StandardJavadocDocletOptions
 import org.gradle.jvm.tasks.Jar
+import java.io.File
 import java.net.URI
 import java.security.MessageDigest
 import java.util.zip.ZipFile
 
 plugins {
-    kotlin("jvm") version "2.4.10"
+    kotlin("jvm") version "2.4.20"
     `java-library`
     `maven-publish`
     signing
 }
 
 group = "me.really"
-version = "0.2.3"
+version = "0.3.0"
+
+// The JVM jar and Android AAR expose the same me.really.codec classes.
+// The shared capability makes Gradle reject a graph containing both.
+configurations.matching { it.name in setOf("apiElements", "runtimeElements") }.configureEach {
+    outgoing.capability("me.really:codec:${project.version}")
+    outgoing.capability("me.really:codec-classes:${project.version}")
+}
 
 dependencyLocking {
     lockAllConfigurations()
+}
+
+val kotlinBouncyCastleConfiguration = "kotlinBouncyCastleConfiguration"
+val bouncyCastleSecurityVersion = "1.86"
+// Kotlin's publishing validation resolves Bouncy Castle 1.84 internally.
+// Constrain that tooling classpath because 1.84 is affected by CVE-2026-8763.
+configurations.configureEach {
+    if (name == kotlinBouncyCastleConfiguration) {
+        resolutionStrategy.eachDependency {
+            if (requested.group == "org.bouncycastle") {
+                useVersion(bouncyCastleSecurityVersion)
+                because("Bouncy Castle 1.86 includes the name-constraints fix")
+            }
+        }
+    }
 }
 
 val remoteMavenRepositoryUrl = providers.gradleProperty("reallyme.maven.repositoryUrl")
@@ -172,12 +195,22 @@ val buildHostNativeLibrary = tasks.register<Exec>("buildHostNativeLibrary") {
     commandLine("cargo", "build", "--locked", "-p", "reallyme-codec-ffi", "--release")
 }
 
+val cargoWorkspaceRoot = file("../..")
+val cargoTargetDirectory = providers.environmentVariable("CARGO_TARGET_DIR")
+    .orNull
+    ?.takeIf { it.isNotBlank() }
+    ?.let { configuredPath ->
+        val configured = File(configuredPath)
+        if (configured.isAbsolute) configured else cargoWorkspaceRoot.resolve(configured)
+    }
+    ?: cargoWorkspaceRoot.resolve("target")
+
 val stageHostNativeResource = tasks.register<Copy>("stageHostNativeResource") {
     group = "build"
     description = "Stages the host Rust JNI library as a JVM package resource for local tests."
     onlyIf { !configuredNativeResourcesDir.isPresent }
     dependsOn(buildHostNativeLibrary)
-    from(layout.projectDirectory.file("../../target/release/$hostNativeLibraryName"))
+    from(cargoTargetDirectory.resolve("release/$hostNativeLibraryName"))
     into(nativeResourcesDir.map {
         it.resolve("me/really/codec/native/$hostNativePlatform-$hostNativeArch")
     })
@@ -201,8 +234,8 @@ val writeHostNativeDigest = tasks.register("writeHostNativeDigest") {
 }
 
 dependencies {
-    api("com.google.protobuf:protobuf-javalite:4.36.1")
-    api("com.google.protobuf:protobuf-kotlin-lite:4.36.1")
+    api("com.google.protobuf:protobuf-javalite:4.36.2")
+    api("com.google.protobuf:protobuf-kotlin-lite:4.36.2")
     testImplementation("com.google.code.gson:gson:2.14.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.3")
     testImplementation(kotlin("test"))
@@ -213,6 +246,7 @@ tasks.test {
     useJUnitPlatform()
     providers.environmentVariable("REALLYME_CODEC_FFI_LIBRARY_PATH").orNull?.let { libraryPath ->
         systemProperty("reallyme.codec.testLibraryPath", libraryPath)
+        systemProperty("reallyme.codec.allowUnverifiedNative", "true")
     }
 }
 

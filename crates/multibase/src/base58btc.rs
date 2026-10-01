@@ -11,7 +11,11 @@ use zeroize::Zeroizing;
 /// The underlying base58 conversion is not linear in input size. This cap keeps
 /// untrusted byte and text inputs bounded while leaving headroom above the
 /// largest currently supported multikey encodings.
-pub const MAX_BASE58BTC_INPUT_LEN: usize = 8 * 1024;
+pub const MAX_BASE58BTC_INPUT_LEN: usize = 5_600;
+
+/// Maximum decoded bytes whose worst-case base58btc spelling fits the text cap.
+/// Includes the two-byte multicodec prefix of a 4096-byte RSA public key.
+pub const MAX_BASE58BTC_DECODED_LEN: usize = 4_098;
 
 /// Error returned when base58btc decoding fails.
 #[derive(Debug, Error)]
@@ -47,7 +51,7 @@ impl From<Bs58DecodeError> for Base58Error {
 
 /// Encodes bytes as a base58btc string.
 pub fn base58btc_encode(bytes: &[u8]) -> Result<String, Base58Error> {
-    if bytes.len() > MAX_BASE58BTC_INPUT_LEN {
+    if bytes.len() > MAX_BASE58BTC_DECODED_LEN {
         return Err(Base58Error::InputTooLarge);
     }
     let mut output = Zeroizing::new(Vec::new());
@@ -77,5 +81,8 @@ pub fn base58btc_decode(s: &str) -> Result<Vec<u8>, Base58Error> {
         .onto(output.as_mut_slice())
         .map_err(Base58Error::from)?;
     output.truncate(length);
+    if length > MAX_BASE58BTC_DECODED_LEN {
+        return Err(Base58Error::InputTooLarge);
+    }
     Ok(core::mem::take(&mut *output))
 }

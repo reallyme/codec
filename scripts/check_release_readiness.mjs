@@ -4,8 +4,10 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 
-import { createReleaseReadinessContext } from "./release-readiness/core.mjs";
+import { createReleaseReadinessContext, scrubCommentsForAssertion } from "./release-readiness/core.mjs";
+import { ReleaseVersionError, verifyCheckedOutReleaseVersion } from "./verify_release_version.mjs";
 import {
   codecProtoProviderOutputMessages,
   codecProtoScalarFieldClassifications,
@@ -42,7 +44,6 @@ const {
   requireTracked,
   assertContains,
   assertNotContains,
-  assertMinOccurrences,
   assertNodeWorkflowJobsPinNode,
   assertProtoContract,
   assertReallyMeOperationBoundaryContract,
@@ -89,7 +90,7 @@ for (const argument of process.argv.slice(2)) {
 }
 
 const assertSubstringsInOrder = (path, substrings) => {
-  const contents = readText(path);
+  const contents = scrubCommentsForAssertion(path, readText(path));
   let previousIndex = -1;
   for (const substring of substrings) {
     const currentIndex = contents.indexOf(substring, previousIndex + 1);
@@ -100,6 +101,14 @@ const assertSubstringsInOrder = (path, substrings) => {
       fail(`${path} has release steps in an unsafe order near: ${substring}`);
     }
     previousIndex = currentIndex;
+  }
+};
+
+const assertMinOccurrences = (path, needle, expectedMin) => {
+  const source = scrubCommentsForAssertion(path, readText(path));
+  const count = source.split(needle).length - 1;
+  if (count < expectedMin) {
+    fail(`${path} contains ${needle} ${count} time(s), expected at least ${expectedMin}`);
   }
 };
 
@@ -301,7 +310,7 @@ const assertTypescriptProtoFacadeCompleteness = ({ facadePath, generatedPath }) 
   });
 };
 
-assertReallyMeVendoredCorePolicy({ version: "0.6.0" });
+assertReallyMeVendoredCorePolicy({ version: "0.6.6" });
 // Composite actions can hide additional third-party dependencies from the
 // top-level workflow scan. Reject them until the checker recursively validates
 // every local action dependency with the same full-SHA policy.
@@ -313,8 +322,16 @@ assertCargoFuzzWorkflowPolicy({
   },
 });
 
-const codecPackageVersion = "0.2.3";
-const codecProtoPackageVersion = "0.2.3";
+const codecPackageVersion = "0.3.0";
+const codecProtoPackageVersion = "0.3.0";
+try {
+  verifyCheckedOutReleaseVersion(codecPackageVersion);
+} catch (error) {
+  if (error instanceof ReleaseVersionError) {
+    fail(`release package version policy failed: ${error.code}`);
+  }
+  fail("release package version policy could not be checked");
+}
 const releasePackagesMode = suppliedArguments.has("--release-packages");
 const generatedFreshnessMode = suppliedArguments.has("--generated-freshness");
 const codecRustLeafCrates = [
@@ -400,7 +417,7 @@ assertContains("crates/ffi/src/codec.rs", "rm_codec_max_operation_response_bytes
 assertContains("crates/ffi/src/codec.rs", "rm_codec_max_ffi_input_bytes");
 assertContains("crates/ffi/src/codec.rs", "rm_codec_max_ffi_output_bytes");
 assertContains("crates/ffi/src/codec.rs", "CODEC_ABI_VERSION");
-assertContains("crates/ffi/src/codec.rs", "CODEC_ABI_VERSION: u32 = 5");
+assertContains("crates/ffi/src/codec.rs", "CODEC_ABI_VERSION: u32 = 6");
 assertContains("crates/codec/src/operation_contract/mod.rs", "include!(\"dispatch.rs\")");
 assertContains("crates/codec/src/operation_contract/dispatch.rs", "pub fn process_operation_response");
 assertContains(
@@ -512,10 +529,10 @@ assertTypescriptExport({
   ],
 });
 assertContains("packages/ts/src/cbor.ts", 'Readonly<{ type: "bytes"; value: Uint8Array }>');
-assertContains("packages/ts/src/cbor.ts", 'return { type: "bytes", value: value.value.slice() }');
+assertContains("packages/ts/src/cbor.ts", "value: snapshotProviderBytes(");
 assertContains("packages/ts/src/cbor.ts", "const entries: CodecDeterministicCborMapEntry[] = []");
 assertContains("packages/ts/src/cbor.ts", "const values: ReallyMeCborValue[] = []");
-assertContains("packages/ts/src/cbor.ts", "const bytes = value.value.slice()");
+assertContains("packages/ts/src/cbor.ts", "const bytes = snapshotDeterministicCborBytes(");
 assertContains("packages/ts/test/reallyme-codec.test.mjs", 'value: { type: "bytes", value: bytes(0, 1, 2) }');
 for (const removedTsDagCborJsonNeedle of [
   "function cborValueForJson",
@@ -550,7 +567,7 @@ assertContains("crates/ffi/src/codec.rs", "CODEC_PEM_ENCODE");
 assertNotContains("crates/ffi/src/codec.rs", "fn typed_dag_cbor_scalar_payload");
 assertNotContains("crates/ffi/src/codec.rs", "CodecDagCborEncodeRequest");
 assertNotContains("crates/ffi/src/codec.rs", "CodecDagCborDecodeRequest");
-assertContains("crates/ffi/src/codec.rs", "CODEC_ABI_VERSION: u32 = 5");
+assertContains("crates/ffi/src/codec.rs", "CODEC_ABI_VERSION: u32 = 6");
 assertNotContains("packages/swift/Sources/ReallyMeCodec/ReallyMeCodec.swift", "dagCborEncode(taggedJson");
 assertNotContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "dagCborEncode(taggedJson");
 assertNotContains("packages/ts/src/cbor.ts", "bytesBase64url");
@@ -574,10 +591,8 @@ assertNotContains("crates/codec/src/lib.rs", "canonicalize_json, JcsError");
 assertNotContains("crates/jcs/src/lib.rs", "canonicalize_json;");
 assertNotContains("crates/jcs/src/canonicalize.rs", "pub fn canonicalize_json(");
 assertNotContains("crates/jcs/tests/jcs_tests.rs", "deprecated_value_alias");
-assertContains("crates/jcs/src/canonicalize.rs", "non-integer binary64 numbers follow RFC 8785");
 assertContains("crates/jcs/src/canonicalize.rs", "validate_interoperable_float_integer");
 assertContains("crates/jcs/src/canonicalize.rs", "MIN_INTEROPERABLE_INTEGER_F64");
-assertContains("crates/jcs/src/lib.rs", "integer-valued");
 assertContains(
   "crates/jcs/tests/jcs_tests.rs",
   "integer_valued_binary64_numbers_outside_interoperable_range_are_rejected",
@@ -586,8 +601,8 @@ assertContains("crates/jcs/tests/jcs_tests.rs", '"1e19"');
 assertContains("crates/jcs/tests/jcs_tests.rs", '"9007199254740992.0"');
 assertContains("crates/ffi/src/codec.rs", "validate_boundary_input_lengths");
 assertContains(
-  "crates/ffi/src/codec.rs",
-  "validate_proto_boundary_input_length(",
+  "crates/ffi/src/codec/operation.rs",
+  "resource_limit_operation_response()",
 );
 assertContains(
   "crates/ffi/src/kotlin_codec.rs",
@@ -603,7 +618,7 @@ assertContains("crates/wasm/src/boundary.rs", "value.iter().peekable()");
 assertNotContains("crates/wasm/src/boundary.rs", "MAX_WASM_STRING_CODE_UNITS");
 assertContains("crates/wasm/src/boundary.rs", "zeroizing_string");
 assertContains("crates/wasm/src/boundary.rs", "zeroizing_bytes_with_maximum");
-assertContains("crates/wasm/src/boundary.rs", "value.subarray");
+assertContains("crates/wasm/src/boundary.rs", "checked_subarray(value,");
 assertContains("crates/wasm/src/boundary.rs", "snapshot.fill");
 for (const wasmSourcePath of [
   "crates/wasm/src/base_encoding.rs",
@@ -704,7 +719,15 @@ assertContains(
 );
 assertContains(
   "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
-  "private fun processOperation(request: CodecOperationRequest): CodecOperationResult",
+  "private fun <T> processOperation(",
+);
+assertContains(
+  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
+  "UnsafeByteOperations.unsafeWrap(responseBytes).newCodedInput()",
+);
+assertContains(
+  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
+  "input.enableAliasing(true)",
 );
 for (const resultCase of [
   "MULTICODEC_PREFIX_FOR_NAME",
@@ -767,11 +790,11 @@ assertContains(
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  'const RELEASE_READINESS_COMMIT = "3fcf50eb312ae20dc9dc7a256f8fae67a7ba2c6b"',
+  'const RELEASE_READINESS_COMMIT = "bdedc88f3f25fcc14242730d4dec6ce6a0c75531"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  '"435ae6205d000d1605761bce2e7b75a1584d6d3ad1b7d338ca8e61868959abdc"',
+  '"244cef63e5a164f8cdfc09eed62d35f39d377d75f835f4e099369debccdb9662"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
@@ -791,7 +814,7 @@ assertContains(
 );
 assertContains(
   "scripts/release-readiness/core.mjs",
-  'RELEASE_READINESS_VERSION = "0.6.0"',
+  'RELEASE_READINESS_VERSION = "0.6.6"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
@@ -857,6 +880,7 @@ assertReallyMeOperationBoundaryContract({
       path: "crates/wasm/src/proto_output.rs",
       processOperationNeedle: "pub fn process_operation(",
       processOperationJsonNeedle: "pub fn process_operation_json(",
+      binaryResponseNeedle: "process_operation_response_request(request.as_slice())",
       requiredNeedles: [
         "process_operation_response_request(request.as_slice())",
         "process_operation_response_json_request(request_json.as_slice())",
@@ -1043,7 +1067,7 @@ const generatedStructuredOperations = [
     ],
     tsPath: "packages/ts/src/cbor.ts",
     tsExport:
-      "export const dagCborVerifyCid = (\n  cid: string,\n  bytes: Uint8Array,",
+      "export const dagCborVerifyCidDetails = (\n  cid: string,\n  bytes: Uint8Array,",
     tsNeedles: [
       "processGeneratedOperationRequest(",
       'operationResult.result.case !== "dagCborVerifyCid"',
@@ -1210,13 +1234,13 @@ assertContains(
 assertNotContains(codecContractShapePath, "der: decoded.der().to_vec()");
 assertRustFunction({
   path: codecContractShapePath,
-  functionNeedle: "pub fn dag_cbor_verify_cid_result_proto(",
+  functionNeedle: "fn dag_cbor_verify_cid_result_proto(",
   requiredNeedles: ["verification.into_parts()", "expected_cid", "actual_cid"],
   forbiddenNeedles: ["to_owned()", "to_string()", "clone()"],
 });
 assertRustFunction({
   path: codecContractShapePath,
-  functionNeedle: "pub fn pem_decode_result_proto(",
+  functionNeedle: "fn pem_decode_result_proto(",
   requiredNeedles: [
     "try_copy_result_string(decoded.label().as_str())?",
     "decoded.into_der()",
@@ -1358,7 +1382,7 @@ assertContains(
 );
 assertContains(
   "packages/swift/Sources/ReallyMeCodec/CallCodecWithRustCAbi.swift",
-  "return expectedOrigin == .caller ? .invalidInput : .providerFailure",
+  "Self.isNonCanonicalReason(error.reason)",
 );
 assertContains(
   "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
@@ -1421,77 +1445,28 @@ for (const deletedProtoPayloadShim of [
   }
 }
 
-for (const limit of [
-  {
-    rust: "pub const MAX_DETERMINISTIC_CBOR_INPUT_LEN: usize = 1024 * 1024;",
-    typescript: "export const MAX_DETERMINISTIC_CBOR_INPUT_LEN = 1_048_576;",
-  },
-  {
-    rust: "pub const MAX_DETERMINISTIC_CBOR_OUTPUT_LEN: usize = 1024 * 1024;",
-    typescript: "export const MAX_DETERMINISTIC_CBOR_OUTPUT_LEN = 1_048_576;",
-  },
-  {
-    rust: "pub const MAX_DETERMINISTIC_CBOR_NESTING_DEPTH: usize = 64;",
-    typescript: "export const MAX_DETERMINISTIC_CBOR_NESTING_DEPTH = 64;",
-    kotlin: "private const val MAX_DETERMINISTIC_CBOR_NESTING_DEPTH: Int = 64",
-    swift: "private let maxDeterministicCborNestingDepth = 64",
-  },
-  {
-    rust: "pub const MAX_DETERMINISTIC_CBOR_NODES: usize = 65_536;",
-    typescript: "export const MAX_DETERMINISTIC_CBOR_NODES = 65_536;",
-    kotlin: "private const val MAX_DETERMINISTIC_CBOR_NODES: Int = 65_536",
-    swift: "private let maxDeterministicCborNodes = 65_536",
-  },
-  {
-    rust: "pub const MAX_DETERMINISTIC_CBOR_CONTAINER_ENTRIES: usize = 16_384;",
-    typescript: "export const MAX_DETERMINISTIC_CBOR_CONTAINER_ENTRIES = 16_384;",
-    kotlin: "private const val MAX_DETERMINISTIC_CBOR_CONTAINER_ENTRIES: Int = 16_384",
-    swift: "private let maxDeterministicCborContainerEntries = 16_384",
-  },
-  {
-    rust: "pub const MAX_DETERMINISTIC_CBOR_AGGREGATE_TEXT_BYTES: usize = 1024 * 1024;",
-    typescript: "export const MAX_DETERMINISTIC_CBOR_AGGREGATE_TEXT_BYTES = 1_048_576;",
-    kotlin:
-      "private const val MAX_DETERMINISTIC_CBOR_AGGREGATE_TEXT_BYTES: Int = 1_048_576",
-    swift: "private let maxDeterministicCborAggregateTextBytes = 1_048_576",
-  },
-  {
-    rust:
-      "pub const MAX_DETERMINISTIC_CBOR_AGGREGATE_BYTE_STRING_BYTES: usize = 1024 * 1024;",
-    typescript:
-      "export const MAX_DETERMINISTIC_CBOR_AGGREGATE_BYTE_STRING_BYTES = 1_048_576;",
-    kotlin:
-      "private const val MAX_DETERMINISTIC_CBOR_AGGREGATE_BYTE_STRING_BYTES: Int = 1_048_576",
-    swift:
-      "private let maxDeterministicCborAggregateByteStringBytes = 1_048_576",
-  },
-]) {
-  assertContains("crates/cbor/src/deterministic/limits.rs", limit.rust);
-  assertContains("packages/ts/src/deterministicCborBoundary.ts", limit.typescript);
-  if (limit.kotlin !== undefined) {
-    assertContains(
-      "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
-      limit.kotlin,
-    );
-  }
-  if (limit.swift !== undefined) {
-    assertContains(
-      "packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift",
-      limit.swift,
-    );
-  }
+// Semantic resource ceilings are generated from one reviewed table for Rust
+// and every SDK. A source edit without regenerating all lanes fails readiness.
+requireTracked("scripts/codec_limits.json");
+requireTracked("scripts/generate_codec_limits.mjs");
+try {
+  execFileSync(process.execPath, ["scripts/generate_codec_limits.mjs", "--check"], {
+    stdio: "pipe",
+  });
+} catch {
+  fail("codec resource limits differ from scripts/codec_limits.json");
 }
 assertContains(
   "packages/ts/src/deterministicCborBoundary.ts",
-  "MAX_DETERMINISTIC_CBOR_NESTING_DEPTH * 3 + 5",
+  "MAX_DETERMINISTIC_CBOR_PROTO_RECURSION_DEPTH = 198",
 );
 assertContains(
   "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
-  "(MAX_DETERMINISTIC_CBOR_NESTING_DEPTH * 3) + 5",
+  "MAX_DETERMINISTIC_CBOR_PROTO_MESSAGE_DEPTH: Int = 197",
 );
 assertContains(
   "packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift",
-  "(maxDeterministicCborNestingDepth * 3) + 7",
+  "maxDeterministicCborProtoMessageDepth = 198",
 );
 for (const swiftTransportNeedle of [
   "maxCodecProtoStructuralBytesPerDeterministicCborNode = 128",
@@ -1611,10 +1586,10 @@ assertContains("crates/codec/src/operation_contract/mod.rs", 'include!("copy_lim
 
 assertContains("buf.gen.yaml", "out: crates/proto/src/generated/buffa");
 assertContains("buf.gen.yaml", "out: packages/ts/src/proto/generated");
-assertContains("buf.gen.yaml", "buf.build/bufbuild/es:v2.14.1");
+assertContains("buf.gen.yaml", "buf.build/bufbuild/es:v2.16.0");
 assertContains("buf.gen.yaml", "buf.build/apple/swift:v1.38.1");
-assertContains("buf.gen.yaml", "buf.build/protocolbuffers/java:v36.1");
-assertContains("buf.gen.yaml", "buf.build/protocolbuffers/kotlin:v36.1");
+assertContains("buf.gen.yaml", "buf.build/protocolbuffers/java:v36.2");
+assertContains("buf.gen.yaml", "buf.build/protocolbuffers/kotlin:v36.2");
 assertContains("crates/proto/src/generated/buffa/mod.rs", "pub mod codec");
 assertContains("crates/proto/src/error.rs", "pub struct CodecWireError");
 assertContains("crates/proto/src/error.rs", "pub fn try_new");
@@ -1650,7 +1625,7 @@ for (const kotlinTransportNeedle of [
 }
 assertContains(
   "crates/ffi/src/kotlin_codec.rs",
-  "max_request_len.checked_add(1)",
+  "if request.len(env)? > max_request_len",
 );
 assertContains(
   "packages/ts/src/readOutput.ts",
@@ -1662,28 +1637,22 @@ assertContains(
 );
 assertContains(
   "crates/proto/src/wire.rs",
-  "pub fn encode_protobuf<M: Message>(message: &M) -> Zeroizing<Vec<u8>>",
+  "pub fn encode_protobuf<M: Message>(message: &M) -> CodecWireResult<Zeroizing<Vec<u8>>>",
 );
 assertContains(
   "crates/proto/src/wire.rs",
-  "pub fn encode_protobuf<M: Message>(message: &M) -> Zeroizing<Vec<u8>>",
+  ".try_encode_to_vec()",
 );
 assertContains("crates/proto/tests/generated_tests/error_wire.rs", "bounded_protobuf_decode_rejects_oversized_messages");
 assertContains("crates/proto/tests/generated_tests/error_wire.rs", "json_decode_rejects_inputs_that_expand_past_binary_cap");
 assertContains(".github/workflows/protobuf-ci.yml", "BUFFA_VERSION: 0.9.2");
-assertContains(".github/workflows/protobuf-ci.yml", "BUF_VERSION: 1.72.0");
-assertContains(".github/workflows/protobuf-ci.yml", "scripts/release-readiness/core.mjs");
-assertContains(".github/workflows/protobuf-ci.yml", "scripts/release-readiness/source-policy.mjs");
+assertContains(".github/workflows/protobuf-ci.yml", "BUF_VERSION: 1.73.0");
 assertContains(".github/workflows/protobuf-ci.yml", "scripts/run_pinned_release_readiness.mjs");
-assertContains(".github/workflows/protobuf-ci.yml", "scripts/codec_proto_sensitivity.mjs");
 assertContains(".github/workflows/protobuf-ci.yml", "node-version: '24'");
 assertContains(".github/workflows/protobuf-ci.yml", "cargo install protoc-gen-buffa-packaging");
 assertContains("scripts/check_release_readiness.mjs", '["buf", ["lint"]]');
+assertContains(".github/workflows/protobuf-ci.yml", "buf breaking --against \".git#tag=${release_tag}\"");
 assertContains(".github/workflows/protobuf-ci.yml", "buf breaking --against '.git#branch=origin/main'");
-assertContains(
-  "crates/proto/proto/reallyme/codec/v1/codec.proto",
-  "Protobuf map<> is intentionally not used",
-);
 assertContains(
   "crates/proto/proto/reallyme/codec/v1/codec.proto",
   "repeated CodecDeterministicCborMapEntry entries = 1;",
@@ -1698,7 +1667,7 @@ assertContains(
 );
 assertContains(
   ".github/workflows/protobuf-ci.yml",
-  "checksum: 8720830e26a733da55bb89bcd3cb44849c0965fc0c44fb5d691cccdc64dca5af",
+  "checksum: 8f2986298ad08f0cc1bf999b9797b7c383adf32d7edf0f73d6f1e1a701baeac1",
 );
 assertContains(".github/workflows/protobuf-ci.yml", "github_token: ${{ github.token }}");
 assertContains(".github/workflows/protobuf-ci.yml", "setup_only: true");
@@ -1717,8 +1686,8 @@ if (tsCodecPackage.private === true) {
   fail("packages/ts/package.json is private and cannot be published to npm");
 }
 assertContains("packages/ts/README.md", "@reallyme/codec/wasm/reallyme_codec_wasm.js");
-assertContains("packages/ts/package.json", '"@bufbuild/protobuf": "2.14.1"');
-assertContains("packages/ts/package.json", '"fast-check": "4.9.0"');
+assertContains("packages/ts/package.json", '"@bufbuild/protobuf": "2.16.0"');
+assertContains("packages/ts/package.json", '"fast-check": "4.10.2"');
 assertContains("packages/ts/package.json", '"typescript": "7.0.2"');
 assertContains("packages/ts/package.json", '"NOTICE"');
 readText("packages/ts/NOTICE");
@@ -1731,11 +1700,19 @@ const kotlinCodecBuild = readText("packages/kotlin/build.gradle.kts");
 if (!kotlinCodecBuild.includes(`version = "${codecPackageVersion}"`)) {
   fail(`packages/kotlin/build.gradle.kts is not versioned ${codecPackageVersion}`);
 }
-assertContains("packages/kotlin/build.gradle.kts", 'kotlin("jvm") version "2.4.10"');
+assertContains("packages/kotlin/build.gradle.kts", 'kotlin("jvm") version "2.4.20"');
 assertContains("packages/kotlin/build.gradle.kts", 'artifactId = "codec"');
 assertContains("packages/kotlin/build.gradle.kts", "Java, Kotlin, JVM, and Android");
-assertContains("packages/kotlin/build.gradle.kts", "com.google.protobuf:protobuf-javalite:4.36.1");
-assertContains("packages/kotlin/build.gradle.kts", "com.google.protobuf:protobuf-kotlin-lite:4.36.1");
+assertContains("packages/kotlin/build.gradle.kts", "com.google.protobuf:protobuf-javalite:4.36.2");
+assertContains("packages/kotlin/build.gradle.kts", "com.google.protobuf:protobuf-kotlin-lite:4.36.2");
+assertContains("packages/kotlin/build.gradle.kts", 'val bouncyCastleSecurityVersion = "1.86"');
+assertContains("packages/kotlin/build.gradle.kts", 'if (name == kotlinBouncyCastleConfiguration)');
+for (const artifact of ["bcpg", "bcpkix", "bcprov", "bcutil"]) {
+  assertContains(
+    "packages/kotlin/gradle.lockfile",
+    `org.bouncycastle:${artifact}-jdk18on:1.86=kotlinBouncyCastleConfiguration`,
+  );
+}
 assertContains("packages/kotlin/build.gradle.kts", "https://github.com/reallyme/codec");
 assertContains("packages/kotlin/build.gradle.kts", "reallyme.codec.nativeResourcesDir");
 assertContains("packages/kotlin/build.gradle.kts", "reallyme.codec.requireFullNativeResources");
@@ -1753,7 +1730,11 @@ assertContains("packages/kotlin/build.gradle.kts", "dependencyLocking {");
 assertContains("packages/kotlin/build.gradle.kts", "lockAllConfigurations()");
 assertContains(
   "packages/kotlin/gradle/wrapper/gradle-wrapper.properties",
-  "distributionSha256Sum=acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a",
+  "distributionSha256Sum=bafd5ce9cfaea0fbccfdc8439a1ac42fbd4cd9c89dc9a988228d8a2639a58e6c",
+);
+assertContains(
+  "packages/kotlin/gradle/wrapper/gradle-wrapper.properties",
+  "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.8.0-bin.zip",
 );
 assertContains(
   "packages/kotlin/gradle.properties",
@@ -1798,7 +1779,7 @@ const packageReleaseWorkflows = Object.freeze([
 for (const workflowPath of packagePreflightWorkflows) {
   assertContains(workflowPath, "Resolve release SHA");
   assertContains(workflowPath, 'default: ""');
-  assertContains(workflowPath, "default: 0.2.3");
+  assertContains(workflowPath, "default: 0.3.0");
 }
 for (const workflowPath of packageReleaseWorkflows) {
   assertContains(workflowPath, "Verify reviewed release SHA");
@@ -1806,10 +1787,9 @@ for (const workflowPath of packageReleaseWorkflows) {
   assertNotContains(workflowPath, "RELEASE_SHA_INPUT");
   assertNotContains(workflowPath, "inputs.publish");
 }
-assertContains(".github/workflows/kotlin-android-package-release.yml", "Write native checksum manifest");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "Write native checksum manifest");
-assertContains(".github/workflows/kotlin-android-package-release.yml", "Test host native loader");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "Test host native loader");
+assertContains("scripts/maven_central_bundle_local.sh", "verify_linux_glibc_floor.sh");
 assertWorkflowPermissionsPolicy({
   path: ".github/workflows/swift-package-release.yml",
   workflow: { contents: "read" },
@@ -1845,184 +1825,109 @@ assertWorkflowPermissionsPolicy({
     publish: { actions: "read", contents: "read" },
   },
 });
-assertNotContains(".github/workflows/swift-package-release.yml", "publish_maven:");
-assertNotContains(".github/workflows/swift-package-release.yml", "publish_npm:");
-assertNotContains(".github/workflows/kotlin-android-package-release.yml", "publish_swift:");
-assertNotContains(".github/workflows/kotlin-android-package-release.yml", "publish_npm:");
-assertNotContains(".github/workflows/npm-package-release.yml", "publish_swift:");
-assertNotContains(".github/workflows/npm-package-release.yml", "publish_maven:");
-assertContains(".github/workflows/crates-release.yml", "Verify reviewed release SHA");
-assertContains(".github/workflows/crates-release.yml", "Resolve current release SHA");
-assertContains(".github/workflows/crates-release.yml", "release_version:");
-assertContains(".github/workflows/crates-release.yml", "crates/codec/Cargo.toml");
-assertContains(".github/workflows/crates-release.yml", "RELEASE_VERSION=${release_version}");
-assertContains(".github/workflows/crates-release.yml", "steps.resolve-release-sha.outputs.release_version");
-assertContains(".github/workflows/crates-release.yml", "needs.verify-release-sha.outputs.release_version");
-assertNotContains(".github/workflows/crates-release.yml", "RELEASE_VERSION: ${{ inputs.version }}");
-assertContains(".github/workflows/kotlin-android-package-preflight.yml", "needs: [verify-source-sha, jvm-native]");
-assertContains(".github/workflows/kotlin-android-package-release.yml", "needs: [verify-release-sha, jvm-native]");
-assertContains(
-  ".github/workflows/swift-package-release.yml",
-  `swift-verify:
-    name: SwiftPM artifact verification
-    needs: verify-release-sha
-    runs-on: macos-26
-    permissions:`,
-);
-assertContains(".github/workflows/swift-package-release.yml", "preflight_run_id:");
-assertContains(".github/workflows/swift-package-release.yml", "RELEASE_ATTESTATION_WRITE_GITHUB_OUTPUT");
-assertContains(".github/workflows/swift-package-release.yml", "Download attested Swift artifact");
-assertContains(".github/workflows/swift-package-release.yml", "Download verified Swift artifact");
-assertContains(".github/workflows/swift-package-release.yml", "run-id: ${{ needs.verify-release-sha.outputs.preflight_run_id }}");
-assertContains(".github/workflows/swift-package-release.yml", "RELEASE_ATTESTATION_PREFLIGHT_RUN_ID");
+const readOnlyWorkflowPaths = [
+  ".github/workflows/android-runtime-gate.yml",
+  ".github/workflows/code-checks.yml",
+  ".github/workflows/crates-package-preflight.yml",
+  ".github/workflows/fuzz.yml",
+  ".github/workflows/kotlin-android-package-preflight.yml",
+  ".github/workflows/npm-package-preflight.yml",
+  ".github/workflows/protobuf-ci.yml",
+  ".github/workflows/swift-package-preflight.yml",
+];
+for (const path of readOnlyWorkflowPaths) {
+  assertWorkflowPermissionsPolicy({ path, workflow: { contents: "read" } });
+}
+assertWorkflowPermissionsPolicy({
+  path: ".github/workflows/dependency-security.yml",
+  workflow: { actions: "read", contents: "read", "security-events": "write" },
+});
+assertWorkflowPermissionsPolicy({
+  path: ".github/workflows/codeql.yml",
+  workflow: { contents: "read" },
+  jobs: {
+    analyze: { actions: "read", contents: "read", "security-events": "write" },
+  },
+});
+assertSetEquals({
+  label: "workflow permissions policy coverage",
+  actual: [
+    ...readOnlyWorkflowPaths,
+    ".github/workflows/dependency-security.yml",
+    ".github/workflows/codeql.yml",
+    ...packageReleaseWorkflows,
+  ],
+  expected: workflowFiles,
+});
+
+assertContains(".github/workflows/swift-package-release.yml", "environment: github-release");
+for (const path of workflowFiles) {
+  if (packageReleaseWorkflows.includes(path) ||
+      path === ".github/workflows/kotlin-android-package-preflight.yml" ||
+      path === ".github/workflows/swift-package-preflight.yml") {
+    continue;
+  }
+  const source = readText(path);
+  const steps = source.split(/^      - name: /mu).slice(1);
+  for (const step of steps) {
+    if (/^        uses: actions\/checkout@/mu.test(step) &&
+        !/^          persist-credentials: false$/mu.test(step)) {
+      fail(`${path} checkout must not retain repository credentials`);
+    }
+  }
+}
+for (const path of [
+  ".github/workflows/crates-package-preflight.yml",
+  ".github/workflows/npm-package-preflight.yml",
+]) {
+  assertContains(path, "Verify release version across package manifests");
+  assertContains(path, "node scripts/verify_release_version.mjs");
+}
+for (const path of packageReleaseWorkflows) {
+  assertContains(path, "node scripts/verify_release_attestation.mjs");
+}
+assertContains(".github/workflows/swift-package-release.yml", "gh release create");
+assertContains(".github/workflows/swift-package-release.yml", "git push origin");
 assertContains(".github/workflows/swift-package-release.yml", "Bind release manifest to verified Swift artifact");
-assertNotContains(".github/workflows/swift-package-release.yml", "scripts/build_swift_xcframework.sh");
-assertContains(".github/workflows/crates-release.yml", "needs: [verify-release-sha, dry-run]");
-assertWorkflowRunStep(
-  ".github/workflows/swift-package-release.yml",
-  "Require current main and successful Swift package checks",
-  "node scripts/verify_release_attestation.mjs",
-);
-assertWorkflowRunStep(
-  ".github/workflows/kotlin-android-package-release.yml",
-  "Require current main and successful Kotlin Android package checks",
-  "node scripts/verify_release_attestation.mjs",
-);
-assertWorkflowRunStep(
-  ".github/workflows/npm-package-release.yml",
-  "Require current main and successful npm package checks",
-  "node scripts/verify_release_attestation.mjs",
-);
-assertWorkflowRunStep(
-  ".github/workflows/crates-release.yml",
-  "Require current main and successful checks for exact SHA",
-  "node scripts/verify_release_attestation.mjs",
-);
-assertWorkflowRunStep(
-  ".github/workflows/kotlin-android-package-release.yml",
-  "Publish Maven artifact",
-  `node ../../scripts/verify_release_attestation.mjs
-./gradlew publish -Preallyme.codec.nativeResourcesDir=\${{ github.workspace }}/build/kotlin-native-resources -Preallyme.codec.requireFullNativeResources=true`,
-);
-assertWorkflowRunStep(
-  ".github/workflows/kotlin-android-package-release.yml",
-  "Publish Android AAR",
-  `node scripts/verify_release_attestation.mjs
-packages/kotlin/gradlew -p packages/kotlin-android publish -Preallyme.codec.androidJniLibsDir=\${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=\${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true`,
-);
-assertWorkflowRunStep(
-  ".github/workflows/npm-package-release.yml",
-  "Publish npm package",
-  `if [ -z "\${NODE_AUTH_TOKEN}" ]; then
-  echo "::error::NPM_TOKEN is required"
-  exit 1
-fi
-node ../../scripts/verify_release_attestation.mjs
-npm publish --provenance --access public`,
-);
-assertContains(".github/workflows/npm-package-release.yml", "registry-url: 'https://registry.npmjs.org'");
+assertContains(".github/workflows/npm-package-release.yml", "npm publish");
 assertContains(".github/workflows/npm-package-release.yml", "NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}");
-assertContains(".github/workflows/npm-package-release.yml", "wasm-pack@0.15.0");
-assertContains(".github/workflows/npm-package-release.yml", "wasm-bindgen-cli@0.2.127");
+assertContains(".github/workflows/crates-release.yml", "secrets.CARGO_REGISTRY_TOKEN");
+assertContains(".github/workflows/crates-package-preflight.yml", "verify_release_availability.mjs");
+assertContains("scripts/verify_release_attestation.mjs", '"crates-package-preflight.yml"');
+assertContains("scripts/verify_release_version.mjs", "workspace-path-requirement-mismatch");
+assertContains("crates/ffi/src/codec.rs", "rm_codec_package_version_major");
+assertContains("crates/ffi/src/codec.rs", "rm_codec_package_version_minor");
+assertContains("crates/ffi/src/codec.rs", "rm_codec_package_version_patch");
+assertContains("packages/swift/Sources/ReallyMeCodec/CallCodecWithRustCAbi.swift", "requireCompatiblePackageVersion");
 assertContains(".github/workflows/kotlin-android-package-release.yml", "if: steps.maven_remote.outputs.configured == 'true'");
 assertContains(".github/workflows/kotlin-android-package-release.yml", "configured=false");
-assertContains(
-  ".github/workflows/kotlin-android-package-release.yml",
-  "remote Maven credentials are incomplete; verified artifacts were packaged locally and remote publish is skipped",
-);
-assertNotContains("scripts/publish_crates_in_order.mjs", "already published; continuing");
-assertContains(
-  "scripts/publish_crates_in_order.mjs",
-  "refusing to treat a prior upload as this release's attested publish",
-);
-assertWorkflowRunStep(
-  ".github/workflows/crates-release.yml",
-  "Publish crates in dependency order",
-  `node scripts/verify_release_attestation.mjs
-node scripts/publish_crates_in_order.mjs publish`,
-);
-assertWorkflowRunStep(
-  ".github/workflows/swift-package-release.yml",
-  "Verify SwiftPM manifest and downloaded artifact",
-  `node scripts/verify_swift_release_artifact.mjs build/swift/ReallyMeCodecFFI.xcframework.zip build/swift/ReallyMeCodecFFI.xcframework.checksum Package.swift "\${RELEASE_VERSION}"
-node scripts/run_pinned_release_readiness.mjs --release-packages`,
-);
-assertWorkflowRunStep(
-  ".github/workflows/swift-package-release.yml",
-  "Select Xcode 26.4 for Swift verification",
-  `sudo xcode-select -s /Applications/Xcode_26.4.app
-swift --version`,
-);
-assertContains(".github/workflows/swift-package-release.yml", "SwiftPM artifact verification");
-assertWorkflowRunStep(
-  ".github/workflows/swift-package-release.yml",
-  "Create immutable GitHub release with Swift artifact",
-  `node scripts/verify_swift_release_artifact.mjs build/swift/ReallyMeCodecFFI.xcframework.zip build/swift/ReallyMeCodecFFI.xcframework.checksum Package.swift "\${RELEASE_VERSION}"
-node scripts/verify_release_attestation.mjs
-if gh release view "v\${RELEASE_VERSION}" >/dev/null 2>&1; then
-  echo "::error::GitHub release v\${RELEASE_VERSION} already exists"
-  exit 1
-fi
-if ! git diff --quiet -- . ':(exclude)Package.swift'; then
-  echo "::error::Swift release preparation modified files other than Package.swift"
-  exit 1
-fi
-tag_target="\${RELEASE_SHA}"
-if ! git diff --quiet -- Package.swift; then
-  git config user.name "github-actions[bot]"
-  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-  git add Package.swift
-  release_commit_date="$(git show -s --format=%cI "\${RELEASE_SHA}")"
-  GIT_AUTHOR_DATE="\${release_commit_date}" GIT_COMMITTER_DATE="\${release_commit_date}" \\
-    git commit -m "Bind Swift artifact for v\${RELEASE_VERSION}"
-  tag_target="$(git rev-parse HEAD)"
-fi
-existing_tag_target="$(git ls-remote --tags origin "refs/tags/v\${RELEASE_VERSION}" | cut -f1)"
-if [ -n "\${existing_tag_target}" ] && [ "\${existing_tag_target}" != "\${tag_target}" ]; then
-  echo "::error::Git tag v\${RELEASE_VERSION} already targets a different commit"
-  exit 1
-fi
-if [ -z "\${existing_tag_target}" ]; then
-  git tag "v\${RELEASE_VERSION}" "\${tag_target}"
-  git push origin "refs/tags/v\${RELEASE_VERSION}"
-fi
-gh release create "v\${RELEASE_VERSION}" build/swift/ReallyMeCodecFFI.xcframework.zip --verify-tag --title "ReallyMe Codec v\${RELEASE_VERSION}" --notes "ReallyMe Codec package release v\${RELEASE_VERSION}."`,
-);
-assertSubstringsInOrder(".github/workflows/swift-package-release.yml", [
-  "Download attested Swift artifact",
-  "Bind manifest to attested Swift artifact",
-  "Verify SwiftPM manifest and downloaded artifact",
-  "Download verified Swift artifact",
-  "Bind release manifest to verified Swift artifact",
-  "Create immutable GitHub release with Swift artifact",
-]);
-const swiftReleaseArtifactVerificationCount = readText(".github/workflows/swift-package-release.yml").match(
-  /node scripts\/verify_swift_release_artifact[.]mjs/gu,
-)?.length;
-if (swiftReleaseArtifactVerificationCount !== 2) {
-  fail("Swift release workflow must verify the downloaded archive in both verification jobs");
-}
+assertContains("scripts/publish_crates_in_order.mjs", "published-crate-checksum-mismatch");
+assertContains("scripts/maven_central_bundle_local.sh", "release checkout must have a clean working tree");
+assertContains("scripts/maven_central_bundle_local.sh", "verify_release_attestation.mjs");
+assertContains(".github/workflows/crates-release.yml", "needs: [verify-release-sha, dry-run]");
 assertMinOccurrences(".github/workflows/swift-package-release.yml", "node-version: '24'", 3);
 assertMinOccurrences(".github/workflows/kotlin-android-package-release.yml", "node-version: '24'", 3);
 assertMinOccurrences(".github/workflows/npm-package-release.yml", "node-version: '24'", 2);
 assertMinOccurrences(".github/workflows/kotlin-android-package-preflight.yml", "node-version: '24'", 3);
-assertMinOccurrences(".github/workflows/npm-package-preflight.yml", "node-version: '24'", 1);
-for (const workflowPath of [
-  ".github/workflows/fuzz.yml",
-  ...packagePreflightWorkflows,
-  ...packageReleaseWorkflows,
-]) {
+for (const workflowPath of [".github/workflows/fuzz.yml", ...packagePreflightWorkflows, ...packageReleaseWorkflows]) {
   assertNotContains(workflowPath, "actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4");
   assertNotContains(workflowPath, "actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0");
 }
-assertContains(
-  ".github/workflows/kotlin-android-package-release.yml",
-  "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1",
-);
+assertContains(".github/workflows/dependency-security.yml", "google/osv-scanner-action/");
+assertContains(".github/workflows/dependency-security.yml", "packages/kotlin/gradle.lockfile");
+assertContains(".github/workflows/dependency-security.yml", "packages/kotlin-android/gradle.lockfile");
+assertContains(".github/workflows/codeql.yml", "queries: security-and-quality");
+assertContains(".github/workflows/codeql.yml", "- language: java-kotlin");
+assertContains(".github/workflows/codeql.yml", "build-mode: manual");
+assertContains(".github/workflows/codeql.yml", "compileKotlin compileJava");
+assertContains(".github/workflows/codeql.yml", "compileReleaseKotlin compileReleaseJavaWithJavac");
+assertContains(".github/workflows/codeql.yml", "swift build --arch arm64");
+assertContains(".github/workflows/code-checks.yml", "npm audit --prefix packages/ts --omit=dev --audit-level=high");
+assertContains(".github/dependabot.yml", "package-ecosystem: cargo");
+assertContains(".github/dependabot.yml", "package-ecosystem: gradle");
+assertContains("scripts/verify_release_attestation.mjs", "DEPENDENCY_SECURITY_WORKFLOW");
 assertMinOccurrences(".github/workflows/fuzz.yml", "toolchain: nightly-2026-07-01", 2);
 assertNotContains(".github/workflows/fuzz.yml", "cargo +nightly fuzz");
-assertMinOccurrences(".github/workflows/fuzz.yml", '"crates/**"', 2);
-assertMinOccurrences(".github/workflows/fuzz.yml", '"Cargo.lock"', 2);
 assertContains(".github/workflows/fuzz.yml", "- operation_contract");
 assertContains("fuzz/Cargo.toml", 'name = "operation_contract"');
 assertContains("fuzz/README.md", "`operation_contract`");
@@ -2063,14 +1968,11 @@ assertContains("scripts/test_native_sanitizers.sh", "nightly-2026-07-01");
 assertContains("scripts/test_native_sanitizers.sh", "-Zsanitizer=address");
 assertContains("scripts/test_native_sanitizers.sh", "-Zub-checks=yes -Zextra-const-ub-checks=yes");
 assertContains(".github/workflows/code-checks.yml", "Test native sanitizer lanes");
-assertContains(
-  ".github/workflows/kotlin-android-package-release.yml",
-  "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1",
-);
-assertContains(".github/workflows/kotlin-android-package-release.yml", "requireFullNativeResources=true");
+assertContains(".github/workflows/kotlin-android-package-release.yml", "Test and package Maven artifact");
+assertContains(".github/workflows/kotlin-android-package-release.yml", "Build Android AAR");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "requireFullNativeResources=true");
 assertContains("packages/kotlin/settings.gradle.kts", 'rootProject.name = "reallyme-codec"');
-assertContains("packages/kotlin/README.md", "me.really:codec:0.2.3");
+assertContains("packages/kotlin/README.md", "me.really:codec:0.3.0");
 assertContains("packages/kotlin/README.md", "ships Rust JNI libraries as platform resources");
 assertContains(
   "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
@@ -2153,7 +2055,7 @@ assertContains("packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTes
 assertContains("packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", 'codec.multicodecPrefixForName("not-a-codec")');
 assertContains("packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", "codec.multicodecLookupPrefix(byteArrayOf(0, 0, 7))");
 assertContains("packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", 'codec.dagCborVerifyCid("", encoded)');
-assertContains("crates/multibase/src/base58btc.rs", "bytes.len() > MAX_BASE58BTC_INPUT_LEN");
+assertContains("crates/multibase/src/base58btc.rs", "bytes.len() > MAX_BASE58BTC_DECODED_LEN");
 assertContains("crates/multibase/tests/base58btc_tests.rs", "rejects_inputs_above_encode_cap_before_base58_conversion");
 assertContains(
   "packages/kotlin/src/test/java/me/really/codec/ReallyMeCodecJavaTest.java",
@@ -2171,6 +2073,16 @@ assertContains(
   "packages/kotlin/src/test/java/me/really/codec/ReallyMeCodecJavaTest.java",
   "javaCallersCanProcessSharedProtoVector",
 );
+// Keep the fixture set anchored outside the manifest itself. A checksum field
+// beside its own bytes cannot detect a coordinated golden-vector edit.
+const EXPECTED_CODEC_VECTORS_SHA256 =
+  "36e558e2cc8cd1ec50171ff3fb5478ebcde03d6eacd5df7192b13e05d70905d8";
+const codecVectorDigest = createHash("sha256")
+  .update(readText("vectors/codec-vectors.json"), "utf8")
+  .digest("hex");
+if (codecVectorDigest !== EXPECTED_CODEC_VECTORS_SHA256) {
+  fail("vectors/codec-vectors.json differs from the reviewed fixture set");
+}
 const codecVectorManifest = readJson("vectors/codec-vectors.json");
 if (codecVectorManifest.schemaVersion !== 2) {
   fail("vectors/codec-vectors.json must use schemaVersion 2");
@@ -2182,6 +2094,7 @@ for (const key of [
   "base64urlNonCanonicalTrailingBits",
   "unsupportedMultibase",
   "nonCanonicalBase64urlMultikey",
+  "p256Multikey",
   "dagCborNonCanonicalIntegerHex",
   "dagCborDuplicateKeyHex",
   "dagCborOutOfOrderKeyHex",
@@ -2279,15 +2192,26 @@ assertContains("packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTes
 assertContains("packages/kotlin/src/test/java/me/really/codec/ReallyMeCodecJavaTest.java", "ReallyMeCodec.processOperationJson");
 
 assertContains("Package.swift", 'name: "reallyme-codec"');
-assertContains("Package.swift", "// swift-tools-version: 6.3");
+if (!readText("Package.swift").startsWith("// swift-tools-version: 6.3\n")) {
+  fail("Package.swift must declare Swift tools version 6.3");
+}
 assertContains("Package.swift", 'name: "ReallyMeCodec"');
-assertContains("Package.swift", 'name: "ReallyMeCodecProto"');
+assertNotContains("Package.swift", 'name: "ReallyMeCodecProto"');
+assertContains("Package.swift", 'path: "packages/swift/Sources/ReallyMeCodec"');
+if (readText("packages/swift/Sources/ReallyMeCodec/GeneratedCodecProto.swift") !== readText("gen/swift/reallyme/codec/v1/codec.pb.swift")) {
+  fail("Swift internal protobuf source differs from the generated wire contract");
+}
+assertNotContains("packages/swift/Sources/ReallyMeCodec/GeneratedCodecProto.swift", "public nonisolated struct ReallyMeProto");
+assertNotContains("gen/swift/reallyme/codec/v1/codec.pb.swift", "public nonisolated struct ReallyMeProto");
+assertContains("buf.gen.yaml", "Visibility=Internal");
 assertContains("Package.swift", 'name: "ReallyMeCodecFFI"');
 assertContains("Package.swift", 'from: "1.38.1"');
 assertContains("Package.swift", "ReallyMeCodecFFI.xcframework.zip");
 assertContains("Package.swift", 'let ffiArtifactLocalPathOverride = "');
+assertContains("Package.swift", 'ffiArtifactVersion == packageVersion');
 assertContains("Package.swift", "path: ffiArtifactLocalPathOverride");
-assertNotContains("Package.swift", "FileManager.default.fileExists");
+assertContains("Package.swift", "runtimeFfiPathExists = FileManager.default.fileExists(");
+assertContains("Package.swift", "runtimeFfiPathIsDirectory.boolValue");
 assertContains("Package.swift", "REALLYME_CODEC_SWIFTPM_RUNTIME_FFI");
 assertContains("packages/swift/Sources/ReallyMeCodec/ReallyMeCodec.swift", "public func tryParseCid(_ cid: String) throws -> String?");
 assertContains("packages/swift/Sources/ReallyMeCodec/ReallyMeCodec.swift", "public func dagCborCodecCode() throws -> UInt32");
@@ -2300,12 +2224,12 @@ assertContains("packages/swift/Sources/ReallyMeCodec/MemoryHygiene.swift", "expl
 assertContains("packages/swift/Sources/ReallyMeCodec/MemoryHygiene.swift", "clearOwned");
 assertNotContains("packages/swift/Sources/ReallyMeCodec/MemoryHygiene.swift", "resetBytes");
 assertNotContains("packages/swift/Sources/ReallyMeCodec/MemoryHygiene.swift", "initialize(repeating:");
-assertContains("packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift", "let detachedValue = value.value");
-assertContains("packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift", "value.value = nil");
+assertContains("packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift", "swap(&value.value, &detachedValue)");
+assertContains("packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift", "detachedValue = nil");
 assertContains("packages/swift/Sources/ReallyMeCodec/CallCodecWithRustCAbi.swift", "expectedCodecAbiVersion");
 assertContains(
   "packages/swift/Sources/ReallyMeCodec/CallCodecWithRustCAbi.swift",
-  "expectedCodecAbiVersion: UInt32 = 5",
+  "expectedCodecAbiVersion: UInt32 = 6",
 );
 assertContains(
   "packages/swift/Sources/ReallyMeCodec/CallCodecWithRustCAbi.swift",
@@ -2460,14 +2384,9 @@ assertContains("packages/ts/src/operationContract.ts", "MAX_CODEC_PROTO_MESSAGE_
 assertContains("packages/ts/src/operationContract.ts", "CodecErrorReason.CANONICAL_INTERNAL");
 assertContains("packages/ts/src/operationContract.ts", 'case "boundary":');
 assertContains("packages/ts/src/operationContract.ts", "expectedOrigin = CodecErrorOrigin.CALLER");
-assertContains(
-  "packages/ts/src/operationContract.ts",
-  "Protobuf enums are open on the wire",
-);
 assertNotContains("packages/ts/tsconfig.json", '"DOM"');
 assertContains("packages/ts/src/readOutput.ts", "MAX_CODEC_FFI_OUTPUT_BYTES");
 assertContains("packages/ts/src/readOutput.ts", "export const snapshotBoundedBytesInput =");
-assertContains("packages/ts/src/readOutput.ts", "Length-tracking resizable buffers");
 assertContains("packages/ts/src/readOutput.ts", "ArrayBuffer.isView(value)");
 assertContains("packages/ts/src/readOutput.ts", "Object.getPrototypeOf(value) !== Uint8Array.prototype");
 assertContains("packages/ts/src/readOutput.ts", "Object.getOwnPropertyDescriptor(value, property)");
@@ -2495,10 +2414,6 @@ assertContains(
   "packages/ts/test/reallyme-codec.test.mjs",
   "multicodecStripPrefix(forged)",
 );
-assertContains(
-  "packages/ts/src/readOutput.ts",
-  "They are malformed provider output",
-);
 assertContains("packages/ts/src/wasmProvider.ts", "Object.getOwnPropertyDescriptor(module, name)");
 assertContains(
   "packages/ts/test/deterministic-cbor-provider.test.mjs",
@@ -2525,10 +2440,6 @@ for (const semanticOperation of [
   assertContains("crates/codec/src/multicodec.rs", semanticOperation);
 }
 assertContains("crates/codec/src/multicodec.rs", ".try_reserve(capacity)");
-assertContains(
-  "crates/codec/src/multicodec.rs",
-  "deliberately does not implement `Clone`",
-);
 assertNotContains(
   "crates/codec/src/multicodec.rs",
   "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct MulticodecTable",
@@ -2575,7 +2486,8 @@ assertNotContains("crates/wasm/src/multiformat.rs", "js_name = multikeyParse");
 assertNotContains("crates/wasm/src/cbor.rs", "js_name = dagCborVerifyCid");
 assertContains("packages/ts/src/proto.ts", "CodecBackendErrorSchema");
 assertContains("packages/ts/test/reallyme-codec.test.mjs", 'assert.deepEqual(base58btcDecode(""), bytes())');
-assertContains("packages/ts/test/reallyme-codec.test.mjs", 'dagCborVerifyCid("", encoded)');
+assertContains("packages/ts/test/reallyme-codec.test.mjs", 'dagCborVerifyCidDetails("", encoded)');
+assertContains("packages/ts/src/cbor.ts", "export const dagCborVerifyCid = (cid: string, bytes: Uint8Array): boolean =>");
 assertContains("packages/ts/test/reallyme-codec.test.mjs", "binary protobuf and generated ProtoJSON return equivalent responses");
 assertContains("packages/ts/test/reallyme-codec.test.mjs", "superseded direct WASM structured result exports are absent");
 assertContains("packages/ts/test/reallyme-codec.test.mjs", "array metadata is snapshotted once without invoking proxy getters");
@@ -2615,7 +2527,7 @@ assertContains(".github/workflows/crates-package-preflight.yml", "cargo-audit@0.
 assertContains(".github/workflows/crates-package-preflight.yml", "scripts/audit_committed_lockfiles.sh");
 assertContains("deny.toml", 'yanked = "deny"');
 assertMinOccurrences(".github/workflows/swift-package-release.yml", "RELEASE_VERSION: ${{ inputs.version }}", 2);
-assertMinOccurrences(".github/workflows/kotlin-android-package-release.yml", "RELEASE_VERSION: ${{ inputs.version }}", 3);
+assertMinOccurrences(".github/workflows/kotlin-android-package-release.yml", "RELEASE_VERSION: ${{ inputs.version }}", 2);
 assertMinOccurrences(".github/workflows/npm-package-release.yml", "RELEASE_VERSION: ${{ inputs.version }}", 2);
 assertMinOccurrences(
   ".github/workflows/crates-release.yml",
@@ -2649,11 +2561,11 @@ if (!androidCodecBuild.includes(`version = "${codecPackageVersion}"`)) {
 assertContains("packages/kotlin-android/settings.gradle.kts", 'rootProject.name = "reallyme-codec-android"');
 assertContains("packages/kotlin-android/settings.gradle.kts", 'include(":consumer-r8-runtime")');
 assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.library")');
-assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.library") version "9.4.0"');
-assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.application") version "9.4.0" apply false');
+assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.library") version "9.4.1"');
+assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.application") version "9.4.1" apply false');
 assertContains("packages/kotlin-android/build.gradle.kts", 'artifactId = "codec-android"');
-assertContains("packages/kotlin-android/build.gradle.kts", "com.google.protobuf:protobuf-javalite:4.36.1");
-assertContains("packages/kotlin-android/build.gradle.kts", "com.google.protobuf:protobuf-kotlin-lite:4.36.1");
+assertContains("packages/kotlin-android/build.gradle.kts", "com.google.protobuf:protobuf-javalite:4.36.2");
+assertContains("packages/kotlin-android/build.gradle.kts", "com.google.protobuf:protobuf-kotlin-lite:4.36.2");
 assertContains("packages/kotlin-android/build.gradle.kts", "jniLibs.directories");
 assertContains("packages/kotlin-android/build.gradle.kts", "assets.directories");
 assertContains("packages/kotlin-android/build.gradle.kts", "reallyme-codec/native-manifest.json");
@@ -2682,11 +2594,11 @@ assertContains(
 );
 assertContains(
   "packages/kotlin-android/gradle/verification-metadata.xml",
-  '<component group="com.android.tools.build" name="gradle" version="9.4.0">',
+  '<component group="com.android.tools.build" name="gradle" version="9.4.1">',
 );
 assertContains(
   "packages/kotlin-android/gradle/verification-metadata.xml",
-  'artifact name="aapt2-9.4.0-15978811-linux.jar"',
+  'artifact name="aapt2-9.4.1-15978811-linux.jar"',
 );
 assertContains(
   "packages/kotlin-android/gradle/verification-metadata.xml",
@@ -2727,7 +2639,7 @@ assertContains(
   ".github/workflows/kotlin-android-package-release.yml",
   '{ yes 2>/dev/null || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "ndk;29.0.14206865"',
 );
-assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.2.3");
+assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.3.0");
 assertContains("packages/kotlin-android/README.md", "never sourced from the Git worktree");
 assertContains(
   "packages/kotlin-android/gradle.properties",
@@ -2753,10 +2665,8 @@ assertContains("packages/kotlin/build.gradle.kts", "-C panic=unwind");
 assertContains(".github/workflows/kotlin-android-package-release.yml", "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/29.0.14206865");
 assertNotContains(".github/workflows/kotlin-android-package-release.yml", "ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/29.0.14206865");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/29.0.14206865");
-assertContains(".github/workflows/kotlin-android-package-release.yml", "android-aar:");
-assertContains(".github/workflows/kotlin-android-package-release.yml", "Write Android native checksum manifest");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "Write Android native checksum manifest");
-assertContains(".github/workflows/kotlin-android-package-release.yml", "verifyReleaseAarContainsJniLibs");
+assertContains("scripts/maven_central_bundle_local.sh", "validate_bundle_files");
 assertContains(".github/workflows/kotlin-android-package-release.yml", "RELEASE_VERSION");
 assertContains(".github/workflows/swift-package-release.yml", "needs: [verify-release-sha, swift-verify]");
 assertNotContains(".github/workflows/swift-package-release.yml", "if: inputs.publish == true");
@@ -2791,7 +2701,7 @@ assertContains(".github/workflows/npm-package-preflight.yml", "Test TypeScript c
 
 assertContains("README.md", "https://github.com/reallyme/codec");
 assertContains("README.md", "https://www.npmjs.com/package/@reallyme/codec");
-assertContains("README.md", "me.really:codec:0.2.3");
+assertContains("README.md", "me.really:codec:0.3.0");
 assertContains("README.md", "reallyme-codec-proto");
 assertContains("README.md", "## Published Surfaces");
 assertContains("README.md", "`me.really:codec-android` AAR");
@@ -2831,7 +2741,7 @@ assertContains("crates/proto/proto/reallyme/codec/v1/codec.proto", "message Code
 assertContains("crates/proto/proto/reallyme/codec/v1/codec.proto", "message CodecPemDecodeResult");
 assertContains("crates/proto/proto/reallyme/codec/v1/codec.proto", "message CodecDagCborVerifyCidResult");
 assertContains("crates/proto/proto/reallyme/codec/v1/codec.proto", "enum CodecErrorReason");
-assertContains(".github/workflows/protobuf-ci.yml", "redact_codec_proto_debug.mjs");
+assertContains(".github/workflows/protobuf-ci.yml", "--generated-freshness");
 assertContains("crates/proto/Cargo.toml", '"buffa/json"');
 assertContains("scripts/redact_codec_proto_debug.mjs", "validateScalarFieldClassifications");
 assertContains("scripts/redact_codec_proto_debug.mjs", "validateSensitiveRustHardening");
@@ -2859,7 +2769,7 @@ for (const messageName of codecProtoProviderOutputMessages) {
   );
 }
 assertReallyMeProtobufReleasePolicy({
-  bufVersion: "1.72.0",
+  bufVersion: "1.73.0",
   buffaVersion: "0.9.2",
   generatedFreshnessMode,
   workflowMode: "delegated",
@@ -2938,7 +2848,7 @@ assertReallyMeProtobufReleasePolicy({
         path: "gen/swift/reallyme/codec/v1/codec.pb.swift",
         required: codecProtoSensitiveMessageNames.flatMap((message) => [
           `ReallyMeProto${message}(<redacted>)`,
-          `public nonisolated struct ReallyMeProto${message}: Sendable`,
+          `nonisolated struct ReallyMeProto${message}: Sendable`,
         ]),
       },
       ...codecProtoSensitiveMessageNames.map((message) => ({

@@ -20,7 +20,7 @@ Codecs for Rust, TypeScript, Swift, Java and Kotlin, covering base encodings, mu
 | Base encodings | base64, unpadded base64url, lowercase hex, base58btc |
 | Multiformats | multibase, multicodec, multikey, key-binding validation |
 | Canonical data | deterministic generic CBOR, DAG-CBOR, CID helpers, SHA-256 content hash, multihash helpers, JCS |
-| PEM | strict PEM decode and encode with label, size, line-width, and line-ending policy |
+| PEM | PEM decode and encode with label, size, line-width, and line-ending policy; decoding permits public keys by default |
 | Protobuf | `reallyme.codec.v1` generated operation requests, generated ProtoJSON, and codec error envelopes |
 
 ## Install
@@ -36,7 +36,7 @@ every primitive codec family. Consumers that need a smaller dependency surface c
 only the families they use:
 
 ```toml
-reallyme-codec = { version = "0.2.3", default-features = false, features = [
+reallyme-codec = { version = "0.3.0", default-features = false, features = [
   "base64url",
   "multikey",
 ] }
@@ -51,7 +51,7 @@ feature enables the base64url field adapters.
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.2.3"
+    from: "0.3.0"
 )
 ```
 
@@ -63,7 +63,7 @@ feature enables the base64url field adapters.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.2.3")
+    implementation("me.really:codec:0.3.0")
 }
 ```
 
@@ -71,7 +71,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.2.3")
+    implementation("me.really:codec-android:0.3.0")
 }
 ```
 
@@ -97,9 +97,12 @@ Rust:
 ```rust
 use reallyme_codec::base64url::{base64url_to_bytes, bytes_to_base64url};
 
-let encoded = bytes_to_base64url(b"hello");
-let decoded = base64url_to_bytes(&encoded)?;
-# Ok::<(), reallyme_codec::base64url::Base64UrlError>(())
+fn round_trip() -> Result<(), reallyme_codec::base64url::Base64UrlError> {
+    let encoded = bytes_to_base64url(b"hello");
+    let decoded = base64url_to_bytes(&encoded)?;
+    assert_eq!(decoded, b"hello");
+    Ok(())
+}
 ```
 
 Swift:
@@ -175,6 +178,11 @@ limits. The generic profile permits at most 64 nested containers, 65,536 nodes
 are each capped at 1 MiB; aggregate UTF-8 text and aggregate byte-string content
 are each capped at 1 MiB.
 
+Map keys use RFC 8949 §4.2.3 length-first ordering. This profile differs from
+the bytewise ordering in RFC 8949 §4.2.1 when keys have different encoded
+lengths. JCS is a strict RFC 8785 subset: integer-valued binary64 numbers
+outside the interoperable ±(2⁵³−1) range are rejected, including `1e19`.
+
 DAG-CBOR uses text map keys and signed 64-bit integers; floats and tags are outside the supported profile.
 
 Swift and JVM packages include native libraries. See their package READMEs for installation and local-library loading.
@@ -201,7 +209,7 @@ The generated proto surfaces are available through:
 | Language | Proto surface | Generic execution |
 |---|---|---|
 | Rust | `reallyme-codec-proto` | `process_operation_response`, `process_operation_response_json` |
-| Swift | `ReallyMeCodecProto` | `processOperation`, `processOperationJson` |
+| Swift | Internal generated wire types | `processOperation`, `processOperationJson` |
 | Kotlin / Java | `me.really.codec.v1` | `processOperation`, `processOperationJson` |
 | TypeScript | `@reallyme/codec/proto` | `processOperation`, `processOperationJson` |
 

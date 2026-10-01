@@ -9,13 +9,23 @@
 
 #![no_main]
 
+use codec_cbor::CidVerificationStatus;
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
-    if let Ok(value) = codec_cbor::decode_dag_cbor(data) {
-        // Successful decoding promises canonical bytes. Exercise both encoder
-        // passes as well, and require exact byte-for-byte preservation.
-        assert_eq!(codec_cbor::encode_dag_cbor(&value).as_deref(), Ok(data));
+    let canonical_cid = codec_cbor::compute_cid_dag_cbor(data);
+    let verification = codec_cbor::verify_dag_cbor_cid(&canonical_cid, data);
+    match codec_cbor::decode_dag_cbor(data) {
+        Ok(value) => {
+            // A matching digest is meaningful only after the canonical DAG
+            // profile accepts the block. Exercise the encoder as an oracle.
+            assert_eq!(codec_cbor::encode_dag_cbor(&value).as_deref(), Ok(data));
+            let verified = verification.expect("canonical block must verify");
+            assert_eq!(verified.status(), CidVerificationStatus::Match);
+            assert_eq!(verified.expected_cid(), canonical_cid);
+            assert_eq!(verified.actual_cid(), canonical_cid);
+        }
+        Err(error) => assert_eq!(verification.err(), Some(error)),
     }
 
     // Split the input so the tail also drives the CID string parser and the
@@ -24,7 +34,12 @@ fuzz_target!(|data: &[u8]| {
         let cid_len = (*head as usize).min(tail.len());
         if let Ok(cid_text) = core::str::from_utf8(&tail[..cid_len]) {
             let _ = codec_cbor::try_parse_cid(cid_text);
-            let _ = codec_cbor::verify_dag_cbor_cid(cid_text, &tail[cid_len..]);
+            if let Ok(verified) = codec_cbor::verify_dag_cbor_cid(cid_text, &tail[cid_len..]) {
+                if verified.status() == CidVerificationStatus::Match {
+                    assert_eq!(verified.expected_cid(), verified.actual_cid());
+                    assert_eq!(verified.expected_cid(), cid_text);
+                }
+            }
         }
     }
 });

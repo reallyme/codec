@@ -10,7 +10,8 @@ export type ReallyMeCodecErrorCode =
   | "invalid-input"
   | "non-canonical"
   | "provider-failure"
-  | "unsupported-codec";
+  | "unsupported-codec"
+  | "unsupported-ipld-value";
 
 export class ReallyMeCodecError extends Error {
   readonly code: ReallyMeCodecErrorCode;

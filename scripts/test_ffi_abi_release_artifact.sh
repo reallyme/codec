@@ -76,4 +76,15 @@ for symbol in "${SYMBOLS[@]}"; do
   fi
 done
 
+if ! command -v clang >/dev/null 2>&1; then
+  echo "clang is required for the release ABI sanitizer harness" >&2
+  exit 1
+fi
+clang -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer \
+  "${ROOT_DIR}/scripts/ffi_abi_sanitizer.c" \
+  -L"${ROOT_DIR}/target/release" -lreallyme_codec_ffi \
+  -Wl,-rpath,"${ROOT_DIR}/target/release" \
+  -o "${TEMP_DIR}/ffi-abi-sanitizer"
+"${TEMP_DIR}/ffi-abi-sanitizer"
+
 echo "release FFI ABI artifact verified: ${LIBRARY_PATH}"

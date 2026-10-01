@@ -118,6 +118,15 @@ impl CodecWireError {
             CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF,
         )
     }
+
+    /// Returns the deterministic provider-attributed internal error.
+    #[must_use]
+    pub const fn internal() -> Self {
+        Self::known_good(
+            CodecWireErrorBranch::Backend,
+            CodecErrorReason::CODEC_ERROR_REASON_BACKEND_INTERNAL,
+        )
+    }
 }
 
 /// Builds the structured `CodecError` protobuf message for a validated error.

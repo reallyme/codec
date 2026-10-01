@@ -10,7 +10,7 @@
     clippy::unwrap_used
 )]
 use codec_multicodec::{
-    lookup_codec_prefix, strip_codec_prefix, CodecTag, KeyMaterialKind, VARIABLE_KEY_LENGTH,
+    lookup_codec_prefix, strip_codec_prefix, CodecPrefixError, CodecTag, KeyLength, KeyMaterialKind,
 };
 
 fn assert_codec(
@@ -33,7 +33,7 @@ fn lookup_ed25519_prefix() {
 
     assert_eq!(found.name, "ed25519-pub");
     assert_eq!(found.alg, "Ed25519");
-    assert_eq!(found.key_length, 32);
+    assert_eq!(found.key_length, KeyLength::Fixed(32));
 }
 
 #[test]
@@ -41,12 +41,12 @@ fn lookup_p384_and_p521_prefixes() {
     let p384 = lookup_codec_prefix(&[0x81, 0x24, 1, 2, 3]).unwrap();
     assert_eq!(p384.name, "p384-pub");
     assert_eq!(p384.alg, "P-384");
-    assert_eq!(p384.key_length, 49);
+    assert_eq!(p384.key_length, KeyLength::Fixed(49));
 
     let p521 = lookup_codec_prefix(&[0x82, 0x24, 1, 2, 3]).unwrap();
     assert_eq!(p521.name, "p521-pub");
     assert_eq!(p521.alg, "P-521");
-    assert_eq!(p521.key_length, 67);
+    assert_eq!(p521.key_length, KeyLength::Fixed(67));
 }
 
 #[test]
@@ -268,7 +268,15 @@ fn lookup_rsa_prefix() {
     let rsa = lookup_codec_prefix(&[0x85, 0x24, 0x30, 0x82, 0x01, 0x0a]).unwrap();
     assert_eq!(rsa.name, "rsa-pub");
     assert_eq!(rsa.alg, "RSA");
-    assert_eq!(rsa.key_length, VARIABLE_KEY_LENGTH);
+    assert_eq!(rsa.key_length, KeyLength::Variable);
+}
+
+#[test]
+fn variable_key_and_non_key_lengths_are_distinct() {
+    let rsa = lookup_codec_prefix(&[0x85, 0x24]).unwrap();
+    let encryption = lookup_codec_prefix(&[0x80, 0x40]).unwrap();
+    assert_eq!(rsa.key_length, KeyLength::Variable);
+    assert_eq!(encryption.key_length, KeyLength::NotApplicable);
 }
 
 #[test]
@@ -279,16 +287,35 @@ fn lookup_unknown_prefix_returns_none() {
 
 #[test]
 fn strip_prefix_when_known() {
-    let bytes = [0xec, 0x01, 1, 2, 3, 4];
-    let stripped = strip_codec_prefix(&bytes);
-    assert_eq!(stripped, &[1, 2, 3, 4]);
+    let mut bytes = vec![0xec, 0x01];
+    bytes.extend([1_u8; 32]);
+    let stripped = strip_codec_prefix(&bytes).unwrap();
+    assert_eq!(stripped, &[1_u8; 32]);
 }
 
 #[test]
-fn strip_prefix_when_unknown_returns_original() {
+fn strip_prefix_rejects_unknown_prefix() {
     let bytes = [0x01, 0x02, 0x03];
-    let stripped = strip_codec_prefix(&bytes);
-    assert_eq!(stripped, &bytes);
+    assert_eq!(
+        strip_codec_prefix(&bytes),
+        Err(CodecPrefixError::InvalidPrefix)
+    );
+}
+
+#[test]
+fn strip_prefix_rejects_non_public_and_short_keys() {
+    let mut private = vec![0x80, 0x26];
+    private.extend([7_u8; 32]);
+    assert_eq!(
+        strip_codec_prefix(&private),
+        Err(CodecPrefixError::NonPublicKeyMaterial)
+    );
+    let mut short = vec![0xed, 0x01];
+    short.extend([7_u8; 31]);
+    assert_eq!(
+        strip_codec_prefix(&short),
+        Err(CodecPrefixError::InvalidLength)
+    );
 }
 
 #[test]

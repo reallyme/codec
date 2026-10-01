@@ -3,8 +3,11 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 import Foundation
-import ReallyMeCodecProto
 import SwiftProtobuf
+
+// The operation envelope has its own transport bound. Scalar C ABI calls use
+// the smaller ffiInputLimit, but a valid PEM request can exceed that limit.
+private let maxOperationRequestBytes = 10_485_760
 
 private enum CodecOperation {
     static let base64Encode: UInt32 = 1
@@ -28,6 +31,7 @@ private enum CodecOperation {
     static let dagCborCodecCode: UInt32 = 26
     static let canonicalizeJson: UInt32 = 27
     static let validateKeyBinding: UInt32 = 30
+    static let validateKeyBindingNoAlgorithm: UInt32 = 31
 }
 
 private enum CodecBoolOperation {
@@ -45,7 +49,7 @@ public struct ReallyMeCodec: Sendable {
         #if REALLYME_CODEC_LINKED_FFI
         provider = try ReallyMeCodecRustCAbiProvider()
         #else
-        throw ReallyMeCodecError.providerFailure
+        throw ReallyMeCodecError.providerUnavailable
         #endif
     }
 
@@ -109,7 +113,7 @@ public struct ReallyMeCodec: Sendable {
 
     public func multicodecPrefixForName(_ name: String) throws -> ReallyMeMulticodecMetadata {
         let operationResult = try withOwnedBytes(
-            multicodecPrefixForNameOperationRequestBytes(name, maxFfiInputLength: provider.ffiInputLimit)
+            multicodecPrefixForNameOperationRequestBytes(name, maxFfiInputLength: maxOperationRequestBytes)
         ) { request in
             try processGeneratedOperation(request: request)
         }
@@ -121,7 +125,7 @@ public struct ReallyMeCodec: Sendable {
 
     public func multicodecLookupPrefix(_ bytes: [UInt8]) throws -> ReallyMeMulticodecLookupResult {
         let operationResult = try withOwnedBytes(
-            multicodecLookupPrefixOperationRequestBytes(bytes, maxFfiInputLength: provider.ffiInputLimit)
+            multicodecLookupPrefixOperationRequestBytes(bytes, maxFfiInputLength: maxOperationRequestBytes)
         ) { request in
             try processGeneratedOperation(request: request)
         }
@@ -137,7 +141,7 @@ public struct ReallyMeCodec: Sendable {
 
     public func multicodecTable() throws -> ReallyMeMulticodecTable {
         let operationResult = try withOwnedBytes(
-            multicodecTableOperationRequestBytes(maxFfiInputLength: provider.ffiInputLimit)
+            multicodecTableOperationRequestBytes(maxFfiInputLength: maxOperationRequestBytes)
         ) { request in
             try processGeneratedOperation(request: request)
         }
@@ -155,7 +159,7 @@ public struct ReallyMeCodec: Sendable {
 
     public func multikeyParse(_ multikey: String) throws -> ReallyMeParsedMultikey {
         var operationResult = try withOwnedBytes(
-            multikeyParseOperationRequestBytes(multikey, maxFfiInputLength: provider.ffiInputLimit)
+            multikeyParseOperationRequestBytes(multikey, maxFfiInputLength: maxOperationRequestBytes)
         ) { request in
             try processGeneratedOperation(request: request)
         }
@@ -190,6 +194,9 @@ public struct ReallyMeCodec: Sendable {
     }
 
     public func validateKeyBinding(bindingType: String, algorithm: String?, multikey: String) throws {
+        if algorithm == "" {
+            throw ReallyMeCodecError.invalidInput
+        }
         try withTextBytes(
             bindingType,
             algorithm ?? "",
@@ -200,7 +207,9 @@ public struct ReallyMeCodec: Sendable {
             encodedAlgorithm,
             encodedMultikey in
             _ = try provider.process(
-                operation: CodecOperation.validateKeyBinding,
+                operation: algorithm == nil
+                    ? CodecOperation.validateKeyBindingNoAlgorithm
+                    : CodecOperation.validateKeyBinding,
                 first: encodedBindingType,
                 second: encodedAlgorithm,
                 third: encodedMultikey
@@ -220,7 +229,7 @@ public struct ReallyMeCodec: Sendable {
             dagCborVerifyCidOperationRequestBytes(
                 cid: cid,
                 payload: payload,
-                maxFfiInputLength: provider.ffiInputLimit
+                maxFfiInputLength: maxOperationRequestBytes
             )
         ) { request in
             try processGeneratedOperation(request: request)
@@ -335,7 +344,7 @@ public struct ReallyMeCodec: Sendable {
             pemDecodeOperationRequestBytes(
                 pem: pem,
                 options: options,
-                maxFfiInputLength: provider.ffiInputLimit
+                maxFfiInputLength: maxOperationRequestBytes
             )
         ) { request in
             try processGeneratedOperation(request: request)
@@ -361,7 +370,7 @@ public struct ReallyMeCodec: Sendable {
                 label: label,
                 der: der,
                 options: options,
-                maxFfiInputLength: provider.ffiInputLimit
+                maxFfiInputLength: maxOperationRequestBytes
             )
         ) { request in
             try processGeneratedOperation(request: request)
@@ -551,6 +560,9 @@ private func pemEncodeOperationRequestBytes(
     options: ReallyMePemEncodeOptions,
     maxFfiInputLength: Int
 ) throws -> [UInt8] {
+    if let lineWidth = options.lineWidth, lineWidth > 76 {
+        throw ReallyMeCodecError.invalidInput
+    }
     try requireBoundaryAggregate([der.count], maxFfiInputLength: maxFfiInputLength)
     var request = ReallyMeProtoCodecPemEncodeRequest()
     request.label = protoPemLabel(from: label)

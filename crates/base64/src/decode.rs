@@ -5,10 +5,13 @@
 use base64::{decoded_len_estimate, engine::general_purpose::STANDARD, Engine as _};
 use zeroize::Zeroizing;
 
-use crate::error::Base64Error;
+use crate::{error::Base64Error, MAX_BASE64_INPUT_LEN};
 
 /// Decode standard padded Base64 from RFC 4648.
 pub fn base64_to_bytes(input: &str) -> Result<Vec<u8>, Base64Error> {
+    if input.len() > MAX_BASE64_INPUT_LEN {
+        return Err(Base64Error::InputTooLarge);
+    }
     // A late alphabet or padding error may follow successfully decoded secret
     // bytes. Keep ownership here so the partial output is wiped on failure.
     let mut output = Zeroizing::new(vec![0_u8; decoded_len_estimate(input.len())]);

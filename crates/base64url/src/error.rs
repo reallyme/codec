@@ -11,4 +11,7 @@ pub enum Base64UrlError {
     /// The input was not valid base64url.
     #[error("invalid base64url")]
     Invalid,
+    /// Encoded text exceeded the supported resource limit.
+    #[error("base64url input too large")]
+    InputTooLarge,
 }

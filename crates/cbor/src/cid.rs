@@ -3,10 +3,13 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use cid::multibase::{decode as multibase_decode, Base};
-use cid::Cid;
+use cid::{Cid, Version};
 use multihash::Multihash;
 use multihash_codetable::{Code, MultihashDigest};
 use sha2::{Digest, Sha256};
+use zeroize::Zeroizing;
+
+use crate::{decode_dag_cbor, CborError};
 
 /// dag-cbor multicodec code (IPLD)
 pub const DAG_CBOR_CODEC: u64 = 0x71;
@@ -23,8 +26,51 @@ const CID_V0_STRING_LEN: usize = 46;
 /// Hash output for sha2-256
 pub type ContentHash = [u8; 32];
 
-/// Multihash envelope size used by the CID stack for sha2-256 digests.
-pub type DagCborMultihash = Multihash<64>;
+/// SHA-256 multihash for a DAG-CBOR block.
+///
+/// The wrapper keeps the upstream multihash representation out of the public
+/// API while preserving the canonical wire bytes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DagCborMultihash(Multihash<64>);
+
+impl DagCborMultihash {
+    /// Return the multihash algorithm code.
+    pub fn code(&self) -> u64 {
+        self.0.code()
+    }
+
+    /// Return the digest length.
+    pub fn size(&self) -> u8 {
+        self.0.size()
+    }
+
+    /// Borrow the digest bytes.
+    pub fn digest(&self) -> &[u8] {
+        self.0.digest()
+    }
+
+    /// Return canonical multihash wire bytes.
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.0.to_bytes()
+    }
+}
+
+/// Validated CID, independent of the upstream CID type.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParsedCid(Cid);
+
+impl ParsedCid {
+    /// Return the validated CID's canonical binary representation.
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.0.to_bytes()
+    }
+}
+
+impl core::fmt::Display for ParsedCid {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        self.0.fmt(formatter)
+    }
+}
 
 /// Returns the raw sha2-256 digest of `bytes`.
 pub fn sha2_256_content_hash(bytes: &[u8]) -> ContentHash {
@@ -33,7 +79,7 @@ pub fn sha2_256_content_hash(bytes: &[u8]) -> ContentHash {
 
 /// Returns a sha2-256 multihash of `bytes` for use in a CID.
 pub fn dag_cbor_multihash(bytes: &[u8]) -> DagCborMultihash {
-    Code::Sha2_256.digest(bytes)
+    DagCborMultihash(Code::Sha2_256.digest(bytes))
 }
 
 /// Computes the CIDv1 (dag-cbor, sha2-256) of `bytes` in canonical
@@ -43,69 +89,88 @@ pub fn dag_cbor_multihash(bytes: &[u8]) -> DagCborMultihash {
 /// encoder/decoder size limit. Encode a value first to obtain a canonical block.
 pub fn compute_cid_dag_cbor(bytes: &[u8]) -> String {
     let hash = dag_cbor_multihash(bytes);
-    let cid = Cid::new_v1(DAG_CBOR_CODEC, hash);
+    let cid = Cid::new_v1(DAG_CBOR_CODEC, hash.0);
     cid.to_string()
 }
 
-/// Recomputes the CID of `bytes` and compares it to `cid_str`.
+/// Outcome of comparing a canonical DAG-CBOR block with a CID string.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CidVerificationStatus {
+    /// The canonical CID matches the validated block.
+    Match,
+    /// A canonical CID identifies different bytes.
+    Mismatch,
+    /// The CID parses but its textual representation is not canonical.
+    NonCanonical,
+    /// The supplied text is not a valid CID.
+    InvalidCid,
+}
+
+/// Validated CID comparison with canonical, input-independent diagnostics.
+#[must_use]
+pub struct DagCborCidVerification {
+    status: CidVerificationStatus,
+    expected_cid: String,
+    actual_cid: String,
+}
+
+impl DagCborCidVerification {
+    /// Return the exact verification outcome.
+    pub const fn status(&self) -> CidVerificationStatus {
+        self.status
+    }
+
+    /// Return the canonical CID computed from the block.
+    pub fn expected_cid(&self) -> &str {
+        self.expected_cid.as_str()
+    }
+
+    /// Return the parsed CID in canonical form, or empty for invalid text.
+    pub fn actual_cid(&self) -> &str {
+        self.actual_cid.as_str()
+    }
+
+    /// Transfer the canonical strings to a transport adapter without copying.
+    pub fn into_parts(self) -> (CidVerificationStatus, String, String) {
+        (self.status, self.expected_cid, self.actual_cid)
+    }
+}
+
+/// Validate one canonical DAG-CBOR block and compare its CID text.
 ///
-/// Returns whether the parsed CID values match, plus the expected CID and the
-/// parsed actual CID in canonical string form. Invalid CID input never matches
-/// and returns an empty actual string so unvalidated caller input does not cross
-/// diagnostic or FFI boundaries.
-/// Like [`compute_cid_dag_cbor`], this hashes bytes without validating CBOR.
-/// Verification rejects uppercase base16, base32, and base36 variants, including
-/// uppercase payloads with lowercase prefixes; generic [`try_parse_cid`] also
-/// accepts those case variants.
-pub fn verify_dag_cbor_cid(cid_str: &str, bytes: &[u8]) -> (bool, String, String) {
+/// # Errors
+///
+/// Returns a typed DAG-CBOR error when the payload is malformed, noncanonical,
+/// or exceeds the parser's resource limits. Use [`compute_cid_dag_cbor`] when
+/// intentionally hashing opaque bytes without validating a DAG-CBOR block.
+pub fn verify_dag_cbor_cid(
+    cid_str: &str,
+    bytes: &[u8],
+) -> Result<DagCborCidVerification, CborError> {
+    let _validated = Zeroizing::new(decode_dag_cbor(bytes)?);
     let expected_hash = dag_cbor_multihash(bytes);
-    let expected_cid = Cid::new_v1(DAG_CBOR_CODEC, expected_hash);
+    let expected_cid = Cid::new_v1(DAG_CBOR_CODEC, expected_hash.0);
     let expected = expected_cid.to_string();
-    let Some(actual_cid) = parse_verification_cid(cid_str) else {
-        return (false, expected, String::new());
+    let Some((actual_cid, _base)) = parse_cid_string(cid_str) else {
+        return Ok(DagCborCidVerification {
+            status: CidVerificationStatus::InvalidCid,
+            expected_cid: expected,
+            actual_cid: String::new(),
+        });
     };
     let actual = actual_cid.to_string();
-    (expected_cid == actual_cid, expected, actual)
-}
-
-fn parse_verification_cid(cid_str: &str) -> Option<Cid> {
-    let (actual, base) = parse_cid_string(cid_str)?;
-    let Some(base) = base else {
-        return Some(actual);
+    let status = if cid_str != actual {
+        CidVerificationStatus::NonCanonical
+    } else if expected_cid == actual_cid {
+        CidVerificationStatus::Match
+    } else {
+        CidVerificationStatus::Mismatch
     };
-    if rejects_case_variant_base(base) || has_uppercase_payload_for_lowercase_base(base, cid_str) {
-        return None;
-    }
-    Some(actual)
-}
-
-fn rejects_case_variant_base(base: Base) -> bool {
-    matches!(
-        base,
-        Base::Base16Upper
-            | Base::Base32Upper
-            | Base::Base32PadUpper
-            | Base::Base32HexUpper
-            | Base::Base32HexPadUpper
-            | Base::Base36Upper
-    )
-}
-
-fn has_uppercase_payload_for_lowercase_base(base: Base, cid_str: &str) -> bool {
-    if !matches!(
-        base,
-        Base::Base16Lower
-            | Base::Base32Lower
-            | Base::Base32PadLower
-            | Base::Base32HexLower
-            | Base::Base32HexPadLower
-            | Base::Base36Lower
-    ) {
-        return false;
-    }
-    cid_str
-        .get(1..)
-        .is_some_and(|payload| payload.bytes().any(|byte| byte.is_ascii_uppercase()))
+    Ok(DagCborCidVerification {
+        status,
+        expected_cid: expected,
+        actual_cid: actual,
+    })
 }
 
 /// Returns whether `s` parses as a valid CID string.
@@ -117,8 +182,8 @@ pub fn is_valid_cid_string(s: &str) -> bool {
 ///
 /// Accepts CIDv0 and multibase CID strings up to [`MAX_CID_STRING_LEN`]. Paths,
 /// non-minimal binary encodings, and trailing decoded bytes are rejected.
-pub fn try_parse_cid(s: &str) -> Option<Cid> {
-    parse_cid_string(s).map(|(cid, _base)| cid)
+pub fn try_parse_cid(s: &str) -> Option<ParsedCid> {
+    parse_cid_string(s).map(|(cid, _base)| ParsedCid(cid))
 }
 
 fn parse_cid_string(s: &str) -> Option<(Cid, Option<Base>)> {
@@ -135,6 +200,10 @@ fn parse_cid_string(s: &str) -> Option<(Cid, Option<Base>)> {
     };
     let mut remaining = decoded.as_slice();
     let cid = Cid::read_bytes(&mut remaining).ok()?;
+    // CIDv0 has exactly one canonical textual representation: bare base58btc.
+    if base.is_some() && cid.version() == Version::V0 {
+        return None;
+    }
     // read_bytes is a stream parser. Exhaustion is essential for validating
     // an identifier, and byte equality also enforces minimal varint forms.
     if !remaining.is_empty() || cid.to_bytes() != decoded {

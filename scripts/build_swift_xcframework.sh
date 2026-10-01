@@ -6,12 +6,16 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TARGET_DIR="${CARGO_TARGET_DIR:-${ROOT_DIR}/target}"
+if [[ "${TARGET_DIR}" != /* ]]; then
+  TARGET_DIR="${ROOT_DIR}/${TARGET_DIR}"
+fi
 BUILD_DIR="${ROOT_DIR}/build/swift"
 HEADERS_DIR="${BUILD_DIR}/headers"
 FRAMEWORK_DIR="${BUILD_DIR}/ReallyMeCodecFFI.xcframework"
 ZIP_PATH="${BUILD_DIR}/ReallyMeCodecFFI.xcframework.zip"
 CHECKSUM_PATH="${BUILD_DIR}/ReallyMeCodecFFI.xcframework.checksum"
-FFI_RUSTFLAGS="${RUSTFLAGS:+${RUSTFLAGS} }-C panic=unwind"
+FFI_RUSTFLAGS="${RUSTFLAGS:+${RUSTFLAGS} }-C panic=unwind --remap-path-prefix=${ROOT_DIR}=. --remap-path-prefix=${CARGO_HOME:-${HOME}/.cargo}=.cargo --remap-path-prefix=${RUSTUP_HOME:-${HOME}/.rustup}=.rustup"
 
 require_tool() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -24,7 +28,9 @@ build_target() {
   local target="$1"
   rustup target add "${target}"
   RUSTFLAGS="${FFI_RUSTFLAGS}" \
-    cargo build --locked -p reallyme-codec-ffi --release --target "${target}"
+    cargo build --locked -p reallyme-codec-ffi --release --no-default-features \
+      --target "${target}" --target-dir "${TARGET_DIR}" \
+      --manifest-path "${ROOT_DIR}/Cargo.toml"
 }
 
 copy_or_lipo() {
@@ -162,6 +168,9 @@ cat >"${HEADERS_DIR}/reallyme_codec_ffi.h" <<'HEADER'
 typedef int32_t rm_codec_status_t;
 
 uint32_t rm_codec_abi_version(void);
+uint32_t rm_codec_package_version_major(void);
+uint32_t rm_codec_package_version_minor(void);
+uint32_t rm_codec_package_version_patch(void);
 size_t rm_codec_max_operation_response_bytes(void);
 size_t rm_codec_max_ffi_input_bytes(void);
 size_t rm_codec_max_ffi_output_bytes(void);
@@ -211,17 +220,31 @@ build_target x86_64-apple-ios
 
 copy_or_lipo \
   "${BUILD_DIR}/libs/libreallyme_codec_ffi_macos.a" \
-  "${ROOT_DIR}/target/aarch64-apple-darwin/release/libreallyme_codec_ffi.a" \
-  "${ROOT_DIR}/target/x86_64-apple-darwin/release/libreallyme_codec_ffi.a"
+  "${TARGET_DIR}/aarch64-apple-darwin/release/libreallyme_codec_ffi.a" \
+  "${TARGET_DIR}/x86_64-apple-darwin/release/libreallyme_codec_ffi.a"
 
 copy_or_lipo \
   "${BUILD_DIR}/libs/libreallyme_codec_ffi_ios.a" \
-  "${ROOT_DIR}/target/aarch64-apple-ios/release/libreallyme_codec_ffi.a"
+  "${TARGET_DIR}/aarch64-apple-ios/release/libreallyme_codec_ffi.a"
 
 copy_or_lipo \
   "${BUILD_DIR}/libs/libreallyme_codec_ffi_ios_simulator.a" \
-  "${ROOT_DIR}/target/aarch64-apple-ios-sim/release/libreallyme_codec_ffi.a" \
-  "${ROOT_DIR}/target/x86_64-apple-ios/release/libreallyme_codec_ffi.a"
+  "${TARGET_DIR}/aarch64-apple-ios-sim/release/libreallyme_codec_ffi.a" \
+  "${TARGET_DIR}/x86_64-apple-ios/release/libreallyme_codec_ffi.a"
+
+rust_host="$(rustc -vV | sed -n 's/^host: //p')"
+RUST_NM="$(rustc --print sysroot)/lib/rustlib/${rust_host}/bin/llvm-nm"
+[[ -x "${RUST_NM}" ]] || { printf 'Rust toolchain llvm-nm is required\n' >&2; exit 1; }
+for static_library in "${BUILD_DIR}/libs/"*.a; do
+  exported_symbols="$("${RUST_NM}" -g --defined-only --format=just-symbols "${static_library}" 2>/dev/null)"
+  if [[ "${exported_symbols}" == *Java_* ]]; then
+    printf 'Swift artifact unexpectedly exports JNI symbols: %s\n' "${static_library}" >&2
+    exit 1
+  fi
+  bash "${ROOT_DIR}/scripts/check_swift_static_library_paths.sh" \
+    "${static_library}" "${ROOT_DIR}" \
+    "${CARGO_HOME:-${HOME}/.cargo}" "${RUSTUP_HOME:-${HOME}/.rustup}"
+done
 
 xcodebuild -create-xcframework \
   -library "${BUILD_DIR}/libs/libreallyme_codec_ffi_macos.a" -headers "${HEADERS_DIR}" \

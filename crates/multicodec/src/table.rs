@@ -48,15 +48,19 @@ pub struct CodecSpec {
     pub codec: &'static [u8],
 
     /// Expected raw public key length AFTER prefix
-    pub key_length: usize,
+    pub key_length: KeyLength,
 }
 
-/// Variable-length key payload. RSA keys use DER, whose length depends on
-/// modulus size and integer leading-byte normalization.
-pub const VARIABLE_KEY_LENGTH: usize = 0;
-
-/// Fixed length does not apply to this codec.
-pub const FIXED_LENGTH_NOT_APPLICABLE: usize = 0;
+/// Expected payload length without conflating variable keys and non-key codecs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum KeyLength {
+    /// A payload with an exact byte length.
+    Fixed(usize),
+    /// A nonempty variable-length payload, such as an RSA key.
+    Variable,
+    /// This codec does not represent a key payload.
+    NotApplicable,
+}
 
 /// Single source of truth for multicodec prefixes
 pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
@@ -67,7 +71,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::NotKey,
             alg: "SHA2-256",
             codec: &[0x12],
-            key_length: 32,
+            key_length: KeyLength::Fixed(32),
         },
     ),
     (
@@ -77,7 +81,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::NotKey,
             alg: "SHA2-512",
             codec: &[0x13],
-            key_length: 64,
+            key_length: KeyLength::Fixed(64),
         },
     ),
     (
@@ -87,7 +91,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::NotKey,
             alg: "SHA3-512",
             codec: &[0x14],
-            key_length: 64,
+            key_length: KeyLength::Fixed(64),
         },
     ),
     (
@@ -97,7 +101,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::NotKey,
             alg: "SHA3-384",
             codec: &[0x15],
-            key_length: 48,
+            key_length: KeyLength::Fixed(48),
         },
     ),
     (
@@ -107,7 +111,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::NotKey,
             alg: "SHA3-256",
             codec: &[0x16],
-            key_length: 32,
+            key_length: KeyLength::Fixed(32),
         },
     ),
     (
@@ -117,7 +121,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::NotKey,
             alg: "SHA3-224",
             codec: &[0x17],
-            key_length: 28,
+            key_length: KeyLength::Fixed(28),
         },
     ),
     (
@@ -127,7 +131,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::NotKey,
             alg: "SHA2-384",
             codec: &[0x20],
-            key_length: 48,
+            key_length: KeyLength::Fixed(48),
         },
     ),
     (
@@ -137,7 +141,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::SymmetricKey,
             alg: "AES-128",
             codec: &[0xa0, 0x01],
-            key_length: 16,
+            key_length: KeyLength::Fixed(16),
         },
     ),
     (
@@ -147,7 +151,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::SymmetricKey,
             alg: "AES-192",
             codec: &[0xa1, 0x01],
-            key_length: 24,
+            key_length: KeyLength::Fixed(24),
         },
     ),
     (
@@ -157,7 +161,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::SymmetricKey,
             alg: "AES-256",
             codec: &[0xa2, 0x01],
-            key_length: 32,
+            key_length: KeyLength::Fixed(32),
         },
     ),
     (
@@ -167,7 +171,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::SymmetricKey,
             alg: "ChaCha-128",
             codec: &[0xa3, 0x01],
-            key_length: 16,
+            key_length: KeyLength::Fixed(16),
         },
     ),
     (
@@ -177,7 +181,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::SymmetricKey,
             alg: "ChaCha-256",
             codec: &[0xa4, 0x01],
-            key_length: 32,
+            key_length: KeyLength::Fixed(32),
         },
     ),
     (
@@ -187,7 +191,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PublicKey,
             alg: "Ed25519",
             codec: &[0xed, 0x01],
-            key_length: 32,
+            key_length: KeyLength::Fixed(32),
         },
     ),
     (
@@ -197,7 +201,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PublicKey,
             alg: "X25519",
             codec: &[0xec, 0x01],
-            key_length: 32,
+            key_length: KeyLength::Fixed(32),
         },
     ),
     (
@@ -207,7 +211,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PublicKey,
             alg: "P-256",
             codec: &[0x80, 0x24],
-            key_length: 33,
+            key_length: KeyLength::Fixed(33),
         },
     ),
     (
@@ -217,7 +221,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PublicKey,
             alg: "P-384",
             codec: &[0x81, 0x24],
-            key_length: 49,
+            key_length: KeyLength::Fixed(49),
         },
     ),
     (
@@ -227,7 +231,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PublicKey,
             alg: "P-521",
             codec: &[0x82, 0x24],
-            key_length: 67,
+            key_length: KeyLength::Fixed(67),
         },
     ),
     (
@@ -237,7 +241,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PublicKey,
             alg: "Ed448",
             codec: &[0x83, 0x24],
-            key_length: 57,
+            key_length: KeyLength::Fixed(57),
         },
     ),
     (
@@ -247,7 +251,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PublicKey,
             alg: "RSA",
             codec: &[0x85, 0x24],
-            key_length: VARIABLE_KEY_LENGTH,
+            key_length: KeyLength::Variable,
         },
     ),
     (
@@ -257,7 +261,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PublicKey,
             alg: "secp256k1",
             codec: &[0xe7, 0x01],
-            key_length: 33,
+            key_length: KeyLength::Fixed(33),
         },
     ),
     (
@@ -267,7 +271,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PublicKey,
             alg: "ML-DSA-44",
             codec: &[0x90, 0x24],
-            key_length: 1312,
+            key_length: KeyLength::Fixed(1312),
         },
     ),
     (
@@ -277,7 +281,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PublicKey,
             alg: "ML-DSA-65",
             codec: &[0x91, 0x24],
-            key_length: 1952,
+            key_length: KeyLength::Fixed(1952),
         },
     ),
     (
@@ -287,7 +291,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PublicKey,
             alg: "ML-DSA-87",
             codec: &[0x92, 0x24],
-            key_length: 2592,
+            key_length: KeyLength::Fixed(2592),
         },
     ),
     (
@@ -297,7 +301,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PublicKey,
             alg: "ML-KEM-512",
             codec: &[0x8b, 0x24],
-            key_length: 800,
+            key_length: KeyLength::Fixed(800),
         },
     ),
     (
@@ -307,7 +311,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PublicKey,
             alg: "ML-KEM-768",
             codec: &[0x8c, 0x24],
-            key_length: 1184,
+            key_length: KeyLength::Fixed(1184),
         },
     ),
     (
@@ -317,7 +321,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PublicKey,
             alg: "ML-KEM-1024",
             codec: &[0x8d, 0x24],
-            key_length: 1568,
+            key_length: KeyLength::Fixed(1568),
         },
     ),
     (
@@ -327,7 +331,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PrivateKey,
             alg: "Ed25519",
             codec: &[0x80, 0x26],
-            key_length: 32,
+            key_length: KeyLength::Fixed(32),
         },
     ),
     (
@@ -337,7 +341,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PrivateKey,
             alg: "secp256k1",
             codec: &[0x81, 0x26],
-            key_length: 32,
+            key_length: KeyLength::Fixed(32),
         },
     ),
     (
@@ -347,7 +351,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PrivateKey,
             alg: "X25519",
             codec: &[0x82, 0x26],
-            key_length: 32,
+            key_length: KeyLength::Fixed(32),
         },
     ),
     (
@@ -357,7 +361,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PrivateKey,
             alg: "RSA",
             codec: &[0x85, 0x26],
-            key_length: VARIABLE_KEY_LENGTH,
+            key_length: KeyLength::Variable,
         },
     ),
     (
@@ -367,7 +371,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PrivateKey,
             alg: "P-256",
             codec: &[0x86, 0x26],
-            key_length: 32,
+            key_length: KeyLength::Fixed(32),
         },
     ),
     (
@@ -377,7 +381,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PrivateKey,
             alg: "P-384",
             codec: &[0x87, 0x26],
-            key_length: 48,
+            key_length: KeyLength::Fixed(48),
         },
     ),
     (
@@ -387,7 +391,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PrivateKey,
             alg: "P-521",
             codec: &[0x88, 0x26],
-            key_length: 66,
+            key_length: KeyLength::Fixed(66),
         },
     ),
     (
@@ -397,7 +401,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PrivateKey,
             alg: "Ed448",
             codec: &[0x91, 0x26],
-            key_length: 57,
+            key_length: KeyLength::Fixed(57),
         },
     ),
     (
@@ -407,7 +411,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PrivateKey,
             alg: "ML-KEM-512",
             codec: &[0x93, 0x26],
-            key_length: 1632,
+            key_length: KeyLength::Fixed(1632),
         },
     ),
     (
@@ -417,7 +421,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PrivateKey,
             alg: "ML-KEM-768",
             codec: &[0x94, 0x26],
-            key_length: 2400,
+            key_length: KeyLength::Fixed(2400),
         },
     ),
     (
@@ -427,7 +431,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::PrivateKey,
             alg: "ML-KEM-1024",
             codec: &[0x95, 0x26],
-            key_length: 3168,
+            key_length: KeyLength::Fixed(3168),
         },
     ),
     (
@@ -437,7 +441,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::NotKey,
             alg: "AES-256-GCM",
             codec: &[0x80, 0x40],
-            key_length: FIXED_LENGTH_NOT_APPLICABLE,
+            key_length: KeyLength::NotApplicable,
         },
     ),
     (
@@ -447,7 +451,7 @@ pub static MULTICODEC_TABLE: &[(&str, CodecSpec)] = &[
             key_material: KeyMaterialKind::NotKey,
             alg: "ChaCha20-Poly1305",
             codec: &[0x80, 0xc0, 0x02],
-            key_length: FIXED_LENGTH_NOT_APPLICABLE,
+            key_length: KeyLength::NotApplicable,
         },
     ),
 ];

@@ -10,6 +10,7 @@ import android.util.Log;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import me.really.codec.ReallyMeCodec;
+import me.really.codec.ReallyMeCodecException;
 import me.really.codec.ReallyMeDagCborCidVerification;
 import me.really.codec.ReallyMeMulticodecLookupResult;
 import me.really.codec.ReallyMeMulticodecMetadata;
@@ -79,6 +80,8 @@ public final class ConsumerR8RuntimeActivity extends Activity {
             ReallyMeCodec.base64urlDecode("AQID")
         );
         requireEquals("base64url encode", "AQID", ReallyMeCodec.base64urlEncode(new byte[] { 1, 2, 3 }));
+        requireInvalidInput(() -> ReallyMeCodec.base64urlDecode("A"));
+        requireInvalidInput(() -> ReallyMeCodec.lowerHexToBytes("GG"));
 
         ReallyMeMulticodecMetadata metadata =
             ReallyMeCodec.multicodecPrefixForName("ed25519-pub");
@@ -115,6 +118,15 @@ public final class ConsumerR8RuntimeActivity extends Activity {
                 )
             )
         );
+    }
+
+    private static void requireInvalidInput(Runnable operation) {
+        try {
+            operation.run();
+        } catch (ReallyMeCodecException.InvalidInput expected) {
+            return;
+        }
+        throw new IllegalStateException("expected typed invalid-input exception");
     }
 
     private static void requireTrue(String label, boolean condition) {

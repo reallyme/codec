@@ -7,7 +7,7 @@ Swift codecs for Apple platforms.
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.2.3"
+    from: "0.3.0"
 )
 ```
 
@@ -15,16 +15,12 @@ Swift codecs for Apple platforms.
 .product(name: "ReallyMeCodec", package: "codec")
 ```
 
-Applications that store or receive ReallyMe codec protobuf identifiers can add
-the proto product at the same boundary:
-
-```swift
-.product(name: "ReallyMeCodecProto", package: "codec")
-```
+Generated Swift protobuf messages are internal. Use `processOperation` or `processOperationJson` for serialized requests, or generate matching wire types in your application.
 
 ## Quick Start
 
-Public SwiftPM releases include the Rust FFI `.xcframework` binary target, so
+A tagged SwiftPM release includes the Rust FFI `.xcframework` binary target
+only when its artifact version matches the Swift source version. Then
 applications can construct the codec directly:
 
 ```swift
@@ -54,7 +50,7 @@ let dagCbor = try codec.dagCborEncodeData(ReallyMeDagCbor.mapText([
 ]))
 ```
 
-Encoding canonicalizes map ordering. Decoding rejects duplicate keys, non-canonical input, unsupported types and exceeded limits. DAG-CBOR accepts text map keys only. Positive DAG-CBOR integers must not exceed `Int64.max`.
+Encoding canonicalizes map ordering. Decoding rejects duplicate keys, non-canonical input, unsupported types and exceeded limits. DAG-CBOR accepts text map keys only. Positive DAG-CBOR integers must not exceed `Int64.max`. CID verification rejects types outside the supported DAG-CBOR profile.
 
 PEM input, output, and decoded DER use `[UInt8]` rather than `String` so
 callers can clear private-key material promptly with their own memory policy.
@@ -84,4 +80,8 @@ swift test
 ## License
 
 Dual-licensed under the MIT License or Apache License, Version 2.0, at your
-option. See [LICENSE](../../LICENSE) for both license texts.
+option. See [MIT](../../LICENSE-MIT) and [Apache 2.0](../../LICENSE-APACHE).
+
+An untagged checkout without a matching binary artifact reports
+`providerUnavailable` from `ReallyMeCodec()`. Local tests can pass an explicit,
+verified Rust C ABI library path through `ReallyMeCodecRustCAbiLibrary`.

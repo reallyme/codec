@@ -2,27 +2,32 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+#![allow(deprecated)]
+
 use super::{dag_cbor_vector_value, decode_hex, encode_hex, Vectors};
+#[cfg(feature = "operation-contract")]
+use reallyme_codec::operation_contract::{
+    process_operation_response, process_operation_response_json,
+};
 use reallyme_codec::{
-    base64::{base64_to_bytes, bytes_to_base64},
-    base64url::{base64url_to_bytes, bytes_to_base64url},
+    base64::{base64_to_bytes, bytes_to_base64, Base64Error},
+    base64url::{base64url_to_bytes, bytes_to_base64url, Base64UrlError},
     cbor::{
         compute_cid_dag_cbor, dag_cbor_multihash, decode_dag_cbor, encode_dag_cbor,
-        is_valid_cid_string, sha2_256_content_hash, try_parse_cid, verify_dag_cbor_cid,
+        is_valid_cid_string, sha2_256_content_hash, try_parse_cid, verify_dag_cbor_cid, CborError,
         DAG_CBOR_CODEC,
     },
     hex::{bytes_to_lower_hex, lower_hex_to_bytes},
-    jcs::canonicalize_json_text,
+    jcs::{canonicalize_json_text, JcsError},
     multibase::{
         base58btc_decode, base58btc_encode, bytes_to_multibase58btc, bytes_to_multibase_base64url,
-        multibase_to_bytes,
+        multibase_to_bytes, MultibaseError,
     },
     multicodec::{lookup_prefix, strip_prefix, supported_table, MulticodecLength},
     multikey::{
         binding_type_matches_codec, encode_multikey, parse_multikey, validate_key_binding,
-        KeyBindingInput,
+        KeyBindingInput, MultikeyError,
     },
-    operation_contract::{process_operation_response, process_operation_response_json},
     pem::{decode_pem, encode_pem, PemDecodePolicy, PemEncodeOptions, PemLabel},
 };
 
@@ -108,16 +113,22 @@ fn shared_vector_suite_covers_core_codec_methods() {
     let multikey = encode_multikey(vectors.string("ed25519CodecName"), &public_key).unwrap();
     assert_eq!(multikey, vectors.string("ed25519Multikey"));
     let parsed = parse_multikey(vectors.string("ed25519Multikey")).unwrap();
-    assert_eq!(parsed.codec_name, vectors.string("ed25519CodecName"));
-    assert_eq!(parsed.alg, vectors.string("ed25519AlgorithmName"));
-    assert_eq!(parsed.public_key, public_key);
+    assert!(parse_multikey(vectors.string("ed25519PrivateMultikey")).is_err());
+    assert_eq!(parsed.codec_name(), vectors.string("ed25519CodecName"));
     assert_eq!(
-        parsed.key_length,
-        usize::try_from(vectors.u64("ed25519ExpectedKeyLength")).unwrap()
+        parsed.algorithm_name(),
+        vectors.string("ed25519AlgorithmName")
+    );
+    assert_eq!(parsed.public_key(), public_key);
+    assert_eq!(
+        parsed.key_length(),
+        codec_multicodec::KeyLength::Fixed(
+            usize::try_from(vectors.u64("ed25519ExpectedKeyLength")).unwrap()
+        )
     );
     assert!(binding_type_matches_codec(
         vectors.string("multikeyBindingType"),
-        parsed.codec_name
+        parsed.codec_name()
     ));
     validate_key_binding(
         KeyBindingInput {
@@ -127,14 +138,37 @@ fn shared_vector_suite_covers_core_codec_methods() {
         &parsed,
     )
     .unwrap();
-    assert!(validate_key_binding(
-        KeyBindingInput {
-            binding_type: vectors.string("mismatchedBindingType"),
-            algorithm: Some(vectors.string("mismatchedBindingAlgorithm")),
-        },
-        &parsed
-    )
-    .is_err());
+    let p256 = parse_multikey(vectors.string("p256Multikey")).unwrap();
+    assert!(matches!(
+        validate_key_binding(
+            KeyBindingInput {
+                binding_type: "P256Key2024",
+                algorithm: None,
+            },
+            &p256,
+        ),
+        Err(MultikeyError::BindingAlgorithmMissing { .. })
+    ));
+    assert!(matches!(
+        validate_key_binding(
+            KeyBindingInput {
+                binding_type: vectors.string("mismatchedBindingType"),
+                algorithm: Some(vectors.string("mismatchedBindingAlgorithm")),
+            },
+            &parsed
+        ),
+        Err(MultikeyError::BindingTypeCodecMismatch { .. })
+    ));
+    assert!(matches!(
+        validate_key_binding(
+            KeyBindingInput {
+                binding_type: vectors.string("multikeyBindingType"),
+                algorithm: Some(vectors.string("mismatchedBindingAlgorithm")),
+            },
+            &parsed
+        ),
+        Err(MultikeyError::BindingAlgorithmMismatch { .. })
+    ));
 
     let cbor_value = dag_cbor_vector_value();
     let encoded = encode_dag_cbor(&cbor_value).unwrap();
@@ -160,10 +194,13 @@ fn shared_vector_suite_covers_core_codec_methods() {
     );
     assert!(!is_valid_cid_string(vectors.string("invalidCid")));
     assert_eq!(try_parse_cid(vectors.string("invalidCid")), None);
-    let (valid, expected, actual) = verify_dag_cbor_cid(vectors.string("dagCborCid"), &encoded);
-    assert!(valid);
-    assert_eq!(expected, vectors.string("dagCborCid"));
-    assert_eq!(actual, vectors.string("dagCborCid"));
+    let verification = verify_dag_cbor_cid(vectors.string("dagCborCid"), &encoded).unwrap();
+    assert_eq!(
+        verification.status(),
+        codec_cbor::CidVerificationStatus::Match
+    );
+    assert_eq!(verification.expected_cid(), vectors.string("dagCborCid"));
+    assert_eq!(verification.actual_cid(), vectors.string("dagCborCid"));
 
     assert_eq!(
         canonicalize_json_text(vectors.string("jcsObjectInputJson")).unwrap(),
@@ -182,40 +219,98 @@ fn shared_vector_suite_covers_core_codec_methods() {
     )
     .unwrap();
     assert_eq!(pem.as_str(), vectors.string("pemPrivatePem"));
-    let decoded = decode_pem(vectors.string("pemPrivatePem"), PemDecodePolicy::default()).unwrap();
+    let decoded = decode_pem(
+        vectors.string("pemPrivatePem"),
+        PemDecodePolicy {
+            allowed_labels: &[PemLabel::PrivateKey],
+            ..PemDecodePolicy::default()
+        },
+    )
+    .unwrap();
     assert_eq!(decoded.label, PemLabel::PrivateKey);
     assert_eq!(decoded.der.as_slice(), private_der.as_slice());
 
-    let proto_envelope = process_operation_response(&decode_hex(
-        vectors.string("protoMulticodecTableRequestHex"),
-    ));
-    let proto_json_envelope = process_operation_response_json(
-        vectors.string("protoMulticodecTableRequestJson").as_bytes(),
-    );
-    assert!(!proto_envelope.is_empty());
-    assert_eq!(proto_envelope.as_slice(), proto_json_envelope.as_slice());
+    #[cfg(feature = "operation-contract")]
+    {
+        let proto_envelope = process_operation_response(&decode_hex(
+            vectors.string("protoMulticodecTableRequestHex"),
+        ));
+        let proto_json_envelope = process_operation_response_json(
+            vectors.string("protoMulticodecTableRequestJson").as_bytes(),
+        );
+        assert!(!proto_envelope.is_empty());
+        assert_eq!(proto_envelope.as_slice(), proto_json_envelope.as_slice());
+    }
 }
 
 #[test]
 fn shared_vector_suite_rejects_non_canonical_inputs() {
     let vectors = Vectors::load();
 
-    assert!(base64_to_bytes(vectors.string("base64MissingPadding")).is_err());
-    assert!(base64_to_bytes(vectors.string("base64NonCanonicalTrailingBits")).is_err());
-    assert!(base64_to_bytes(vectors.string("base64Whitespace")).is_err());
-    assert!(base64url_to_bytes(vectors.string("base64urlPadded")).is_err());
-    assert!(base64url_to_bytes(vectors.string("base64urlNonCanonicalTrailingBits")).is_err());
-    assert!(base64url_to_bytes(vectors.string("base64urlInvalidLength")).is_err());
-    assert!(base64url_to_bytes(vectors.string("base64urlWhitespace")).is_err());
-    assert!(multibase_to_bytes(vectors.string("unsupportedMultibase")).is_err());
-    assert!(multibase_to_bytes(vectors.string("multibaseMultibytePrefix")).is_err());
-    assert!(parse_multikey(vectors.string("nonCanonicalBase64urlMultikey")).is_err());
-    assert!(decode_dag_cbor(&decode_hex(vectors.string("dagCborNonCanonicalIntegerHex"))).is_err());
-    assert!(decode_dag_cbor(&decode_hex(vectors.string("dagCborDuplicateKeyHex"))).is_err());
-    assert!(decode_dag_cbor(&decode_hex(vectors.string("dagCborOutOfOrderKeyHex"))).is_err());
-    assert!(canonicalize_json_text(vectors.string("jcsDuplicateMemberJson")).is_err());
-    assert!(canonicalize_json_text(vectors.string("jcsNonInteroperableIntegerJson")).is_err());
-    assert!(canonicalize_json_text(vectors.string("jcsLoneSurrogateJson")).is_err());
+    for key in [
+        "base64MissingPadding",
+        "base64NonCanonicalTrailingBits",
+        "base64Whitespace",
+    ] {
+        assert!(
+            matches!(
+                base64_to_bytes(vectors.string(key)),
+                Err(Base64Error::Invalid)
+            ),
+            "{key}"
+        );
+    }
+    for key in [
+        "base64urlPadded",
+        "base64urlNonCanonicalTrailingBits",
+        "base64urlInvalidLength",
+        "base64urlWhitespace",
+    ] {
+        assert!(
+            matches!(
+                base64url_to_bytes(vectors.string(key)),
+                Err(Base64UrlError::Invalid)
+            ),
+            "{key}"
+        );
+    }
+    for key in ["unsupportedMultibase", "multibaseMultibytePrefix"] {
+        assert!(
+            matches!(
+                multibase_to_bytes(vectors.string(key)),
+                Err(MultibaseError::UnsupportedPrefix)
+            ),
+            "{key}"
+        );
+    }
+    assert!(matches!(
+        parse_multikey(vectors.string("nonCanonicalBase64urlMultikey")),
+        Err(MultikeyError::InvalidMultibase)
+    ));
+    assert_eq!(
+        decode_dag_cbor(&decode_hex(vectors.string("dagCborNonCanonicalIntegerHex"))),
+        Err(CborError::NonCanonicalInteger)
+    );
+    assert_eq!(
+        decode_dag_cbor(&decode_hex(vectors.string("dagCborDuplicateKeyHex"))),
+        Err(CborError::DuplicateMapKey)
+    );
+    assert_eq!(
+        decode_dag_cbor(&decode_hex(vectors.string("dagCborOutOfOrderKeyHex"))),
+        Err(CborError::MapKeysOutOfOrder)
+    );
+    assert_eq!(
+        canonicalize_json_text(vectors.string("jcsDuplicateMemberJson")),
+        Err(JcsError::DuplicateProperty)
+    );
+    assert_eq!(
+        canonicalize_json_text(vectors.string("jcsNonInteroperableIntegerJson")),
+        Err(JcsError::IntegerOutsideInteroperableRange)
+    );
+    assert_eq!(
+        canonicalize_json_text(vectors.string("jcsLoneSurrogateJson")),
+        Err(JcsError::InvalidJson)
+    );
     assert_eq!(
         canonicalize_json_text(vectors.string("jcsUtf16KeyOrderInputJson")).unwrap(),
         vectors.string("jcsUtf16KeyOrderCanonicalJson")

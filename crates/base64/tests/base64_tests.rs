@@ -3,7 +3,19 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 #![allow(missing_docs)]
-use codec_base64::{base64_to_bytes, bytes_to_base64, Base64Error};
+use codec_base64::{base64_to_bytes, bytes_to_base64, Base64Error, MAX_BASE64_INPUT_LEN};
+
+#[test]
+fn decode_input_limit_accepts_exact_boundary_and_rejects_next_byte() {
+    let accepted = "A".repeat(MAX_BASE64_INPUT_LEN);
+    assert!(base64_to_bytes(&accepted).is_ok());
+    let mut rejected = accepted;
+    rejected.push('A');
+    assert!(matches!(
+        base64_to_bytes(&rejected),
+        Err(Base64Error::InputTooLarge)
+    ));
+}
 
 #[test]
 fn rfc4648_section_10_known_answer_vectors() -> Result<(), Base64Error> {

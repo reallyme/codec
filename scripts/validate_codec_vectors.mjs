@@ -59,6 +59,23 @@ for (const [section, minimumCount] of Object.entries(deterministicMinimumCounts)
   }
 }
 
+const nonCanonicalCborReasons = new Set([
+  "duplicate-key",
+  "non-minimal-integer",
+  "non-minimal-length",
+  "map-key-order",
+  "trailing-data",
+]);
+for (const [index, fixture] of deterministic.negative.entries()) {
+  const reason = requireString(fixture?.reason, `deterministicCbor.negative[${index}].reason`);
+  const expectedClass = nonCanonicalCborReasons.has(reason)
+    ? "non-canonical"
+    : "invalid-input";
+  if (fixture.errorClass !== expectedClass) {
+    fail(`deterministicCbor.negative[${index}].errorClass must be ${expectedClass}`);
+  }
+}
+
 const names = new Set();
 for (const [index, fixture] of interoperability.entries()) {
   const path = `deterministicCbor.interoperability[${index}]`;

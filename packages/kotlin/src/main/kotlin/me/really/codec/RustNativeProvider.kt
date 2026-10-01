@@ -10,6 +10,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
+import java.nio.file.FileSystems
 import java.nio.file.LinkOption
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
@@ -19,6 +20,7 @@ import java.nio.file.attribute.AclEntryType
 import java.nio.file.attribute.AclFileAttributeView
 import java.nio.file.attribute.PosixFileAttributeView
 import java.nio.file.attribute.PosixFilePermissions
+import java.nio.file.attribute.UserPrincipal
 import java.security.MessageDigest
 import java.util.EnumSet
 import java.util.Locale
@@ -34,7 +36,7 @@ import java.util.Locale
 public object ReallyMeCodecRustNativeProvider {
     private const val RESOURCE_ROOT: String = "/me/really/codec/native"
     private const val ANDROID_LIBRARY_NAME: String = "reallyme_codec_ffi"
-    private const val EXPECTED_CODEC_ABI_VERSION: Int = 5
+    private const val EXPECTED_CODEC_ABI_VERSION: Int = 6
     private const val MAX_NATIVE_LIBRARY_BYTES: Long = 134_217_728L
     private const val MAX_MANAGED_FFI_LIMIT_BYTES: Long = Int.MAX_VALUE.toLong()
     private const val DIGEST_BYTE_LENGTH: Int = 32
@@ -43,13 +45,18 @@ public object ReallyMeCodecRustNativeProvider {
     private const val POSIX_GROUP_WRITE: Int = 0x10
     private const val POSIX_OTHER_WRITE: Int = 0x02
     private const val POSIX_STICKY: Int = 0x200
+    private const val ALLOW_UNVERIFIED_NATIVE_PROPERTY: String = "reallyme.codec.allowUnverifiedNative"
 
     private val digestMetadataPattern: Regex = Regex("^([0-9a-f]{64}) ([1-9][0-9]{0,11})\\n$")
-    private val trustedWindowsSidPattern: Regex =
-        Regex("(?:^|[^0-9])(?:s-1-5-18|s-1-5-32-544)(?:$|[^0-9])")
 
     @Volatile
     private var loaded: Boolean = false
+
+    @Volatile
+    private var explicitlyLoadedPath: String? = null
+
+    @Volatile
+    private var loadFailed: Boolean = false
 
     @Volatile
     private var maxFfiInputBytes: Int = 0
@@ -67,21 +74,48 @@ public object ReallyMeCodecRustNativeProvider {
             throw ReallyMeCodecException.InvalidInput()
         }
         val library = File(path)
+        if (!library.isAbsolute || !library.isFile) {
+            throw ReallyMeCodecException.ProviderFailure()
+        }
+        // An external path bypasses the bundled resource digest. Require an
+        // explicit local-development opt-in before loading unmanaged code.
+        val explicitlyAllowed = try {
+            System.getProperty(ALLOW_UNVERIFIED_NATIVE_PROPERTY) == "true"
+        } catch (_: SecurityException) {
+            false
+        }
+        if (!explicitlyAllowed) {
+            throw ReallyMeCodecException.ProviderFailure()
+        }
+        val canonicalPath = try {
+            library.canonicalPath
+        } catch (_: IOException) {
+            throw ReallyMeCodecException.ProviderFailure()
+        } catch (_: SecurityException) {
+            throw ReallyMeCodecException.ProviderFailure()
+        }
         if (loaded) {
-            if (!library.isFile) {
+            if (canonicalPath != explicitlyLoadedPath) {
                 throw ReallyMeCodecException.ProviderFailure()
             }
             return
         }
+        if (loadFailed) {
+            throw ReallyMeCodecException.ProviderFailure()
+        }
         try {
-            System.load(library.absolutePath)
+            System.load(canonicalPath)
             if (!validateLoadedNativeContract()) {
+                loadFailed = true
                 throw ReallyMeCodecException.ProviderFailure()
             }
+            explicitlyLoadedPath = canonicalPath
             loaded = true
         } catch (_: LinkageError) {
+            loadFailed = true
             throw ReallyMeCodecException.ProviderFailure()
         } catch (_: SecurityException) {
+            loadFailed = true
             throw ReallyMeCodecException.ProviderFailure()
         }
     }
@@ -91,10 +125,17 @@ public object ReallyMeCodecRustNativeProvider {
         if (loaded) {
             return
         }
+        if (loadFailed) {
+            throw ReallyMeCodecException.ProviderFailure()
+        }
         if (isAndroidRuntime() && loadAndroidLibrary()) {
             return
         }
         if (!loadBundledLibrary()) {
+            // A failed native load cannot be undone in this classloader. Keep
+            // one terminal failure so repeated calls cannot fill temporary
+            // storage with verified but unloadable native libraries.
+            loadFailed = true
             throw ReallyMeCodecException.ProviderFailure()
         }
     }
@@ -123,8 +164,20 @@ public object ReallyMeCodecRustNativeProvider {
         val resource = platformNativeResource() ?: return false
         val expected = readExpectedDigest(resource.digestPath) ?: return false
         val extracted = extractVerifiedLibrary(resource, expected) ?: return false
-
-        return loadExtractedLibrary(extracted)
+        val loadedSuccessfully = loadExtractedLibrary(extracted)
+        if (loadedSuccessfully) {
+            // The JVM deletes in reverse registration order. Register the
+            // directory first so the library is removed before its parent.
+            extracted.parentFile?.deleteOnExit()
+            extracted.deleteOnExit()
+        } else {
+            val extractedPath = extracted.toPath()
+            val directory = extractedPath.parent
+            if (directory != null) {
+                deleteExtractionFiles(extractedPath, directory)
+            }
+        }
+        return loadedSuccessfully
     }
 
     private fun readExpectedDigest(path: String): ExpectedNativeDigest? {
@@ -202,8 +255,6 @@ public object ReallyMeCodecRustNativeProvider {
             if (!verifyExtractedLibrary(target, expected)) {
                 return null
             }
-            directory.toFile().deleteOnExit()
-            target.toFile().deleteOnExit()
             completed = true
             return target.toFile()
         } catch (_: IOException) {
@@ -290,8 +341,16 @@ public object ReallyMeCodecRustNativeProvider {
         view: AclFileAttributeView,
         currentUser: String,
     ): Boolean {
+        // Windows display names are not identities: another domain can have
+        // the same final username, and a name may contain a SID as text.
+        // Resolve principals through the filesystem provider and compare the
+        // returned identities, which Windows backs with account SIDs.
+        val lookup = FileSystems.getDefault().userPrincipalLookupService
+        val currentPrincipal = lookup.lookupPrincipalByName(currentUser)
+        val systemPrincipal = lookup.lookupPrincipalByName("S-1-5-18")
+        val administratorsPrincipal = lookup.lookupPrincipalByName("S-1-5-32-544")
         val owner = view.owner
-        if (!isTrustedAclPrincipal(owner.name, currentUser, owner.toString())) {
+        if (!isTrustedAclPrincipal(owner, currentPrincipal, systemPrincipal, administratorsPrincipal)) {
             return false
         }
         val mutatingPermissions = EnumSet.of(
@@ -309,28 +368,21 @@ public object ReallyMeCodecRustNativeProvider {
         return view.acl.none { entry ->
             entry.type() == AclEntryType.ALLOW &&
                 !isTrustedAclPrincipal(
-                    entry.principal().name,
-                    currentUser,
-                    entry.principal().toString(),
+                    entry.principal(),
+                    currentPrincipal,
+                    systemPrincipal,
+                    administratorsPrincipal,
                 ) &&
                 entry.permissions().any { it in mutatingPermissions }
         }
     }
 
     internal fun isTrustedAclPrincipal(
-        principal: String,
-        currentUser: String,
-        description: String = principal,
-    ): Boolean {
-        val normalizedPrincipal = principal.lowercase(Locale.ROOT)
-        val normalizedUser = currentUser.lowercase(Locale.ROOT)
-        val normalizedDescription = description.lowercase(Locale.ROOT)
-        return normalizedPrincipal == normalizedUser ||
-            normalizedPrincipal.endsWith("\\$normalizedUser") ||
-            normalizedPrincipal == "builtin\\administrators" ||
-            normalizedPrincipal == "nt authority\\system" ||
-            trustedWindowsSidPattern.containsMatchIn(normalizedDescription)
-    }
+        principal: UserPrincipal,
+        currentUser: UserPrincipal,
+        system: UserPrincipal,
+        administrators: UserPrincipal,
+    ): Boolean = principal == currentUser || principal == system || principal == administrators
 
     private fun restrictAclToOwner(path: Path, writable: Boolean): Boolean {
         return try {

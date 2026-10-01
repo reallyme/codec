@@ -14,11 +14,7 @@ pub const DEFAULT_MAX_DER_LEN: usize = 1024 * 1024;
 pub const DEFAULT_PEM_LINE_WIDTH: usize = 64;
 
 /// Labels accepted by the default decode policy.
-pub const DEFAULT_ALLOWED_LABELS: &[PemLabel] = &[
-    PemLabel::PrivateKey,
-    PemLabel::EcPrivateKey,
-    PemLabel::PublicKey,
-];
+pub const DEFAULT_ALLOWED_LABELS: &[PemLabel] = &[PemLabel::PublicKey];
 
 /// Policy controlling PEM decoding.
 #[derive(Debug, Clone, Copy)]

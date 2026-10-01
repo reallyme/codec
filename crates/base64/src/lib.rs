@@ -9,5 +9,7 @@ mod encode;
 mod error;
 
 pub use decode::base64_to_bytes;
+/// Maximum accepted encoded base64 text length.
+pub const MAX_BASE64_INPUT_LEN: usize = 2 * 1024 * 1024;
 pub use encode::bytes_to_base64;
 pub use error::Base64Error;

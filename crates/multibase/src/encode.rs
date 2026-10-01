@@ -5,14 +5,14 @@
 use base64::{encoded_len, engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use zeroize::Zeroizing;
 
-use crate::{Base58Error, MultibaseError, MAX_BASE58BTC_INPUT_LEN};
+use crate::{Base58Error, MultibaseError, MAX_BASE58BTC_DECODED_LEN};
 
 const MULTIBASE_BASE58BTC_PREFIX: u8 = b'z';
 const MULTIBASE_BASE64URL_PREFIX: u8 = b'u';
 
 /// Encode bytes using multibase base58btc with the `z` prefix.
 pub fn bytes_to_multibase58btc(bytes: &[u8]) -> Result<String, Base58Error> {
-    if bytes.len() > MAX_BASE58BTC_INPUT_LEN {
+    if bytes.len() > MAX_BASE58BTC_DECODED_LEN {
         return Err(Base58Error::InputTooLarge);
     }
     let mut output = Zeroizing::new(Vec::with_capacity(1));
