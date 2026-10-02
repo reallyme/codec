@@ -7,7 +7,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { readDevToolsActivePort } from "./chrome-devtools-port.mjs";
+import { readDevToolsActivePort, readDevToolsListeningPort } from "./chrome-devtools-port.mjs";
 
 test("Chrome DevTools port file accepts a valid port and rejects malformed values", (context) => {
   const directory = mkdtempSync(join(tmpdir(), "reallyme-codec-port-test-"));
@@ -21,4 +21,14 @@ test("Chrome DevTools port file accepts a valid port and rejects malformed value
     writeFileSync(path, invalid);
     assert.throws(() => readDevToolsActivePort(path), /invalid DevTools port/u);
   }
+});
+
+test("Chrome DevTools startup output accepts only a valid loopback port", () => {
+  const first = "[startup] DevTools listening on ws://127.0.0.1:";
+  const second = "41723/devtools/browser/id\n";
+  assert.equal(readDevToolsListeningPort(first), undefined);
+  assert.equal(readDevToolsListeningPort(first + second), 41723);
+  assert.equal(readDevToolsListeningPort("DevTools listening on ws://127.0.0.1:0/id"), undefined);
+  assert.equal(readDevToolsListeningPort("DevTools listening on ws://127.0.0.1:65536/id"), undefined);
+  assert.equal(readDevToolsListeningPort("DevTools listening on ws://example.com:41723/id"), undefined);
 });

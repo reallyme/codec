@@ -4,17 +4,20 @@
 
 import { spawn } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { startStaticServer } from "./browser-test-server.mjs";
-import { readDevToolsActivePort } from "./chrome-devtools-port.mjs";
+import { readDevToolsActivePort, readDevToolsListeningPort } from "./chrome-devtools-port.mjs";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const packageDirectory = resolve(scriptDirectory, "..");
 const browserResultPrefix = "__REALLYME_CODEC_BROWSER_WASM_RESULT__";
 const browserTestTimeoutMs = 45_000;
-const chromeStartupTimeoutMs = 15_000;
+const chromeStartupTimeoutMs = 30_000;
+const chromeLaunchAttempts = 2;
+const chromeStderrLimit = 4_096;
+const chromeDiagnosticLimit = 1_024;
 
 const chromeCandidates = [
   process.env.REALLYME_CODEC_CHROME_PATH,
@@ -256,57 +259,86 @@ const runBrowserTest = async ({ serverPort, debuggerPort }) => {
   }
 };
 
+const sanitizedChromeDiagnostics = (stderr, userDataDir) => {
+  const home = homedir();
+  const redactedHome = home.length === 0 ? stderr : stderr.replaceAll(home, "<home>");
+  return redactedHome
+    .replaceAll(userDataDir, "<profile>")
+    .replace(/ws:\/\/\S+/gu, "<devtools-endpoint>")
+    .replace(/[^\x20-\x7e\n]/gu, " ")
+    .slice(-chromeDiagnosticLimit)
+    .trim() || "no Chrome startup diagnostics";
+};
+
 const run = async () => {
   const { server, port: serverPort } = await startStaticServer({ packageDirectory, testPage: browserTestPage });
-  const userDataDir = mkdtempSync(resolve(tmpdir(), "reallyme-codec-chrome-"));
-  const chrome = spawn(chromeExecutable, [
-    "--headless=new",
-    "--disable-gpu",
-    "--disable-dev-shm-usage",
-    "--no-first-run",
-    "--no-default-browser-check",
-    "--no-sandbox",
-    "--remote-debugging-port=0",
-    `--user-data-dir=${userDataDir}`,
-    "about:blank",
-  ], {
-    stdio: ["ignore", "ignore", "pipe"],
-  });
-
-  // The profile file is written atomically once Chrome's DevTools endpoint
-  // exists. Drain stderr so startup diagnostics cannot fill its pipe.
-  chrome.stderr.resume();
-  let launchFailed = false;
-  chrome.once("error", () => { launchFailed = true; });
-
+  const startupFailures = [];
   try {
-    const deadline = Date.now() + chromeStartupTimeoutMs;
-    const devToolsPortFile = resolve(userDataDir, "DevToolsActivePort");
-    let debuggerPort;
-    while (debuggerPort === undefined && Date.now() < deadline) {
-      debuggerPort = readDevToolsActivePort(devToolsPortFile);
-      if (debuggerPort !== undefined) {
-        break;
+    for (let attempt = 0; attempt < chromeLaunchAttempts; attempt += 1) {
+      // A fresh profile makes a retry independent of a stalled first launch.
+      const userDataDir = mkdtempSync(resolve(tmpdir(), "reallyme-codec-chrome-"));
+      const chrome = spawn(chromeExecutable, [
+        "--headless=new",
+        "--disable-gpu",
+        "--disable-dev-shm-usage",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--no-sandbox",
+        "--remote-debugging-port=0",
+        `--user-data-dir=${userDataDir}`,
+        "about:blank",
+      ], {
+        stdio: ["ignore", "ignore", "pipe"],
+      });
+      let chromeStderr = "";
+      chrome.stderr.setEncoding("utf8");
+      chrome.stderr.on("data", (chunk) => {
+        // Retain only bounded startup output. The result is redacted before
+        // reporting and never includes the test page's application data.
+        chromeStderr = (chromeStderr + chunk).slice(-chromeStderrLimit);
+      });
+      let launchFailed = false;
+      chrome.once("error", () => { launchFailed = true; });
+
+      try {
+        const deadline = Date.now() + chromeStartupTimeoutMs;
+        const devToolsPortFile = resolve(userDataDir, "DevToolsActivePort");
+        let debuggerPort;
+        let startupReason = "timeout";
+        while (debuggerPort === undefined && Date.now() < deadline) {
+          // Chrome normally writes this file when DevTools is ready. Its
+          // stderr announcement is a fallback for browser builds that omit it.
+          debuggerPort = readDevToolsActivePort(devToolsPortFile) ??
+            readDevToolsListeningPort(chromeStderr);
+          if (debuggerPort !== undefined) {
+            break;
+          }
+          if (launchFailed || chrome.exitCode !== null || chrome.signalCode !== null) {
+            startupReason = "process exited";
+            break;
+          }
+          await new Promise((resolveTimer) => setTimeout(resolveTimer, 100));
+        }
+        if (debuggerPort === undefined) {
+          startupFailures.push(`${startupReason}: ${sanitizedChromeDiagnostics(chromeStderr, userDataDir)}`);
+          continue;
+        }
+        await runBrowserTest({ serverPort, debuggerPort });
+        return;
+      } finally {
+        chrome.kill();
+        await waitForChromeExit(chrome);
+        rmSync(userDataDir, {
+          force: true,
+          maxRetries: 5,
+          recursive: true,
+          retryDelay: 100,
+        });
       }
-      if (launchFailed || chrome.exitCode !== null || chrome.signalCode !== null) {
-        throw new Error("Chrome exited before its DevTools endpoint was ready");
-      }
-      await new Promise((resolveTimer) => setTimeout(resolveTimer, 100));
     }
-    if (debuggerPort === undefined) {
-      throw new Error("Chrome did not write a DevTools port");
-    }
-    await runBrowserTest({ serverPort, debuggerPort });
+    throw new Error(`Chrome did not start DevTools: ${startupFailures.join(" | ")}`);
   } finally {
-    chrome.kill();
-    await waitForChromeExit(chrome);
     server.close();
-    rmSync(userDataDir, {
-      force: true,
-      maxRetries: 5,
-      recursive: true,
-      retryDelay: 100,
-    });
   }
 };
 
