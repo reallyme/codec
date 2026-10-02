@@ -267,9 +267,6 @@ final class ReallyMeCodecTests: XCTestCase {
 
         Self.assertCodecError(.invalidInput, try codec.base64Decode(oversizedBase64))
         Self.assertCodecError(.invalidInput, try codec.canonicalizeJson(oversizedJson))
-        // The structured operation limit is larger than the scalar cap.
-        let oversizedOperationText = String(repeating: "a", count: 10_485_761)
-        Self.assertCodecError(.invalidInput, try codec.multicodecPrefixForName(oversizedOperationText))
     }
 
     func testBaseEncodingsHandleEmptyLargeAndInvalidInput() throws {

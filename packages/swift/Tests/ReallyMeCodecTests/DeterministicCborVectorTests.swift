@@ -6,6 +6,11 @@ import Foundation
 @testable import ReallyMeCodec
 import XCTest
 
+private enum DeterministicCborFixtureError: Error, Equatable {
+    case invalidHex
+    case invalidManifest
+}
+
 private struct DeterministicCborManifest: Decodable {
     let schemaVersion: Int
     let deterministicCbor: DeterministicCborVectors
@@ -197,6 +202,14 @@ private indirect enum DeterministicCborFixtureValue: Decodable {
 final class DeterministicCborVectorTests: XCTestCase {
     private static let maximumCborBytes = 1_048_576
     private static let cborU32LengthHeaderBytes = 5
+
+    func testMalformedFixtureHexIsNotACodecFailure() {
+        for malformed in ["0", "zz"] {
+            XCTAssertThrowsError(try Self.hexBytes(malformed)) { error in
+                XCTAssertEqual(error as? DeterministicCborFixtureError, .invalidHex)
+            }
+        }
+    }
 
     func testSharedPositiveNegativeAndEquivalentVectors() throws {
         let codec = try Self.configuredCodec()
@@ -432,11 +445,11 @@ final class DeterministicCborVectorTests: XCTestCase {
                 from: Data(contentsOf: candidate)
             )
             guard manifest.schemaVersion == 2 else {
-                throw ReallyMeCodecError.invalidInput
+                throw DeterministicCborFixtureError.invalidManifest
             }
             return manifest.deterministicCbor
         }
-        throw ReallyMeCodecError.invalidInput
+        throw DeterministicCborFixtureError.invalidManifest
     }
 
     private static func sdkInteger(
@@ -510,7 +523,7 @@ final class DeterministicCborVectorTests: XCTestCase {
 
     private static func hexBytes(_ text: String) throws -> [UInt8] {
         guard text.count.isMultiple(of: 2) else {
-            throw ReallyMeCodecError.invalidInput
+            throw DeterministicCborFixtureError.invalidHex
         }
         var result: [UInt8] = []
         result.reserveCapacity(text.count / 2)
@@ -518,7 +531,7 @@ final class DeterministicCborVectorTests: XCTestCase {
         while index < text.endIndex {
             let next = text.index(index, offsetBy: 2)
             guard let byte = UInt8(text[index..<next], radix: 16) else {
-                throw ReallyMeCodecError.invalidInput
+                throw DeterministicCborFixtureError.invalidHex
             }
             result.append(byte)
             index = next

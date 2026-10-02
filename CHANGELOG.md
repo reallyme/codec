@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0 (unreleased)
+## 0.3.0 (2026-10-02)
 
 - Bound allocations and nesting before decoding protobuf, ProtoJSON, CBOR,
   DAG-CBOR, base encodings, and PEM input.
