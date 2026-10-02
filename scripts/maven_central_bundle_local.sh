@@ -37,7 +37,6 @@ ANDROID_LOCAL_RELEASE_REPOSITORY_DIR="${ANDROID_LOCAL_RELEASE_REPOSITORY_DIR:-${
 NATIVE_RESOURCE_WORKFLOW="${MAVEN_NATIVE_RESOURCE_WORKFLOW:-kotlin-android-package-preflight.yml}"
 NATIVE_RESOURCE_ARTIFACT_PATTERN="${MAVEN_NATIVE_RESOURCE_ARTIFACT_PATTERN:-kotlin-native-*}"
 NATIVE_RESOURCE_DOWNLOAD_DIR="${MAVEN_NATIVE_RESOURCE_DOWNLOAD_DIR:-${WORK_DIR}/kotlin-native-artifacts}"
-NATIVE_RESOURCE_WORKFLOW_TIMEOUT_SECONDS="${MAVEN_NATIVE_RESOURCE_WORKFLOW_TIMEOUT_SECONDS:-3600}"
 NATIVE_RESOURCE_RUN_ID="${MAVEN_NATIVE_RESOURCE_RUN_ID:-${RUN_ID:-}}"
 
 fail() {
@@ -152,8 +151,7 @@ ensure_kotlin_native_resources() {
     fail "native-resource run does not certify the current main release SHA"
   fi
   case "$run_path" in
-    .github/workflows/kotlin-android-package-preflight.yml@refs/heads/main) ;;
-    */.github/workflows/kotlin-android-package-preflight.yml@refs/heads/main) ;;
+    .github/workflows/kotlin-android-package-preflight.yml) ;;
     *) fail "native-resource run is not the main package preflight workflow" ;;
   esac
 
