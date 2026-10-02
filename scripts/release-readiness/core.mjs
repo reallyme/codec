@@ -11,7 +11,7 @@ import { spawnSync } from "node:child_process";
 // This module is the release package's shared policy core. The public runner
 // supplies this exact immutable module to consumers so release-critical checks
 // cannot drift independently from the pinned package revision.
-export const RELEASE_READINESS_VERSION = "0.6.6";
+export const RELEASE_READINESS_VERSION = "0.6.7";
 
 const DEFAULT_FAILURE_PREFIX = "release readiness check failed";
 const MAX_PRODUCTION_SOURCE_LINES = 500;
@@ -3594,6 +3594,71 @@ export function createReleaseReadinessContext(options) {
     }
   };
 
+  const assertWorkflowToolVersion = (workflow, name, expectedVersion) => {
+    if (
+      expectedVersion !== null &&
+      (typeof expectedVersion !== "string" || !/^\d+\.\d+\.\d+$/u.test(expectedVersion))
+    ) {
+      fail(`${name} policy version must be an exact semantic version`);
+    }
+    // Require a single top-level value so a job or step cannot silently
+    // override the version validated for the release workflow.
+    const lines = readText(workflow).replace(/\r\n/gu, "\n").split("\n");
+    const hasUnsupportedEnvironmentSyntax = (line) => {
+      if (/^\s*<<:\s*/u.test(line)) {
+        return true;
+      }
+      const env = /^\s*env:\s*(.*?)\s*$/u.exec(line);
+      return env !== null && stripWorkflowInlineComment(env[1]).trim().length !== 0;
+    };
+    if (lines.some(hasUnsupportedEnvironmentSyntax)) {
+      fail(`${workflow} uses an unsupported inline environment or merge`);
+    }
+    const envHeaders = lines
+      .map((line, index) => (/^env:\s*(?:#.*)?$/u.test(line) ? index : null))
+      .filter((index) => index !== null);
+    if (envHeaders.length !== 1) {
+      fail(`${workflow} must define one top-level env mapping`);
+    }
+    const envStart = envHeaders[0];
+    let envEnd = lines.length;
+    for (let index = envStart + 1; index < lines.length; index += 1) {
+      if (/^[^\s#]/u.test(lines[index])) {
+        envEnd = index;
+        break;
+      }
+    }
+    const declarations = lines
+      .map((line, index) => {
+        if (line.trimStart().startsWith("#")) {
+          return null;
+        }
+        const declarationPattern = new RegExp(
+          `^([ \\t]+)(?:"${name}"|'${name}'|${name}):\\s*(.*?)\\s*$`,
+          "u",
+        );
+        const match = declarationPattern.exec(line);
+        return match === null ? null : { index, indent: match[1], value: match[2] };
+      })
+      .filter((declaration) => declaration !== null);
+    if (
+      declarations.length !== 1 ||
+      declarations[0].index <= envStart ||
+      declarations[0].index >= envEnd ||
+      declarations[0].indent !== "  "
+    ) {
+      fail(`${workflow} must declare ${name} exactly once in top-level env`);
+    }
+    const version = unquoteWorkflowScalar(declarations[0].value);
+    if (!/^\d+\.\d+\.\d+$/u.test(version)) {
+      fail(`${workflow} ${name} must be an exact semantic version`);
+    }
+    if (expectedVersion !== null && version !== expectedVersion) {
+      fail(`${workflow} ${name} does not match the configured version`);
+    }
+    return version;
+  };
+
   const assertReallyMeProtobufReleasePolicy = (policy) => {
     const {
       workflow = ".github/workflows/protobuf-ci.yml",
@@ -3602,10 +3667,11 @@ export function createReleaseReadinessContext(options) {
       // the former vendored-core model. New consumers reference their checker;
       // the immutable core remains owned by the package runner.
       corePath = null,
-      bufVersion = "1.72.0",
-      buffaVersion = "0.9.2",
+      bufVersion = null,
+      buffaVersion = null,
       installBufStepName = "Install buf",
       installBufUses = null,
+      installBufAction = null,
       installBufRun = null,
       installBuffaStepName = "Install pinned Buffa generators",
       lintStepName = "Lint protobuf schema",
@@ -3630,13 +3696,19 @@ export function createReleaseReadinessContext(options) {
       corePath ?? checkerPath,
     );
 
-    assertContains(workflow, `BUFFA_VERSION: ${buffaVersion}`);
-    assertContains(workflow, `BUF_VERSION: ${bufVersion}`);
+    assertWorkflowToolVersion(workflow, "BUF_VERSION", bufVersion);
+    assertWorkflowToolVersion(workflow, "BUFFA_VERSION", buffaVersion);
     assertWorkflowChangePathCovered(workflow, releaseReadinessPath);
     validateGeneratedArtifactsPolicy(generatedFreshness);
 
+    if (installBufUses !== null && installBufAction !== null) {
+      fail("protobuf release policy must select one install-buf action constraint");
+    }
     if (installBufUses !== null) {
       assertWorkflowUsesStep(workflow, installBufStepName, installBufUses);
+    }
+    if (installBufAction !== null) {
+      assertWorkflowUsesStepPinnedTo(workflow, installBufStepName, installBufAction);
     }
     if (installBufRun !== null) {
       assertWorkflowRunStep(workflow, installBufStepName, installBufRun);
@@ -3775,7 +3847,25 @@ cargo install protoc-gen-buffa-packaging --version "$BUFFA_VERSION" --locked`,
       workflowDirectoryPath,
       "workflow directory",
     );
-    const nodeVersion = workflowOptions.nodeVersion ?? "24";
+    const nodeVersion = workflowOptions.nodeVersion ?? null;
+    const minimumNodeMajor = 24;
+    const isSupportedNodeVersion = (value) => {
+      if (typeof value !== "string") {
+        return false;
+      }
+      const match = /^(\d+)(?:\.\d+\.\d+)?$/u.exec(value);
+      if (match === null) {
+        return false;
+      }
+      const major = Number(match[1]);
+      return Number.isSafeInteger(major) && major >= minimumNodeMajor;
+    };
+    if (
+      nodeVersion !== null &&
+      !isSupportedNodeVersion(nodeVersion)
+    ) {
+      fail(`Node workflow version policy must be numeric and at least ${minimumNodeMajor}`);
+    }
     const nodeToolCommands = workflowOptions.nodeToolCommands ?? [
       "node",
       "npm",
@@ -3821,10 +3911,18 @@ cargo install protoc-gen-buffa-packaging --version "$BUFFA_VERSION" --locked`,
         }
         const pinnedNodeVersion = activeJob.split("\n").some((line) => {
           const match = /^\s*node-version:\s*(.+?)\s*$/u.exec(line);
-          return match !== null && unquoteWorkflowScalar(match[1]) === nodeVersion;
+          if (match === null) {
+            return false;
+          }
+          const actualVersion = unquoteWorkflowScalar(match[1]);
+          return nodeVersion === null
+            ? isSupportedNodeVersion(actualVersion)
+            : actualVersion === nodeVersion;
         });
         if (!pinnedNodeVersion) {
-          fail(`${workflowPath} job ${header[1]} must pin Node ${nodeVersion}`);
+          const requirement =
+            nodeVersion === null ? `a numeric Node version of at least ${minimumNodeMajor}` : `Node ${nodeVersion}`;
+          fail(`${workflowPath} job ${header[1]} must pin ${requirement}`);
         }
       }
     }
@@ -4406,6 +4504,29 @@ cargo install protoc-gen-buffa-packaging --version "$BUFFA_VERSION" --locked`,
     }
   };
 
+  // Keep action identity in policy while leaving the immutable revision in the
+  // workflow, where dependency update tooling can propose a reviewed change.
+  const assertWorkflowUsesStepPinnedTo = (path, stepName, action, jobName = null) => {
+    if (
+      typeof action !== "string" ||
+      !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u.test(action)
+    ) {
+      fail(`${path} step ${stepName} requires an action repository`);
+    }
+    const step = findWorkflowStep(path, stepName, jobName);
+    const prefix = `${action}@`;
+    if (
+      typeof step.uses !== "string" ||
+      !step.uses.startsWith(prefix) ||
+      !/^[0-9a-f]{40}$/u.test(step.uses.slice(prefix.length))
+    ) {
+      fail(`${path} step ${stepName} must use ${action} pinned to a full commit SHA`);
+    }
+    if (conditionIsStaticallyFalse(step.condition)) {
+      fail(`${path} step ${stepName} is statically disabled`);
+    }
+  };
+
   const parseWorkflowJobScalar = (path, job, key) => {
     const matches = [];
     for (let index = job.start + 1; index < job.end; index += 1) {
@@ -4524,7 +4645,14 @@ cargo install protoc-gen-buffa-packaging --version "$BUFFA_VERSION" --locked`,
       );
     }
     for (const step of usesSteps) {
-      assertWorkflowUsesStep(path, step?.name, step?.uses, step?.job ?? null);
+      if (step?.action !== undefined && step?.uses !== undefined) {
+        fail(`${path} step ${step?.name} must select one action constraint`);
+      }
+      if (step?.action !== undefined) {
+        assertWorkflowUsesStepPinnedTo(path, step?.name, step.action, step?.job ?? null);
+      } else {
+        assertWorkflowUsesStep(path, step?.name, step?.uses, step?.job ?? null);
+      }
     }
   };
 
@@ -4630,6 +4758,7 @@ cargo install protoc-gen-buffa-packaging --version "$BUFFA_VERSION" --locked`,
     const {
       workflow = ".github/workflows/fuzz.yml",
       version,
+      versionFromWorkflowEnv = false,
       gitSource,
       minimumInstallations = 2,
       requiredInstallSteps = [],
@@ -4637,12 +4766,16 @@ cargo install protoc-gen-buffa-packaging --version "$BUFFA_VERSION" --locked`,
     if (typeof workflow !== "string" || workflow.length === 0) {
       fail("cargo-fuzz workflow policy requires a workflow path");
     }
+    if (typeof versionFromWorkflowEnv !== "boolean") {
+      fail("cargo-fuzz workflow environment-version policy must be a boolean");
+    }
     const configuredSources = [
       Object.prototype.hasOwnProperty.call(policy ?? {}, "version"),
+      versionFromWorkflowEnv,
       Object.prototype.hasOwnProperty.call(policy ?? {}, "gitSource"),
     ].filter(Boolean).length;
     if (configuredSources !== 1) {
-      fail("cargo-fuzz workflow policy requires exactly one exact version or Git revision");
+      fail("cargo-fuzz workflow policy requires exactly one exact version or Git revision, or a workflow environment version");
     }
     const hasVersion = Object.prototype.hasOwnProperty.call(policy ?? {}, "version");
     if (hasVersion && (typeof version !== "string" || !/^\d+\.\d+\.\d+$/u.test(version))) {
@@ -4661,6 +4794,9 @@ cargo install protoc-gen-buffa-packaging --version "$BUFFA_VERSION" --locked`,
     ) {
       fail("cargo-fuzz workflow policy requires an exact GitHub repository URL and revision");
     }
+    const resolvedVersion = versionFromWorkflowEnv
+      ? assertWorkflowToolVersion(workflow, "CARGO_FUZZ_VERSION", null)
+      : version;
     if (!Number.isSafeInteger(minimumInstallations) || minimumInstallations < 1) {
       fail("cargo-fuzz workflow policy requires a positive installation count");
     }
@@ -4741,8 +4877,15 @@ cargo install protoc-gen-buffa-packaging --version "$BUFFA_VERSION" --locked`,
         }
         continue;
       }
+      if (versionFromWorkflowEnv) {
+        const expected = 'cargo install cargo-fuzz --version "$CARGO_FUZZ_VERSION" --locked';
+        if (command !== expected) {
+          fail(`${workflow} cargo-fuzz installation must use CARGO_FUZZ_VERSION`);
+        }
+        continue;
+      }
       const usesLiteralVersion = new RegExp(
-        `(?:^|\\s)--version\\s+${version.replaceAll(".", "\\.")}(?:\\s|$)`,
+        `(?:^|\\s)--version\\s+${resolvedVersion.replaceAll(".", "\\.")}(?:\\s|$)`,
         "u",
       ).test(command);
       const usesEnvironmentVersion =
@@ -4754,7 +4897,7 @@ cargo install protoc-gen-buffa-packaging --version "$BUFFA_VERSION" --locked`,
         !(usesEnvironmentVersion && environmentVersion !== null && environmentVersion.test(text))
       ) {
         fail(
-          `${workflow} cargo-fuzz installation must pin version ${version}`,
+          `${workflow} cargo-fuzz installation must pin version ${resolvedVersion}`,
         );
       }
     }
@@ -5575,6 +5718,7 @@ cargo install protoc-gen-buffa-packaging --version "$BUFFA_VERSION" --locked`,
     extractWorkflowSteps,
     assertWorkflowRunStep,
     assertWorkflowUsesStep,
+    assertWorkflowUsesStepPinnedTo,
     assertWorkflowPolicy,
     stripProtoLineComments,
     extractProtoBlocks,

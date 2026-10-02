@@ -14,15 +14,15 @@ import { spawnSync } from "node:child_process";
 // The checker imports other local modules whose bytes are not pinned here.
 // This is a change-detection tripwire; review of the full change set remains
 // necessary before treating the complete policy implementation as trusted.
-const RELEASE_READINESS_COMMIT = "bdedc88f3f25fcc14242730d4dec6ce6a0c75531";
+const RELEASE_READINESS_COMMIT = "5c2da5e5d5795c2c895d0dca0819287ee7101207";
 const RELEASE_READINESS_CORE_SHA256 =
-  "244cef63e5a164f8cdfc09eed62d35f39d377d75f835f4e099369debccdb9662";
+  "d3434554901ea5438bb0dd64f4f7214b9050e95cd1e3d579cc2992f4c662e85a";
 const LOCAL_CHECKER_SHA256 =
-  "21166e52ce846875bb1d52a2a8c764734de75c913af1a92ea6c1dd9ee47e3dc8";
+  "3cd4a1df38ceb1f168e1a717feb4ddc60fc3dd793e1d77722ca0870f0f2c491e";
 // The upstream pin authenticates the original release; the local pin covers
 // the company-name correction without changing that upstream authority.
 const LOCAL_CORE_SHA256 =
-  "3b000b12b4e8c0bdae94964c70e7bd9a0e07493026a22fafe5dd9ee51f6a73c9";
+  "515918afc515d1f0f684003ea9d9105533e3633176cfd669d06278596efe3504";
 const RELEASE_READINESS_CORE_URL =
   `https://raw.githubusercontent.com/reallyme/release-readiness/${RELEASE_READINESS_COMMIT}/core.mjs`;
 const VENDORED_CORE_PATH = "scripts/release-readiness/core.mjs";
