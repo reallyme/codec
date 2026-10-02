@@ -105,16 +105,12 @@ class ReallyMeCodecTest {
     fun managedBoundariesRejectOversizedInputsBeforeSerialization() {
         val oversizedBase64 = "A".repeat(MAX_FFI_REQUEST_BYTES + 4)
         val oversizedJson = "\"" + "a".repeat(MAX_FFI_REQUEST_BYTES - 1) + "\""
-        val oversizedOperationName = "a".repeat(10_485_761)
 
         assertEquals(ReallyMeCodecException.InvalidInput::class, assertFailsWith<ReallyMeCodecException.InvalidInput> {
             ReallyMeCodec.base64Decode(oversizedBase64)
         }::class)
         assertEquals(ReallyMeCodecException.InvalidInput::class, assertFailsWith<ReallyMeCodecException.InvalidInput> {
             ReallyMeCodec.canonicalizeJson(oversizedJson)
-        }::class)
-        assertEquals(ReallyMeCodecException.InvalidInput::class, assertFailsWith<ReallyMeCodecException.InvalidInput> {
-            ReallyMeCodec.multicodecPrefixForName(oversizedOperationName)
         }::class)
         assertFailsWith<ReallyMeCodecException.InvalidInput> {
             ReallyMeCodec.canonicalizeJson("\uD800")

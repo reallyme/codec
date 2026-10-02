@@ -131,8 +131,10 @@ dependencies {
 npm install @reallyme/codec
 ```
 
-For production deployments, pin exact package versions, release tags, or Git
-revisions so codec behavior remains identical across all language lanes.
+For production deployments, pin exact package versions or release tags so codec
+behavior remains identical across language lanes. SwiftPM consumers must use a
+release tag with its matching FFI artifact; a Git revision of `main` can have
+an unbound manifest and make `ReallyMeCodec()` unavailable.
 
 ## Versioning
 
