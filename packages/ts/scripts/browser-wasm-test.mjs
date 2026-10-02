@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { startStaticServer } from "./browser-test-server.mjs";
+import { readDevToolsActivePort } from "./chrome-devtools-port.mjs";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const packageDirectory = resolve(scriptDirectory, "..");
@@ -272,22 +273,28 @@ const run = async () => {
     stdio: ["ignore", "ignore", "pipe"],
   });
 
-  let debuggerPort;
-  chrome.stderr.setEncoding("utf8");
-  chrome.stderr.on("data", (chunk) => {
-    const match = /DevTools listening on ws:\/\/127\.0\.0\.1:(\d+)\//u.exec(chunk);
-    if (match !== null) {
-      debuggerPort = Number(match[1]);
-    }
-  });
+  // The profile file is written atomically once Chrome's DevTools endpoint
+  // exists. Drain stderr so startup diagnostics cannot fill its pipe.
+  chrome.stderr.resume();
+  let launchFailed = false;
+  chrome.once("error", () => { launchFailed = true; });
 
   try {
     const deadline = Date.now() + chromeStartupTimeoutMs;
+    const devToolsPortFile = resolve(userDataDir, "DevToolsActivePort");
+    let debuggerPort;
     while (debuggerPort === undefined && Date.now() < deadline) {
+      debuggerPort = readDevToolsActivePort(devToolsPortFile);
+      if (debuggerPort !== undefined) {
+        break;
+      }
+      if (launchFailed || chrome.exitCode !== null || chrome.signalCode !== null) {
+        throw new Error("Chrome exited before its DevTools endpoint was ready");
+      }
       await new Promise((resolveTimer) => setTimeout(resolveTimer, 100));
     }
     if (debuggerPort === undefined) {
-      throw new Error("Chrome did not report a DevTools port");
+      throw new Error("Chrome did not write a DevTools port");
     }
     await runBrowserTest({ serverPort, debuggerPort });
   } finally {
