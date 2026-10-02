@@ -24,6 +24,10 @@ test("every release lane requires the global registry preflight", () => {
     const required = requiredWorkflowsForRelease(lane);
     assert(required.includes("crates-package-preflight.yml"));
     assert(required.includes(lane));
+    assert.equal(
+      required.includes("android-runtime-gate.yml"),
+      lane === "kotlin-android-package-preflight.yml",
+    );
     assert.equal(required.length, new Set(required).size);
   }
   assert.throws(

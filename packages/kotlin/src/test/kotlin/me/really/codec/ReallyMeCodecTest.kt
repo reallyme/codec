@@ -18,15 +18,21 @@ import me.really.codec.v1.CodecErrorReason
 import me.really.codec.v1.CodecOperationResponse
 import me.really.codec.v1.CodecPemDecodeResult
 import java.io.File
+import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.LinkOption
+import java.nio.file.attribute.GroupPrincipal
 import java.nio.file.attribute.PosixFileAttributeView
 import java.nio.file.attribute.PosixFilePermissions
+import java.nio.file.attribute.UserPrincipal
+import java.nio.file.attribute.UserPrincipalLookupService
+import java.nio.file.attribute.UserPrincipalNotFoundException
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -233,6 +239,80 @@ class ReallyMeCodecTest {
             Files.setPosixFilePermissions(root, PosixFilePermissions.fromString("rwx------"))
             Files.deleteIfExists(root)
         }
+    }
+
+    @Test
+    fun windowsAclLookupUsesResolvedIdentityWhenSidTextIsUnavailable() {
+        val system = UserPrincipal { "NT AUTHORITY\\SYSTEM" }
+        val sidLookup = object : UserPrincipalLookupService() {
+            override fun lookupPrincipalByName(name: String): UserPrincipal =
+                if (name == "S-1-5-18") {
+                    system
+                } else {
+                    throw UserPrincipalNotFoundException(name)
+                }
+
+            override fun lookupPrincipalByGroupName(group: String): GroupPrincipal =
+                throw UserPrincipalNotFoundException(group)
+        }
+        val lookup = object : UserPrincipalLookupService() {
+            override fun lookupPrincipalByName(name: String): UserPrincipal =
+                if (name == "NT AUTHORITY\\SYSTEM") {
+                    system
+                } else {
+                    throw UserPrincipalNotFoundException(name)
+                }
+
+            override fun lookupPrincipalByGroupName(group: String): GroupPrincipal =
+                throw UserPrincipalNotFoundException(group)
+        }
+        assertEquals(
+            system,
+            ReallyMeCodecRustNativeProvider.lookupTrustedAclPrincipal(
+                sidLookup,
+                "S-1-5-18",
+                "NT AUTHORITY\\SYSTEM",
+            ),
+        )
+        assertEquals(
+            system,
+            ReallyMeCodecRustNativeProvider.lookupTrustedAclPrincipal(
+                lookup,
+                "S-1-5-18",
+                "NT AUTHORITY\\SYSTEM",
+            ),
+        )
+        assertFailsWith<UserPrincipalNotFoundException> {
+            ReallyMeCodecRustNativeProvider.lookupTrustedAclPrincipal(
+                lookup,
+                "S-1-5-32-544",
+                "BUILTIN\\Administrators",
+            )
+        }
+    }
+
+    @Test
+    fun windowsHostCreatesPrivateNativeExtractionDirectory() {
+        if (ReallyMeCodecRustNativeProvider.normalizedOs(System.getProperty("os.name")) != "windows") {
+            return
+        }
+        val lookup = FileSystems.getDefault().userPrincipalLookupService
+        assertNotNull(
+            ReallyMeCodecRustNativeProvider.lookupTrustedAclPrincipal(
+                lookup,
+                "S-1-5-18",
+                "NT AUTHORITY\\SYSTEM",
+            ),
+        )
+        assertNotNull(
+            ReallyMeCodecRustNativeProvider.lookupTrustedAclPrincipal(
+                lookup,
+                "S-1-5-32-544",
+                "BUILTIN\\Administrators",
+            ),
+        )
+        val extracted = assertNotNull(ReallyMeCodecRustNativeProvider.createPrivateExtractionDirectory())
+        Files.delete(extracted)
     }
 
     @Test
