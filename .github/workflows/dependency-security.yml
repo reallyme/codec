@@ -18,8 +18,23 @@ permissions:
   security-events: write
 
 jobs:
+  verify-runtime-lockfiles:
+    name: Verify published Gradle runtime dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Verify runtime lockfiles match Gradle locks
+        run: |
+          python3 -m unittest discover -s scripts -p 'gradle_runtime_lockfiles_test.py'
+          python3 scripts/gradle_runtime_lockfiles.py --check
+
   scan:
-    name: Scan committed dependency records
+    name: Gate published runtime dependencies
+    needs: verify-runtime-lockfiles
     uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc # v2.6.0
     with:
       upload-sarif: false
@@ -27,5 +42,18 @@ jobs:
       scan-args: |-
         --lockfile=./Cargo.lock
         --lockfile=./packages/ts/package-lock.json
+        --lockfile=./packages/kotlin/runtime/gradle.lockfile
+        --lockfile=./packages/kotlin-android/runtime/gradle.lockfile
+
+  scan-build-tooling:
+    name: Report Gradle build tooling advisories
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc # v2.6.0
+    with:
+      upload-sarif: false
+      # AGP's lint and test tools resolve versions that are not shipped in the
+      # Maven artifacts. Keep their advisories visible without blocking a
+      # release whose published runtime dependencies scan cleanly.
+      fail-on-vuln: false
+      scan-args: |-
         --lockfile=./packages/kotlin/gradle.lockfile
         --lockfile=./packages/kotlin-android/gradle.lockfile

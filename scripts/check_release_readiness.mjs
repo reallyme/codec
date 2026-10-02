@@ -1663,7 +1663,7 @@ assertContains(
 );
 assertContains(
   ".github/workflows/protobuf-ci.yml",
-  "bufbuild/buf-action@8c6a16e16f12ba20b6470afa9c2ba9b5ba8c97c3",
+  "bufbuild/buf-action@85aebf73123b5c15fd5528aaecbf9129cddf7fa7",
 );
 assertContains(
   ".github/workflows/protobuf-ci.yml",
@@ -1890,6 +1890,7 @@ assertContains(".github/workflows/swift-package-release.yml", "gh release create
 assertContains(".github/workflows/swift-package-release.yml", "git push origin");
 assertContains(".github/workflows/swift-package-release.yml", "Bind release manifest to verified Swift artifact");
 assertContains(".github/workflows/npm-package-release.yml", "npm publish");
+assertContains(".github/workflows/npm-package-release.yml", "wasm-bindgen-cli@0.2.129");
 assertContains(".github/workflows/npm-package-release.yml", "NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}");
 assertContains(".github/workflows/crates-release.yml", "secrets.CARGO_REGISTRY_TOKEN");
 assertContains(".github/workflows/crates-package-preflight.yml", "verify_release_availability.mjs");
@@ -1914,8 +1915,13 @@ for (const workflowPath of [".github/workflows/fuzz.yml", ...packagePreflightWor
   assertNotContains(workflowPath, "actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0");
 }
 assertContains(".github/workflows/dependency-security.yml", "google/osv-scanner-action/");
-assertContains(".github/workflows/dependency-security.yml", "packages/kotlin/gradle.lockfile");
-assertContains(".github/workflows/dependency-security.yml", "packages/kotlin-android/gradle.lockfile");
+assertContains(".github/workflows/dependency-security.yml", "python3 scripts/gradle_runtime_lockfiles.py --check");
+assertContains(".github/workflows/dependency-security.yml", "packages/kotlin/runtime/gradle.lockfile");
+assertContains(".github/workflows/dependency-security.yml", "packages/kotlin-android/runtime/gradle.lockfile");
+assertContains(".github/workflows/dependency-security.yml", "name: Gate published runtime dependencies");
+assertContains(".github/workflows/dependency-security.yml", "name: Report Gradle build tooling advisories");
+assertContains(".github/workflows/dependency-security.yml", "fail-on-vuln: true");
+assertContains(".github/workflows/dependency-security.yml", "fail-on-vuln: false");
 assertContains(".github/workflows/codeql.yml", "queries: security-and-quality");
 assertContains(".github/workflows/codeql.yml", "- language: java-kotlin");
 assertContains(".github/workflows/codeql.yml", "build-mode: manual");
@@ -2776,7 +2782,7 @@ assertReallyMeProtobufReleasePolicy({
   generatedFreshnessStepRun:
     "node scripts/run_pinned_release_readiness.mjs --generated-freshness",
   installBufUses:
-    "bufbuild/buf-action@8c6a16e16f12ba20b6470afa9c2ba9b5ba8c97c3",
+    "bufbuild/buf-action@85aebf73123b5c15fd5528aaecbf9129cddf7fa7",
   hardeningPolicy: {
     hardeningScript: "scripts/redact_codec_proto_debug.mjs",
     protoSchema: "crates/proto/proto/reallyme/codec/v1/codec.proto",

@@ -1,0 +1,6 @@
+# Derived from the Gradle lockfile for the published runtime classpath.
+# Regenerate with: python3 scripts/gradle_runtime_lockfiles.py --write
+com.google.protobuf:protobuf-javalite:4.36.2=runtimeClasspath
+com.google.protobuf:protobuf-kotlin-lite:4.36.2=runtimeClasspath
+org.jetbrains.kotlin:kotlin-stdlib:2.4.20=runtimeClasspath
+org.jetbrains:annotations:13.0=runtimeClasspath

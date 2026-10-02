@@ -76,12 +76,12 @@ jobs:
           ref: ${{ needs.verify-source-sha.outputs.release_sha }}
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master
+        uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
         with:
           toolchain: 1.98.1
 
       - name: Install cargo-audit
-        uses: taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b # cargo-audit
+        uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # cargo-audit
         with:
           tool: cargo-audit@0.22.2
 
