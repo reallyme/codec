@@ -50,9 +50,10 @@ const {
   assertReallyMeProtobufReleasePolicy,
   assertReallyMeVendoredCorePolicy,
   assertWorkflowActionsPinned,
+  assertWorkflowUsesStepPinnedTo,
+  extractWorkflowSteps,
   assertCargoFuzzWorkflowPolicy,
   assertWorkflowPermissionsPolicy,
-  assertWorkflowRunStep,
 } = createReleaseReadinessContext({
   scriptUrl: import.meta.url,
   requireTrackedFiles: true,
@@ -116,53 +117,6 @@ const rustProductionSource = (path) => {
   const source = readText(path);
   const testStart = source.indexOf("\n#[cfg(test)]");
   return testStart === -1 ? source : source.slice(0, testStart);
-};
-
-const scrubProtoCommentsAndStrings = (source) => {
-  let output = "";
-  let index = 0;
-  while (index < source.length) {
-    const char = source[index];
-    const next = source[index + 1] ?? "";
-    if (char === "/" && next === "/") {
-      while (index < source.length && source[index] !== "\n") {
-        output += " ";
-        index += 1;
-      }
-      continue;
-    }
-    if (char === "/" && next === "*") {
-      output += "  ";
-      index += 2;
-      while (index < source.length) {
-        if (source[index] === "*" && source[index + 1] === "/") {
-          output += "  ";
-          index += 2;
-          break;
-        }
-        output += source[index] === "\n" ? "\n" : " ";
-        index += 1;
-      }
-      continue;
-    }
-    if (char === "\"" || char === "'") {
-      const quote = char;
-      output += " ";
-      index += 1;
-      while (index < source.length) {
-        const current = source[index];
-        output += current === "\n" ? "\n" : " ";
-        index += current === "\\" ? 2 : 1;
-        if (current === quote) {
-          break;
-        }
-      }
-      continue;
-    }
-    output += char;
-    index += 1;
-  }
-  return output;
 };
 
 const blockFromNeedle = ({
@@ -310,7 +264,7 @@ const assertTypescriptProtoFacadeCompleteness = ({ facadePath, generatedPath }) 
   });
 };
 
-assertReallyMeVendoredCorePolicy({ version: "0.6.6" });
+assertReallyMeVendoredCorePolicy({ version: "0.6.7" });
 // Composite actions can hide additional third-party dependencies from the
 // top-level workflow scan. Reject them until the checker recursively validates
 // every local action dependency with the same full-SHA policy.
@@ -346,7 +300,7 @@ const codecRustLeafCrates = [
   "crates/pem/Cargo.toml",
 ];
 
-assertNodeWorkflowJobsPinNode({ nodeVersion: "24" });
+assertNodeWorkflowJobsPinNode();
 
 const rootCargo = readText("Cargo.toml");
 for (const member of [
@@ -790,11 +744,11 @@ assertContains(
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  'const RELEASE_READINESS_COMMIT = "bdedc88f3f25fcc14242730d4dec6ce6a0c75531"',
+  'const RELEASE_READINESS_COMMIT = "5c2da5e5d5795c2c895d0dca0819287ee7101207"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  '"244cef63e5a164f8cdfc09eed62d35f39d377d75f835f4e099369debccdb9662"',
+  '"d3434554901ea5438bb0dd64f4f7214b9050e95cd1e3d579cc2992f4c662e85a"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
@@ -814,7 +768,7 @@ assertContains(
 );
 assertContains(
   "scripts/release-readiness/core.mjs",
-  'RELEASE_READINESS_VERSION = "0.6.6"',
+  'RELEASE_READINESS_VERSION = "0.6.7"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
@@ -840,12 +794,14 @@ assertContains(
   "scripts/release-readiness/source-policy.test.mjs",
   "regex literals with quotes do not blank following executable code",
 );
-assertContains(
-  ".github/workflows/code-checks.yml",
-  "gradle/actions/wrapper-validation@67621b124fd2e251c5e8a0e6e3b91318f2287669",
-);
-assertContains(".github/workflows/code-checks.yml", "node-version: '24'");
-assertMinOccurrences(".github/workflows/crates-release.yml", "node-version: '24'", 2);
+const gradleWrapperSteps = extractWorkflowSteps(".github/workflows/code-checks.yml")
+  .filter((step) => step.name === "Validate Gradle wrapper");
+if (
+  gradleWrapperSteps.length !== 1 ||
+  !/^gradle\/actions\/wrapper-validation@[0-9a-f]{40}$/u.test(gradleWrapperSteps[0].uses ?? "")
+) {
+  fail("Code Checks must use the Gradle wrapper validator at a full commit SHA");
+}
 
 const codecProtoCargo = readText("crates/proto/Cargo.toml");
 if (!codecProtoCargo.includes(`version = "${codecProtoPackageVersion}"`)) {
@@ -1645,10 +1601,7 @@ assertContains(
 );
 assertContains("crates/proto/tests/generated_tests/error_wire.rs", "bounded_protobuf_decode_rejects_oversized_messages");
 assertContains("crates/proto/tests/generated_tests/error_wire.rs", "json_decode_rejects_inputs_that_expand_past_binary_cap");
-assertContains(".github/workflows/protobuf-ci.yml", "BUFFA_VERSION: 0.9.2");
-assertContains(".github/workflows/protobuf-ci.yml", "BUF_VERSION: 1.73.0");
 assertContains(".github/workflows/protobuf-ci.yml", "scripts/run_pinned_release_readiness.mjs");
-assertContains(".github/workflows/protobuf-ci.yml", "node-version: '24'");
 assertContains(".github/workflows/protobuf-ci.yml", "cargo install protoc-gen-buffa-packaging");
 assertContains("scripts/check_release_readiness.mjs", '["buf", ["lint"]]');
 assertContains(".github/workflows/protobuf-ci.yml", "buf breaking --against \".git#tag=${release_tag}\"");
@@ -1661,9 +1614,10 @@ assertContains(
   ".github/workflows/protobuf-ci.yml",
   "node scripts/run_pinned_release_readiness.mjs --generated-freshness",
 );
-assertContains(
+assertWorkflowUsesStepPinnedTo(
   ".github/workflows/protobuf-ci.yml",
-  "bufbuild/buf-action@85aebf73123b5c15fd5528aaecbf9129cddf7fa7",
+  "Install buf",
+  "bufbuild/buf-action",
 );
 assertContains(
   ".github/workflows/protobuf-ci.yml",
@@ -1906,10 +1860,6 @@ assertContains("scripts/publish_crates_in_order.mjs", "published-crate-checksum-
 assertContains("scripts/maven_central_bundle_local.sh", "release checkout must have a clean working tree");
 assertContains("scripts/maven_central_bundle_local.sh", "verify_release_attestation.mjs");
 assertContains(".github/workflows/crates-release.yml", "needs: [verify-release-sha, dry-run]");
-assertMinOccurrences(".github/workflows/swift-package-release.yml", "node-version: '24'", 3);
-assertMinOccurrences(".github/workflows/kotlin-android-package-release.yml", "node-version: '24'", 3);
-assertMinOccurrences(".github/workflows/npm-package-release.yml", "node-version: '24'", 2);
-assertMinOccurrences(".github/workflows/kotlin-android-package-preflight.yml", "node-version: '24'", 3);
 for (const workflowPath of [".github/workflows/fuzz.yml", ...packagePreflightWorkflows, ...packageReleaseWorkflows]) {
   assertNotContains(workflowPath, "actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4");
   assertNotContains(workflowPath, "actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0");
@@ -2775,14 +2725,11 @@ for (const messageName of codecProtoProviderOutputMessages) {
   );
 }
 assertReallyMeProtobufReleasePolicy({
-  bufVersion: "1.73.0",
-  buffaVersion: "0.9.2",
   generatedFreshnessMode,
   workflowMode: "delegated",
   generatedFreshnessStepRun:
     "node scripts/run_pinned_release_readiness.mjs --generated-freshness",
-  installBufUses:
-    "bufbuild/buf-action@85aebf73123b5c15fd5528aaecbf9129cddf7fa7",
+  installBufAction: "bufbuild/buf-action",
   hardeningPolicy: {
     hardeningScript: "scripts/redact_codec_proto_debug.mjs",
     protoSchema: "crates/proto/proto/reallyme/codec/v1/codec.proto",

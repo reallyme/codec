@@ -14,11 +14,11 @@ import { spawnSync } from "node:child_process";
 // The checker imports other local modules whose bytes are not pinned here.
 // This is a change-detection tripwire; review of the full change set remains
 // necessary before treating the complete policy implementation as trusted.
-const RELEASE_READINESS_COMMIT = "bdedc88f3f25fcc14242730d4dec6ce6a0c75531";
+const RELEASE_READINESS_COMMIT = "5c2da5e5d5795c2c895d0dca0819287ee7101207";
 const RELEASE_READINESS_CORE_SHA256 =
-  "244cef63e5a164f8cdfc09eed62d35f39d377d75f835f4e099369debccdb9662";
+  "d3434554901ea5438bb0dd64f4f7214b9050e95cd1e3d579cc2992f4c662e85a";
 const LOCAL_CHECKER_SHA256 =
-  "27685d8ce97b348ece264f3311f7a1c2d5b5be1ba4313dafa8f255afc732eb73";
+  "75b5d18be8e272dee53c6e25fd9f2edc08a78688fdae4d465e6db2787112678b";
 const RELEASE_READINESS_CORE_URL =
   `https://raw.githubusercontent.com/reallyme/release-readiness/${RELEASE_READINESS_COMMIT}/core.mjs`;
 const VENDORED_CORE_PATH = "scripts/release-readiness/core.mjs";

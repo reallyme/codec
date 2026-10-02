@@ -330,8 +330,8 @@ public object ReallyMeCodecRustNativeProvider {
 
     internal fun isSecurePosixTempMode(mode: Int): Boolean {
         val writableByAnotherPrincipal =
-            mode and (POSIX_GROUP_WRITE or POSIX_OTHER_WRITE) != 0
-        return !writableByAnotherPrincipal || mode and POSIX_STICKY != 0
+            (mode and (POSIX_GROUP_WRITE or POSIX_OTHER_WRITE)) != 0
+        return !writableByAnotherPrincipal || (mode and POSIX_STICKY) != 0
     }
 
     internal fun isTrustedPosixTempOwner(owner: String, currentUser: String): Boolean =

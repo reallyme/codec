@@ -78,14 +78,6 @@ const assertProviderFailure = (operation) => {
   assert.ok(lastProviderOutput.every((byte) => byte === 0));
 };
 
-const assertInvalidInput = (operation) => {
-  assert.throws(
-    operation,
-    (error) =>
-      error instanceof ReallyMeCodecError && error.code === "invalid-input",
-  );
-};
-
 test("public contract processors pass providers a wiped SDK-owned snapshot", () => {
   const callerBytes = Uint8Array.of(0xff);
   const responseBytes = processOperation(callerBytes);
