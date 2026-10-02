@@ -1858,7 +1858,8 @@ assertContains(".github/workflows/kotlin-android-package-release.yml", "if: step
 assertContains(".github/workflows/kotlin-android-package-release.yml", "configured=false");
 assertContains("scripts/publish_crates_in_order.mjs", "published-crate-checksum-mismatch");
 assertContains("scripts/maven_central_bundle_local.sh", "release checkout must have a clean working tree");
-assertContains("scripts/maven_central_bundle_local.sh", "verify_release_attestation.mjs");
+assertContains("scripts/maven_central_bundle_local.sh", "validate_successful_workflow_run");
+assertContains("scripts/maven_central_bundle_local.sh", "android-runtime-gate.yml");
 assertContains(".github/workflows/crates-release.yml", "needs: [verify-release-sha, dry-run]");
 for (const workflowPath of [".github/workflows/fuzz.yml", ...packagePreflightWorkflows, ...packageReleaseWorkflows]) {
   assertNotContains(workflowPath, "actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4");
