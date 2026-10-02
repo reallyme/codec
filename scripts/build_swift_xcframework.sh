@@ -151,6 +151,11 @@ require_tool swift
 require_tool touch
 require_tool zip
 
+# llvm-nm is supplied by the optional Rust LLVM tools component. Install it
+# before building five targets so a missing component fails without discarding
+# an otherwise complete release candidate.
+rustup component add llvm-tools-preview
+
 rm -rf "${BUILD_DIR}"
 mkdir -p "${HEADERS_DIR}" "${BUILD_DIR}/libs"
 

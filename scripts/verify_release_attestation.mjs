@@ -85,17 +85,20 @@ const parsePreflightWorkflow = (value) => {
   return value;
 };
 
-export const requiredWorkflowsForRelease = (preflightWorkflow) => [
-  ...new Set([
-    CODE_CHECK_WORKFLOW,
-    DEPENDENCY_SECURITY_WORKFLOW,
-    PROTOBUF_WORKFLOW,
-    FUZZ_WORKFLOW,
-    ANDROID_RUNTIME_WORKFLOW,
-    "crates-package-preflight.yml",
-    parsePreflightWorkflow(preflightWorkflow),
-  ]),
-];
+export const requiredWorkflowsForRelease = (preflightWorkflow) => {
+  const lane = parsePreflightWorkflow(preflightWorkflow);
+  return [
+    ...new Set([
+      CODE_CHECK_WORKFLOW,
+      DEPENDENCY_SECURITY_WORKFLOW,
+      PROTOBUF_WORKFLOW,
+      FUZZ_WORKFLOW,
+      "crates-package-preflight.yml",
+      lane,
+      ...(lane === "kotlin-android-package-preflight.yml" ? [ANDROID_RUNTIME_WORKFLOW] : []),
+    ]),
+  ];
+};
 
 const expectedDisplayTitle = (workflow, releaseVersion) => {
   const preflightTitle = PREFLIGHT_WORKFLOW_TITLES[workflow];

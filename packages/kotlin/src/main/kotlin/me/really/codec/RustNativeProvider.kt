@@ -21,6 +21,8 @@ import java.nio.file.attribute.AclFileAttributeView
 import java.nio.file.attribute.PosixFileAttributeView
 import java.nio.file.attribute.PosixFilePermissions
 import java.nio.file.attribute.UserPrincipal
+import java.nio.file.attribute.UserPrincipalLookupService
+import java.nio.file.attribute.UserPrincipalNotFoundException
 import java.security.MessageDigest
 import java.util.EnumSet
 import java.util.Locale
@@ -46,6 +48,10 @@ public object ReallyMeCodecRustNativeProvider {
     private const val POSIX_OTHER_WRITE: Int = 0x02
     private const val POSIX_STICKY: Int = 0x200
     private const val ALLOW_UNVERIFIED_NATIVE_PROPERTY: String = "reallyme.codec.allowUnverifiedNative"
+    private const val WINDOWS_SYSTEM_SID: String = "S-1-5-18"
+    private const val WINDOWS_SYSTEM_ACCOUNT: String = "NT AUTHORITY\\SYSTEM"
+    private const val WINDOWS_ADMINISTRATORS_SID: String = "S-1-5-32-544"
+    private const val WINDOWS_ADMINISTRATORS_ACCOUNT: String = "BUILTIN\\Administrators"
 
     private val digestMetadataPattern: Regex = Regex("^([0-9a-f]{64}) ([1-9][0-9]{0,11})\\n$")
 
@@ -347,8 +353,16 @@ public object ReallyMeCodecRustNativeProvider {
         // returned identities, which Windows backs with account SIDs.
         val lookup = FileSystems.getDefault().userPrincipalLookupService
         val currentPrincipal = lookup.lookupPrincipalByName(currentUser)
-        val systemPrincipal = lookup.lookupPrincipalByName("S-1-5-18")
-        val administratorsPrincipal = lookup.lookupPrincipalByName("S-1-5-32-544")
+        val systemPrincipal = lookupTrustedAclPrincipal(
+            lookup,
+            WINDOWS_SYSTEM_SID,
+            WINDOWS_SYSTEM_ACCOUNT,
+        )
+        val administratorsPrincipal = lookupTrustedAclPrincipal(
+            lookup,
+            WINDOWS_ADMINISTRATORS_SID,
+            WINDOWS_ADMINISTRATORS_ACCOUNT,
+        )
         val owner = view.owner
         if (!isTrustedAclPrincipal(owner, currentPrincipal, systemPrincipal, administratorsPrincipal)) {
             return false
@@ -375,6 +389,20 @@ public object ReallyMeCodecRustNativeProvider {
                 ) &&
                 entry.permissions().any { it in mutatingPermissions }
         }
+    }
+
+    internal fun lookupTrustedAclPrincipal(
+        lookup: UserPrincipalLookupService,
+        sid: String,
+        qualifiedAccountName: String,
+    ): UserPrincipal = try {
+        lookup.lookupPrincipalByName(sid)
+    } catch (_: UserPrincipalNotFoundException) {
+        // Java's Windows provider resolves account names through
+        // LookupAccountName. Some hosts do not accept textual SIDs there.
+        // The fully qualified fallback is still resolved to a principal and
+        // compared by identity, never by its display name.
+        lookup.lookupPrincipalByName(qualifiedAccountName)
     }
 
     internal fun isTrustedAclPrincipal(

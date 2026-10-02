@@ -18,6 +18,10 @@ their release workflows. If a publish stops partway through, rerun the release
 workflow against the same commit and preflight; do not start a new preflight
 after registry state has changed.
 
+Run **Android Runtime Gate** for the same commit before the Kotlin/Android
+release or a local Maven Central bundle. The other release lanes do not require
+the Android emulator gate.
+
 Use **Crates Package Preflight** with the release version and exact current
 `main` commit, then **Crates.io Release**. The release workflow resolves the
 current `main` commit and requires successful checks and the matching preflight
