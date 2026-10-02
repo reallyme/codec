@@ -13,8 +13,9 @@ IFS=$'\n\t'
 #   ANDROID_NDK_HOME=/path/to/android-ndk \
 #   ./scripts/maven_central_bundle_local.sh
 #
-# RUN_ID=<github-actions-run-id> selects a successful preflight run for the
-# current main commit. When omitted, the latest successful run is selected.
+# MAVEN_NATIVE_RESOURCE_RUN_ID=<github-actions-run-id> selects a successful
+# Kotlin/Android preflight for the current main commit. When omitted, the
+# latest run for the current commit and package version is selected.
 #
 # Output:
 #   build/maven-central-upload/out/reallyme-maven-central-<version>.zip
@@ -37,7 +38,7 @@ ANDROID_LOCAL_RELEASE_REPOSITORY_DIR="${ANDROID_LOCAL_RELEASE_REPOSITORY_DIR:-${
 NATIVE_RESOURCE_WORKFLOW="${MAVEN_NATIVE_RESOURCE_WORKFLOW:-kotlin-android-package-preflight.yml}"
 NATIVE_RESOURCE_ARTIFACT_PATTERN="${MAVEN_NATIVE_RESOURCE_ARTIFACT_PATTERN:-kotlin-native-*}"
 NATIVE_RESOURCE_DOWNLOAD_DIR="${MAVEN_NATIVE_RESOURCE_DOWNLOAD_DIR:-${WORK_DIR}/kotlin-native-artifacts}"
-NATIVE_RESOURCE_RUN_ID="${MAVEN_NATIVE_RESOURCE_RUN_ID:-${RUN_ID:-}}"
+NATIVE_RESOURCE_RUN_ID="${MAVEN_NATIVE_RESOURCE_RUN_ID:-}"
 
 fail() {
   printf 'maven central bundle failed: %s\n' "$1" >&2
@@ -98,16 +99,49 @@ kotlin_native_resources_are_complete() {
   return 0
 }
 
-find_successful_native_resource_run() {
-  local head_sha="$1"
+find_latest_workflow_run() {
+  local workflow="$1"
+  local title="$2"
+  local head_sha="$3"
   gh run list \
-    --workflow "$NATIVE_RESOURCE_WORKFLOW" \
+    --repo reallyme/codec \
+    --workflow "$workflow" \
     --commit "$head_sha" \
-    --status success \
-    --limit 20 \
-    --json databaseId,headSha \
-    --jq ".[] | select(.headSha == \"${head_sha}\") | .databaseId" \
+    --limit 100 \
+    --json databaseId,displayTitle,event,headSha \
+    --jq ".[] | select(.headSha == \"${head_sha}\" and .event == \"workflow_dispatch\" and .displayTitle == \"${title}\") | .databaseId" \
     | head -n 1
+}
+
+validate_successful_workflow_run() {
+  local run_id="$1"
+  local workflow="$2"
+  local title="$3"
+  local expected_workflow_id
+  local run_metadata
+  local run_status
+  local run_conclusion
+  local run_head_sha
+  local run_head_branch
+  local run_workflow_id
+  local run_title
+  local run_event
+
+  if [[ ! "$run_id" =~ ^[1-9][0-9]*$ ]]; then
+    fail "a positive GitHub Actions run id is required for ${workflow}"
+  fi
+  expected_workflow_id="$(gh api "repos/reallyme/codec/actions/workflows/${workflow}" --jq '.id')"
+  run_metadata="$(gh run view "$run_id" --repo reallyme/codec \
+    --json status,conclusion,headSha,headBranch,workflowDatabaseId,displayTitle,event \
+    --jq '[.status, .conclusion, .headSha, .headBranch, (.workflowDatabaseId | tostring), .displayTitle, .event] | @tsv')"
+  IFS=$'\t' read -r run_status run_conclusion run_head_sha run_head_branch \
+    run_workflow_id run_title run_event <<< "$run_metadata"
+  if [ "$run_status" != "completed" ] || [ "$run_conclusion" != "success" ] || \
+     [ "$run_head_sha" != "$RELEASE_SHA" ] || [ "$run_head_branch" != "main" ] || \
+     [ "$run_workflow_id" != "$expected_workflow_id" ] || [ "$run_title" != "$title" ] || \
+     [ "$run_event" != "workflow_dispatch" ]; then
+    fail "GitHub Actions run ${run_id} does not certify ${workflow} for the current main commit and version"
+  fi
 }
 
 download_kotlin_native_resources_from_run() {
@@ -117,7 +151,7 @@ download_kotlin_native_resources_from_run() {
   rm -rf "$NATIVE_RESOURCE_DOWNLOAD_DIR"
   mkdir -p "$NATIVE_RESOURCE_DOWNLOAD_DIR" "$KOTLIN_NATIVE_RESOURCES_DIR"
   info "Downloading JVM native resource artifacts from GitHub Actions run ${run_id}"
-  gh run download "$run_id" \
+  gh run download "$run_id" --repo reallyme/codec \
     --pattern "$NATIVE_RESOURCE_ARTIFACT_PATTERN" \
     --dir "$NATIVE_RESOURCE_DOWNLOAD_DIR"
 
@@ -128,35 +162,24 @@ download_kotlin_native_resources_from_run() {
 
 ensure_kotlin_native_resources() {
   local run_id="${NATIVE_RESOURCE_RUN_ID}"
-  local run_metadata
-  local run_status
-  local run_conclusion
-  local run_head_sha
-  local run_head_branch
-  local run_path
+  local latest_run_id
+  local runtime_gate_run_id
 
   require_tool gh
+  latest_run_id="$(find_latest_workflow_run "$NATIVE_RESOURCE_WORKFLOW" \
+    "Kotlin Android package preflight ${VERSION}" "$RELEASE_SHA")"
   if [ -z "$run_id" ]; then
-    run_id="$(find_successful_native_resource_run "$RELEASE_SHA")"
+    run_id="$latest_run_id"
   fi
-  if [[ ! "$run_id" =~ ^[1-9][0-9]*$ ]]; then
-    fail "a successful native-resource preflight run id is required"
+  if [ "$run_id" != "$latest_run_id" ]; then
+    fail "selected native-resource run is not the latest preflight for the current main commit"
   fi
-
-  run_metadata="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}" \
-    --jq '[.status, .conclusion, .head_sha, .head_branch, .path] | @tsv')"
-  IFS=$'\t' read -r run_status run_conclusion run_head_sha run_head_branch run_path <<< "$run_metadata"
-  if [ "$run_status" != "completed" ] || [ "$run_conclusion" != "success" ] || \
-     [ "$run_head_sha" != "$RELEASE_SHA" ] || [ "$run_head_branch" != "main" ]; then
-    fail "native-resource run does not certify the current main release SHA"
-  fi
-  case "$run_path" in
-    .github/workflows/kotlin-android-package-preflight.yml) ;;
-    *) fail "native-resource run is not the main package preflight workflow" ;;
-  esac
-
-  export RELEASE_ATTESTATION_PREFLIGHT_RUN_ID="$run_id"
-  node "${ROOT_DIR}/scripts/verify_release_attestation.mjs"
+  validate_successful_workflow_run "$run_id" "$NATIVE_RESOURCE_WORKFLOW" \
+    "Kotlin Android package preflight ${VERSION}"
+  runtime_gate_run_id="$(find_latest_workflow_run "android-runtime-gate.yml" \
+    "Android Runtime Gate" "$RELEASE_SHA")"
+  validate_successful_workflow_run "$runtime_gate_run_id" "android-runtime-gate.yml" \
+    "Android Runtime Gate"
 
   case "$KOTLIN_NATIVE_RESOURCES_DIR" in
     "${ROOT_DIR}"/build/*) ;;
@@ -364,15 +387,6 @@ RELEASE_SHA="$(git -C "$ROOT_DIR" rev-parse HEAD)"
 if [ "$RELEASE_SHA" != "$(git -C "$ROOT_DIR" rev-parse origin/main)" ]; then
   fail "release checkout is not the current origin/main tip"
 fi
-GITHUB_REPOSITORY="$(gh repo view --json nameWithOwner --jq .nameWithOwner)"
-GH_TOKEN="${GH_TOKEN:-$(gh auth token)}"
-if [ -z "$GH_TOKEN" ] || [ -z "$GITHUB_REPOSITORY" ]; then
-  fail "authenticated GitHub access is required to verify the release"
-fi
-export GITHUB_REPOSITORY GH_TOKEN RELEASE_SHA
-export RELEASE_VERSION="$VERSION"
-export RELEASE_ATTESTATION_PREFLIGHT_WORKFLOW="kotlin-android-package-preflight.yml"
-
 require_file "$GRADLE"
 
 info "Using version ${VERSION}"
