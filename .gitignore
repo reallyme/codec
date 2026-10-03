@@ -23,7 +23,6 @@ target/
 
 # Local environment
 /.claude/
-/.codex/
 .env
 .env.*
 !.env.example
