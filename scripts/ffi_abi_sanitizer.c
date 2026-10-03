@@ -4,6 +4,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 extern uint32_t rm_codec_abi_version(void);
@@ -18,6 +19,9 @@ extern int32_t rm_codec_process(uint32_t operation, const uint8_t *first, size_t
 
 enum {
     CODEC_ABI_VERSION = 6,
+    CODEC_PACKAGE_VERSION_MAJOR = 0,
+    CODEC_PACKAGE_VERSION_MINOR = 3,
+    CODEC_PACKAGE_VERSION_PATCH = 1,
     CODEC_BASE64_ENCODE = 1,
     CODEC_OK = 0,
     CODEC_INVALID_ARGUMENT = -1,
@@ -30,11 +34,18 @@ int main(void) {
     uint8_t output[4] = {0};
     size_t produced = 0;
 
-    if (rm_codec_abi_version() != CODEC_ABI_VERSION ||
-        rm_codec_package_version_major() != 0 ||
-        rm_codec_package_version_minor() != 3 ||
-        rm_codec_package_version_patch() != 0 ||
-        rm_codec_max_ffi_output_bytes() < sizeof(output)) {
+    if (rm_codec_abi_version() != CODEC_ABI_VERSION) {
+        fputs("release FFI ABI version mismatch\n", stderr);
+        return 1;
+    }
+    if (rm_codec_package_version_major() != CODEC_PACKAGE_VERSION_MAJOR ||
+        rm_codec_package_version_minor() != CODEC_PACKAGE_VERSION_MINOR ||
+        rm_codec_package_version_patch() != CODEC_PACKAGE_VERSION_PATCH) {
+        fputs("release FFI package version mismatch\n", stderr);
+        return 1;
+    }
+    if (rm_codec_max_ffi_output_bytes() < sizeof(output)) {
+        fputs("release FFI output capacity mismatch\n", stderr);
         return 1;
     }
     if (rm_codec_process(CODEC_BASE64_ENCODE, input, sizeof(input), NULL, 0, NULL, 0,
