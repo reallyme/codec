@@ -86,7 +86,7 @@ every primitive codec family. Consumers that need a smaller dependency surface c
 only the families they use:
 
 ```toml
-reallyme-codec = { version = "0.3.0", default-features = false, features = [
+reallyme-codec = { version = "0.3.1", default-features = false, features = [
   "base64url",
   "multikey",
 ] }
@@ -101,7 +101,7 @@ feature enables the base64url field adapters.
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.3.0"
+    from: "0.3.1"
 )
 ```
 
@@ -113,7 +113,7 @@ feature enables the base64url field adapters.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.3.0")
+    implementation("me.really:codec:0.3.1")
 }
 ```
 
@@ -121,7 +121,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.3.0")
+    implementation("me.really:codec-android:0.3.1")
 }
 ```
 
@@ -140,13 +140,12 @@ an unbound manifest and make `ReallyMeCodec()` unavailable.
 
 ReallyMe Codec is pre-1.0. We follow the Rust community convention for
 [0.x compatibility](https://doc.rust-lang.org/cargo/reference/semver.html):
-breaking changes increment the minor version, such as `0.2.x` to `0.3.0`, and
-additive compatible changes increment the patch version, such as `0.3.0` to
-`0.3.1`.
+breaking changes increment the minor version, such as `0.2.x` to `0.3.x`, and
+compatible fixes increment the patch version, such as `0.3.1` to `0.3.2`.
 
 For Rust consumers, pin to the minor line you have reviewed, for example
 `reallyme-codec = "0.3"`. A full version written by `cargo add`, such as
-`reallyme-codec = "0.3.0"`, uses Cargo caret semantics and remains on the same
+`reallyme-codec = "0.3.1"`, uses Cargo caret semantics and remains on the same
 `0.3.x` compatibility line. For npm, Maven, SwiftPM, and release artifacts used
 in production, prefer exact versions or locked dependency files so every
 language lane runs the same reviewed codec release.

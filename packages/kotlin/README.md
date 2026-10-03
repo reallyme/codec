@@ -9,7 +9,7 @@ parsing, or DAG-CBOR on the JVM.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.3.0")
+    implementation("me.really:codec:0.3.1")
 }
 ```
 
@@ -71,8 +71,8 @@ non-canonical input, unsupported CBOR types, and values beyond the documented
 resource limits before returning SDK owners. Although the builders share a
 value type, DAG-CBOR rejects integer map keys and positive integers above
 `Long.MAX_VALUE`.
-CID verification reports IPLD links and floating-point values outside this
-SDK's closed DAG-CBOR model as `UnsupportedIpldValue`.
+CID verification rejects tags and floating-point encodings outside this
+SDK's closed DAG-CBOR model as `InvalidInput`.
 
 PEM input, output, and decoded DER use `ByteArray` rather than `String` so
 callers can overwrite private-key material promptly after use.

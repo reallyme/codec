@@ -18,7 +18,7 @@ on:
         description: Release version without leading v
         required: true
         type: string
-        default: 0.3.0
+        default: 0.3.1
 
 permissions:
   contents: read
@@ -103,7 +103,7 @@ jobs:
           RELEASE_VERSION: ${{ inputs.version }}
 
       - name: Check workspace metadata
-        run: cargo metadata --format-version 1 --no-deps
+        run: cargo metadata --format-version 1 --locked > /dev/null
 
       - name: Security advisory audit
         run: scripts/audit_committed_lockfiles.sh

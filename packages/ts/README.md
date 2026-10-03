@@ -35,6 +35,10 @@ const decoded = ReallyMeCodec.base64urlDecode(encoded);
 
 The installer accepts only this package's generated WASM module namespace.
 Initialize that module with the bundled `.wasm` file before installing it.
+If a WASM call fails unexpectedly, the facade creates a fresh instance from
+the compiled module before the next call and wipes the trapped instance's
+linear memory before activating it. A failed recovery returns
+`provider-failure` and is retried on a later call.
 
 ## Surface
 
@@ -99,8 +103,8 @@ CID verification validates one canonical DAG-CBOR block before comparing the
 CID and requires the supplied CID text to use that canonical lowercase base32
 form. `dagCborVerifyCid` returns a boolean; `dagCborVerifyCidDetails` returns
 the canonical CID diagnostics. Invalid DAG-CBOR returns a typed canonicalization
-error. IPLD links and floating-point values outside this package's closed
-DAG-CBOR model return `unsupported-ipld-value`.
+error. Tagged values and floating-point encodings outside this package's closed
+DAG-CBOR model return `invalid-input`.
 
 Encoded CBOR and decoded byte-string values can contain the complete sensitive
 document. Returned buffers belong to the caller and should be cleared with

@@ -4,6 +4,19 @@ All packages in the ReallyMe Codec release line share one version. Security
 changes are called out when they affect accepted input or an integration
 boundary.
 
+## 0.3.1 (2026-10-03)
+
+- Recover the TypeScript facade after unexpected WASM exceptions by wiping the
+  trapped instance's linear memory and creating a fresh instance. Raw WASM
+  string exports reject null inputs without exhausting the bindgen stack.
+- Wipe JCS object-member values on drop and tighten protobuf decoder memory
+  accounting for nested arrays.
+- Classify malformed DAG-CBOR tags and floating-point encodings consistently
+  across decoding and CID verification. Unknown multikey codec names now return
+  the unsupported-codec class in native SDKs, matching TypeScript.
+- Validate the Cargo lockfile during WASM builds and package preflight, and
+  expand boundary and cross-language regression coverage.
+
 ## 0.3.0 (2026-10-02)
 
 - Bound allocations and nesting before decoding protobuf, ProtoJSON, CBOR,

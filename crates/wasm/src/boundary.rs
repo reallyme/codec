@@ -64,6 +64,12 @@ fn utf8_bytes_for_code_unit(code_unit: u16) -> usize {
 }
 
 fn utf8_byte_len_for_js_string(value: &JsString) -> Result<usize, JsValue> {
+    // Raw callers can pass null through a JsString export. Calling length()
+    // on it would throw inside WASM and leave the bindgen stack unwound.
+    let raw: &JsValue = value.as_ref();
+    if !raw.is_string() {
+        return Err(invalid_input());
+    }
     let code_units = usize::try_from(value.length()).map_err(|_| invalid_input())?;
     if code_units > MAX_WASM_INPUT_BYTES {
         return Err(invalid_input());

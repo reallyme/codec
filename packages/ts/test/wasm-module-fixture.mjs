@@ -10,6 +10,16 @@ let jsonOperationHandler;
 let voidHandler = () => undefined;
 let cidHandler = () => undefined;
 let initialized = true;
+let recoveries = 0;
+
+export const reinstantiate = () => {
+  if (!initialized) {
+    throw new TypeError("WASM module is not initialized");
+  }
+  recoveries += 1;
+};
+
+export const recoveryCount = () => recoveries;
 
 export const setInitialized = (value) => {
   initialized = value;

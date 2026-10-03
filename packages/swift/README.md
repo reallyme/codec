@@ -13,7 +13,7 @@ by Git URL; the source lives under `packages/swift` with the other language SDKs
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.3.0"
+    from: "0.3.1"
 )
 ```
 
@@ -75,8 +75,8 @@ DAG-CBOR has the stricter key profile. Both routes use the same generated
 protobuf operation contract and bounded SwiftProtobuf depth/resource checks.
 The shared value type does not make the profiles interchangeable: DAG-CBOR
 rejects integer map keys and integers above `Int64.max`.
-CID verification reports IPLD links and floating-point values outside this
-SDK's closed DAG-CBOR model as `unsupportedIpldValue`.
+CID verification rejects tags and floating-point encodings outside this
+SDK's closed DAG-CBOR model as `invalidInput`.
 
 PEM input, output, and decoded DER use `[UInt8]` rather than `String` so
 callers can clear private-key material promptly with their own memory policy.
@@ -110,7 +110,7 @@ SwiftPM checksum. Download those files into `build/swift` before publishing,
 then bind the checksum and matching version in the root manifest:
 
 ```sh
-node scripts/prepare_swift_binary_manifest.mjs 0.3.0 "$(cat build/swift/ReallyMeCodecFFI.xcframework.checksum)"
+node scripts/prepare_swift_binary_manifest.mjs 0.3.1 "$(cat build/swift/ReallyMeCodecFFI.xcframework.checksum)"
 ```
 
 Review and commit `Package.swift` on `main`, then rerun the preflights for that

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 import { spawnSync } from "node:child_process";
-import { readFileSync, rmSync } from "node:fs";
+import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -100,7 +100,7 @@ if (versionText(wasmBindgenVersion) !== lockedBindgen[1]) {
 // lockfile first so that metadata cannot silently repair a stale dependency.
 const lockedMetadata = spawnSync(
   "cargo",
-  ["metadata", "--locked", "--format-version", "1", "--no-deps"],
+  ["metadata", "--locked", "--format-version", "1"],
   { cwd: repositoryDirectory, stdio: ["inherit", "ignore", "inherit"] },
 );
 if (lockedMetadata.status !== 0) {
@@ -136,6 +136,37 @@ if (result.status !== 0) {
 if (readFileSync(cargoLockPath, "utf8") !== cargoLock) {
   fail("The WASM build changed Cargo.lock.");
 }
+
+// The generated initializer is intentionally install-once. Retain its compiled
+// module but replace the instance after a trap, which may skip Rust drop paths.
+// Wipe the old linear memory before releasing the trapped instance.
+// Match the exact generated footer so a bindgen layout change fails the build.
+const gluePath = resolve(outputDirectory, "reallyme_codec_wasm.js");
+const glue = readFileSync(gluePath, "utf8");
+const footer = "export { initSync, __wbg_init as default };";
+if (glue.split(footer).length !== 2 ||
+    !glue.includes("let wasmModule, wasmInstance, wasm;")) {
+  fail("The generated WASM initializer layout changed.");
+}
+const recoveryExport = `export function reinstantiate() {
+    if (wasmModule === undefined) {
+        throw new TypeError('WASM module is not initialized');
+    }
+    if (!(wasm.memory instanceof WebAssembly.Memory)) {
+        throw new TypeError('WASM memory is unavailable');
+    }
+    new Uint8Array(wasm.memory.buffer).fill(0);
+    const imports = __wbg_get_imports();
+    const instance = new WebAssembly.Instance(wasmModule, imports);
+    __wbg_finalize_init(instance, wasmModule);
+}
+
+${footer}`;
+writeFileSync(gluePath, glue.replace(footer, recoveryExport));
+
+const declarationsPath = resolve(outputDirectory, "reallyme_codec_wasm.d.ts");
+const declarations = readFileSync(declarationsPath, "utf8");
+writeFileSync(declarationsPath, `${declarations}\n/** Replace a trapped instance using its compiled module. */\nexport function reinstantiate(): void;\n`);
 
 for (const generatedFile of [
   ".gitignore",

@@ -25,10 +25,6 @@ fn dag_cbor_boundary_error(error: DagCborOperationError) -> CodecWireError {
             CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED,
         ),
         DagCborOperationError::InvalidPayload(reason) => dag_cbor_cbor_wire_error(reason),
-        DagCborOperationError::UnsupportedIpldValue => wire_error(
-            CodecWireErrorBranch::Canonicalization,
-            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE,
-        ),
     }
 }
 

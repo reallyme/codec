@@ -283,7 +283,7 @@ fn canonical_sensitive_array_len(
 }
 
 fn canonical_sensitive_object_len(
-    values: &std::collections::BTreeMap<String, SensitiveJsonValue>,
+    values: &std::collections::BTreeMap<String, Box<SensitiveJsonValue>>,
     depth: usize,
 ) -> Result<usize, JcsError> {
     let child_depth = descend(depth)?;

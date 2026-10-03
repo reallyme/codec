@@ -32,9 +32,6 @@ pub enum DagCborOperationError {
     /// The bytes do not form one canonical DAG-CBOR block.
     #[error("invalid dag-cbor payload")]
     InvalidPayload(CborError),
-    /// The block uses an IPLD value type outside this codec's closed model.
-    #[error("unsupported IPLD value")]
-    UnsupportedIpldValue,
 }
 
 /// Result of verifying a supplied CID against a DAG-CBOR payload.
@@ -82,13 +79,8 @@ pub fn verify_dag_cbor_cid(
         return Err(DagCborOperationError::PayloadTooLarge);
     }
 
-    let verified = verify_primitive_dag_cbor_cid(cid, payload).map_err(|error| match error {
-        CborError::DisallowedMajorType { major: 6 }
-        | CborError::DisallowedSimpleValue { value: 27 } => {
-            DagCborOperationError::UnsupportedIpldValue
-        }
-        other => DagCborOperationError::InvalidPayload(other),
-    })?;
+    let verified = verify_primitive_dag_cbor_cid(cid, payload)
+        .map_err(DagCborOperationError::InvalidPayload)?;
     let (status, expected_cid, actual_cid) = verified.into_parts();
     Ok(DagCborCidVerification {
         valid: status == CidVerificationStatus::Match,

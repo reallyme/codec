@@ -51,14 +51,14 @@ test("Swift binary manifest rejects ancestor path components", (t) => {
   ].join("\n"));
   const checksum = "a".repeat(64);
   for (const path of ["artifact/../bundle.zip", "artifact/./bundle.zip"]) {
-    const result = spawnSync(process.execPath, [script, "0.3.0", checksum, "--local-artifact-path", path], {
+    const result = spawnSync(process.execPath, [script, "0.3.1", checksum, "--local-artifact-path", path], {
       cwd: root, encoding: "utf8", timeout: 10_000,
     });
     assert.equal(result.error, undefined);
     assert.equal(result.status, 1);
     assert.match(result.stderr, /ancestor or current-directory components/u);
   }
-  const accepted = spawnSync(process.execPath, [script, "0.3.0", checksum, "--local-artifact-path", "artifact/bundle.zip"], {
+  const accepted = spawnSync(process.execPath, [script, "0.3.1", checksum, "--local-artifact-path", "artifact/bundle.zip"], {
     cwd: root, encoding: "utf8", timeout: 10_000,
   });
   assert.equal(accepted.error, undefined);
@@ -145,9 +145,9 @@ test("crate packaging waits for the preceding workspace release to reach the ind
     const root = process.env.TOOLING_FIXTURE;
     if (process.argv[2] === "metadata") {
       console.log(JSON.stringify({ target_directory: path.join(root, "target"), packages: [
-        { name: "base", version: "0.3.0", publish: null, dependencies: [] },
-        { name: "fixture", version: "0.3.0", publish: null, dependencies: [
-          { name: "base", source: null, path: path.join(root, "base"), req: "=0.3.0" },
+        { name: "base", version: "0.3.1", publish: null, dependencies: [] },
+        { name: "fixture", version: "0.3.1", publish: null, dependencies: [
+          { name: "base", source: null, path: path.join(root, "base"), req: "=0.3.1" },
         ] },
       ] }));
     } else if (process.argv[2] === "package") {
@@ -157,13 +157,13 @@ test("crate packaging waits for the preceding workspace release to reach the ind
         const count = fs.existsSync(counter) ? Number(fs.readFileSync(counter, "utf8")) + 1 : 1;
         fs.writeFileSync(counter, String(count));
         if (count < 3) {
-          console.error('failed to select a version for the requirement \`base = "=0.3.0"\`');
+          console.error('failed to select a version for the requirement \`base = "=0.3.1"\`');
           process.exit(101);
         }
       }
       const directory = path.join(root, "target/package");
       fs.mkdirSync(directory, { recursive: true });
-      fs.writeFileSync(path.join(directory, name + "-0.3.0.crate"), "package " + name);
+      fs.writeFileSync(path.join(directory, name + "-0.3.1.crate"), "package " + name);
     } else {
       const name = process.argv[process.argv.indexOf("-p") + 1];
       fs.appendFileSync(path.join(root, "uploads"), name + "\\n");
@@ -190,11 +190,11 @@ for (const matches of [false, true]) {
       const fs = require("node:fs");
       const path = require("node:path");
       if (process.argv[2] === "metadata") {
-        console.log(JSON.stringify({ target_directory: path.join(process.env.TOOLING_FIXTURE, "target"), packages: [{ name: "fixture", version: "0.3.0", publish: null, dependencies: [] }] }));
+        console.log(JSON.stringify({ target_directory: path.join(process.env.TOOLING_FIXTURE, "target"), packages: [{ name: "fixture", version: "0.3.1", publish: null, dependencies: [] }] }));
       } else if (process.argv[2] === "package") {
         const directory = path.join(process.env.TOOLING_FIXTURE, "target/package");
         fs.mkdirSync(directory, { recursive: true });
-        fs.writeFileSync(path.join(directory, "fixture-0.3.0.crate"), "package fixture");
+        fs.writeFileSync(path.join(directory, "fixture-0.3.1.crate"), "package fixture");
       } else {
         fs.writeFileSync(path.join(process.env.TOOLING_FIXTURE, "unexpected-publish"), "yes");
         process.exit(1);
@@ -239,11 +239,11 @@ for (const scenario of [
       const fs = require("node:fs");
       const path = require("node:path");
       if (process.argv[2] === "metadata") {
-        console.log(JSON.stringify({ target_directory: path.join(process.env.TOOLING_FIXTURE, "target"), packages: [{ name: "fixture", version: "0.3.0", publish: null, dependencies: [] }] }));
+        console.log(JSON.stringify({ target_directory: path.join(process.env.TOOLING_FIXTURE, "target"), packages: [{ name: "fixture", version: "0.3.1", publish: null, dependencies: [] }] }));
       } else if (process.argv[2] === "package") {
         const directory = path.join(process.env.TOOLING_FIXTURE, "target/package");
         fs.mkdirSync(directory, { recursive: true });
-        fs.writeFileSync(path.join(directory, "fixture-0.3.0.crate"), "package fixture");
+        fs.writeFileSync(path.join(directory, "fixture-0.3.1.crate"), "package fixture");
       } else {
         const counter = path.join(process.env.TOOLING_FIXTURE, "uploads");
         const count = fs.existsSync(counter) ? Number(fs.readFileSync(counter, "utf8")) + 1 : 1;
