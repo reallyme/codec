@@ -80,7 +80,8 @@ export type ReallyMeCodecWasmProvider = Readonly<{
 }>;
 
 let installedProvider: ReallyMeCodecWasmProvider | undefined;
-let providerPoisoned = false;
+let providerNeedsRecovery = false;
+let reinstantiate: (() => unknown) | undefined;
 const DAG_CBOR_CODEC_CODE = 0x71;
 
 const wasmErrorCode = (error: unknown): ReallyMeCodecErrorCode | undefined => {
@@ -98,15 +99,6 @@ const wasmErrorCode = (error: unknown): ReallyMeCodecErrorCode | undefined => {
     default:
       return undefined;
   }
-};
-
-const isWasmRuntimeError = (error: unknown): boolean => {
-  const wasm: unknown = Reflect.get(globalThis, "WebAssembly");
-  if (typeof wasm !== "object" || wasm === null) {
-    return false;
-  }
-  const runtimeError: unknown = Reflect.get(wasm, "RuntimeError");
-  return typeof runtimeError === "function" && error instanceof runtimeError;
 };
 
 const requireObject = (module: unknown): object => {
@@ -134,24 +126,35 @@ const requireFunction = (module: object, name: string): WasmCallable => {
     throw new ReallyMeCodecError("provider-failure");
   }
   return (...args: ReadonlyArray<WasmArgument>): unknown => {
-    if (providerPoisoned) {
-      throw new ReallyMeCodecError("provider-failure");
-    }
+    recoverProviderIfNeeded();
     try {
       return candidate(...args);
     } catch (error: unknown) {
       const code = wasmErrorCode(error);
       if (code === undefined) {
-        // A WASM trap may leave the instance partially unwound. Host-side
-        // errors do not prove that the instance is unusable.
-        if (isWasmRuntimeError(error)) {
-          providerPoisoned = true;
-        }
+        // Any exception escaping the WASM call may have skipped Rust cleanup.
+        // The next call must use a fresh instance, including for RangeError.
+        providerNeedsRecovery = true;
         throw new ReallyMeCodecError("provider-failure");
       }
       throw new ReallyMeCodecError(code);
     }
   };
+};
+
+const recoverProviderIfNeeded = (): void => {
+  if (!providerNeedsRecovery) {
+    return;
+  }
+  if (reinstantiate === undefined) {
+    throw new ReallyMeCodecError("provider-failure");
+  }
+  try {
+    reinstantiate();
+    providerNeedsRecovery = false;
+  } catch {
+    throw new ReallyMeCodecError("provider-failure");
+  }
 };
 
 const function0 = (module: object, name: string): Function0 => {
@@ -226,6 +229,11 @@ export const installReallyMeCodecWasmProvider = (module: unknown): void => {
   if (codecCode !== DAG_CBOR_CODEC_CODE) {
     throw new ReallyMeCodecError("provider-failure");
   }
+  const recovery = Object.getOwnPropertyDescriptor(providerModule, "reinstantiate")?.value;
+  if (typeof recovery !== "function") {
+    throw new ReallyMeCodecError("provider-failure");
+  }
+  reinstantiate = recovery;
   installedProvider = {
     base64Decode: stringFunction1(providerModule, "base64Decode"),
     base64Encode: bytesFunction1(providerModule, "base64Encode"),
@@ -271,8 +279,9 @@ export const installReallyMeCodecWasmProvider = (module: unknown): void => {
 };
 
 export const requireReallyMeCodecWasmProvider = (): ReallyMeCodecWasmProvider => {
-  if (installedProvider === undefined || providerPoisoned) {
+  if (installedProvider === undefined) {
     throw new ReallyMeCodecError("provider-failure");
   }
+  recoverProviderIfNeeded();
   return installedProvider;
 };

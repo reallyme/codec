@@ -39,7 +39,8 @@ test("installation before WASM initialization does not poison a later installati
   installReallyMeCodecWasmProvider(wasm);
 });
 
-test("a host RangeError does not poison the initialized WASM provider", () => {
+test("a RangeError escaping a WASM call replaces the instance", () => {
+  const recoveriesBefore = wasm.recoveryCount();
   wasm.setOperationHandler(() => {
     calls += 1;
     throw new RangeError("host stack error");
@@ -52,6 +53,7 @@ test("a host RangeError does not poison the initialized WASM provider", () => {
   });
   assert.deepEqual(processOperation(request), Uint8Array.of(0));
   assert.equal(calls, callsAfterHostError + 1);
+  assert.equal(wasm.recoveryCount(), recoveriesBefore + 1);
 });
 
 test("void provider responses reject unexpected values without poisoning", () => {
@@ -75,7 +77,10 @@ test("CID parsing returns undefined only for an invalid input error", () => {
   );
 });
 
-test("a WASM trap poisons the installed provider", () => {
+test("a WASM trap is recovered before the next call", () => {
+  wasm.setOperationHandler(() => Uint8Array.of(0));
+  assert.deepEqual(processOperation(request), Uint8Array.of(0));
+  const recoveriesBefore = wasm.recoveryCount();
   wasm.setOperationHandler(() => {
     calls += 1;
     throw new WebAssembly.RuntimeError("trap");
@@ -88,6 +93,22 @@ test("a WASM trap poisons the installed provider", () => {
     calls += 1;
     return Uint8Array.of(0);
   });
+  assert.deepEqual(processOperation(request), Uint8Array.of(0));
+  assert.equal(calls, callsBeforeTrap + 2);
+  assert.equal(wasm.recoveryCount(), recoveriesBefore + 1);
+});
+
+test("failed recovery stays closed and can retry when an instance is available", () => {
+  wasm.setOperationHandler(() => {
+    throw new RangeError("stack overflow");
+  });
   assertCode("provider-failure");
-  assert.equal(calls, callsBeforeTrap + 1);
+  const recoveriesBefore = wasm.recoveryCount();
+  wasm.setInitialized(false);
+  assertCode("provider-failure");
+  assert.equal(wasm.recoveryCount(), recoveriesBefore);
+  wasm.setInitialized(true);
+  wasm.setOperationHandler(() => Uint8Array.of(0));
+  assert.deepEqual(processOperation(request), Uint8Array.of(0));
+  assert.equal(wasm.recoveryCount(), recoveriesBefore + 1);
 });

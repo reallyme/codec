@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.1 (2026-10-03)
+
+- Recover the TypeScript facade after unexpected Wasm exceptions and reject
+  null raw Wasm string inputs.
+- Clear JCS object values on drop and bound nested protobuf decoding.
+- Classify malformed DAG-CBOR tags and floating-point encodings consistently
+  across decoding and CID verification. Unknown multikey codec names now return
+  the unsupported-codec class in native SDKs, matching TypeScript.
+
 ## 0.3.0 (2026-10-02)
 
 - Bound allocations and nesting before decoding protobuf, ProtoJSON, CBOR,

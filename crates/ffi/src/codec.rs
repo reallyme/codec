@@ -11,6 +11,7 @@ use codec_adapter::scalar_ops::{
     decode_base64url, decode_lower_hex, decode_multibase, encode_base58btc, encode_base64,
     encode_base64url, encode_lower_hex, encode_multibase_base58btc, encode_multibase_base64url,
     encode_multikey, parse_cid, valid_cid, validate_encoded_binding, HexError, JcsError,
+    MultikeyError,
 };
 use codec_runtime::multicodec::{
     prefix_for_name as multicodec_prefix_for_name, strip_prefix as multicodec_strip_prefix,
@@ -235,6 +236,26 @@ fn multicodec_status(error: MulticodecOperationError) -> CodecStatus {
     }
 }
 
+fn multikey_status(error: MultikeyError) -> CodecStatus {
+    match error {
+        MultikeyError::UnknownCodecName { .. } | MultikeyError::UnknownCodecPrefix => {
+            CODEC_UNKNOWN_MULTICODEC
+        }
+        MultikeyError::InvalidMultibase
+        | MultikeyError::DecodedTooShort(_)
+        | MultikeyError::NonPublicKeyMaterial
+        | MultikeyError::EmptyKey
+        | MultikeyError::InvalidCompressedPoint
+        | MultikeyError::KeyLengthMismatch { .. }
+        | MultikeyError::KeyTooLarge { .. }
+        | MultikeyError::EncodedPayloadTooLarge
+        | MultikeyError::BindingTypeCodecMismatch { .. }
+        | MultikeyError::BindingAlgorithmMismatch { .. }
+        | MultikeyError::BindingAlgorithmMissing { .. } => CODEC_INVALID_ARGUMENT,
+        _ => CODEC_INTERNAL_ERROR,
+    }
+}
+
 fn process(
     operation: u32,
     first_ptr: *const u8,
@@ -315,7 +336,7 @@ fn process(
             let codec_name = core::str::from_utf8(first).map_err(|_| CODEC_INVALID_ARGUMENT)?;
             encode_multikey(codec_name, second)
                 .map(text_bytes)
-                .map_err(|_| CODEC_INVALID_ARGUMENT)
+                .map_err(multikey_status)
         }
         CODEC_REQUIRE_SUPPORTED_MULTICODEC => {
             let text = core::str::from_utf8(first).map_err(|_| CODEC_INVALID_ARGUMENT)?;

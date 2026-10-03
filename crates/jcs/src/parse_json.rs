@@ -68,7 +68,9 @@ pub(crate) enum SensitiveJsonValue {
         reason = "array growth must not copy sensitive numeric payloads"
     )]
     Array(Vec<Box<SensitiveJsonValue>>),
-    Object(BTreeMap<String, SensitiveJsonValue>),
+    /// Tree rotations move nodes. Boxing values keeps numeric payloads at a
+    /// stable address until their drop path wipes them.
+    Object(BTreeMap<String, Box<SensitiveJsonValue>>),
 }
 
 /// Parsed numeric value kept in a primitive that supports volatile wiping.
@@ -255,7 +257,7 @@ impl<'de> Visitor<'de> for StrictValueVisitor<'_> {
                 if is_duplicate {
                     self.duplicate_property.set(true);
                 } else {
-                    values.insert(core::mem::take(&mut *key), value);
+                    values.insert(core::mem::take(&mut *key), Box::new(value));
                 }
             }
         }

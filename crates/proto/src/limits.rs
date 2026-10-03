@@ -22,7 +22,10 @@ pub(crate) const MAX_CODEC_PROTO_JSON_TOKENS: usize = max_codec_proto_json_token
 // Buffa charges repeated elements but not every boxed oneof payload.
 pub(crate) const MAX_CODEC_PROTO_ELEMENT_MEMORY_BYTES: usize =
     CODEC_PROTO_DETERMINISTIC_CBOR_NODES * CODEC_PROTO_ELEMENT_MEMORY_BYTES_PER_NODE;
-const CODEC_PROTO_ELEMENT_MEMORY_BYTES_PER_NODE: usize = 256;
+// Buffa does not charge every nested oneof allocation. A tighter repeated
+// element allowance keeps a maximally nested malformed binary message below
+// the transport allocation budget while preserving the semantic node ceiling.
+const CODEC_PROTO_ELEMENT_MEMORY_BYTES_PER_NODE: usize = 224;
 
 // Each semantic node is allowed 128 bytes of protobuf/ProtoJSON structure.
 // The largest generated leaf and map-entry paths are substantially smaller;

@@ -26,17 +26,17 @@ for (const [state, expectedStatus] of [
     writeFileSync(archive, "bounded bundle fixture");
     writeFileSync(preload, `
       globalThis.fetch = async (url, options) => {
-        if (String(url).endsWith('/upload?publishingType=AUTOMATIC&name=reallyme-codec-0.3.0')) {
+        if (String(url).endsWith('/upload?publishingType=AUTOMATIC&name=reallyme-codec-0.3.1')) {
           if (options.method !== 'POST' || !String(options.headers.Authorization).startsWith('Bearer ')) throw Error('wrong upload request');
           return { status: 201, text: async () => '${deploymentId}' };
         }
         return { ok: true, json: async () => ({
           deploymentId: '${deploymentId}', deploymentState: '${state}',
-          purls: ['pkg:maven/me.really/codec@0.3.0', 'pkg:maven/me.really/codec-android@0.3.0'],
+          purls: ['pkg:maven/me.really/codec@0.3.1', 'pkg:maven/me.really/codec-android@0.3.1'],
         }) };
       };
     `);
-    const result = spawnSync(process.execPath, ["--import", pathToFileURL(preload).href, script, archive, "0.3.0"], {
+    const result = spawnSync(process.execPath, ["--import", pathToFileURL(preload).href, script, archive, "0.3.1"], {
       encoding: "utf8",
       env: { ...process.env, CENTRAL_PORTAL_USERNAME: "test-user", CENTRAL_PORTAL_PASSWORD: "private-test-password" },
       timeout: 10_000,
@@ -52,7 +52,7 @@ test("Central Portal upload requires credentials before making a request", (t) =
   t.after(() => rmSync(directory, { recursive: true, force: true }));
   const archive = join(directory, "bundle.zip");
   writeFileSync(archive, "bounded bundle fixture");
-  const result = spawnSync(process.execPath, [script, archive, "0.3.0"], {
+  const result = spawnSync(process.execPath, [script, archive, "0.3.1"], {
     encoding: "utf8",
     env: { ...process.env, CENTRAL_PORTAL_USERNAME: "", CENTRAL_PORTAL_PASSWORD: "" },
     timeout: 10_000,

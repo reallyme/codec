@@ -3,14 +3,15 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use super::{
-    multicodec_status, rm_codec_abi_version, rm_codec_max_ffi_input_bytes,
-    rm_codec_max_ffi_output_bytes, rm_codec_max_operation_response_bytes,
-    rm_codec_package_version_major, rm_codec_package_version_minor, rm_codec_package_version_patch,
-    rm_codec_process, rm_codec_process_bool, validate_boundary_input_lengths, write_output,
-    CODEC_ABI_VERSION, CODEC_BASE58BTC_DECODE, CODEC_BASE58BTC_ENCODE, CODEC_BASE64_ENCODE,
-    CODEC_CANONICALIZE_JSON, CODEC_DAG_CBOR_VERIFY_CID, CODEC_LOWER_HEX_DECODE,
-    CODEC_MULTICODEC_LOOKUP_PREFIX, CODEC_MULTICODEC_PREFIX_FOR_NAME, CODEC_MULTICODEC_TABLE,
-    CODEC_MULTIKEY_PARSE, CODEC_PEM_DECODE, CODEC_PEM_ENCODE, CODEC_VALIDATE_KEY_BINDING,
+    encode_multikey, multicodec_status, multikey_status, rm_codec_abi_version,
+    rm_codec_max_ffi_input_bytes, rm_codec_max_ffi_output_bytes,
+    rm_codec_max_operation_response_bytes, rm_codec_package_version_major,
+    rm_codec_package_version_minor, rm_codec_package_version_patch, rm_codec_process,
+    rm_codec_process_bool, validate_boundary_input_lengths, write_output, CODEC_ABI_VERSION,
+    CODEC_BASE58BTC_DECODE, CODEC_BASE58BTC_ENCODE, CODEC_BASE64_ENCODE, CODEC_CANONICALIZE_JSON,
+    CODEC_DAG_CBOR_VERIFY_CID, CODEC_LOWER_HEX_DECODE, CODEC_MULTICODEC_LOOKUP_PREFIX,
+    CODEC_MULTICODEC_PREFIX_FOR_NAME, CODEC_MULTICODEC_TABLE, CODEC_MULTIKEY_PARSE,
+    CODEC_PEM_DECODE, CODEC_PEM_ENCODE, CODEC_VALIDATE_KEY_BINDING,
     CODEC_VALIDATE_KEY_BINDING_NO_ALGORITHM, MAX_CODEC_FFI_INPUT_BYTES, MAX_CODEC_FFI_OUTPUT_BYTES,
 };
 use crate::status::{
@@ -85,6 +86,12 @@ fn scalar_multicodec_failures_keep_unsupported_statuses() {
         multicodec_status(MulticodecOperationError::InvalidPrefix),
         CODEC_INVALID_MULTICODEC_PREFIX
     );
+    assert_eq!(
+        encode_multikey("not-a-codec", &[0_u8; 32])
+            .err()
+            .map(multikey_status),
+        Some(CODEC_UNKNOWN_MULTICODEC)
+    );
 }
 
 fn generated_error(
@@ -133,7 +140,7 @@ fn abi_version_export_matches_the_sdk_contract() {
     assert_eq!(rm_codec_abi_version(), CODEC_ABI_VERSION);
     assert_eq!(rm_codec_package_version_major(), 0);
     assert_eq!(rm_codec_package_version_minor(), 3);
-    assert_eq!(rm_codec_package_version_patch(), 0);
+    assert_eq!(rm_codec_package_version_patch(), 1);
     assert_eq!(
         rm_codec_max_operation_response_bytes(),
         codec_proto::MAX_CODEC_PROTO_MESSAGE_BYTES

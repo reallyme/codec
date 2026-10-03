@@ -69,7 +69,7 @@ test("package preflight attestation is bound to the requested version", () => {
         ],
         releaseSha,
         "kotlin-android-package-preflight.yml",
-        "0.3.0",
+        "0.3.1",
       );
     },
     (error) =>

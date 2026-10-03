@@ -11,7 +11,7 @@ import {
 } from "./verify_release_availability.mjs";
 
 const request = {
-  version: "0.3.0",
+  version: "0.3.1",
   repository: "reallyme/codec",
   token: "test-token",
   crateNames: ["reallyme-codec", "reallyme-codec-base64"],
@@ -28,7 +28,7 @@ test("an unused version passes every registry and tag check", async () => {
   });
   assert.equal(urls.length, 7);
   assert.equal(urls.filter(([, method]) => method === "HEAD").length, 2);
-  assert(urls.some(([url]) => url.includes("%40reallyme%2Fcodec/0.3.0")));
+  assert(urls.some(([url]) => url.includes("%40reallyme%2Fcodec/0.3.1")));
 });
 
 for (const [registry, urlPart, reason] of [

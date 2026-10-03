@@ -452,6 +452,9 @@ class ReallyMeCodecTest {
         assertFailsWith<ReallyMeCodecException.InvalidInput> {
             codec.validateKeyBinding("P256Key2024", vectors.string("emptyBindingAlgorithm"), vectors.string("p256Multikey"))
         }
+        assertFailsWith<ReallyMeCodecException.InvalidInput> {
+            codec.validateKeyBinding("Multikey", "", vectors.string("ed25519Multikey"))
+        }
 
         val dagCborBytes = codec.dagCborEncode(dagCborVectorValue())
         assertEquals(vectors.string("dagCborEncodedHex"), dagCborBytes.toLowerHex())
@@ -643,6 +646,9 @@ class ReallyMeCodecTest {
         assertTrue(codec.multicodecTable().entries.any { it.name == "mlkem-1024-pub" })
 
         val multikey = codec.multikeyEncode("ed25519-pub", publicKey)
+        assertFailsWith<ReallyMeCodecException.UnsupportedCodec> {
+            codec.multikeyEncode("not-a-codec", publicKey)
+        }
         val parsed = codec.multikeyParse(multikey)
         assertEquals("ed25519-pub", parsed.codecName)
         assertEquals("Ed25519", parsed.algorithmName)
@@ -696,13 +702,13 @@ class ReallyMeCodecTest {
                 codec.dagCborVerifyCid(invalidCid, invalidBlock)
             }
         }
-        for (unsupportedBlock in listOf(
+        for (invalidBlock in listOf(
             byteArrayOf(0xfb.toByte(), 0x3f, 0xf8.toByte(), 0, 0, 0, 0, 0, 0),
             byteArrayOf(0xd8.toByte(), 0x2a, 0x41, 0),
         )) {
-            val unsupportedCid = codec.dagCborComputeCid(unsupportedBlock)
-            assertFailsWith<ReallyMeCodecException.UnsupportedIpldValue> {
-                codec.dagCborVerifyCid(unsupportedCid, unsupportedBlock)
+            val invalidCid = codec.dagCborComputeCid(invalidBlock)
+            assertFailsWith<ReallyMeCodecException.InvalidInput> {
+                codec.dagCborVerifyCid(invalidCid, invalidBlock)
             }
         }
 

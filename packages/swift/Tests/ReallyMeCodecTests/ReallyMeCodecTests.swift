@@ -379,6 +379,14 @@ final class ReallyMeCodecTests: XCTestCase {
                 multikey: vectors.p256Multikey
             )
         )
+        Self.assertCodecError(
+            .invalidInput,
+            try codec.validateKeyBinding(
+                bindingType: "Multikey",
+                algorithm: "",
+                multikey: vectors.ed25519Multikey
+            )
+        )
 
         let dagCborBytes = try codec.dagCborEncode(Self.dagCborVectorValue())
         XCTAssertEqual(Self.hexString(dagCborBytes), vectors.dagCborEncodedHex)
@@ -532,6 +540,10 @@ final class ReallyMeCodecTests: XCTestCase {
         XCTAssertTrue(try codec.multicodecTable().entries.contains { $0.name == "mlkem-1024-pub" })
 
         let multikey = try codec.multikeyEncode(codecName: "ed25519-pub", publicKey: publicKey)
+        Self.assertCodecError(
+            .unsupportedCodec,
+            try codec.multikeyEncode(codecName: "not-a-codec", publicKey: publicKey)
+        )
         let parsed = try codec.multikeyParse(multikey)
         XCTAssertEqual(parsed.codecName, "ed25519-pub")
         XCTAssertEqual(parsed.algorithmName, "Ed25519")
@@ -585,15 +597,15 @@ final class ReallyMeCodecTests: XCTestCase {
             let expected: ReallyMeCodecError = index == 0 ? .invalidInput : .nonCanonical
             Self.assertCodecError(expected, try codec.dagCborVerifyCid(cid: invalidCid, bytes: invalidBlock))
         }
-        let unsupportedBlocks: [[UInt8]] = [
+        let invalidValueBlocks: [[UInt8]] = [
             [0xfb, 0x3f, 0xf8, 0, 0, 0, 0, 0, 0],
             [0xd8, 0x2a, 0x41, 0],
         ]
-        for unsupportedBlock in unsupportedBlocks {
-            let unsupportedCid = try codec.dagCborComputeCid(unsupportedBlock)
+        for invalidBlock in invalidValueBlocks {
+            let invalidCid = try codec.dagCborComputeCid(invalidBlock)
             Self.assertCodecError(
-                .unsupportedIpldValue,
-                try codec.dagCborVerifyCid(cid: unsupportedCid, bytes: unsupportedBlock)
+                .invalidInput,
+                try codec.dagCborVerifyCid(cid: invalidCid, bytes: invalidBlock)
             )
         }
 
@@ -816,9 +828,9 @@ final class ReallyMeCodecTests: XCTestCase {
         try ReallyMeCodecRustCAbiProvider.requireCompatiblePackageVersion(
             major: 0,
             minor: 3,
-            patch: 0
+            patch: 1
         )
-        let rejectedVersions: [(UInt32, UInt32, UInt32)] = [(0, 2, 1), (0, 3, 1), (1, 3, 0)]
+        let rejectedVersions: [(UInt32, UInt32, UInt32)] = [(0, 2, 1), (0, 3, 0), (1, 3, 1)]
         for version in rejectedVersions {
             Self.assertCodecError(
                 .providerFailure,

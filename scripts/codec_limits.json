@@ -20,7 +20,7 @@
     "jsonTextEscapeExpansion": 6,
     "jsonTokensPerNode": 9,
     "jsonFixedOperationTokens": 128,
-    "elementMemoryBytesPerNode": 256,
+    "elementMemoryBytesPerNode": 224,
     "messageLayersPerMapDepth": 3,
     "messageOuterLayers": 5,
     "jsonContainersPerMapDepth": 4,

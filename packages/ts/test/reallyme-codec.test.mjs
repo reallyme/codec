@@ -536,6 +536,10 @@ test("shared codec vector suite covers TypeScript public methods", () => {
     () => validateKeyBinding("P256Key2024", codecVectors.emptyBindingAlgorithm, codecVectors.p256Multikey),
     "invalid-input",
   );
+  assertCodecError(
+    () => validateKeyBinding("Multikey", "", codecVectors.ed25519Multikey),
+    "invalid-input",
+  );
 
   const encoded = dagCborEncode(dagCborVectorValue());
   assert.equal(hex(encoded), codecVectors.dagCborEncodedHex);
@@ -1244,8 +1248,8 @@ test("DAG-CBOR encode/decode and CID helpers use the Rust codec", () => {
     [bytes(0xff), "invalid-input"],
     [bytes(0x18, 0x01), "non-canonical"],
     [bytes(0xf6, 0xf6), "non-canonical"],
-    [bytes(0xfb, 0x3f, 0xf8, 0, 0, 0, 0, 0, 0), "unsupported-ipld-value"],
-    [bytes(0xd8, 0x2a, 0x41, 0), "unsupported-ipld-value"],
+    [bytes(0xfb, 0x3f, 0xf8, 0, 0, 0, 0, 0, 0), "invalid-input"],
+    [bytes(0xd8, 0x2a, 0x41, 0), "invalid-input"],
   ]) {
     assertCodecError(
       () => dagCborVerifyCid(dagCborComputeCid(invalidBlock), invalidBlock),
@@ -1574,9 +1578,15 @@ test("malformed protobuf and ProtoJSON fail inside typed responses", () => {
 test("WASM boundaries reject oversized non-proto inputs before codec allocation", () => {
   const oversizedRaw = new Uint8Array(MAX_CODEC_FFI_INPUT_BYTES + 1);
   assertCodecError(() => base64Encode(oversizedRaw), "invalid-input");
-  assertCodecError(() => decodePem(oversizedRaw), "invalid-input");
+  const oversizedPem = utf8(
+    `-----BEGIN PUBLIC KEY-----\n${"A".repeat(MAX_CODEC_FFI_INPUT_BYTES)}\n-----END PUBLIC KEY-----`,
+  );
+  assert.ok(oversizedPem.length > MAX_CODEC_FFI_INPUT_BYTES);
+  assertCodecError(() => decodePem(oversizedPem), "invalid-input");
+  const oversizedJsonString = `"${"a".repeat(MAX_CODEC_FFI_INPUT_BYTES)}"`;
+  assert.ok(utf8(oversizedJsonString).length > MAX_CODEC_FFI_INPUT_BYTES);
   assertCodecError(
-    () => canonicalizeJsonText(" ".repeat(MAX_CODEC_FFI_INPUT_BYTES + 1)),
+    () => canonicalizeJsonText(oversizedJsonString),
     "invalid-input",
   );
 });
@@ -1599,6 +1609,15 @@ test("WASM string boundaries enforce UTF-8 byte length before Rust string copy",
     () => wasm.bindingTypeMatchesCodec(aggregateBoundaryText, aggregateBoundaryText),
     "invalid-input",
   );
+});
+
+test("raw WASM string exports reject repeated nulls without exhausting the bindgen stack", () => {
+  for (let attempt = 0; attempt < 1_025; attempt += 1) {
+    assertWasmError(() => wasm.canonicalizeJson(null), "invalid-input");
+  }
+  assert.equal(wasm.canonicalizeJson("null"), "null");
+  wasm.reinstantiate();
+  assert.equal(wasm.canonicalizeJson("null"), "null");
 });
 
 test("WASM operation boundaries enforce oversized operation inputs", () => {

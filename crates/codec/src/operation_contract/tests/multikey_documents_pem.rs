@@ -101,11 +101,11 @@ fn dag_cbor_verify_cid_rejects_invalid_blocks_before_hash_comparison() {
         (&[0xf6, 0xf6], CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_CBOR_TRAILING_BYTES),
         (
             &[0xfb, 0x3f, 0xf8, 0, 0, 0, 0, 0, 0],
-            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE,
+            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_INVALID_CBOR,
         ),
         (
             &[0xd8, 0x2a, 0x41, 0],
-            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE,
+            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_INVALID_CBOR,
         ),
     ];
     for (payload, expected_reason) in cases {
