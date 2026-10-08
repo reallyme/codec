@@ -35,27 +35,27 @@ jobs:
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
 
       - name: Install nextest
-        uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # nextest
+        uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # nextest
         with:
           tool: cargo-nextest@0.9.143
 
       - name: Install cargo-deny
-        uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # cargo-deny
+        uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # cargo-deny
         with:
           tool: cargo-deny@0.20.2
 
       - name: Install cargo-audit
-        uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # cargo-audit
+        uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # cargo-audit
         with:
           tool: cargo-audit@0.22.2
 
       - name: Install wasm-pack
-        uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # wasm-pack
+        uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # wasm-pack
         with:
           tool: wasm-pack@0.15.0
 
       - name: Install wasm-bindgen-cli
-        uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # wasm-bindgen-cli
+        uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # wasm-bindgen-cli
         with:
           tool: wasm-bindgen-cli@0.2.129
 
