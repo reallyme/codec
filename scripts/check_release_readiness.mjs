@@ -1844,7 +1844,7 @@ assertContains(".github/workflows/swift-package-release.yml", "gh release create
 assertContains(".github/workflows/swift-package-release.yml", "git push origin");
 assertContains(".github/workflows/swift-package-release.yml", "Bind release manifest to verified Swift artifact");
 assertContains(".github/workflows/npm-package-release.yml", "npm publish");
-assertContains(".github/workflows/npm-package-release.yml", "wasm-bindgen-cli@0.2.129");
+assertContains(".github/workflows/npm-package-release.yml", "wasm-bindgen-cli@0.2.130");
 assertContains(".github/workflows/npm-package-release.yml", "NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}");
 assertContains(".github/workflows/crates-release.yml", "secrets.CARGO_REGISTRY_TOKEN");
 assertContains(".github/workflows/crates-package-preflight.yml", "verify_release_availability.mjs");

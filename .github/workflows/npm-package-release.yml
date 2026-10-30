@@ -102,7 +102,7 @@ jobs:
       - name: Install wasm-bindgen-cli
         uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # wasm-bindgen-cli
         with:
-          tool: wasm-bindgen-cli@0.2.129
+          tool: wasm-bindgen-cli@0.2.130
 
       - name: Install TypeScript codec package dependencies
         run: npm ci
