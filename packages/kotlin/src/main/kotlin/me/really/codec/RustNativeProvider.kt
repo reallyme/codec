@@ -35,6 +35,11 @@ import java.util.Locale
  * use; `loadLibrary(path)` remains available for local development and tests
  * against a freshly built Rust cdylib.
  */
+// Android always uses System.loadLibrary and fails closed if the packaged JNI
+// library is unavailable. The suppressed APIs belong exclusively to the JVM
+// resource-extraction path, where java.nio.file is provided by the host JDK
+// and every extracted library is size- and digest-verified before loading.
+@Suppress("NewApi", "UnsafeDynamicallyLoadedCode")
 public object ReallyMeCodecRustNativeProvider {
     private const val RESOURCE_ROOT: String = "/me/really/codec/native"
     private const val ANDROID_LIBRARY_NAME: String = "reallyme_codec_ffi"
@@ -134,8 +139,15 @@ public object ReallyMeCodecRustNativeProvider {
         if (loadFailed) {
             throw ReallyMeCodecException.ProviderFailure()
         }
-        if (isAndroidRuntime() && loadAndroidLibrary()) {
-            return
+        if (isAndroidRuntime()) {
+            if (loadAndroidLibrary()) {
+                return
+            }
+            // Never fall through to the desktop JVM extraction path on
+            // Android. Besides being inapplicable to packaged jniLibs, that
+            // path uses java.nio.file APIs that are unavailable on API 24-25.
+            loadFailed = true
+            throw ReallyMeCodecException.ProviderFailure()
         }
         if (!loadBundledLibrary()) {
             // A failed native load cannot be undone in this classloader. Keep

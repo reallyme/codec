@@ -94,7 +94,7 @@ class ProvenanceTests(unittest.TestCase):
 
     def test_android_plugin_marker_uses_google_repository_first(self):
         digest = "0" * 64
-        item = (("com.android.library", "com.android.library.gradle.plugin", "9.4.1", "com.android.library.gradle.plugin-9.4.1.pom"), digest)
+        item = (("com.android.library", "com.android.library.gradle.plugin", "9.5.0", "com.android.library.gradle.plugin-9.5.0.pom"), digest)
         response = subprocess.CompletedProcess(args=(), returncode=0, stdout=digest, stderr="")
         with patch.object(provenance.subprocess, "run", return_value=response) as fetch:
             status, source, _ = provenance.verify(item)

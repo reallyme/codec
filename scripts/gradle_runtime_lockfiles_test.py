@@ -13,7 +13,7 @@ from gradle_runtime_lockfiles import runtime_records
 RUNTIME_DEPENDENCIES = (
     "com.google.protobuf:protobuf-javalite:4.36.2",
     "com.google.protobuf:protobuf-kotlin-lite:4.36.2",
-    "org.jetbrains.kotlin:kotlin-stdlib:2.4.20",
+    "org.jetbrains.kotlin:kotlin-stdlib:2.4.21",
 )
 
 

@@ -9,8 +9,8 @@ import java.security.MessageDigest
 import java.util.zip.ZipFile
 
 plugins {
-    id("com.android.library") version "9.4.1"
-    id("com.android.application") version "9.4.1" apply false
+    id("com.android.library") version "9.5.0"
+    id("com.android.application") version "9.5.0" apply false
     `maven-publish`
     signing
 }
@@ -134,7 +134,7 @@ fun verifyAndroidNativeManifestEntry(
 
 android {
     namespace = "me.really.codec"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 24
