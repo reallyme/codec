@@ -1654,7 +1654,7 @@ const kotlinCodecBuild = readText("packages/kotlin/build.gradle.kts");
 if (!kotlinCodecBuild.includes(`version = "${codecPackageVersion}"`)) {
   fail(`packages/kotlin/build.gradle.kts is not versioned ${codecPackageVersion}`);
 }
-assertContains("packages/kotlin/build.gradle.kts", 'kotlin("jvm") version "2.4.20"');
+assertContains("packages/kotlin/build.gradle.kts", 'kotlin("jvm") version "2.4.21"');
 assertContains("packages/kotlin/build.gradle.kts", 'artifactId = "codec"');
 assertContains("packages/kotlin/build.gradle.kts", "Java, Kotlin, JVM, and Android");
 assertContains("packages/kotlin/build.gradle.kts", "com.google.protobuf:protobuf-javalite:4.36.2");
@@ -1684,11 +1684,11 @@ assertContains("packages/kotlin/build.gradle.kts", "dependencyLocking {");
 assertContains("packages/kotlin/build.gradle.kts", "lockAllConfigurations()");
 assertContains(
   "packages/kotlin/gradle/wrapper/gradle-wrapper.properties",
-  "distributionSha256Sum=bafd5ce9cfaea0fbccfdc8439a1ac42fbd4cd9c89dc9a988228d8a2639a58e6c",
+  "distributionSha256Sum=21bd5da2de49b642904077f38c0efdc7778e92b3ed0889392dca61b97e389607",
 );
 assertContains(
   "packages/kotlin/gradle/wrapper/gradle-wrapper.properties",
-  "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.8.0-bin.zip",
+  "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.8.2-bin.zip",
 );
 assertContains(
   "packages/kotlin/gradle.properties",
@@ -1844,6 +1844,9 @@ assertContains(".github/workflows/swift-package-release.yml", "gh release create
 assertContains(".github/workflows/swift-package-release.yml", "git push origin");
 assertContains(".github/workflows/swift-package-release.yml", "Bind release manifest to verified Swift artifact");
 assertContains(".github/workflows/npm-package-release.yml", "npm publish");
+assertContains("Cargo.toml", 'wasm-bindgen = "=0.2.130"');
+assertContains(".github/workflows/code-checks.yml", "wasm-bindgen-cli@0.2.130");
+assertContains(".github/workflows/npm-package-preflight.yml", "wasm-bindgen-cli@0.2.130");
 assertContains(".github/workflows/npm-package-release.yml", "wasm-bindgen-cli@0.2.130");
 assertContains(".github/workflows/npm-package-release.yml", "NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}");
 assertContains(".github/workflows/crates-release.yml", "secrets.CARGO_REGISTRY_TOKEN");
@@ -2518,8 +2521,13 @@ if (!androidCodecBuild.includes(`version = "${codecPackageVersion}"`)) {
 assertContains("packages/kotlin-android/settings.gradle.kts", 'rootProject.name = "reallyme-codec-android"');
 assertContains("packages/kotlin-android/settings.gradle.kts", 'include(":consumer-r8-runtime")');
 assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.library")');
-assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.library") version "9.4.1"');
-assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.application") version "9.4.1" apply false');
+assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.library") version "9.5.0"');
+assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.application") version "9.5.0" apply false');
+assertContains("packages/kotlin-android/build.gradle.kts", "compileSdk = 37");
+assertContains("packages/kotlin-android/consumer-r8-runtime/build.gradle.kts", "compileSdk = 37");
+assertContains("packages/kotlin-android/consumer-r8-runtime/build.gradle.kts", "targetSdk = 37");
+assertContains("scripts/test_android_consumer_r8_runtime.sh", 'ANDROID_R8_PLATFORM="platforms;android-37"');
+assertContains("scripts/test_android_consumer_r8_runtime.sh", 'ANDROID_R8_SYSTEM_IMAGE="system-images;android-37;google_apis;x86_64"');
 assertContains("packages/kotlin-android/build.gradle.kts", 'artifactId = "codec-android"');
 assertContains("packages/kotlin-android/build.gradle.kts", "com.google.protobuf:protobuf-javalite:4.36.2");
 assertContains("packages/kotlin-android/build.gradle.kts", "com.google.protobuf:protobuf-kotlin-lite:4.36.2");
@@ -2551,15 +2559,15 @@ assertContains(
 );
 assertContains(
   "packages/kotlin-android/gradle/verification-metadata.xml",
-  '<component group="com.android.tools.build" name="gradle" version="9.4.1">',
+  '<component group="com.android.tools.build" name="gradle" version="9.5.0">',
 );
 assertContains(
   "packages/kotlin-android/gradle/verification-metadata.xml",
-  'artifact name="aapt2-9.4.1-15978811-linux.jar"',
+  'artifact name="aapt2-9.5.0-16666295-linux.jar"',
 );
 assertContains(
   "packages/kotlin-android/gradle/verification-metadata.xml",
-  "f5bebd466ecf14d341fd465f2756a16d86052f29eb4532003d5ff7bcffd08de5",
+  "fa1014cb1431622d292ef55ba870e75882ea19987bec541698b912f446a2d08f",
 );
 assertContains("packages/kotlin-android/build.gradle.kts", "fun nonBlank(value: String?): String?");
 assertContains("packages/kotlin-android/build.gradle.kts", "verifyRemoteMavenPublishingConfigured");
