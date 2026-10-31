@@ -2598,6 +2598,8 @@ assertContains("scripts/test_android_consumer_r8_runtime.sh", "logcat");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "ensure_avd_exists");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "ANDROID_AVD_HOME_VALUE");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "export ANDROID_AVD_HOME");
+assertContains("scripts/test_android_consumer_r8_runtime.sh", 'ANDROID_R8_DATA_PARTITION_MB="4096"');
+assertContains("scripts/test_android_consumer_r8_runtime.sh", '-wipe-data -partition-size "$ANDROID_R8_DATA_PARTITION_MB"');
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "$EMULATOR\" -list-avds");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "{ yes 2>/dev/null || true; } | \"$SDKMANAGER\"");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "$SDKMANAGER\" \"emulator\"");

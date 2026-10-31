@@ -16,6 +16,7 @@ readonly ANDROID_AVD_HOME_VALUE="${ANDROID_AVD_HOME:-"$HOME/.android/avd"}"
 readonly AVD_NAME="${REALLYME_CODEC_ANDROID_AVD:-}"
 readonly ANDROID_R8_PLATFORM="platforms;android-37.0"
 readonly ANDROID_R8_SYSTEM_IMAGE="system-images;android-37.0;google_apis;x86_64"
+readonly ANDROID_R8_DATA_PARTITION_MB="4096"
 readonly APP_ID="me.really.codec.consumer.r8"
 readonly ACTIVITY="me.really.codec.consumer.r8.ConsumerR8RuntimeActivity"
 readonly LOG_TAG="ReallyMeCodecR8Gate"
@@ -93,7 +94,9 @@ ensure_avd_exists() {
 
 if [[ -n "$AVD_NAME" ]]; then
     ensure_avd_exists
-    "$EMULATOR" -avd "$AVD_NAME" -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect >"$EMULATOR_LOG" 2>&1 &
+    # Runtime gates must not inherit a stale or undersized userdata image. The
+    # Android 17 image's default partition can be too small for package install.
+    "$EMULATOR" -avd "$AVD_NAME" -wipe-data -partition-size "$ANDROID_R8_DATA_PARTITION_MB" -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect >"$EMULATOR_LOG" 2>&1 &
     emulator_pid="$!"
 fi
 
