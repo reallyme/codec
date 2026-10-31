@@ -2596,6 +2596,9 @@ assertContains("packages/kotlin-android/consumer-r8-runtime/src/main/java/me/rea
 assertContains("scripts/test_android_consumer_r8_runtime.sh", ":consumer-r8-runtime:assembleRelease");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "logcat");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", 'install --no-streaming -r "$APK_PATH"');
+assertContains("scripts/test_android_consumer_r8_runtime.sh", 'ADB_INSTALL_MAX_ATTEMPTS="3"');
+assertContains("scripts/test_android_consumer_r8_runtime.sh", 'service check package');
+assertContains("scripts/test_android_consumer_r8_runtime.sh", '"$install_output" != *"Broken pipe"*');
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android consumer R8 APK installation failed");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android consumer R8 activity launch failed");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "ensure_avd_exists");

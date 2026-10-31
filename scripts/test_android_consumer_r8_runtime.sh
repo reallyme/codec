@@ -17,6 +17,8 @@ readonly AVD_NAME="${REALLYME_CODEC_ANDROID_AVD:-}"
 readonly ANDROID_R8_PLATFORM="platforms;android-37.0"
 readonly ANDROID_R8_SYSTEM_IMAGE="system-images;android-37.0;google_apis;x86_64"
 readonly ANDROID_R8_DATA_PARTITION_MB="4096"
+readonly PACKAGE_MANAGER_READY_TIMEOUT_SECONDS="30"
+readonly ADB_INSTALL_MAX_ATTEMPTS="3"
 readonly APP_ID="me.really.codec.consumer.r8"
 readonly ACTIVITY="me.really.codec.consumer.r8.ConsumerR8RuntimeActivity"
 readonly LOG_TAG="ReallyMeCodecR8Gate"
@@ -49,6 +51,44 @@ dump_emulator_log() {
 fail() {
     printf '%s\n' "$1" >&2
     exit 1
+}
+
+wait_for_package_manager() {
+    local package_manager_deadline=$((SECONDS + PACKAGE_MANAGER_READY_TIMEOUT_SECONDS))
+    local package_manager_state=""
+    while (( SECONDS <= package_manager_deadline )); do
+        package_manager_state="$("$ADB" shell service check package 2>/dev/null || true)"
+        if [[ "$package_manager_state" == *"found"* ]]; then
+            return
+        fi
+        sleep 2
+    done
+    fail "Android package manager was not ready before timeout"
+}
+
+install_apk() {
+    local install_attempt=1
+    local install_output=""
+    while (( install_attempt <= ADB_INSTALL_MAX_ATTEMPTS )); do
+        if install_output="$("$ADB" install --no-streaming -r "$APK_PATH" 2>&1)"; then
+            if [[ "$install_output" == *"Success"* ]]; then
+                return
+            fi
+        fi
+
+        printf '%s\n' "$install_output" >&2
+        if [[ "$install_output" != *"Broken pipe"* ]] || (( install_attempt == ADB_INSTALL_MAX_ATTEMPTS )); then
+            break
+        fi
+
+        printf 'Android package service dropped install attempt %s; retrying after recovery\n' "$install_attempt" >&2
+        sleep 5
+        wait_for_package_manager
+        ((install_attempt += 1))
+    done
+
+    "$ADB" shell df -h /data >&2 || true
+    fail "Android consumer R8 APK installation failed"
 }
 
 ensure_avd_exists() {
@@ -121,6 +161,7 @@ while [[ "$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" !
     fi
     sleep 2
 done
+wait_for_package_manager
 
 ANDROID_NDK_HOME="$ANDROID_NDK_HOME_VALUE" "$REPO_ROOT/scripts/build_android_native_resources.sh" "$JNILIBS_DIR"
 
@@ -152,17 +193,7 @@ ANDROID_NDK_HOME="$ANDROID_NDK_HOME_VALUE" "$REPO_ROOT/packages/kotlin/gradlew" 
     -Preallyme.codec.androidNativeAssetsDir="$NATIVE_ASSETS_DIR" \
     -Preallyme.codec.requireAndroidJniLibs=true
 
-install_output=""
-if ! install_output="$("$ADB" install --no-streaming -r "$APK_PATH" 2>&1)"; then
-    printf '%s\n' "$install_output" >&2
-    "$ADB" shell df -h /data >&2 || true
-    fail "Android consumer R8 APK installation failed"
-fi
-if [[ "$install_output" != *"Success"* ]]; then
-    printf '%s\n' "$install_output" >&2
-    "$ADB" shell df -h /data >&2 || true
-    fail "Android consumer R8 APK installation did not report success"
-fi
+install_apk
 
 "$ADB" logcat -c
 "$ADB" shell am force-stop "$APP_ID" >/dev/null 2>&1 || true
