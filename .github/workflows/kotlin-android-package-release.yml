@@ -229,9 +229,9 @@ jobs:
         with:
           node-version: '26'
 
-      - name: Install Android NDK
+      - name: Install Android SDK platform and NDK
         run: |
-          { yes 2>/dev/null || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "ndk;29.0.14206865"
+          { yes 2>/dev/null || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "ndk;29.0.14206865"
           echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/29.0.14206865" >> "${GITHUB_ENV}"
 
       - name: Stage Android JNI libraries
