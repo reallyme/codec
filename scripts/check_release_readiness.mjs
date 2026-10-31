@@ -2595,6 +2595,9 @@ assertContains("packages/kotlin-android/consumer-r8-runtime/src/main/java/me/rea
 assertContains("packages/kotlin-android/consumer-r8-runtime/src/main/java/me/really/codec/consumer/r8/ConsumerR8RuntimeActivity.java", "ReallyMeCodec.deterministicCborDecode");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", ":consumer-r8-runtime:assembleRelease");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "logcat");
+assertContains("scripts/test_android_consumer_r8_runtime.sh", 'install --no-streaming -r "$APK_PATH"');
+assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android consumer R8 APK installation failed");
+assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android consumer R8 activity launch failed");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "ensure_avd_exists");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "ANDROID_AVD_HOME_VALUE");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "export ANDROID_AVD_HOME");
