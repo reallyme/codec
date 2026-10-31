@@ -152,10 +152,29 @@ ANDROID_NDK_HOME="$ANDROID_NDK_HOME_VALUE" "$REPO_ROOT/packages/kotlin/gradlew" 
     -Preallyme.codec.androidNativeAssetsDir="$NATIVE_ASSETS_DIR" \
     -Preallyme.codec.requireAndroidJniLibs=true
 
-"$ADB" install -r "$APK_PATH" >/dev/null
+install_output=""
+if ! install_output="$("$ADB" install --no-streaming -r "$APK_PATH" 2>&1)"; then
+    printf '%s\n' "$install_output" >&2
+    "$ADB" shell df -h /data >&2 || true
+    fail "Android consumer R8 APK installation failed"
+fi
+if [[ "$install_output" != *"Success"* ]]; then
+    printf '%s\n' "$install_output" >&2
+    "$ADB" shell df -h /data >&2 || true
+    fail "Android consumer R8 APK installation did not report success"
+fi
+
 "$ADB" logcat -c
 "$ADB" shell am force-stop "$APP_ID" >/dev/null 2>&1 || true
-"$ADB" shell am start -W -n "$APP_ID/$ACTIVITY" >/dev/null
+start_output=""
+if ! start_output="$("$ADB" shell am start -W -n "$APP_ID/$ACTIVITY" 2>&1)"; then
+    printf '%s\n' "$start_output" >&2
+    fail "Android consumer R8 activity launch failed"
+fi
+if [[ "$start_output" != *"Status: ok"* ]]; then
+    printf '%s\n' "$start_output" >&2
+    fail "Android consumer R8 activity launch did not report success"
+fi
 
 log_deadline=$((SECONDS + 60))
 while (( SECONDS <= log_deadline )); do
