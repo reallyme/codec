@@ -2526,8 +2526,8 @@ assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.appl
 assertContains("packages/kotlin-android/build.gradle.kts", "compileSdk = 37");
 assertContains("packages/kotlin-android/consumer-r8-runtime/build.gradle.kts", "compileSdk = 37");
 assertContains("packages/kotlin-android/consumer-r8-runtime/build.gradle.kts", "targetSdk = 37");
-assertContains("scripts/test_android_consumer_r8_runtime.sh", 'ANDROID_R8_PLATFORM="platforms;android-37"');
-assertContains("scripts/test_android_consumer_r8_runtime.sh", 'ANDROID_R8_SYSTEM_IMAGE="system-images;android-37;google_apis;x86_64"');
+assertContains("scripts/test_android_consumer_r8_runtime.sh", 'ANDROID_R8_PLATFORM="platforms;android-37.0"');
+assertContains("scripts/test_android_consumer_r8_runtime.sh", 'ANDROID_R8_SYSTEM_IMAGE="system-images;android-37.0;google_apis;x86_64"');
 assertContains("packages/kotlin-android/build.gradle.kts", 'artifactId = "codec-android"');
 assertContains("packages/kotlin-android/build.gradle.kts", "com.google.protobuf:protobuf-javalite:4.36.2");
 assertContains("packages/kotlin-android/build.gradle.kts", "com.google.protobuf:protobuf-kotlin-lite:4.36.2");
