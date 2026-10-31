@@ -2569,6 +2569,14 @@ assertContains(
   "packages/kotlin-android/gradle/verification-metadata.xml",
   "fa1014cb1431622d292ef55ba870e75882ea19987bec541698b912f446a2d08f",
 );
+assertContains(
+  "packages/kotlin-android/gradle/verification-metadata.xml",
+  'artifact name="bc-jdk18on-bom-1.80.2.module"',
+);
+assertContains(
+  "packages/kotlin-android/gradle/verification-metadata.xml",
+  "dd652f7a3141dd8ad81406ae5efc9ebeb47c99c0ab136931d1cd087bccd80474",
+);
 assertContains("packages/kotlin-android/build.gradle.kts", "fun nonBlank(value: String?): String?");
 assertContains("packages/kotlin-android/build.gradle.kts", "verifyRemoteMavenPublishingConfigured");
 assertContains("packages/kotlin-android/build.gradle.kts", "remote Maven publishing is not configured");
@@ -2598,11 +2606,11 @@ assertContains("scripts/test_android_consumer_r8_runtime.sh", "$AVDMANAGER\" cre
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android consumer R8 runtime gate passed");
 assertContains(
   ".github/workflows/kotlin-android-package-preflight.yml",
-  '{ yes 2>/dev/null || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "ndk;29.0.14206865"',
+  '{ yes 2>/dev/null || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "ndk;29.0.14206865"',
 );
 assertContains(
   ".github/workflows/kotlin-android-package-release.yml",
-  '{ yes 2>/dev/null || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "ndk;29.0.14206865"',
+  '{ yes 2>/dev/null || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "ndk;29.0.14206865"',
 );
 assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.3.1");
 assertContains("packages/kotlin-android/README.md", "never sourced from the Git worktree");
