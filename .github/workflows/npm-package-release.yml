@@ -89,18 +89,18 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
+        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
         with:
           toolchain: 1.99.0
           targets: wasm32-unknown-unknown
 
       - name: Install wasm-pack
-        uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # wasm-pack
+        uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # wasm-pack
         with:
           tool: wasm-pack@0.15.0
 
       - name: Install wasm-bindgen-cli
-        uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # wasm-bindgen-cli
+        uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # wasm-bindgen-cli
         with:
           tool: wasm-bindgen-cli@0.2.130
 
