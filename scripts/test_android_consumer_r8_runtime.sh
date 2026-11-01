@@ -17,7 +17,7 @@ readonly AVD_NAME="${REALLYME_CODEC_ANDROID_AVD:-}"
 readonly ANDROID_R8_PLATFORM="platforms;android-37.0"
 readonly ANDROID_R8_SYSTEM_IMAGE="system-images;android-37.0;google_apis;x86_64"
 readonly ANDROID_R8_DATA_PARTITION_MB="4096"
-readonly PACKAGE_MANAGER_READY_TIMEOUT_SECONDS="30"
+readonly RUNTIME_SERVICES_READY_TIMEOUT_SECONDS="60"
 readonly ADB_INSTALL_MAX_ATTEMPTS="3"
 readonly APP_ID="me.really.codec.consumer.r8"
 readonly ACTIVITY="me.really.codec.consumer.r8.ConsumerR8RuntimeActivity"
@@ -53,17 +53,26 @@ fail() {
     exit 1
 }
 
-wait_for_package_manager() {
-    local package_manager_deadline=$((SECONDS + PACKAGE_MANAGER_READY_TIMEOUT_SECONDS))
+wait_for_runtime_services() {
+    local runtime_services_deadline=$((SECONDS + RUNTIME_SERVICES_READY_TIMEOUT_SECONDS))
     local package_manager_state=""
-    while (( SECONDS <= package_manager_deadline )); do
+    local storage_manager_state=""
+    local volume_state=""
+    local android_package_path=""
+    while (( SECONDS <= runtime_services_deadline )); do
         package_manager_state="$("$ADB" shell service check package 2>/dev/null || true)"
-        if [[ "$package_manager_state" == *"found"* ]]; then
+        storage_manager_state="$("$ADB" shell service check mount 2>/dev/null || true)"
+        volume_state="$("$ADB" shell sm list-volumes all 2>/dev/null || true)"
+        android_package_path="$("$ADB" shell pm path android 2>/dev/null || true)"
+        if [[ "$package_manager_state" == *"found"* ]] &&
+            [[ "$storage_manager_state" == *"found"* ]] &&
+            [[ "$volume_state" == *"mounted"* ]] &&
+            [[ "$android_package_path" == package:* ]]; then
             return
         fi
         sleep 2
     done
-    fail "Android package manager was not ready before timeout"
+    fail "Android package and storage services were not ready before timeout"
 }
 
 install_apk() {
@@ -77,13 +86,14 @@ install_apk() {
         fi
 
         printf '%s\n' "$install_output" >&2
-        if [[ "$install_output" != *"Broken pipe"* ]] || (( install_attempt == ADB_INSTALL_MAX_ATTEMPTS )); then
+        if { [[ "$install_output" != *"Broken pipe"* ]] && [[ "$install_output" != *"StorageManager.getVolumes()"* ]]; } ||
+            (( install_attempt == ADB_INSTALL_MAX_ATTEMPTS )); then
             break
         fi
 
-        printf 'Android package service dropped install attempt %s; retrying after recovery\n' "$install_attempt" >&2
+        printf 'Android runtime services rejected install attempt %s; retrying after recovery\n' "$install_attempt" >&2
         sleep 5
-        wait_for_package_manager
+        wait_for_runtime_services
         ((install_attempt += 1))
     done
 
@@ -161,7 +171,7 @@ while [[ "$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" !
     fi
     sleep 2
 done
-wait_for_package_manager
+wait_for_runtime_services
 
 ANDROID_NDK_HOME="$ANDROID_NDK_HOME_VALUE" "$REPO_ROOT/scripts/build_android_native_resources.sh" "$JNILIBS_DIR"
 

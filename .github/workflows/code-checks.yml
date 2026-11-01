@@ -25,7 +25,7 @@ jobs:
           persist-credentials: false
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
+        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
         with:
           toolchain: 1.99.0
           components: rustfmt, clippy
@@ -35,27 +35,27 @@ jobs:
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
 
       - name: Install nextest
-        uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # nextest
+        uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # nextest
         with:
           tool: cargo-nextest@0.9.143
 
       - name: Install cargo-deny
-        uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # cargo-deny
+        uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # cargo-deny
         with:
           tool: cargo-deny@0.20.2
 
       - name: Install cargo-audit
-        uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # cargo-audit
+        uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # cargo-audit
         with:
           tool: cargo-audit@0.22.2
 
       - name: Install wasm-pack
-        uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # wasm-pack
+        uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # wasm-pack
         with:
           tool: wasm-pack@0.15.0
 
       - name: Install wasm-bindgen-cli
-        uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # wasm-bindgen-cli
+        uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # wasm-bindgen-cli
         with:
           tool: wasm-bindgen-cli@0.2.130
 
@@ -163,7 +163,7 @@ jobs:
           persist-credentials: false
 
       - name: Install Rust sanitizer toolchain
-        uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
+        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
         with:
           toolchain: nightly-2026-07-01
 
@@ -180,7 +180,7 @@ jobs:
           persist-credentials: false
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
+        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
         with:
           toolchain: 1.99.0
 
@@ -197,7 +197,7 @@ jobs:
           persist-credentials: false
 
       - name: Install pinned Miri toolchain
-        uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
+        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
         with:
           toolchain: nightly-2026-07-01
           components: miri
@@ -219,7 +219,7 @@ jobs:
           persist-credentials: false
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
+        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
         with:
           toolchain: 1.99.0
 
@@ -259,7 +259,7 @@ jobs:
           java-version: '21'
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
+        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
         with:
           toolchain: 1.99.0
 
