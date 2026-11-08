@@ -14,15 +14,11 @@ import { spawnSync } from "node:child_process";
 // The checker imports other local modules whose bytes are not pinned here.
 // This is a change-detection tripwire; review of the full change set remains
 // necessary before treating the complete policy implementation as trusted.
-const RELEASE_READINESS_COMMIT = "5c2da5e5d5795c2c895d0dca0819287ee7101207";
+const RELEASE_READINESS_COMMIT = "9cf40c7da1def8a8d809af51789284097c572dd5";
 const RELEASE_READINESS_CORE_SHA256 =
-  "d3434554901ea5438bb0dd64f4f7214b9050e95cd1e3d579cc2992f4c662e85a";
+  "c65fd51666d3858f33b9447f7e59aa32fb5fcd63e87465bfd8d7cd463a124452";
 const LOCAL_CHECKER_SHA256 =
-  "75fc3be6ae29cd06114e95b907b83a8f65051879920649ac65b30a5b60a6f344";
-// The upstream pin authenticates the original release; the local pin covers
-// the company-name correction without changing that upstream authority.
-const LOCAL_CORE_SHA256 =
-  "515918afc515d1f0f684003ea9d9105533e3633176cfd669d06278596efe3504";
+  "b062f51022956941cefc3484e877dbb7bfc2ef25ca5e479da8d18a3e074d7596";
 const RELEASE_READINESS_CORE_URL =
   `https://raw.githubusercontent.com/reallyme/release-readiness/${RELEASE_READINESS_COMMIT}/core.mjs`;
 const VENDORED_CORE_PATH = "scripts/release-readiness/core.mjs";
@@ -39,7 +35,6 @@ const fail = (message) => {
 const sha256 = (value) => createHash("sha256").update(value).digest();
 
 const expectedDigest = Buffer.from(RELEASE_READINESS_CORE_SHA256, "hex");
-const expectedLocalDigest = Buffer.from(LOCAL_CORE_SHA256, "hex");
 if (expectedDigest.length !== 32) {
   fail("configured core digest is invalid");
 }
@@ -73,8 +68,8 @@ try {
 if (!timingSafeEqual(sha256(localChecker), expectedCheckerDigest)) {
   fail("local checker does not match the reviewed repository policy pin");
 }
-if (!timingSafeEqual(sha256(localCore), expectedLocalDigest)) {
-  fail("vendored core does not match its reviewed local pin");
+if (!timingSafeEqual(sha256(localCore), expectedDigest)) {
+  fail("vendored core does not match the reviewed upstream pin");
 }
 
 let response;
@@ -129,7 +124,12 @@ const upstreamCore = Buffer.concat(chunks, totalLength);
 if (!timingSafeEqual(sha256(upstreamCore), expectedDigest)) {
   fail("pinned upstream core digest does not match the reviewed commit");
 }
-
+if (
+  localCore.length !== upstreamCore.length ||
+  !timingSafeEqual(localCore, upstreamCore)
+) {
+  fail("vendored core bytes do not match the pinned upstream core");
+}
 
 const checker = spawnSync(process.execPath, [LOCAL_CHECKER_PATH, ...process.argv.slice(2)], {
   env: process.env,

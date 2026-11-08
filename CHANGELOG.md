@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.2 (2026-11-08)
+
+- Update copyright ownership to ReallyMe Technologies Limited.
+
 ## 0.3.1 (2026-10-03)
 
 - Recover the TypeScript facade after unexpected Wasm exceptions and reject
