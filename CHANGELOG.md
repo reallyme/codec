@@ -4,6 +4,16 @@ All packages in the ReallyMe Codec release line share one version. Security
 changes are called out when they affect accepted input or an integration
 boundary.
 
+## 0.3.2 (2026-11-08)
+
+- Change project ownership and copyright references to ReallyMe Technologies
+  Limited across source, generated artifacts, package metadata, and release
+  policy checks.
+- Refresh Rust, TypeScript, Swift, Kotlin, Android, WASM, build-tool, and CI
+  dependencies together with their committed lockfiles and verification
+  metadata, including the pinned release-readiness policy core at v0.6.9.
+- Keep every public package and SDK lane on the shared 0.3.2 release version.
+
 ## 0.3.1 (2026-10-03)
 
 - Recover the TypeScript facade after unexpected WASM exceptions by wiping the

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2026 ReallyMe LLC
+// SPDX-FileCopyrightText: 2026 ReallyMe Technologies Limited
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
@@ -828,9 +828,9 @@ final class ReallyMeCodecTests: XCTestCase {
         try ReallyMeCodecRustCAbiProvider.requireCompatiblePackageVersion(
             major: 0,
             minor: 3,
-            patch: 1
+            patch: 2
         )
-        let rejectedVersions: [(UInt32, UInt32, UInt32)] = [(0, 2, 1), (0, 3, 0), (1, 3, 1)]
+        let rejectedVersions: [(UInt32, UInt32, UInt32)] = [(0, 2, 2), (0, 3, 1), (1, 3, 2)]
         for version in rejectedVersions {
             Self.assertCodecError(
                 .providerFailure,

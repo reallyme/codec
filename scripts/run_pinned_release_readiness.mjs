@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// SPDX-FileCopyrightText: 2026 ReallyMe LLC
+// SPDX-FileCopyrightText: 2026 ReallyMe Technologies Limited
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
@@ -14,11 +14,11 @@ import { spawnSync } from "node:child_process";
 // The checker imports other local modules whose bytes are not pinned here.
 // This is a change-detection tripwire; review of the full change set remains
 // necessary before treating the complete policy implementation as trusted.
-const RELEASE_READINESS_COMMIT = "5c2da5e5d5795c2c895d0dca0819287ee7101207";
+const RELEASE_READINESS_COMMIT = "9cf40c7da1def8a8d809af51789284097c572dd5";
 const RELEASE_READINESS_CORE_SHA256 =
-  "d3434554901ea5438bb0dd64f4f7214b9050e95cd1e3d579cc2992f4c662e85a";
+  "c65fd51666d3858f33b9447f7e59aa32fb5fcd63e87465bfd8d7cd463a124452";
 const LOCAL_CHECKER_SHA256 =
-  "c15913fd7d6f692634f6d593499fde6a1035936f37528a4baae249a2cd93df9f";
+  "b062f51022956941cefc3484e877dbb7bfc2ef25ca5e479da8d18a3e074d7596";
 const RELEASE_READINESS_CORE_URL =
   `https://raw.githubusercontent.com/reallyme/release-readiness/${RELEASE_READINESS_COMMIT}/core.mjs`;
 const VENDORED_CORE_PATH = "scripts/release-readiness/core.mjs";

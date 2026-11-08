@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-FileCopyrightText: 2026 ReallyMe LLC
+# SPDX-FileCopyrightText: 2026 ReallyMe Technologies Limited
 #
 # SPDX-License-Identifier: MIT OR Apache-2.0
 
@@ -160,7 +160,7 @@ rm -rf "${BUILD_DIR}"
 mkdir -p "${HEADERS_DIR}" "${BUILD_DIR}/libs"
 
 cat >"${HEADERS_DIR}/reallyme_codec_ffi.h" <<'HEADER'
-// SPDX-FileCopyrightText: 2026 ReallyMe LLC
+// SPDX-FileCopyrightText: 2026 ReallyMe Technologies Limited
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 

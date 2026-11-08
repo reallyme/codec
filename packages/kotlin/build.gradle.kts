@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2026 ReallyMe LLC
+// SPDX-FileCopyrightText: 2026 ReallyMe Technologies Limited
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
@@ -19,7 +19,7 @@ plugins {
 }
 
 group = "me.really"
-version = "0.3.1"
+version = "0.3.2"
 
 // The JVM jar and Android AAR expose the same me.really.codec classes.
 // The shared capability makes Gradle reject a graph containing both.
@@ -438,8 +438,8 @@ publishing {
                 developers {
                     developer {
                         id.set("reallyme")
-                        name.set("ReallyMe LLC")
-                        organization.set("ReallyMe LLC")
+                        name.set("ReallyMe Technologies Limited")
+                        organization.set("ReallyMe Technologies Limited")
                         organizationUrl.set("https://github.com/reallyme")
                     }
                 }

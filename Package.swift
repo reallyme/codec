@@ -1,5 +1,5 @@
 // swift-tools-version: 6.3
-// SPDX-FileCopyrightText: 2026 ReallyMe LLC
+// SPDX-FileCopyrightText: 2026 ReallyMe Technologies Limited
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
@@ -8,7 +8,7 @@
 // SwiftPM and Xcode only read `Package.swift` at the repository root when a
 // package is consumed by URL, e.g.
 //
-//     .package(url: "https://github.com/reallyme/codec", from: "0.3.1")
+//     .package(url: "https://github.com/reallyme/codec", from: "0.3.2")
 //     .product(name: "ReallyMeCodec", package: "codec")
 //
 // The Swift sources live under `packages/swift/` to keep symmetry with the
@@ -23,7 +23,7 @@ let ffiArtifactChecksumPlaceholder =
 let ffiArtifactChecksum = "348d6525669c530ee846f7989aadb861233e125422b7759f5cdde8e8715de9cf"
 let ffiArtifactVersion = "0.2.1"
 let ffiArtifactLocalPathOverride = ""
-let packageVersion = "0.3.1"
+let packageVersion = "0.3.2"
 let hasReleasedFfiArtifact =
     ffiArtifactChecksum != ffiArtifactChecksumPlaceholder && ffiArtifactVersion == packageVersion
 let useRuntimeFfiProvider =
@@ -107,7 +107,7 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/apple/swift-protobuf.git",
-            from: "1.38.1"
+            from: "1.39.0"
         ),
     ],
     targets: packageTargets

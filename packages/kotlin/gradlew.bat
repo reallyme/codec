@@ -13,7 +13,7 @@
 @rem See the License for the specific language governing permissions and
 @rem limitations under the License.
 @rem
-@rem SPDX-FileCopyrightText: 2026 ReallyMe LLC
+@rem SPDX-FileCopyrightText: 2026 ReallyMe Technologies Limited
 @rem
 @rem SPDX-License-Identifier: MIT OR Apache-2.0
 @rem

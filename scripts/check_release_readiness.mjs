@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// SPDX-FileCopyrightText: 2026 ReallyMe LLC
+// SPDX-FileCopyrightText: 2026 ReallyMe Technologies Limited
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
@@ -264,7 +264,7 @@ const assertTypescriptProtoFacadeCompleteness = ({ facadePath, generatedPath }) 
   });
 };
 
-assertReallyMeVendoredCorePolicy({ version: "0.6.7" });
+assertReallyMeVendoredCorePolicy({ version: "0.6.9" });
 // Composite actions can hide additional third-party dependencies from the
 // top-level workflow scan. Reject them until the checker recursively validates
 // every local action dependency with the same full-SHA policy.
@@ -276,8 +276,8 @@ assertCargoFuzzWorkflowPolicy({
   },
 });
 
-const codecPackageVersion = "0.3.1";
-const codecProtoPackageVersion = "0.3.1";
+const codecPackageVersion = "0.3.2";
+const codecProtoPackageVersion = "0.3.2";
 try {
   verifyCheckedOutReleaseVersion(codecPackageVersion);
 } catch (error) {
@@ -744,11 +744,11 @@ assertContains(
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  'const RELEASE_READINESS_COMMIT = "5c2da5e5d5795c2c895d0dca0819287ee7101207"',
+  'const RELEASE_READINESS_COMMIT = "9cf40c7da1def8a8d809af51789284097c572dd5"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  '"d3434554901ea5438bb0dd64f4f7214b9050e95cd1e3d579cc2992f4c662e85a"',
+  '"c65fd51666d3858f33b9447f7e59aa32fb5fcd63e87465bfd8d7cd463a124452"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
@@ -768,7 +768,7 @@ assertContains(
 );
 assertContains(
   "scripts/release-readiness/core.mjs",
-  'RELEASE_READINESS_VERSION = "0.6.7"',
+  'RELEASE_READINESS_VERSION = "0.6.9"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
@@ -1542,8 +1542,8 @@ assertContains("crates/codec/src/operation_contract/mod.rs", 'include!("copy_lim
 
 assertContains("buf.gen.yaml", "out: crates/proto/src/generated/buffa");
 assertContains("buf.gen.yaml", "out: packages/ts/src/proto/generated");
-assertContains("buf.gen.yaml", "buf.build/bufbuild/es:v2.16.0");
-assertContains("buf.gen.yaml", "buf.build/apple/swift:v1.38.1");
+assertContains("buf.gen.yaml", "buf.build/bufbuild/es:v2.17.0");
+assertContains("buf.gen.yaml", "buf.build/apple/swift:v1.39.0");
 assertContains("buf.gen.yaml", "buf.build/protocolbuffers/java:v36.2");
 assertContains("buf.gen.yaml", "buf.build/protocolbuffers/kotlin:v36.2");
 assertContains("crates/proto/src/generated/buffa/mod.rs", "pub mod codec");
@@ -1640,7 +1640,7 @@ if (tsCodecPackage.private === true) {
   fail("packages/ts/package.json is private and cannot be published to npm");
 }
 assertContains("packages/ts/README.md", "@reallyme/codec/wasm/reallyme_codec_wasm.js");
-assertContains("packages/ts/package.json", '"@bufbuild/protobuf": "2.16.0"');
+assertContains("packages/ts/package.json", '"@bufbuild/protobuf": "2.17.0"');
 assertContains("packages/ts/package.json", '"fast-check": "4.10.2"');
 assertContains("packages/ts/package.json", '"typescript": "7.0.2"');
 assertContains("packages/ts/package.json", '"NOTICE"');
@@ -1684,11 +1684,11 @@ assertContains("packages/kotlin/build.gradle.kts", "dependencyLocking {");
 assertContains("packages/kotlin/build.gradle.kts", "lockAllConfigurations()");
 assertContains(
   "packages/kotlin/gradle/wrapper/gradle-wrapper.properties",
-  "distributionSha256Sum=21bd5da2de49b642904077f38c0efdc7778e92b3ed0889392dca61b97e389607",
+  "distributionSha256Sum=0b00b0ffe07c4d4789c12d4935a44a7057d55774b7540bd4a3f76f336deb177a",
 );
 assertContains(
   "packages/kotlin/gradle/wrapper/gradle-wrapper.properties",
-  "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.8.2-bin.zip",
+  "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.9.0-bin.zip",
 );
 assertContains(
   "packages/kotlin/gradle.properties",
@@ -1733,7 +1733,7 @@ const packageReleaseWorkflows = Object.freeze([
 for (const workflowPath of packagePreflightWorkflows) {
   assertContains(workflowPath, "Resolve release SHA");
   assertContains(workflowPath, 'default: ""');
-  assertContains(workflowPath, "default: 0.3.1");
+  assertContains(workflowPath, "default: 0.3.2");
 }
 for (const workflowPath of packageReleaseWorkflows) {
   assertContains(workflowPath, "Verify reviewed release SHA");
@@ -1932,7 +1932,7 @@ assertContains(".github/workflows/kotlin-android-package-release.yml", "Test and
 assertContains(".github/workflows/kotlin-android-package-release.yml", "Build Android AAR");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "requireFullNativeResources=true");
 assertContains("packages/kotlin/settings.gradle.kts", 'rootProject.name = "reallyme-codec"');
-assertContains("packages/kotlin/README.md", "me.really:codec:0.3.1");
+assertContains("packages/kotlin/README.md", "me.really:codec:0.3.2");
 assertContains("packages/kotlin/README.md", "ships Rust JNI libraries as platform resources");
 assertContains(
   "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
@@ -2165,7 +2165,7 @@ assertNotContains("packages/swift/Sources/ReallyMeCodec/GeneratedCodecProto.swif
 assertNotContains("gen/swift/reallyme/codec/v1/codec.pb.swift", "public nonisolated struct ReallyMeProto");
 assertContains("buf.gen.yaml", "Visibility=Internal");
 assertContains("Package.swift", 'name: "ReallyMeCodecFFI"');
-assertContains("Package.swift", 'from: "1.38.1"');
+assertContains("Package.swift", 'from: "1.39.0"');
 assertContains("Package.swift", "ReallyMeCodecFFI.xcframework.zip");
 assertContains("Package.swift", 'let ffiArtifactLocalPathOverride = "');
 assertContains("Package.swift", 'ffiArtifactVersion == packageVersion');
@@ -2521,8 +2521,8 @@ if (!androidCodecBuild.includes(`version = "${codecPackageVersion}"`)) {
 assertContains("packages/kotlin-android/settings.gradle.kts", 'rootProject.name = "reallyme-codec-android"');
 assertContains("packages/kotlin-android/settings.gradle.kts", 'include(":consumer-r8-runtime")');
 assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.library")');
-assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.library") version "9.5.0"');
-assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.application") version "9.5.0" apply false');
+assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.library") version "9.5.1"');
+assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.application") version "9.5.1" apply false');
 assertContains("packages/kotlin-android/build.gradle.kts", "compileSdk = 37");
 assertContains("packages/kotlin-android/consumer-r8-runtime/build.gradle.kts", "compileSdk = 37");
 assertContains("packages/kotlin-android/consumer-r8-runtime/build.gradle.kts", "targetSdk = 37");
@@ -2559,11 +2559,11 @@ assertContains(
 );
 assertContains(
   "packages/kotlin-android/gradle/verification-metadata.xml",
-  '<component group="com.android.tools.build" name="gradle" version="9.5.0">',
+  '<component group="com.android.tools.build" name="gradle" version="9.5.1">',
 );
 assertContains(
   "packages/kotlin-android/gradle/verification-metadata.xml",
-  'artifact name="aapt2-9.5.0-16666295-linux.jar"',
+  'artifact name="aapt2-9.5.1-16666295-linux.jar"',
 );
 assertContains(
   "packages/kotlin-android/gradle/verification-metadata.xml",
@@ -2624,7 +2624,7 @@ assertContains(
   ".github/workflows/kotlin-android-package-release.yml",
   '{ yes 2>/dev/null || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "ndk;29.0.14206865"',
 );
-assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.3.1");
+assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.3.2");
 assertContains("packages/kotlin-android/README.md", "never sourced from the Git worktree");
 assertContains(
   "packages/kotlin-android/gradle.properties",
@@ -2686,7 +2686,7 @@ assertContains(".github/workflows/npm-package-preflight.yml", "Test TypeScript c
 
 assertContains("README.md", "https://github.com/reallyme/codec");
 assertContains("README.md", "https://www.npmjs.com/package/@reallyme/codec");
-assertContains("README.md", "me.really:codec:0.3.1");
+assertContains("README.md", "me.really:codec:0.3.2");
 assertContains("README.md", "reallyme-codec-proto");
 assertContains("README.md", "## Published Surfaces");
 assertContains("README.md", "`me.really:codec-android` AAR");

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2026 ReallyMe LLC
+// SPDX-FileCopyrightText: 2026 ReallyMe Technologies Limited
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
@@ -21,7 +21,7 @@ enum {
     CODEC_ABI_VERSION = 6,
     CODEC_PACKAGE_VERSION_MAJOR = 0,
     CODEC_PACKAGE_VERSION_MINOR = 3,
-    CODEC_PACKAGE_VERSION_PATCH = 1,
+    CODEC_PACKAGE_VERSION_PATCH = 2,
     CODEC_BASE64_ENCODE = 1,
     CODEC_OK = 0,
     CODEC_INVALID_ARGUMENT = -1,

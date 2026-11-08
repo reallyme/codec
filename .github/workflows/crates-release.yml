@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2026 ReallyMe LLC
+# SPDX-FileCopyrightText: 2026 ReallyMe Technologies Limited
 #
 # SPDX-License-Identifier: MIT OR Apache-2.0
 
@@ -53,7 +53,7 @@ jobs:
           echo "Using release SHA ${release_sha} for version ${release_version}"
 
       - name: Install Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '26'
 
@@ -81,17 +81,17 @@ jobs:
           ref: ${{ needs.verify-release-sha.outputs.release_sha }}
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
           toolchain: 1.99.0
 
       - name: Install Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '26'
 
       - name: Cache Cargo
-        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
 
       - name: Inspect publishable crate tarballs
         run: node scripts/publish_crates_in_order.mjs inspect
@@ -110,17 +110,17 @@ jobs:
           ref: ${{ needs.verify-release-sha.outputs.release_sha }}
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
           toolchain: 1.99.0
 
       - name: Install Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '26'
 
       - name: Cache Cargo
-        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
 
       - name: Publish crates in dependency order
         run: |

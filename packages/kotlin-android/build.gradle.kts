@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2026 ReallyMe LLC
+// SPDX-FileCopyrightText: 2026 ReallyMe Technologies Limited
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
@@ -9,14 +9,14 @@ import java.security.MessageDigest
 import java.util.zip.ZipFile
 
 plugins {
-    id("com.android.library") version "9.5.0"
-    id("com.android.application") version "9.5.0" apply false
+    id("com.android.library") version "9.5.1"
+    id("com.android.application") version "9.5.1" apply false
     `maven-publish`
     signing
 }
 
 group = "me.really"
-version = "0.3.1"
+version = "0.3.2"
 
 // AGP's publication component reads these generated configurations, rather
 // than releaseApiElements/releaseRuntimeElements. Keep the implicit identity
@@ -366,8 +366,8 @@ publishing {
                 developers {
                     developer {
                         id.set("reallyme")
-                        name.set("ReallyMe LLC")
-                        organization.set("ReallyMe LLC")
+                        name.set("ReallyMe Technologies Limited")
+                        organization.set("ReallyMe Technologies Limited")
                         organizationUrl.set("https://github.com/reallyme")
                     }
                 }

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2026 ReallyMe LLC
+# SPDX-FileCopyrightText: 2026 ReallyMe Technologies Limited
 #
 # SPDX-License-Identifier: MIT OR Apache-2.0
 
@@ -35,7 +35,7 @@ jobs:
   scan:
     name: Gate published runtime dependencies
     needs: verify-runtime-lockfiles
-    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc # v2.6.0
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
     with:
       upload-sarif: false
       fail-on-vuln: true
@@ -47,7 +47,7 @@ jobs:
 
   scan-build-tooling:
     name: Report Gradle build tooling advisories
-    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc # v2.6.0
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
     with:
       upload-sarif: false
       # AGP's lint and test tools resolve versions that are not shipped in the
