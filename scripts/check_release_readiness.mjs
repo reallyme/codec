@@ -264,7 +264,7 @@ const assertTypescriptProtoFacadeCompleteness = ({ facadePath, generatedPath }) 
   });
 };
 
-assertReallyMeVendoredCorePolicy({ version: "0.6.9" });
+assertReallyMeVendoredCorePolicy({ version: "0.7.0" });
 // Composite actions can hide additional third-party dependencies from the
 // top-level workflow scan. Reject them until the checker recursively validates
 // every local action dependency with the same full-SHA policy.
@@ -744,11 +744,11 @@ assertContains(
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  'const RELEASE_READINESS_COMMIT = "9cf40c7da1def8a8d809af51789284097c572dd5"',
+  'const RELEASE_READINESS_COMMIT = "18a6d91d99837e80f92e41fe04effb0b043d754e"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  '"c65fd51666d3858f33b9447f7e59aa32fb5fcd63e87465bfd8d7cd463a124452"',
+  '"7614b0cbf9e36a4653c2fa9008bee0d1e22542de0e4a08a10e640c836a5c93db"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
@@ -768,7 +768,7 @@ assertContains(
 );
 assertContains(
   "scripts/release-readiness/core.mjs",
-  'RELEASE_READINESS_VERSION = "0.6.9"',
+  'RELEASE_READINESS_VERSION = "0.7.0"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
