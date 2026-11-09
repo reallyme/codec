@@ -11,7 +11,7 @@ boundary.
   policy checks.
 - Refresh Rust, TypeScript, Swift, Kotlin, Android, WASM, build-tool, and CI
   dependencies together with their committed lockfiles and verification
-  metadata, including the pinned release-readiness policy core at v0.6.9.
+  metadata, including the pinned release-readiness policy core at v0.7.0.
 - Keep every public package and SDK lane on the shared 0.3.2 release version.
 
 ## 0.3.1 (2026-10-03)
