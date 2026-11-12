@@ -10,7 +10,7 @@ targets = [
     "aarch64-apple-ios",
     "aarch64-linux-android",
 ]
-all-features = false
+all-features = true
 no-default-features = false
 
 [output]

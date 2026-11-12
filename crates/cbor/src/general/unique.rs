@@ -35,18 +35,14 @@ pub(super) struct KeyStarts {
 }
 
 impl KeyStarts {
-    /// Prepare storage, reserving once when a declared count is known.
-    pub(super) fn new(declared: Option<usize>) -> Result<Self, CborError> {
-        let mut heap = Vec::new();
-        if let Some(count) = declared.filter(|count| *count > INLINE_KEYS) {
-            heap.try_reserve_exact(count)
-                .map_err(|_| error(ErrorReason::AllocationFailure))?;
-        }
-        Ok(Self {
+    /// Prepare empty storage. Heap storage grows only as keys are actually
+    /// read, so a declared count never reserves memory ahead of the input.
+    pub(super) const fn new() -> Self {
+        Self {
             inline: [0; INLINE_KEYS],
             len: 0,
-            heap,
-        })
+            heap: Vec::new(),
+        }
     }
 
     pub(super) fn push(&mut self, start: usize) -> Result<(), CborError> {

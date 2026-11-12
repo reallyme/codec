@@ -5,7 +5,11 @@
 use crate::PemLabel;
 
 /// Default maximum PEM input size accepted by the parser.
-pub const DEFAULT_MAX_PEM_INPUT_LEN: usize = 1024 * 1024;
+///
+/// This covers the longest armor the default encoder can emit for
+/// [`DEFAULT_MAX_DER_LEN`] bytes of DER: base64 expansion, 64-column lines,
+/// CRLF line endings, and the longest supported label.
+pub const DEFAULT_MAX_PEM_INPUT_LEN: usize = 1536 * 1024;
 
 /// Default maximum decoded DER size accepted by the parser.
 pub const DEFAULT_MAX_DER_LEN: usize = 1024 * 1024;

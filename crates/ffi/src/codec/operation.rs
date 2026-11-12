@@ -8,7 +8,7 @@ use codec_runtime::operation_contract::{
 
 use crate::guard::ffi_guard;
 use crate::pointer::{read_slice, validate_input_scalar_output};
-use crate::status::{CodecStatus, CODEC_OK};
+use crate::status::{CodecStatus, CODEC_INVALID_ARGUMENT, CODEC_OK};
 
 use super::{initialize_output_length, write_output};
 
@@ -96,6 +96,11 @@ fn process_operation_boundary(
 ) -> CodecStatus {
     if let Err(status) = validate_input_scalar_output(request_ptr, request_len, len_out) {
         return status;
+    }
+    // A null request with a non-zero length is a caller pointer bug, not an
+    // oversized request; report it before the resource-limit response path.
+    if request_ptr.is_null() && request_len != 0 {
+        return CODEC_INVALID_ARGUMENT;
     }
     let output_status = initialize_output_length(output_ptr, output_len, len_out);
     if output_status != CODEC_OK {

@@ -170,11 +170,7 @@ pub(super) fn scan<'a>(
             let mut count = 0_usize;
             let mut previous: Option<Frame<'_>> = None;
             let mut out_of_order = false;
-            let mut key_starts = if map && profile.is_some() {
-                KeyStarts::new(declared)?
-            } else {
-                KeyStarts::new(None)?
-            };
+            let mut key_starts = KeyStarts::new();
             loop {
                 if declared == Some(count) {
                     body_end = end;

@@ -2,6 +2,9 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+#if canImport(CryptoKit)
+import CryptoKit
+#endif
 import Foundation
 @testable import ReallyMeCodec
 import XCTest
@@ -104,6 +107,30 @@ final class ReallyMeCodecTests: XCTestCase {
             XCTAssertFalse(output.contains(marker))
         }
     }
+
+    #if canImport(CryptoKit) && os(macOS)
+    func testDigestPinnedLoaderRefusesMismatchedLibraries() throws {
+        let path = try Self.libraryPath()
+        let contents = try XCTUnwrap(FileManager.default.contents(atPath: path))
+        let digest = Array(SHA256.hash(data: contents))
+
+        let library = try ReallyMeCodecRustCAbiLibrary(path: path, expectedSHA256: digest)
+        _ = try ReallyMeCodec(rustCAbiLibrary: library)
+
+        var tampered = digest
+        tampered[0] ^= 0x01
+        XCTAssertThrowsError(
+            try ReallyMeCodecRustCAbiLibrary(path: path, expectedSHA256: tampered)
+        ) { error in
+            XCTAssertEqual(error as? ReallyMeCodecError, .dynamicLibraryLoadFailed)
+        }
+        XCTAssertThrowsError(
+            try ReallyMeCodecRustCAbiLibrary(path: path, expectedSHA256: Array(digest.prefix(31)))
+        ) { error in
+            XCTAssertEqual(error as? ReallyMeCodecError, .dynamicLibraryNotFound)
+        }
+    }
+    #endif
 
     private static func libraryPath() throws -> String {
         if let value = ProcessInfo.processInfo.environment["REALLYME_CODEC_FFI_LIBRARY_PATH"],

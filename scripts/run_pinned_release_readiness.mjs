@@ -13,14 +13,15 @@ import { fileURLToPath } from "node:url";
 // runner checks both local digests before executing. Re-downloading immutable
 // bytes adds availability risk without strengthening that digest check, so
 // upstream provenance verification is an explicit maintenance operation.
-// The checker imports other local modules whose bytes are not pinned here.
-// This is a change-detection tripwire; review of the full change set remains
-// necessary before treating the complete policy implementation as trusted.
+// The checker pins every local module it imports or spawns, so those bytes
+// are covered transitively by the checker pin. This is a change-detection
+// tripwire; review of the full change set remains necessary before treating
+// the complete policy implementation as trusted.
 const RELEASE_READINESS_COMMIT = "18a6d91d99837e80f92e41fe04effb0b043d754e";
 const RELEASE_READINESS_CORE_SHA256 =
   "7614b0cbf9e36a4653c2fa9008bee0d1e22542de0e4a08a10e640c836a5c93db";
 const LOCAL_CHECKER_SHA256 =
-  "04eebf9a4684701f8d2ca5ed6962163f9f10d8fc7aa91b61fecd3649163b36bf";
+  "5847fc708f4acf87304c81e687493ec42db853ad375f5d9ab2c3f04e400f23fc";
 const RELEASE_READINESS_CORE_URL =
   `https://raw.githubusercontent.com/reallyme/release-readiness/${RELEASE_READINESS_COMMIT}/core.mjs`;
 const VENDORED_CORE_PATH = "scripts/release-readiness/core.mjs";

@@ -303,3 +303,25 @@ impl TestOperationPayload {
         self.bytes.as_slice()
     }
 }
+
+#[test]
+fn proto_json_sensitive_bytes_reject_nonzero_base64_trailing_bits() {
+    let request = CodecOperationRequest {
+        operation: Some(
+            CodecDeterministicCborDecodeRequest {
+                encoded: vec![0x00],
+                __buffa_unknown_fields: Default::default(),
+            }
+            .into(),
+        ),
+        __buffa_unknown_fields: Default::default(),
+    };
+    let canonical = serde_json::to_string(&request).unwrap();
+    assert!(canonical.contains("\"AA==\""));
+    let _ = result_payload(&process_operation_response_json(canonical.as_bytes()));
+
+    // "AB==" carries the same byte with nonzero padding bits; accepting it
+    // would give one request two JSON spellings.
+    let tampered = canonical.replace("\"AA==\"", "\"AB==\"");
+    let _ = codec_error_payload(&process_operation_response_json(tampered.as_bytes()));
+}

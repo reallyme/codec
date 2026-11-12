@@ -15,6 +15,7 @@ const sources = Object.freeze({
   swift: 'let packageVersion = "0.3.1"\n',
   swiftFfi: 'private let expectedCodecPackageMajor: UInt32 = 0\nprivate let expectedCodecPackageMinor: UInt32 = 3\nprivate let expectedCodecPackagePatch: UInt32 = 1\n',
   kotlin: 'version = "0.3.1"\n',
+  kotlinFfi: '    private const val EXPECTED_CODEC_PACKAGE_MAJOR: Int = 0\n    private const val EXPECTED_CODEC_PACKAGE_MINOR: Int = 3\n    private const val EXPECTED_CODEC_PACKAGE_PATCH: Int = 1\n',
   android: 'version = "0.3.1"\n',
   npm: '{"version":"0.3.1"}',
   npmLock: '{"version":"0.3.1","packages":{"":{"version":"0.3.1"}}}',
@@ -30,6 +31,7 @@ test("mistyped release and stale internal package versions fail closed", () => {
     ["0.3.1", sources, ["0.3.1", "0.2.9"], "workspace-version-mismatch"],
     ["0.3.1", { ...sources, swift: 'let packageVersion = "0.2.9"\n' }, ["0.3.1"], "swift-version-mismatch"],
     ["0.3.1", { ...sources, swiftFfi: sources.swiftFfi.replace("Minor: UInt32 = 3", "Minor: UInt32 = 2") }, ["0.3.1"], "swift-ffi-version-mismatch"],
+    ["0.3.1", { ...sources, kotlinFfi: sources.kotlinFfi.replace("PATCH: Int = 1", "PATCH: Int = 0") }, ["0.3.1"], "kotlin-ffi-version-mismatch"],
     ["0.3.1", { ...sources, npmLock: '{"version":"0.3.1","packages":{"":{"version":"0.2.9"}}}' }, ["0.3.1"], "npm-lock-root-version-mismatch"],
   ]) {
     assert.throws(

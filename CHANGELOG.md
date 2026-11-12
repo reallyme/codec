@@ -8,6 +8,8 @@
   exhaust the configured work budget.
 - Preserve general-CBOR policy during child inspection; report truncated strings
   and reject empty tag-24 payloads.
+- Reject invalid native pointer arguments, forged TypeScript byte views and
+  nonzero ProtoJSON pad bits. Map native-loader failures to typed errors.
 - Update SwiftProtobuf to 1.40.0.
 
 ## 0.3.3

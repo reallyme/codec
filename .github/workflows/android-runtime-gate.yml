@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       release_sha:
-        description: Optional exact main commit SHA to test. Leave blank to use current origin/main.
+        description: Optional expected main tip SHA. Leave blank to use current origin/main.
         required: false
         type: string
         default: ""
@@ -48,8 +48,10 @@ jobs:
           else
             runtime_sha="$(git rev-parse origin/main)"
           fi
-          if ! git merge-base --is-ancestor "${runtime_sha}" origin/main; then
-            echo "::error::runtime SHA is not in current main history"
+          # Release attestation matches this run by its main head SHA, so the
+          # tested commit must be that exact tip, never an older ancestor.
+          if [ "${runtime_sha}" != "$(git rev-parse origin/main)" ]; then
+            echo "::error::runtime SHA must be the current origin/main tip"
             exit 1
           fi
           git checkout --detach "${runtime_sha}"

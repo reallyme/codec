@@ -33,6 +33,7 @@ jobs:
       - name: Checkout main for release SHA resolution
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           ref: main
           fetch-depth: 0
 
@@ -88,6 +89,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ needs.verify-release-sha.outputs.release_sha }}
 
       - name: Install Rust toolchain
@@ -137,6 +139,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ needs.verify-release-sha.outputs.release_sha }}
 
       - name: Install Java
@@ -211,6 +214,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ needs.verify-release-sha.outputs.release_sha }}
 
       - name: Install Java

@@ -319,3 +319,32 @@ fn encode_rejects_invalid_options() {
         Err(PemError::InvalidOptions)
     ));
 }
+
+#[test]
+fn default_decode_accepts_the_largest_default_encoding() -> Result<(), PemError> {
+    let max_input_len = PemDecodePolicy::default().max_input_len;
+    let der = vec![0xa5; PemEncodeOptions::default().max_der_len];
+    let labels = [
+        PemLabel::PrivateKey,
+        PemLabel::EcPrivateKey,
+        PemLabel::PublicKey,
+    ];
+    for label in labels {
+        for line_ending in [PemLineEnding::Lf, PemLineEnding::Crlf] {
+            let options = PemEncodeOptions {
+                line_ending,
+                ..PemEncodeOptions::default()
+            };
+            let encoded = encode_pem(label, &der, options)?;
+            assert!(encoded.len() <= max_input_len);
+            let policy = PemDecodePolicy {
+                allowed_labels: &labels,
+                ..PemDecodePolicy::default()
+            };
+            let decoded = decode_pem(&encoded, policy)?;
+            assert_eq!(decoded.label, label);
+            assert_eq!(decoded.der.as_slice(), &der[..]);
+        }
+    }
+    Ok(())
+}

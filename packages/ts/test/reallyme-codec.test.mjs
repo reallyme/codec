@@ -311,6 +311,23 @@ test("byte boundaries reject proxy-wrapped typed arrays before length reads", ()
   });
   assertCodecError(() => base58btcEncode(forged), "invalid-input");
   assertCodecError(() => multicodecStripPrefix(forged), "invalid-input");
+
+  // A DataView with a swapped prototype passes instanceof and the prototype
+  // check; its brand does not, so every byte API must fail with a typed error.
+  const disguised = Object.setPrototypeOf(new DataView(new ArrayBuffer(1)), Uint8Array.prototype);
+  const looksLike = Object.create(Uint8Array.prototype);
+  for (const input of [disguised, looksLike]) {
+    for (const call of [
+      () => base64Encode(input),
+      () => processOperation(input),
+      () => decodePem(input),
+      () => dagCborDecode(input),
+      () => deterministicCborDecode(input),
+      () => dagCborComputeCid(input),
+    ]) {
+      assertCodecError(call, "invalid-input");
+    }
+  }
 });
 
 test("byte boundaries reject shadowed metadata and species without executing getters", () => {
@@ -382,6 +399,18 @@ test("raw WASM nullish byte calls fail without exhausting the instance", () => {
   for (let attempt = 0; attempt < 1_100; attempt += 1) {
     assertWasmError(() => wasm.base64Encode(null), "invalid-input");
     assertWasmError(() => wasm.base64Encode(undefined), "invalid-input");
+    // Forged views pass instanceof but throw from their length getter. Each
+    // must fail as typed input, and repeated failures must not exhaust the
+    // instance's externref table.
+    const forgedViews = [
+      Object.setPrototypeOf(new DataView(new ArrayBuffer(1)), Uint8Array.prototype),
+      Object.create(Uint8Array.prototype),
+      new Proxy(Uint8Array.of(0x12), {}),
+    ];
+    for (let attempt = 0; attempt < 1_200; attempt += 1) {
+      const forged = forgedViews[attempt % forgedViews.length];
+      assertWasmError(() => wasm.base64Encode(forged), "invalid-input");
+    }
   }
   assert.equal(wasm.base64Encode(Uint8Array.of(0x12)), "Eg==");
 });
