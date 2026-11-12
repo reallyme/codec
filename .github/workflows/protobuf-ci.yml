@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2026 ReallyMe Technologies Limited
+# SPDX-FileCopyrightText: 2026 ReallyMe LLC
 #
 # SPDX-License-Identifier: MIT OR Apache-2.0
 
@@ -14,6 +14,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   BUFFA_VERSION: 0.9.2
   BUF_VERSION: 1.73.0
@@ -21,7 +25,8 @@ env:
 jobs:
   protobuf:
     name: lint, breaking, generated freshness
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -29,15 +34,18 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
-        with:
-          toolchain: 1.99.0
-
       - name: Install Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '26'
+
+      - name: Verify release readiness pins before installing generators
+        run: node scripts/run_pinned_release_readiness.mjs --check-pins
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+        with:
+          toolchain: 1.99.0
 
       - name: Cache Cargo
         uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3

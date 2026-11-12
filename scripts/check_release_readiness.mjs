@@ -1,19 +1,36 @@
 #!/usr/bin/env node
-// SPDX-FileCopyrightText: 2026 ReallyMe Technologies Limited
+// SPDX-FileCopyrightText: 2026 ReallyMe LLC
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { fileURLToPath } from "node:url";
 
-import { createReleaseReadinessContext, scrubCommentsForAssertion } from "./release-readiness/core.mjs";
-import { ReleaseVersionError, verifyCheckedOutReleaseVersion } from "./verify_release_version.mjs";
-import {
+// Authenticate the core before importing it: a static import would execute its
+// top-level code before the direct local command could reject a changed pin.
+const pinCheck = spawnSync(process.execPath, [
+  fileURLToPath(new URL("./run_pinned_release_readiness.mjs", import.meta.url)),
+  "--check-pins",
+], {
+  cwd: fileURLToPath(new URL("../", import.meta.url)),
+  stdio: ["ignore", "ignore", "inherit"],
+});
+if (pinCheck.error !== undefined || pinCheck.status !== 0) {
+  console.error("release readiness check failed: readiness pins could not be verified");
+  process.exit(1);
+}
+
+const { createReleaseReadinessContext, scrubCommentsForAssertion } =
+  await import("./release-readiness/core.mjs");
+const { ReleaseVersionError, verifyCheckedOutReleaseVersion } =
+  await import("./verify_release_version.mjs");
+const {
   codecProtoProviderOutputMessages,
   codecProtoScalarFieldClassifications,
   codecProtoSensitiveNonTextFieldClassifications,
   codecProtoSensitiveOwnerMessages,
-} from "./codec_proto_sensitivity.mjs";
+} = await import("./codec_proto_sensitivity.mjs");
 
 const codecProtoSensitiveMessageNames = [...new Set([
   ...codecProtoScalarFieldClassifications
@@ -60,23 +77,6 @@ const {
   requireTrackedFiles: true,
 });
 
-// This policy module executes inside the release gate. Requiring it explicitly
-// prevents an untracked worktree file from influencing release readiness.
-requireTracked("scripts/release-readiness/source-policy.mjs");
-runNodeCheck("scripts/maven_central_bundle.test.mjs");
-try {
-  execFileSync(process.execPath, ["scripts/validate_codec_vectors.mjs"], {
-    stdio: "pipe",
-  });
-} catch {
-  fail("scripts/validate_codec_vectors.mjs failed");
-}
-const {
-  sourceBlockFromNeedle,
-  stripSourceComments,
-  stripSourceStringsAndComments,
-} = await import("./release-readiness/source-policy.mjs");
-
 const supportedArguments = new Set([
   "--generated-freshness",
   "--release-packages",
@@ -91,6 +91,26 @@ for (const argument of process.argv.slice(2)) {
   }
   suppliedArguments.add(argument);
 }
+
+// This policy module executes inside the release gate. Requiring it explicitly
+// prevents an untracked worktree file from influencing release readiness.
+requireTracked("scripts/release-readiness/source-policy.mjs");
+// Test registration must not require a policy edit and a checksum refresh.
+for (const suite of listFiles("scripts").filter((path) => path.endsWith(".test.mjs"))) {
+  runNodeCheck(suite);
+}
+try {
+  execFileSync(process.execPath, ["scripts/validate_codec_vectors.mjs"], {
+    stdio: "pipe",
+  });
+} catch {
+  fail("scripts/validate_codec_vectors.mjs failed");
+}
+const {
+  sourceBlockFromNeedle,
+  stripSourceComments,
+  stripSourceStringsAndComments,
+} = await import("./release-readiness/source-policy.mjs");
 
 const assertSubstringsInOrder = (path, substrings) => {
   const contents = scrubCommentsForAssertion(path, readText(path));
@@ -718,28 +738,12 @@ assertContains(".github/workflows/code-checks.yml", "cargo-audit@0.22.2");
 assertContains(".github/workflows/code-checks.yml", "scripts/audit_committed_lockfiles.sh");
 assertContains(
   ".github/workflows/code-checks.yml",
-  "node --test scripts/release-readiness/cli.test.mjs",
+  'node --test --test-concurrency=4 "scripts/**/*.test.mjs" "packages/ts/scripts/*.test.mjs"',
 );
-assertContains(
-  ".github/workflows/code-checks.yml",
-  "node --test scripts/release-readiness/source-policy.test.mjs",
-);
-assertContains(
-  ".github/workflows/code-checks.yml",
-  "node --test scripts/write_native_manifest.test.mjs",
-);
-assertContains(
-  ".github/workflows/code-checks.yml",
-  "node --test scripts/verify_release_attestation.test.mjs",
-);
-assertContains(
-  ".github/workflows/code-checks.yml",
-  "node --test scripts/verify_swift_release_artifact.test.mjs",
-);
-assertContains(
-  ".github/workflows/code-checks.yml",
-  "node --test scripts/tooling.test.mjs",
-);
+assertContains(".github/workflows/code-checks.yml", "actionlint@1.7.12");
+assertContains(".github/workflows/code-checks.yml", "run: actionlint");
+assertContains(".github/workflows/code-checks.yml", "--check-pins");
+assertContains(".github/workflows/protobuf-ci.yml", "--check-pins");
 assertContains(
   ".github/workflows/code-checks.yml",
   "node scripts/run_pinned_release_readiness.mjs",

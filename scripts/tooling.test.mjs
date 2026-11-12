@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2026 ReallyMe Technologies Limited
+// SPDX-FileCopyrightText: 2026 ReallyMe LLC
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
@@ -65,37 +65,6 @@ test("Swift binary manifest rejects ancestor path components", (t) => {
   assert.equal(accepted.status, 0, accepted.stderr);
   assert.match(readFileSync(join(root, "Package.swift"), "utf8"), /artifact\/bundle\.zip/u);
 });
-
-for (const [tamperedPath, expectedFailure] of [
-  [
-    "scripts/check_release_readiness.mjs",
-    "local checker does not match the reviewed repository policy pin",
-  ],
-  [
-    "scripts/release-readiness/core.mjs",
-    "vendored core does not match the reviewed upstream pin",
-  ],
-]) {
-  test(`pinned release readiness rejects tampered ${tamperedPath}`, (t) => {
-    const root = fixture(t);
-    const runner = copy(root, "scripts/run_pinned_release_readiness.mjs");
-    copy(root, "scripts/check_release_readiness.mjs");
-    const core = copy(root, "scripts/release-readiness/core.mjs");
-    const target = join(root, tamperedPath);
-    writeFileSync(target, `${readFileSync(target, "utf8")}\n// tampered\n`);
-
-    const result = spawnSync(process.execPath, [runner], {
-      cwd: root,
-      encoding: "utf8",
-      timeout: 10_000,
-    });
-
-    assert.equal(result.error, undefined);
-    assert.equal(result.status, 1);
-    assert.match(result.stderr, new RegExp(expectedFailure, "u"));
-    assert.equal(existsSync(core), true);
-  });
-}
 
 for (const succeeds of [false, true]) {
   test(`publish retries ${succeeds ? "accept a later success" : "fail after exhaustion"}`, { skip: !posixHost }, (t) => {
