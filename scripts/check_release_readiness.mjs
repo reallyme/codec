@@ -1642,7 +1642,7 @@ assertWorkflowUsesStepPinnedTo(
 );
 assertContains(
   ".github/workflows/protobuf-ci.yml",
-  "checksum: 8f2986298ad08f0cc1bf999b9797b7c383adf32d7edf0f73d6f1e1a701baeac1",
+  "checksum: fad1e38d6909bbb583a4da81d8c02a01046e2cd663bde7e337dd24277393764b",
 );
 assertContains(".github/workflows/protobuf-ci.yml", "github_token: ${{ github.token }}");
 assertContains(".github/workflows/protobuf-ci.yml", "setup_only: true");
@@ -2775,6 +2775,9 @@ for (const messageName of codecProtoProviderOutputMessages) {
   );
 }
 assertReallyMeProtobufReleasePolicy({
+  // Review the exact CLI version together with its workflow checksum pin.
+  bufVersion: "1.75.0",
+  buffaVersion: "0.9.2",
   generatedFreshnessMode,
   workflowMode: "delegated",
   generatedFreshnessStepRun:

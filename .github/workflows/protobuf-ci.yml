@@ -54,7 +54,7 @@ jobs:
         uses: bufbuild/buf-action@37ac33d8960807670a6e9719080e885197b09cc6 # v1.7.0
         with:
           version: ${{ env.BUF_VERSION }}
-          checksum: 8f2986298ad08f0cc1bf999b9797b7c383adf32d7edf0f73d6f1e1a701baeac1
+          checksum: fad1e38d6909bbb583a4da81d8c02a01046e2cd663bde7e337dd24277393764b
           github_token: ${{ github.token }}
           setup_only: true
 
