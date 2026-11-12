@@ -35,7 +35,7 @@ codec-multicodec = { package = "reallyme-codec-multicodec", path = "../crates/mu
 codec-multikey = { package = "reallyme-codec-multikey", path = "../crates/multikey" }
 codec-cbor = { package = "reallyme-codec-cbor", path = "../crates/cbor" }
 codec-jcs = { package = "reallyme-codec-jcs", path = "../crates/jcs" }
-reallyme-codec = { path = "../crates/codec", default-features = false, features = ["operation-contract"] }
+reallyme-codec = { path = "../crates/codec", default-features = false, features = ["operation-contract", "der"] }
 codec-proto = { package = "reallyme-codec-proto", path = "../crates/proto", features = ["generated"] }
 
 [[bin]]
@@ -111,6 +111,13 @@ bench = false
 [[bin]]
 name = "pem_decode"
 path = "fuzz_targets/pem_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "der"
+path = "fuzz_targets/der.rs"
 test = false
 doc = false
 bench = false

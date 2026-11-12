@@ -36,7 +36,7 @@ every primitive codec family. Consumers that need a smaller dependency surface c
 only the families they use:
 
 ```toml
-reallyme-codec = { version = "0.3.2", default-features = false, features = [
+reallyme-codec = { version = "0.3.3", default-features = false, features = [
   "base64url",
   "multikey",
 ] }
@@ -51,7 +51,7 @@ feature enables the base64url field adapters.
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.3.2"
+    from: "0.3.3"
 )
 ```
 
@@ -63,7 +63,7 @@ feature enables the base64url field adapters.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.3.2")
+    implementation("me.really:codec:0.3.3")
 }
 ```
 
@@ -71,7 +71,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.3.2")
+    implementation("me.really:codec-android:0.3.3")
 }
 ```
 

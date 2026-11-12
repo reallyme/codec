@@ -62,7 +62,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-jcs"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "itoa",
  "ryu-js",
@@ -74,7 +74,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-jcs-feature-unification-probe"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "reallyme-codec-jcs",
  "serde_json",

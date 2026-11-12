@@ -50,6 +50,10 @@ pub mod cbor {
     };
 }
 
+/// Strict, bounded, schema-directed DER parsing for Rust consumers.
+#[cfg(feature = "der")]
+pub mod der;
+
 /// Canonical lowercase hexadecimal encode/decode helpers.
 #[cfg(feature = "hex")]
 pub mod hex {

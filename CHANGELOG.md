@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.3 (unreleased)
+
+- Add opt-in, bounded, schema-directed strict DER readers and an exact
+  SEQUENCE-of-two-unsigned-INTEGER decoder for Rust consumers. Curve widths,
+  scalar ranges, and signature normalization remain in the cryptographic layer.
+- Reject noncanonical DER lengths, INTEGER sign padding, BIT STRING padding,
+  OID subidentifiers, SET OF ordering, and trailing data with typed errors.
+
 ## 0.3.2 (2026-11-08)
 
 - Update copyright ownership to ReallyMe Technologies Limited.

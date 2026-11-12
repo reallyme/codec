@@ -828,9 +828,9 @@ final class ReallyMeCodecTests: XCTestCase {
         try ReallyMeCodecRustCAbiProvider.requireCompatiblePackageVersion(
             major: 0,
             minor: 3,
-            patch: 2
+            patch: 3
         )
-        let rejectedVersions: [(UInt32, UInt32, UInt32)] = [(0, 2, 2), (0, 3, 1), (1, 3, 2)]
+        let rejectedVersions: [(UInt32, UInt32, UInt32)] = [(0, 2, 3), (0, 3, 2), (1, 3, 3)]
         for version in rejectedVersions {
             Self.assertCodecError(
                 .providerFailure,

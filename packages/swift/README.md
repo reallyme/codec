@@ -7,7 +7,7 @@ Swift codecs for Apple platforms.
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.3.2"
+    from: "0.3.3"
 )
 ```
 
