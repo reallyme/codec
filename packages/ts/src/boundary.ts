@@ -6,6 +6,9 @@ import { ReallyMeCodecError } from "./errors.js";
 
 export const MAX_CODEC_FFI_INPUT_BYTES = 1_048_576;
 export const MAX_CODEC_FFI_OUTPUT_BYTES = 67_108_864;
+// Match Rust's default PEM text limit: a one-MiB DER body expands under
+// base64 and line wrapping, so armor needs a larger bound than scalar bytes.
+export const MAX_CODEC_PEM_INPUT_BYTES = 1_572_864;
 const MAX_CODEC_PROTO_SENSITIVE_PAYLOAD_BYTES = 2_097_152;
 const MAX_CODEC_PROTO_SEMANTIC_NODES = 65_536;
 const MAX_CODEC_PROTO_STRUCTURAL_BYTES_PER_NODE = 128;

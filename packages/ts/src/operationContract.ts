@@ -7,6 +7,7 @@ import type { Message } from "@bufbuild/protobuf";
 
 import {
   MAX_CODEC_FFI_INPUT_BYTES,
+  MAX_CODEC_PEM_INPUT_BYTES,
   MAX_CODEC_PROTO_JSON_BYTES,
   MAX_CODEC_PROTO_MESSAGE_BYTES,
   requireBoundaryAggregate,
@@ -587,6 +588,9 @@ const validateGeneratedOperationRequest = (
     case "pemDecode": {
       requireNoGeneratedUnknownFields(request.operation.value);
       const pemLength = requireProtoBytes(request.operation.value.pem);
+      if (pemLength > MAX_CODEC_PEM_INPUT_BYTES) {
+        return false;
+      }
       const options = request.operation.value.options;
       let optionsLength = 0;
       if (options !== undefined) {
@@ -598,17 +602,6 @@ const validateGeneratedOperationRequest = (
           return false;
         }
         optionsLength = options.allowedLabels.length * 5;
-      }
-      try {
-        requireBoundaryAggregate(
-          [pemLength, optionsLength],
-          MAX_CODEC_FFI_INPUT_BYTES,
-        );
-      } catch (error: unknown) {
-        if (error instanceof ReallyMeCodecError) {
-          return false;
-        }
-        throw error;
       }
       lengths.push(pemLength, optionsLength);
       break;

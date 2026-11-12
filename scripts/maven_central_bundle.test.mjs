@@ -12,6 +12,8 @@ import test from "node:test";
 const source = readFileSync(new URL("maven_central_bundle_local.sh", import.meta.url), "utf8");
 const mainStart = source.indexOf("\nrequire_tool awk\n");
 assert.ok(mainStart > 0);
+const signingPreflightEnd = source.indexOf("\nVERSION=");
+assert.ok(signingPreflightEnd > mainStart);
 
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), "codec-maven-bundle-"));
@@ -97,6 +99,65 @@ function fixture(t) {
       return spawnSync("bash", [harness], { cwd: root, env, encoding: "utf8", timeout: 10_000 });
     },
   };
+}
+
+for (const [name, response, status, accepted] of [
+  ["acknowledged reload", "OK\n", 0, true],
+  ["client failure", "OK\n", 1, false],
+  ["agent error with successful client exit", "ERR 67109139 Forbidden\n", 0, false],
+  ["empty response", "", 0, false],
+  ["unexpected acknowledgment", "OK unexpected\n", 0, false],
+  ["error followed by acknowledgment", "ERR 67109139 Forbidden\nOK\n", 0, false],
+  ["acknowledgment followed by error", "OK\nERR 67109139 Forbidden\n", 0, false],
+  ["duplicate acknowledgment", "OK\nOK\n", 0, false],
+]) {
+  test("signing cache reload handles " + name, { skip: process.platform === "win32" }, t => {
+    const f = fixture(t);
+    const harness = join(f.root, "clear-signing-cache.sh");
+    const calls = join(f.root, "agent-calls.json");
+    // Run the real entry point through its signing preflight, stopping before
+    // version resolution, remote attestation, downloads, or build commands.
+    writeFileSync(harness, source.slice(0, signingPreflightEnd) + [
+      "",
+      "printf '%s\\n' 'build phase reached'",
+      "",
+    ].join("\n"));
+    for (const [, tool] of source.slice(mainStart).matchAll(/^require_tool (\S+)$/gmu)) {
+      if (["awk", "node", "gpg", "gpg-connect-agent"].includes(tool)) {
+        continue;
+      }
+      // These tools must be discoverable but must never run in the preflight.
+      writeFileSync(join(f.bin, tool), "#!/bin/sh\nexit 79\n", { mode: 0o755 });
+    }
+    writeFileSync(join(f.bin, "gpg"), [
+      "#!/usr/bin/env node",
+      "process.stdin.resume();",
+      'process.stdin.on("end", () => process.exit(0));',
+      "",
+    ].join("\n"), { mode: 0o755 });
+    // Only this fixture process is contacted. No real agent, signing key, or
+    // credential is accessed, including when simulating an Assuan rejection.
+    writeFileSync(join(f.bin, "gpg-connect-agent"), [
+      "#!/usr/bin/env node",
+      'const fs = require("node:fs");',
+      `fs.writeFileSync(${JSON.stringify(calls)}, JSON.stringify(process.argv.slice(2)));`,
+      `process.stdout.write(${JSON.stringify(response)});`,
+      'process.stderr.write("fixture agent diagnostic\\n");',
+      `process.exit(${status});`,
+      "",
+    ].join("\n"), { mode: 0o755 });
+    const result = spawnSync("bash", [harness], {
+      cwd: f.root,
+      env: { ...f.env, MAVEN_SIGNING_PASSWORD: "fixture-passphrase", MAVEN_SIGNING_KEY_ID: "fixture-key" },
+      encoding: "utf8", timeout: 10_000,
+    });
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, accepted ? 0 : 1, result.stderr);
+    assert.deepEqual(JSON.parse(readFileSync(calls, "utf8")), ["reloadagent", "/bye"]);
+    assert.equal(result.stdout, accepted ? "build phase reached\n" : "");
+    assert.equal(result.stderr, accepted ? "" :
+      "maven central bundle failed: GPG could not clear the signing passphrase cache before the build\n");
+  });
 }
 
 test("installs the latest stable NDK with numeric revision ordering", t => {

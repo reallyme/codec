@@ -2,6 +2,7 @@
 
 ## 0.3.4 (unreleased)
 
+- Accept the largest default PEM encoding with LF or CRLF line endings.
 - Add borrowed general-CBOR framing, validation, cursors and float policies.
 - Add bounded general-CBOR encoding that preserves received items and map order.
 - Reduce work when validating large general-CBOR maps. Complex keys can still

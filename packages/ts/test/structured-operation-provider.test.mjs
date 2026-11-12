@@ -9,6 +9,7 @@ import "./wasm-module-test-hook.mjs";
 const wasm = await import("../dist/wasm/reallyme_codec_wasm.js");
 const {
   ReallyMeCodecError,
+  decodePem,
   installReallyMeCodecWasmProvider,
   multicodecLookupPrefix,
   multicodecPrefixForName,
@@ -16,10 +17,16 @@ const {
   processOperation,
   processOperationJson,
 } = await import("../dist/index.js");
+const { processGeneratedOperationRequest } = await import("../dist/operationContract.js");
 import {
+  MAX_CODEC_PEM_INPUT_BYTES,
   MAX_CODEC_PROTO_JSON_BYTES,
   MAX_CODEC_PROTO_MESSAGE_BYTES,
 } from "../dist/boundary.js";
+import {
+  CodecOperationRequestSchema,
+  CodecPemDecodeRequestSchema,
+} from "../dist/proto/generated/reallyme/codec/v1/codec_pb.js";
 import {
   CodecKeyMaterialKind,
   CodecMulticodecLookupResultSchema,
@@ -113,6 +120,31 @@ test("public contract processors reject oversized input before provider invocati
     );
     assert.deepEqual(json, binary);
     assert.deepEqual(lastProviderInput, Uint8Array.of(0xa5));
+  }
+});
+
+test("PEM decode rejects armor beyond its text ceiling before provider invocation", () => {
+  lastProviderInput = Uint8Array.of(0xa5);
+  const oversized = new Uint8Array(MAX_CODEC_PEM_INPUT_BYTES + 1);
+  try {
+    const request = create(CodecOperationRequestSchema, {
+      operation: {
+        case: "pemDecode",
+        value: create(CodecPemDecodeRequestSchema, { pem: oversized }),
+      },
+    });
+    for (const action of [
+      () => decodePem(oversized, { maxInputLen: oversized.length }),
+      () => processGeneratedOperationRequest(request),
+    ]) {
+      assert.throws(
+        action,
+        (error) => error instanceof ReallyMeCodecError && error.code === "invalid-input",
+      );
+    }
+    assert.deepEqual(lastProviderInput, Uint8Array.of(0xa5));
+  } finally {
+    oversized.fill(0);
   }
 });
 

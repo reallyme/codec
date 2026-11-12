@@ -71,6 +71,7 @@ import {
 } from "../dist/proto.js";
 import {
   MAX_CODEC_FFI_INPUT_BYTES,
+  MAX_CODEC_PEM_INPUT_BYTES,
   MAX_CODEC_PROTO_JSON_BYTES,
   MAX_CODEC_PROTO_MESSAGE_BYTES,
 } from "../dist/boundary.js";
@@ -79,6 +80,10 @@ import {
   readStringProperty,
 } from "../dist/readOutput.js";
 import { frameOperationRequest } from "../dist/frameSensitiveRequest.js";
+import {
+  clearGeneratedOperationResult,
+  processGeneratedOperationRequest,
+} from "../dist/operationContract.js";
 import {
   CodecPemDecodeOptionsSchema,
   CodecPemDecodeRequestSchema,
@@ -1639,6 +1644,76 @@ test("decodePem rejects oversized proto policy before provider work", () => {
   );
 });
 
+test("PEM maximum DER round trips preserve bytes for every label and line ending", () => {
+  const der = new Uint8Array(MAX_CODEC_FFI_INPUT_BYTES).fill(0xa5);
+  try {
+    for (const label of ["PUBLIC KEY", "PRIVATE KEY", "EC PRIVATE KEY"]) {
+      for (const lineEnding of ["lf", "crlf"]) {
+        const pem = encodePem(label, der, { lineEnding });
+        try {
+          assert.ok(pem.length > MAX_CODEC_FFI_INPUT_BYTES);
+          assert.ok(pem.length <= MAX_CODEC_PEM_INPUT_BYTES);
+          const policy = label === "PUBLIC KEY" ? undefined : { allowedLabels: [label] };
+          const decoded = decodePem(pem, policy);
+          try {
+            assert.equal(decoded.label, label);
+            assert.deepEqual(decoded.der, der);
+          } finally {
+            decoded.der.fill(0);
+          }
+        } finally {
+          pem.fill(0);
+        }
+      }
+    }
+  } finally {
+    der.fill(0);
+  }
+});
+
+test("PEM decode accepts its exact armor limit and honors lower policy limits", () => {
+  const der = bytes(0x30, 0x01, 0xa5);
+  const pem = encodePem("PUBLIC KEY", der);
+  // Empty trailing lines are permitted armor. Padding a public fixture tests
+  // the exact text ceiling independently of base64 expansion and line width.
+  const padded = new Uint8Array(MAX_CODEC_PEM_INPUT_BYTES).fill(0x0a);
+  padded.set(pem);
+  try {
+    const decoded = decodePem(padded, { allowedLabels: ["PUBLIC KEY"] });
+    try {
+      assert.deepEqual(decoded.der, der);
+    } finally {
+      decoded.der.fill(0);
+    }
+
+    const request = create(CodecOperationRequestSchema, {
+      operation: {
+        case: "pemDecode",
+        value: create(CodecPemDecodeRequestSchema, {
+          pem: padded,
+          options: create(CodecPemDecodeOptionsSchema, {
+            allowedLabels: [CodecPemLabel.PUBLIC_KEY],
+          }),
+        }),
+      },
+    });
+    const result = processGeneratedOperationRequest(request);
+    try {
+      assert.equal(result.result.case, "pemDecode");
+      assert.deepEqual(result.result.value.der, der);
+    } finally {
+      clearGeneratedOperationResult(result);
+    }
+
+    assertCodecError(() => decodePem(padded, { maxInputLen: padded.length - 1 }), "invalid-input");
+    assertCodecError(() => decodePem(pem, { maxDerLen: der.length - 1 }), "invalid-input");
+  } finally {
+    der.fill(0);
+    pem.fill(0);
+    padded.fill(0);
+  }
+});
+
 test("encodePem rejects oversized proto options before provider work", () => {
   const privateDer = bytesFromHex(codecVectors.pemPrivateDerHex);
   assertCodecError(
@@ -1727,9 +1802,9 @@ test("WASM boundaries reject oversized non-proto inputs before codec allocation"
   const oversizedRaw = new Uint8Array(MAX_CODEC_FFI_INPUT_BYTES + 1);
   assertCodecError(() => base64Encode(oversizedRaw), "invalid-input");
   const oversizedPem = utf8(
-    `-----BEGIN PUBLIC KEY-----\n${"A".repeat(MAX_CODEC_FFI_INPUT_BYTES)}\n-----END PUBLIC KEY-----`,
+    `-----BEGIN PUBLIC KEY-----\n${"A".repeat(MAX_CODEC_PEM_INPUT_BYTES)}\n-----END PUBLIC KEY-----`,
   );
-  assert.ok(oversizedPem.length > MAX_CODEC_FFI_INPUT_BYTES);
+  assert.ok(oversizedPem.length > MAX_CODEC_PEM_INPUT_BYTES);
   assertCodecError(() => decodePem(oversizedPem), "invalid-input");
   const oversizedJsonString = `"${"a".repeat(MAX_CODEC_FFI_INPUT_BYTES)}"`;
   assert.ok(utf8(oversizedJsonString).length > MAX_CODEC_FFI_INPUT_BYTES);

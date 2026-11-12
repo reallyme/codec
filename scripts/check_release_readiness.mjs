@@ -2364,7 +2364,7 @@ assertContains("packages/ts/src/boundary.ts", 'readOwnDataProperty(value, "lengt
 assertContains("packages/ts/src/jcs.ts", "stringifyBoundaryJson");
 assertContains("packages/ts/src/multiformat.ts", "MAX_MULTICODEC_TABLE_ENTRIES");
 assertContains("packages/ts/src/pem.ts", "snapshotDecodePolicy");
-assertContains("packages/ts/src/pem.ts", "const pemSnapshot = snapshotBoundedBytesInput(input)");
+assertContains("packages/ts/src/pem.ts", "const pemSnapshot = snapshotBoundedBytesInput(input, MAX_CODEC_PEM_INPUT_BYTES)");
 assertContains("packages/ts/src/pem.ts", "const derSnapshot = snapshotBoundedBytesInput(der)");
 assertContains("packages/ts/src/operationContract.ts", "requestBytes.fill(0)");
 assertContains("packages/ts/src/operationContract.ts", "responseBytes.fill(0)");
@@ -2515,7 +2515,7 @@ assertContains("packages/ts/test/structured-operation-provider.test.mjs", "publi
 assertContains("packages/ts/test/structured-operation-provider.test.mjs", "public contract processors reject oversized input before provider invocation");
 assertContains("packages/ts/src/pem.ts", "maxInputLen: requireProtoUint32(snapshot.maxInputLen)");
 assertContains("packages/ts/src/pem.ts", "maxDerLen: requireProtoUint32(snapshot.maxDerLen)");
-assertContains("packages/ts/src/pem.ts", "const pemSnapshot = snapshotBoundedBytesInput(input)");
+assertContains("packages/ts/src/pem.ts", "const pemSnapshot = snapshotBoundedBytesInput(input, MAX_CODEC_PEM_INPUT_BYTES)");
 assertContains("packages/ts/src/pem.ts", "pemSnapshot.fill(0)");
 assertContains("packages/ts/src/pem.ts", "const derSnapshot = snapshotBoundedBytesInput(der)");
 assertContains("packages/ts/src/pem.ts", "derSnapshot.fill(0)");
