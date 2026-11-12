@@ -29,12 +29,18 @@ verifying every trusted full fingerprint, scoping each key to its publisher,
 committing the reviewed public-key ring, and retaining SHA-256 verification as
 the integrity control and fallback for unsigned artifacts.
 
-The 2026-11-12 Rust registry review covered all 114 distinct registry crates
+The 2026-11-12 Rust registry review covered all 118 distinct registry crates
 across the four Cargo lockfiles. All direct dependencies and resolvable
 transitive updates use current stable releases. Eleven transitive release lines
 remain constrained by their upstream dependencies, including Buffa's base64
 0.22 requirement and multibase's base-x 0.2 requirement. Those constraints require
 compatible upstream updates before the newer major versions can be selected.
+
+General CBOR uses half 2.7.1 without default features for IEEE binary16
+conversion. Its newly activated dependencies (crunchy 0.2.4, zerocopy 0.8.63,
+and zerocopy-derive 0.8.63) were checked against their current stable registry
+releases. Native, WASM, iOS, Android, MSRV, dependency-policy, and advisory checks
+cover the resulting graph.
 
 SwiftProtobuf 1.40.0 is the current runtime dependency. The Swift generator stays
 at 1.39.0, the newest version published for `buf.build/apple/swift` on

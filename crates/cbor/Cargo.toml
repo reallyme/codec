@@ -17,6 +17,7 @@ include = ["/src/**/*.rs", "/tests/**/*.rs", "/tests/fixtures/**", "/Cargo.toml"
 name = "codec_cbor"
 
 [dependencies]
+half = { workspace = true }
 cid = { workspace = true }
 multihash = { workspace = true }
 multihash-codetable = { workspace = true, features = ["sha2"] }
@@ -25,6 +26,7 @@ thiserror = { workspace = true }
 zeroize = { workspace = true }
 
 [dev-dependencies]
+proptest = { workspace = true }
 stats_alloc = "=0.1.10"
 
 [lints]

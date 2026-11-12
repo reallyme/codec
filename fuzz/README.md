@@ -23,6 +23,7 @@ own empty `[workspace]` so it does not inherit lint settings that libFuzzer's
 | `pem_decode` | PEM envelope decode and re-encode | `codec_pem::{decode_pem, encode_pem}` |
 | `dag_cbor` | DAG-CBOR decode + canonical re-encode + CID parse/verify | `codec_cbor::{decode_dag_cbor, encode_dag_cbor, try_parse_cid, verify_dag_cbor_cid}` |
 | `deterministic_cbor` | generic deterministic-CBOR decode + canonical re-encode | `codec_cbor::{decode_deterministic_cbor, encode_deterministic_cbor}` |
+| `general_cbor` | bounded borrowed framing, profiles, key equivalence, exact received embedding, cursor consumption | `codec_cbor::general::{frame_prefix, validate_exact, encode, Cursor}` |
 | `operation_contract` | executable protobuf + generated ProtoJSON dispatch | `reallyme_codec::operation_contract::{process_operation_response, process_operation_response_json}` |
 | `jcs_text` | strict JSON parsing and canonicalization idempotence | `codec_jcs::canonicalize_json_text` |
 
@@ -37,6 +38,9 @@ cargo install --git https://github.com/rust-fuzz/cargo-fuzz.git --rev 984c861c8d
 # From the repository root:
 cargo +nightly-2026-07-01 fuzz run multibase
 cargo +nightly-2026-07-01 fuzz run deterministic_cbor -- -max_total_time=60  # time-boxed
+mkdir -p fuzz/corpus/general_cbor
+cp fuzz/seeds/general_cbor/* fuzz/corpus/general_cbor/
+cargo +nightly-2026-07-01 fuzz run general_cbor -- -max_total_time=120
 cargo +nightly-2026-07-01 fuzz run jcs_text -- -max_total_time=60  # time-boxed
 cargo +nightly-2026-07-01 fuzz list                              # all targets
 ```

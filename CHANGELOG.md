@@ -6,6 +6,17 @@ boundary.
 
 ## 0.3.4 (unreleased)
 
+- Add a separate borrowed general CBOR API with arbitrary tags, exact received
+  wrapper and payload spans, prefix/full framing, cursors, unsorted unique maps,
+  complete integer arguments, and binary16/32/64 floats. Basic validity,
+  preferred serialization, map ordering, float policy, and tag-24 embedded-item
+  validation remain explicit. Existing deterministic/DAG profiles are unchanged.
+- Add protected general encoding that retains caller map order and embeds received
+  items verbatim, with caller-lowerable resource/work limits and zeroization on
+  failure. Cover semantic key equivalence, NaN payloads, allocation bounds, and
+  memory erasure with regressions, properties, and a dedicated fuzz target.
+- Use the Intel macOS runner pool for portable tooling and sanitizers while retaining
+  ARM macOS coverage in the Swift lane.
 - Derive C sanitizer harness version expectations from Cargo package metadata,
   rejecting missing, invalid, and mismatched release versions without copying
   release numbers into the harness.

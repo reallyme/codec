@@ -32,9 +32,10 @@ pub mod base64url {
     pub use codec_base64url::{serde_bytes, serde_option_bytes};
 }
 
-/// Deterministic generic CBOR, DAG-CBOR, and content-identifier helpers.
+/// Borrowed general CBOR, deterministic CBOR, DAG-CBOR, and CID helpers.
 #[cfg(feature = "cbor")]
 pub mod cbor {
+    pub use codec_cbor::general;
     pub use codec_cbor::{
         compute_cid_dag_cbor, dag_cbor_multihash, decode_dag_cbor, decode_deterministic_cbor,
         encode_dag_cbor, encode_deterministic_cbor, is_valid_cid_string, sha2_256_content_hash,
