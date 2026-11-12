@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// SPDX-FileCopyrightText: 2026 ReallyMe LLC
+// SPDX-FileCopyrightText: 2026 ReallyMe Technologies Limited
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
@@ -59,7 +59,6 @@ const {
   listFiles,
   fail,
   requireTracked,
-  runNodeCheck,
   assertContains,
   assertNotContains,
   assertNodeWorkflowJobsPinNode,
@@ -67,6 +66,7 @@ const {
   assertReallyMeOperationBoundaryContract,
   assertReallyMeProtobufReleasePolicy,
   assertReallyMeVendoredCorePolicy,
+  assertSpdxHeaders,
   assertWorkflowActionsPinned,
   assertWorkflowUsesStepPinnedTo,
   extractWorkflowSteps,
@@ -95,10 +95,8 @@ for (const argument of process.argv.slice(2)) {
 // This policy module executes inside the release gate. Requiring it explicitly
 // prevents an untracked worktree file from influencing release readiness.
 requireTracked("scripts/release-readiness/source-policy.mjs");
-// Test registration must not require a policy edit and a checksum refresh.
-for (const suite of listFiles("scripts").filter((path) => path.endsWith(".test.mjs"))) {
-  runNodeCheck(suite);
-}
+// Script regression suites run once per host in the repository policy job,
+// whose glob is asserted below; running them here again would only repeat it.
 try {
   execFileSync(process.execPath, ["scripts/validate_codec_vectors.mjs"], {
     stdio: "pipe",
@@ -287,6 +285,18 @@ const assertTypescriptProtoFacadeCompleteness = ({ facadePath, generatedPath }) 
 };
 
 assertReallyMeVendoredCorePolicy({ version: "0.7.0" });
+// Every governed tracked source must name the same copyright holder. Only
+// generator output that cannot carry a header is excluded, with a typed reason.
+assertSpdxHeaders({
+  copyright: "SPDX-FileCopyrightText: 2026 ReallyMe Technologies Limited",
+  license: "SPDX-License-Identifier: MIT OR Apache-2.0",
+  exclusions: [
+    { path: "crates/proto/src/generated/buffa", reason: "generated" },
+    { path: "gen/kotlin", reason: "generated" },
+  ],
+  requireExclusionsMatched: true,
+  requireExclusionReasons: true,
+});
 // Composite actions can hide additional third-party dependencies from the
 // top-level workflow scan. Reject them until the checker recursively validates
 // every local action dependency with the same full-SHA policy.
@@ -298,8 +308,8 @@ assertCargoFuzzWorkflowPolicy({
   },
 });
 
-const codecPackageVersion = "0.3.2";
-const codecProtoPackageVersion = "0.3.2";
+const codecPackageVersion = "0.3.3";
+const codecProtoPackageVersion = "0.3.3";
 try {
   verifyCheckedOutReleaseVersion(codecPackageVersion);
 } catch (error) {
@@ -743,6 +753,10 @@ assertContains(
 assertContains(".github/workflows/code-checks.yml", "bash scripts/install_actionlint.sh");
 assertContains(".github/workflows/code-checks.yml", "run: actionlint");
 assertContains(".github/workflows/code-checks.yml", "--check-pins");
+assertContains(
+  ".github/workflows/code-checks.yml",
+  "node scripts/run_pinned_release_readiness.mjs --check-pins --verify-upstream",
+);
 assertContains(".github/workflows/protobuf-ci.yml", "--check-pins");
 assertContains(
   ".github/workflows/code-checks.yml",
@@ -1739,7 +1753,7 @@ const packageReleaseWorkflows = Object.freeze([
 for (const workflowPath of packagePreflightWorkflows) {
   assertContains(workflowPath, "Resolve release SHA");
   assertContains(workflowPath, 'default: ""');
-  assertContains(workflowPath, "default: 0.3.2");
+  assertContains(workflowPath, "default: 0.3.3");
 }
 for (const workflowPath of packageReleaseWorkflows) {
   assertContains(workflowPath, "Verify reviewed release SHA");
@@ -1938,7 +1952,7 @@ assertContains(".github/workflows/kotlin-android-package-release.yml", "Test and
 assertContains(".github/workflows/kotlin-android-package-release.yml", "Build Android AAR");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "requireFullNativeResources=true");
 assertContains("packages/kotlin/settings.gradle.kts", 'rootProject.name = "reallyme-codec"');
-assertContains("packages/kotlin/README.md", "me.really:codec:0.3.2");
+assertContains("packages/kotlin/README.md", "me.really:codec:0.3.3");
 assertContains("packages/kotlin/README.md", "ships Rust JNI libraries as platform resources");
 assertContains(
   "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
@@ -2630,7 +2644,7 @@ assertContains(
   ".github/workflows/kotlin-android-package-release.yml",
   '{ yes 2>/dev/null || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "ndk;29.0.14206865"',
 );
-assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.3.2");
+assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.3.3");
 assertContains("packages/kotlin-android/README.md", "never sourced from the Git worktree");
 assertContains(
   "packages/kotlin-android/gradle.properties",
@@ -2692,7 +2706,7 @@ assertContains(".github/workflows/npm-package-preflight.yml", "Test TypeScript c
 
 assertContains("README.md", "https://github.com/reallyme/codec");
 assertContains("README.md", "https://www.npmjs.com/package/@reallyme/codec");
-assertContains("README.md", "me.really:codec:0.3.2");
+assertContains("README.md", "me.really:codec:0.3.3");
 assertContains("README.md", "reallyme-codec-proto");
 assertContains("README.md", "## Published Surfaces");
 assertContains("README.md", "`me.really:codec-android` AAR");

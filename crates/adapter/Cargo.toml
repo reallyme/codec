@@ -4,7 +4,7 @@
 
 [package]
 name = "reallyme-codec-adapter"
-version = "0.3.2"
+version = "0.3.3"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -13,13 +13,13 @@ publish = false
 description = "Internal scalar policy for ReallyMe codec boundaries."
 
 [dependencies]
-codec-base64 = { package = "reallyme-codec-base64", version = "=0.3.2", path = "../base64" }
-codec-base64url = { package = "reallyme-codec-base64url", version = "=0.3.2", path = "../base64url" }
-codec-cbor = { package = "reallyme-codec-cbor", version = "=0.3.2", path = "../cbor" }
-codec-hex = { package = "reallyme-codec-hex", version = "=0.3.2", path = "../hex" }
-codec-jcs = { package = "reallyme-codec-jcs", version = "=0.3.2", path = "../jcs" }
-codec-multibase = { package = "reallyme-codec-multibase", version = "=0.3.2", path = "../multibase" }
-codec-multikey = { package = "reallyme-codec-multikey", version = "=0.3.2", path = "../multikey" }
+codec-base64 = { package = "reallyme-codec-base64", version = "=0.3.3", path = "../base64" }
+codec-base64url = { package = "reallyme-codec-base64url", version = "=0.3.3", path = "../base64url" }
+codec-cbor = { package = "reallyme-codec-cbor", version = "=0.3.3", path = "../cbor" }
+codec-hex = { package = "reallyme-codec-hex", version = "=0.3.3", path = "../hex" }
+codec-jcs = { package = "reallyme-codec-jcs", version = "=0.3.3", path = "../jcs" }
+codec-multibase = { package = "reallyme-codec-multibase", version = "=0.3.3", path = "../multibase" }
+codec-multikey = { package = "reallyme-codec-multikey", version = "=0.3.3", path = "../multikey" }
 thiserror = { workspace = true }
 
 [lints]

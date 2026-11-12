@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2026 ReallyMe LLC
+// SPDX-FileCopyrightText: 2026 ReallyMe Technologies Limited
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
@@ -15,6 +15,9 @@ import { startStaticServer } from "../packages/ts/scripts/browser-test-server.mj
 
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
 const posixHost = process.platform !== "win32";
+// Retry fixtures spawn several child processes. Keep a finite hang guard without
+// making a loaded runner's process-startup speed part of the tested contract.
+const toolFixtureTimeoutMs = 60_000;
 
 const fixture = (t) => {
   const root = mkdtempSync(join(tmpdir(), "codec tooling # "));
@@ -52,14 +55,14 @@ test("Swift binary manifest rejects ancestor path components", (t) => {
   const checksum = "a".repeat(64);
   for (const path of ["artifact/../bundle.zip", "artifact/./bundle.zip"]) {
     const result = spawnSync(process.execPath, [script, "0.3.1", checksum, "--local-artifact-path", path], {
-      cwd: root, encoding: "utf8", timeout: 10_000,
+      cwd: root, encoding: "utf8", timeout: toolFixtureTimeoutMs,
     });
     assert.equal(result.error, undefined);
     assert.equal(result.status, 1);
     assert.match(result.stderr, /ancestor or current-directory components/u);
   }
   const accepted = spawnSync(process.execPath, [script, "0.3.1", checksum, "--local-artifact-path", "artifact/bundle.zip"], {
-    cwd: root, encoding: "utf8", timeout: 10_000,
+    cwd: root, encoding: "utf8", timeout: toolFixtureTimeoutMs,
   });
   assert.equal(accepted.error, undefined);
   assert.equal(accepted.status, 0, accepted.stderr);
@@ -93,7 +96,7 @@ for (const succeeds of [false, true]) {
       }
     `);
     const result = spawnSync(process.execPath, ["--import", pathToFileURL(preload).href, script, "publish"], {
-      cwd: dirname(root), env: environment(root), encoding: "utf8", timeout: 10_000,
+      cwd: dirname(root), env: environment(root), encoding: "utf8", timeout: toolFixtureTimeoutMs,
     });
     assert.equal(result.error, undefined);
     assert.equal(result.status, succeeds ? 0 : 1, result.stderr);
@@ -139,7 +142,7 @@ test("crate packaging waits for the preceding workspace release to reach the ind
     }
   `);
   const result = spawnSync(process.execPath, ["--import", pathToFileURL(preload).href, script, "publish"], {
-    cwd: root, env: environment(root), encoding: "utf8", timeout: 10_000,
+    cwd: root, env: environment(root), encoding: "utf8", timeout: toolFixtureTimeoutMs,
   });
   assert.equal(result.error, undefined);
   assert.equal(result.status, 0, result.stderr);
@@ -170,7 +173,7 @@ for (const matches of [false, true]) {
       }
     `);
     const result = spawnSync(process.execPath, ["--import", pathToFileURL(preload).href, script, "publish"], {
-      cwd: root, env: environment(root), encoding: "utf8", timeout: 10_000,
+      cwd: root, env: environment(root), encoding: "utf8", timeout: toolFixtureTimeoutMs,
     });
     assert.equal(result.error, undefined);
     assert.equal(result.status, matches ? 0 : 1, result.stderr);
@@ -222,7 +225,7 @@ for (const scenario of [
       }
     `);
     const result = spawnSync(process.execPath, ["--import", pathToFileURL(preload).href, script, "publish"], {
-      cwd: root, env: environment(root), encoding: "utf8", timeout: 10_000,
+      cwd: root, env: environment(root), encoding: "utf8", timeout: toolFixtureTimeoutMs,
     });
     assert.equal(result.error, undefined);
     assert.equal(result.status, scenario.status, result.stderr);
@@ -253,7 +256,7 @@ test("Swift artifact path check accepts runner toolchain paths and rejects unrem
     ["/Users/runner/.rustup/toolchains/custom/lib.rs", 1],
   ]) {
     writeFileSync(stringsOutput, `${value}\n`);
-    const result = spawnSync("bash", args, { cwd: root, env, encoding: "utf8", timeout: 10_000 });
+    const result = spawnSync("bash", args, { cwd: root, env, encoding: "utf8", timeout: toolFixtureTimeoutMs });
     assert.equal(result.error, undefined);
     assert.equal(result.status, expectedStatus, result.stderr);
   }
@@ -274,7 +277,7 @@ test("Linux native glibc floor rejects a newer symbol requirement", { skip: !pos
       cwd: root,
       env: { ...environment(root), REQUIRED_GLIBC_VERSION: version },
       encoding: "utf8",
-      timeout: 10_000,
+      timeout: toolFixtureTimeoutMs,
     });
     assert.equal(result.error, undefined);
     assert.equal(result.status, expectedStatus, result.stderr);
@@ -288,7 +291,7 @@ test("protobuf hardening supports checkout paths containing spaces and URL chara
     "crates/proto/proto", "crates/proto/src/generated", "packages/ts/src/proto/generated", "packages/swift/Sources/ReallyMeCodec/GeneratedCodecProto.swift", "gen",
   ]) copy(root, path);
   const result = spawnSync(process.execPath, [join(root, "scripts/redact_codec_proto_debug.mjs"), "--check-idempotent"], {
-    cwd: root, encoding: "utf8", timeout: 30_000,
+    cwd: root, encoding: "utf8", timeout: toolFixtureTimeoutMs,
   });
   assert.equal(result.error, undefined);
   assert.equal(result.status, 0, result.stderr);
@@ -353,7 +356,7 @@ for (const android of [false, true]) {
     const result = spawnSync("bash", [script], {
       cwd: elsewhere,
       env: { ...environment(root), ANDROID_NDK_HOME: ndk, CARGO_TARGET_DIR: join(root, "other-target") },
-      encoding: "utf8", timeout: 15_000,
+      encoding: "utf8", timeout: toolFixtureTimeoutMs,
     });
     assert.equal(result.error, undefined);
     assert.equal(result.status, 0, result.stderr);
@@ -374,7 +377,7 @@ for (const android of [false, true]) {
       const misaligned = spawnSync("bash", [script], {
         cwd: elsewhere,
         env: { ...environment(root), ANDROID_NDK_HOME: ndk, CARGO_TARGET_DIR: join(root, "other-target") },
-        encoding: "utf8", timeout: 15_000,
+        encoding: "utf8", timeout: toolFixtureTimeoutMs,
       });
       assert.equal(misaligned.status, 1, misaligned.stderr);
       assert.match(misaligned.stderr, /below 16 KB page alignment/u);

@@ -48,6 +48,7 @@ jobs:
           - base64url
           - dag_cbor
           - deterministic_cbor
+          - der
           - multibase
           - multicodec
           - multikey

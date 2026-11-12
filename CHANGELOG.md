@@ -4,6 +4,18 @@ All packages in the ReallyMe Codec release line share one version. Security
 changes are called out when they affect accepted input or an integration
 boundary.
 
+## 0.3.3 (unreleased)
+
+- Add opt-in, bounded, schema-directed strict DER readers and an exact
+  SEQUENCE-of-two-unsigned-INTEGER decoder for Rust consumers. Curve widths,
+  scalar ranges, and signature normalization remain in the cryptographic layer.
+- Reject noncanonical DER lengths, INTEGER sign padding, BIT STRING padding,
+  OID subidentifiers, SET OF ordering, and trailing data with typed errors.
+- Expand parser property tests, fuzzing, Miri coverage, and regression checks
+  against Cargo feature unification.
+- Harden CI pin verification and tooling checks, including bounded subprocess
+  deadlines that tolerate loaded runners.
+
 ## 0.3.2 (2026-11-08)
 
 - Change project ownership and copyright references to ReallyMe Technologies

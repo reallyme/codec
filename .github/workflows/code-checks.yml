@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2026 ReallyMe LLC
+# SPDX-FileCopyrightText: 2026 ReallyMe Technologies Limited
 #
 # SPDX-License-Identifier: MIT OR Apache-2.0
 
@@ -42,6 +42,13 @@ jobs:
 
       - name: Verify release readiness pins before testing
         run: node scripts/run_pinned_release_readiness.mjs --check-pins
+
+      # The local digest pin cannot prove where the vendored core came from.
+      # One bounded fetch on one lane, without retries, ties it to the pinned
+      # upstream commit; every other lane and the release gate stay offline.
+      - name: Verify vendored readiness core against upstream
+        if: matrix.os == 'ubuntu-24.04'
+        run: node scripts/run_pinned_release_readiness.mjs --check-pins --verify-upstream
 
       - name: Install ShellCheck
         uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
@@ -134,12 +141,15 @@ jobs:
       - name: Check codec feature subsets
         run: |
           cargo test -p reallyme-codec --no-default-features --all-targets --locked
-          for feature in base64 base64url cbor hex jcs multibase multicodec multikey pem operation-contract serde; do
+          for feature in base64 base64url cbor der hex jcs multibase multicodec multikey pem operation-contract serde; do
             cargo test -p reallyme-codec --no-default-features --features "$feature" --all-targets --locked
           done
 
       - name: Test JCS under serde_json feature unification
         run: cargo test --manifest-path probes/jcs-feature-unification/Cargo.toml --locked
+
+      - name: Test DER under BER feature unification
+        run: cargo test --manifest-path probes/der-feature-unification/Cargo.toml --locked
 
       - name: Doc build
         run: cargo doc --workspace --no-deps --all-features
@@ -150,7 +160,9 @@ jobs:
         run: cargo test --workspace --all-features --doc --locked
 
       - name: Check codec WASM crate
-        run: cargo check -p reallyme-codec-wasm --target wasm32-unknown-unknown --locked
+        run: |
+          cargo check -p reallyme-codec-wasm --target wasm32-unknown-unknown --locked
+          cargo check -p reallyme-codec --no-default-features --features der --target wasm32-unknown-unknown --locked
 
       - name: Install TypeScript codec package dependencies
         run: npm ci --prefix packages/ts
@@ -228,6 +240,7 @@ jobs:
         run: |
           cargo +nightly-2026-07-01 miri test -p reallyme-codec-ffi --lib pointer::tests --locked
           cargo +nightly-2026-07-01 miri test -p reallyme-codec-ffi --lib guard::tests --locked
+          cargo +nightly-2026-07-01 miri test -p reallyme-codec --no-default-features --features der --test der_canonical_tests --locked
 
   swift:
     name: swift codec package

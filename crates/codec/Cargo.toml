@@ -4,28 +4,29 @@
 
 [package]
 name = "reallyme-codec"
-version = "0.3.2"
+version = "0.3.3"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 publish = true
-description = "ReallyMe codec utilities for PEM, lowercase hex, multibase, multicodec, multikey, CBOR, JCS, and base encodings."
+description = "ReallyMe codec utilities for strict DER, PEM, lowercase hex, multibase, multicodec, multikey, CBOR, JCS, and base encodings."
 readme = "README.md"
 include = ["/src/**/*.rs", "/Cargo.toml", "/README.md", "/LICENSE", "/NOTICE"]
 
 [dependencies]
-codec-base64 = { package = "reallyme-codec-base64", version = "=0.3.2", path = "../base64", optional = true }
-codec-base64url = { package = "reallyme-codec-base64url", version = "=0.3.2", path = "../base64url", optional = true }
-codec-cbor = { package = "reallyme-codec-cbor", version = "=0.3.2", path = "../cbor", optional = true }
-codec-hex = { package = "reallyme-codec-hex", version = "=0.3.2", path = "../hex", optional = true }
-codec-jcs = { package = "reallyme-codec-jcs", version = "=0.3.2", path = "../jcs", optional = true }
-codec-multibase = { package = "reallyme-codec-multibase", version = "=0.3.2", path = "../multibase", optional = true }
-codec-multicodec = { package = "reallyme-codec-multicodec", version = "=0.3.2", path = "../multicodec", optional = true }
-codec-multikey = { package = "reallyme-codec-multikey", version = "=0.3.2", path = "../multikey", optional = true }
-codec-pem = { package = "reallyme-codec-pem", version = "=0.3.2", path = "../pem", optional = true }
-codec-proto = { package = "reallyme-codec-proto", version = "=0.3.2", path = "../proto", default-features = false, features = ["generated"], optional = true }
+codec-base64 = { package = "reallyme-codec-base64", version = "=0.3.3", path = "../base64", optional = true }
+codec-base64url = { package = "reallyme-codec-base64url", version = "=0.3.3", path = "../base64url", optional = true }
+codec-cbor = { package = "reallyme-codec-cbor", version = "=0.3.3", path = "../cbor", optional = true }
+codec-hex = { package = "reallyme-codec-hex", version = "=0.3.3", path = "../hex", optional = true }
+codec-jcs = { package = "reallyme-codec-jcs", version = "=0.3.3", path = "../jcs", optional = true }
+codec-multibase = { package = "reallyme-codec-multibase", version = "=0.3.3", path = "../multibase", optional = true }
+codec-multicodec = { package = "reallyme-codec-multicodec", version = "=0.3.3", path = "../multicodec", optional = true }
+codec-multikey = { package = "reallyme-codec-multikey", version = "=0.3.3", path = "../multikey", optional = true }
+codec-pem = { package = "reallyme-codec-pem", version = "=0.3.3", path = "../pem", optional = true }
+codec-proto = { package = "reallyme-codec-proto", version = "=0.3.3", path = "../proto", default-features = false, features = ["generated"], optional = true }
 buffa = { workspace = true, optional = true }
+der-core = { workspace = true, optional = true }
 thiserror = { workspace = true, optional = true }
 zeroize = { workspace = true, optional = true }
 
@@ -44,6 +45,7 @@ default = [
 base64 = ["dep:codec-base64"]
 base64url = ["dep:codec-base64url"]
 cbor = ["dep:codec-cbor"]
+der = ["dep:der-core", "dep:thiserror"]
 hex = ["dep:codec-hex"]
 jcs = ["dep:codec-jcs"]
 multibase = ["dep:codec-multibase", "base64url"]
@@ -70,4 +72,5 @@ serde = ["base64url", "codec-base64url/serde"]
 workspace = true
 
 [dev-dependencies]
+proptest = { workspace = true }
 serde_json = { workspace = true }

@@ -140,7 +140,7 @@ fn abi_version_export_matches_the_sdk_contract() {
     assert_eq!(rm_codec_abi_version(), CODEC_ABI_VERSION);
     assert_eq!(rm_codec_package_version_major(), 0);
     assert_eq!(rm_codec_package_version_minor(), 3);
-    assert_eq!(rm_codec_package_version_patch(), 2);
+    assert_eq!(rm_codec_package_version_patch(), 3);
     assert_eq!(
         rm_codec_max_operation_response_bytes(),
         codec_proto::MAX_CODEC_PROTO_MESSAGE_BYTES
