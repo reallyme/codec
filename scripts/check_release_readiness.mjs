@@ -42,6 +42,7 @@ const {
   listFiles,
   fail,
   requireTracked,
+  runNodeCheck,
   assertContains,
   assertNotContains,
   assertNodeWorkflowJobsPinNode,
@@ -62,6 +63,7 @@ const {
 // This policy module executes inside the release gate. Requiring it explicitly
 // prevents an untracked worktree file from influencing release readiness.
 requireTracked("scripts/release-readiness/source-policy.mjs");
+runNodeCheck("scripts/maven_central_bundle.test.mjs");
 try {
   execFileSync(process.execPath, ["scripts/validate_codec_vectors.mjs"], {
     stdio: "pipe",
