@@ -309,23 +309,3 @@ export const readOptionalLengthProperty = (
   }
   return value;
 };
-
-export const asciiBytesToString = (bytes: Uint8Array): string => {
-  if (bytes.length > MAX_CODEC_FFI_INPUT_BYTES) {
-    throw new ReallyMeCodecError("invalid-input");
-  }
-  let value = "";
-  // Indexed access avoids executing an attacker-supplied iterator installed
-  // on an otherwise valid Uint8Array instance.
-  for (let index = 0; index < bytes.length; index += 1) {
-    const byte = bytes[index];
-    if (byte === undefined) {
-      throw new ReallyMeCodecError("invalid-input");
-    }
-    if (byte > 0x7f) {
-      throw new ReallyMeCodecError("invalid-input");
-    }
-    value += String.fromCharCode(byte);
-  }
-  return value;
-};

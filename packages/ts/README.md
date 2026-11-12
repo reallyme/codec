@@ -29,7 +29,7 @@ const encoded = ReallyMeCodec.base64urlEncode(new Uint8Array([1, 2, 3]));
 const decoded = ReallyMeCodec.base64urlDecode(encoded);
 ```
 
-Initialize the bundled Wasm module before installing its provider. Unexpected runtime failures return `provider-failure`; recovery is attempted on a later call.
+Initialize the bundled Wasm module before installing its provider. Unexpected runtime failures return `provider-failure`; recovery is attempted on a later call. Precompiled `WebAssembly.Module` inputs are rejected; supply bytes, a `Response` or a URL from the matching package.
 
 ## Surface
 

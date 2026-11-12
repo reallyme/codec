@@ -724,6 +724,18 @@ export const processGeneratedOperationRequest = (
   } catch (_error: unknown) {
     throw new ReallyMeCodecError("provider-failure");
   }
+  return processOperationRequestBytes(requestBytes);
+};
+
+/**
+ * Execute a serialized request through the fully discriminated response lane.
+ *
+ * Takes ownership of `requestBytes` and wipes it on every exit path. Sensitive
+ * operations frame their own request bytes so no serializer copy survives.
+ */
+export const processOperationRequestBytes = (
+  requestBytes: Uint8Array,
+): CodecOperationResult => {
   try {
     if (requestBytes.length > MAX_CODEC_PROTO_MESSAGE_BYTES) {
       throw new ReallyMeCodecError("invalid-input");

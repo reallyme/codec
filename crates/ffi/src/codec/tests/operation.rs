@@ -53,6 +53,7 @@ fn operation_ffi_rejects_null_request_with_nonzero_length_before_limits() {
             };
             assert_eq!(status, CODEC_INVALID_ARGUMENT);
             assert_eq!(output, [0xaa_u8; 64]);
+            assert_eq!(produced_len, 0);
         }
     }
 }

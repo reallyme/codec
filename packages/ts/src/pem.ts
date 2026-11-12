@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-import { create } from "@bufbuild/protobuf";
+import { create, toBinary } from "@bufbuild/protobuf";
 import type { Message } from "@bufbuild/protobuf";
 
 import { ReallyMeCodecError } from "./errors.js";
@@ -15,14 +15,11 @@ import {
   CodecPemLabel,
   CodecPemLineEnding,
 } from "./proto/generated/reallyme/codec/v1/codec_pb.js";
-import type {
-  CodecOperationRequest,
-  CodecPemEncodeRequest,
-  CodecPemDecodeResult,
-} from "./proto/generated/reallyme/codec/v1/codec_pb.js";
+import type { CodecPemDecodeResult } from "./proto/generated/reallyme/codec/v1/codec_pb.js";
+import { frameOperationRequest } from "./frameSensitiveRequest.js";
 import {
   clearGeneratedOperationResult,
-  processGeneratedOperationRequest,
+  processOperationRequestBytes,
 } from "./operationContract.js";
 import {
   ensureBytesInput,
@@ -269,66 +266,89 @@ const readPemDocument = (result: CodecPemDecodeResult): ReallyMePemDocument => {
   }
 };
 
+// Field numbers come from the generated schema so framing cannot drift from
+// the protobuf contract.
+const PEM_DECODE_OPERATION_FIELD = CodecOperationRequestSchema.field.pemDecode.number;
+const PEM_ENCODE_OPERATION_FIELD = CodecOperationRequestSchema.field.pemEncode.number;
+const PEM_DECODE_PEM_FIELD = CodecPemDecodeRequestSchema.field.pem.number;
+const PEM_DECODE_OPTIONS_FIELD = CodecPemDecodeRequestSchema.field.options.number;
+const PEM_ENCODE_LABEL_FIELD = CodecPemEncodeRequestSchema.field.label.number;
+const PEM_ENCODE_DER_FIELD = CodecPemEncodeRequestSchema.field.der.number;
+const PEM_ENCODE_OPTIONS_FIELD = CodecPemEncodeRequestSchema.field.options.number;
+
+// Options carry only labels and limits, never key material, so the generated
+// serializer may encode them; the PEM or DER bytes are framed separately.
+const serializeOptions = (encode: () => Uint8Array): Uint8Array => {
+  try {
+    return encode();
+  } catch (error: unknown) {
+    if (error instanceof ReallyMeCodecError) {
+      throw error;
+    }
+    throw new ReallyMeCodecError("provider-failure");
+  }
+};
+
+const pemDecodeOptionsBytes = (policy?: ReallyMePemDecodePolicy): Uint8Array | undefined => {
+  const snapshot = snapshotDecodePolicy(policy);
+  if (snapshot === undefined) {
+    return undefined;
+  }
+  const allowedLabels: CodecPemLabel[] = [];
+  if (snapshot.allowedLabels !== undefined) {
+    for (const label of snapshot.allowedLabels) {
+      allowedLabels.push(protoPemLabel(requirePemLabel(label)));
+    }
+  }
+  const decodeOptions = create(CodecPemDecodeOptionsSchema, {
+    allowedLabels,
+    maxInputLen: requireProtoUint32(snapshot.maxInputLen),
+    maxDerLen: requireProtoUint32(snapshot.maxDerLen),
+  });
+  return serializeOptions(() => toBinary(CodecPemDecodeOptionsSchema, decodeOptions));
+};
+
+const pemEncodeOptionsBytes = (options?: ReallyMePemEncodeOptions): Uint8Array | undefined => {
+  const snapshot = snapshotEncodeOptions(options);
+  if (snapshot === undefined) {
+    return undefined;
+  }
+  const encodeOptions = create(CodecPemEncodeOptionsSchema, {
+    maxDerLen: requireProtoUint32(snapshot.maxDerLen),
+    lineWidth: requireProtoUint32(snapshot.lineWidth),
+    lineEnding: snapshot.lineEnding === "crlf"
+      ? CodecPemLineEnding.CRLF
+      : snapshot.lineEnding === "lf"
+        ? CodecPemLineEnding.LF
+        : CodecPemLineEnding.UNSPECIFIED,
+  });
+  return serializeOptions(() => toBinary(CodecPemEncodeOptionsSchema, encodeOptions));
+};
+
 export const decodePem = (
   input: Uint8Array,
   policy?: ReallyMePemDecodePolicy,
 ): ReallyMePemDocument => {
   ensureBytesInput(input);
-  const request = pemDecodeRequest(input, policy);
-  try {
-    const operationResult = processGeneratedOperationRequest(request);
-    if (operationResult.result.case !== "pemDecode") {
-      clearGeneratedOperationResult(operationResult);
-      throw new ReallyMeCodecError("provider-failure");
-    }
-    return readPemDocument(operationResult.result.value);
-  } finally {
-    clearPemDecodeRequest(request);
-  }
-};
-
-const pemDecodeRequest = (
-  input: Uint8Array,
-  policy?: ReallyMePemDecodePolicy,
-): CodecOperationRequest => {
-  ensureBytesInput(input);
-  const snapshot = snapshotDecodePolicy(policy);
-  const allowedLabels: CodecPemLabel[] = [];
-  if (snapshot?.allowedLabels !== undefined) {
-    for (const label of snapshot.allowedLabels) {
-      allowedLabels.push(protoPemLabel(requirePemLabel(label)));
-    }
-  }
-  const options = snapshot === undefined
-    ? undefined
-    : create(CodecPemDecodeOptionsSchema, {
-      allowedLabels,
-      maxInputLen: requireProtoUint32(snapshot.maxInputLen),
-      maxDerLen: requireProtoUint32(snapshot.maxDerLen),
-    });
+  const optionsBytes = pemDecodeOptionsBytes(policy);
   const pemSnapshot = snapshotBoundedBytesInput(input);
+  let requestBytes: Uint8Array;
   try {
-    const request = create(CodecPemDecodeRequestSchema, { pem: pemSnapshot });
-    if (options !== undefined) {
-      request.options = options;
-    }
-    return create(CodecOperationRequestSchema, {
-      operation: {
-        case: "pemDecode",
-        value: request,
-      },
-    });
-  } catch (error: unknown) {
+    requestBytes = frameOperationRequest(PEM_DECODE_OPERATION_FIELD, [
+      { field: PEM_DECODE_PEM_FIELD, bytes: pemSnapshot },
+      ...(optionsBytes === undefined
+        ? []
+        : [{ field: PEM_DECODE_OPTIONS_FIELD, message: optionsBytes }]),
+    ]);
+  } finally {
     pemSnapshot.fill(0);
-    throw error;
   }
-};
-
-const clearPemDecodeRequest = (request: CodecOperationRequest): void => {
-  if (request.operation.case === "pemDecode") {
-    request.operation.value.pem.fill(0);
-    request.operation.value.pem = new Uint8Array(0);
+  const operationResult = processOperationRequestBytes(requestBytes);
+  if (operationResult.result.case !== "pemDecode") {
+    clearGeneratedOperationResult(operationResult);
+    throw new ReallyMeCodecError("provider-failure");
   }
+  return readPemDocument(operationResult.result.value);
 };
 
 export const encodePem = (
@@ -338,54 +358,30 @@ export const encodePem = (
 ): Uint8Array => {
   requirePemLabel(label);
   ensureBytesInput(der);
-  const snapshot = snapshotEncodeOptions(options);
-  const protoOptions = snapshot === undefined
-    ? undefined
-    : create(CodecPemEncodeOptionsSchema, {
-      maxDerLen: requireProtoUint32(snapshot.maxDerLen),
-      lineWidth: requireProtoUint32(snapshot.lineWidth),
-      lineEnding: snapshot.lineEnding === "crlf"
-        ? CodecPemLineEnding.CRLF
-        : snapshot.lineEnding === "lf"
-          ? CodecPemLineEnding.LF
-          : CodecPemLineEnding.UNSPECIFIED,
-    });
+  const optionsBytes = pemEncodeOptionsBytes(options);
   const derSnapshot = snapshotBoundedBytesInput(der);
-  let request: CodecPemEncodeRequest;
-  let operationRequest: CodecOperationRequest;
+  let requestBytes: Uint8Array;
   try {
-    request = create(CodecPemEncodeRequestSchema, {
-      label: protoPemLabel(label),
-      der: derSnapshot,
-    });
-    if (protoOptions !== undefined) {
-      request.options = protoOptions;
-    }
-    operationRequest = create(CodecOperationRequestSchema, {
-      operation: {
-        case: "pemEncode",
-        value: request,
-      },
-    });
-  } catch (error: unknown) {
-    derSnapshot.fill(0);
-    throw error;
-  }
-  try {
-    const operationResult = processGeneratedOperationRequest(operationRequest);
-    if (operationResult.result.case !== "pemEncode") {
-      clearGeneratedOperationResult(operationResult);
-      throw new ReallyMeCodecError("provider-failure");
-    }
-    const result = operationResult.result.value;
-    try {
-      requireNoProviderUnknownFields(result);
-      return result.pem.slice();
-    } finally {
-      result.pem.fill(0);
-    }
+    requestBytes = frameOperationRequest(PEM_ENCODE_OPERATION_FIELD, [
+      { field: PEM_ENCODE_LABEL_FIELD, varint: protoPemLabel(label) },
+      { field: PEM_ENCODE_DER_FIELD, bytes: derSnapshot },
+      ...(optionsBytes === undefined
+        ? []
+        : [{ field: PEM_ENCODE_OPTIONS_FIELD, message: optionsBytes }]),
+    ]);
   } finally {
-    request.der.fill(0);
-    request.der = new Uint8Array(0);
+    derSnapshot.fill(0);
+  }
+  const operationResult = processOperationRequestBytes(requestBytes);
+  if (operationResult.result.case !== "pemEncode") {
+    clearGeneratedOperationResult(operationResult);
+    throw new ReallyMeCodecError("provider-failure");
+  }
+  const result = operationResult.result.value;
+  try {
+    requireNoProviderUnknownFields(result);
+    return result.pem.slice();
+  } finally {
+    result.pem.fill(0);
   }
 };

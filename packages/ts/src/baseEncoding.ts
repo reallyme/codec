@@ -3,8 +3,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 import {
-  asciiBytesToString,
-  ensureBytesInput,
   ensureStringValue,
   readBytesOutput,
   readStringOutput,
@@ -34,9 +32,12 @@ export const base64urlDecode = (encoded: string): Uint8Array => {
   return readBytesOutput(requireReallyMeCodecWasmProvider().base64urlDecode(encoded));
 };
 
+// The encoded bytes stay in wipeable views end to end; they are never turned
+// into an immutable JavaScript string.
 export const base64urlDecodeBytes = (encoded: Uint8Array): Uint8Array => {
-  ensureBytesInput(encoded);
-  return base64urlDecode(asciiBytesToString(encoded));
+  return withSnapshotBytesInput(encoded, (snapshot) =>
+    readBytesOutput(requireReallyMeCodecWasmProvider().base64urlDecodeBytes(snapshot)),
+  );
 };
 
 export const bytesToLowerHex = (bytes: Uint8Array): string => {

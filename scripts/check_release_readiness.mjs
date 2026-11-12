@@ -1097,7 +1097,9 @@ const generatedStructuredOperations = [
     tsPath: "packages/ts/src/pem.ts",
     tsExport: "export const decodePem = (",
     tsNeedles: [
-      "processGeneratedOperationRequest(request)",
+      "frameOperationRequest(PEM_DECODE_OPERATION_FIELD",
+      "pemSnapshot.fill(0)",
+      "processOperationRequestBytes(requestBytes)",
       'operationResult.result.case !== "pemDecode"',
       "readPemDocument(operationResult.result.value)",
     ],
@@ -2519,6 +2521,19 @@ assertContains("packages/ts/src/pem.ts", "const derSnapshot = snapshotBoundedByt
 assertContains("packages/ts/src/pem.ts", "derSnapshot.fill(0)");
 assertContains("packages/ts/test/reallyme-codec.test.mjs", "decodePem rejects oversized proto policy before provider work");
 assertContains("packages/ts/test/reallyme-codec.test.mjs", "encodePem rejects oversized proto options before provider work");
+// PEM text and DER may be private-key material. Frame them into one wiped,
+// exactly sized request instead of the generated serializer, whose internal
+// buffers cannot be wiped.
+assertContains("packages/ts/src/pem.ts", "frameOperationRequest(PEM_ENCODE_OPERATION_FIELD");
+assertContains("packages/ts/src/pem.ts", "derSnapshot.fill(0)");
+assertNotContains("packages/ts/src/pem.ts", "processGeneratedOperationRequest");
+assertNotContains("packages/ts/src/pem.ts", "toBinary(CodecOperationRequestSchema");
+assertContains("packages/ts/src/operationContract.ts", "export const processOperationRequestBytes = (");
+assertContains("packages/ts/test/reallyme-codec.test.mjs", "framed PEM requests match the generated protobuf serialization");
+// The packaged glue must refuse WASM bytes other than the ones built with it.
+assertContains("packages/ts/scripts/build-wasm.mjs", "wasmIntegritySource(wasmDigest)");
+assertContains("packages/ts/scripts/wasm-integrity.mjs", "__reallymeVerifiedWasmBytes");
+assertContains("packages/ts/test/reallyme-codec.test.mjs", "WASM initialization refuses bytes other than the packaged module");
 assertContains("scripts/verify_swift_release_artifact.mjs", "Package.swift binary target URL is not bound to ffiArtifactVersion");
 assertContains("scripts/verify_swift_release_artifact.mjs", "Package.swift binary target checksum is not bound to ffiArtifactChecksum");
 assertContains(

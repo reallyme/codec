@@ -2,15 +2,16 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-//! Map-key uniqueness in `O(n log n)` comparisons, independent of key order.
+//! Map-key uniqueness using a bounded index, independent of received key order.
 //!
 //! Keys are sorted with a bounded, fallible merge sort under a total preorder
 //! whose ties include every pair that [`equivalent`] accepts. Equivalent keys
 //! therefore end up adjacent, inside one tie run, and only runs are checked
-//! with [`equivalent`]. The preorder is exact for integers, strings (including
-//! chunked strings), floats, simple values, tags, and arrays, so a run there
-//! is a duplicate. Maps used as keys tie on entry count, and their runs are
-//! compared pairwise; every comparison charges the shared work budget.
+//! with [`equivalent`]. Keys without descendant maps have an exact preorder and
+//! need `O(n log n)` comparisons. Maps tie on entry count, so maps and compound
+//! keys containing maps can share coarse ties. Their runs use pairwise semantic
+//! comparisons and may exhaust work before the entry ceiling. Every traversal
+//! and comparison charges the shared work budget.
 //! Only key start offsets are stored; key bytes are never copied.
 
 use core::cmp::Ordering;
@@ -20,7 +21,7 @@ use super::error::{error, CborError, ErrorReason};
 use super::limits::Budget;
 use super::read_header::MajorType;
 use super::receipt::Frame;
-use super::scan::tail;
+use super::scan::{add, tail};
 
 /// Maps with at most this many keys are checked pairwise from inline storage,
 /// so validating typical small maps performs no heap allocation.
@@ -49,7 +50,7 @@ impl KeyStarts {
         if self.heap.is_empty() {
             if let Some(slot) = self.inline.get_mut(self.len) {
                 *slot = start;
-                self.len += 1;
+                self.len = add(self.len, 1)?;
                 return Ok(());
             }
             let inline = self
@@ -57,7 +58,7 @@ impl KeyStarts {
                 .get(..self.len)
                 .ok_or(error(ErrorReason::ArithmeticOverflow))?;
             self.heap
-                .try_reserve(INLINE_KEYS.saturating_mul(2))
+                .try_reserve(INLINE_KEYS.checked_mul(2).ok_or(error(ErrorReason::ArithmeticOverflow))?)
                 .map_err(|_| error(ErrorReason::AllocationFailure))?;
             self.heap.extend_from_slice(inline);
         }
@@ -68,11 +69,11 @@ impl KeyStarts {
         Ok(())
     }
 
-    fn as_slice(&self) -> &[usize] {
+    fn as_slice(&self) -> Result<&[usize], CborError> {
         if self.heap.is_empty() {
-            self.inline.get(..self.len).unwrap_or(&[])
+            self.inline.get(..self.len).ok_or(error(ErrorReason::ArithmeticOverflow))
         } else {
-            &self.heap
+            Ok(&self.heap)
         }
     }
 }
@@ -83,7 +84,7 @@ pub(super) fn check_unique(
     keys: &KeyStarts,
     budget: &mut Budget,
 ) -> Result<(), CborError> {
-    let starts = keys.as_slice();
+    let starts = keys.as_slice()?;
     let len = starts.len();
     if len < 2 {
         return Ok(());
@@ -101,7 +102,8 @@ pub(super) fn check_unique(
 
     let mut run_start = 0_usize;
     for index in 1..=len {
-        let tied = match (order.get(index - 1), order.get(index)) {
+        let previous_index = index.checked_sub(1).ok_or(error(ErrorReason::ArithmeticOverflow))?;
+        let tied = match (order.get(previous_index), order.get(index)) {
             (Some(&previous), Some(&current)) => {
                 compare_at(input, starts, previous, current, budget)? == Ordering::Equal
             }
@@ -134,7 +136,8 @@ fn check_run(
     budget: &mut Budget,
 ) -> Result<(), CborError> {
     for (position, &first) in run.iter().enumerate() {
-        for &second in run.get(position + 1..).unwrap_or(&[]) {
+        let rest = run.get(add(position, 1)?..).ok_or(error(ErrorReason::ArithmeticOverflow))?;
+        for &second in rest {
             let left = frame_at(input, starts, first, budget)?;
             let right = frame_at(input, starts, second, budget)?;
             if equivalent(&left, &right, budget, 0)? {
@@ -157,8 +160,8 @@ fn merge_sort(
     while width < len {
         let mut start = 0_usize;
         while start < len {
-            let middle = start.saturating_add(width).min(len);
-            let end = middle.saturating_add(width).min(len);
+            let middle = add(start, width)?.min(len);
+            let end = add(middle, width)?.min(len);
             let left = order
                 .get(start..middle)
                 .ok_or(error(ErrorReason::ArithmeticOverflow))?;
@@ -171,8 +174,9 @@ fn merge_sort(
             merge(input, starts, left, right, output, budget)?;
             start = end;
         }
+        if order.len() != scratch.len() { return Err(error(ErrorReason::ArithmeticOverflow)); }
         order.copy_from_slice(scratch);
-        width = width.saturating_mul(2);
+        width = width.checked_mul(2).ok_or(error(ErrorReason::ArithmeticOverflow))?;
     }
     Ok(())
 }
@@ -297,7 +301,7 @@ fn simple_key(frame: &Frame<'_>) -> Result<(u8, u8, u8, u64), CborError> {
             let (class, bits) = value.equivalence_key();
             Ok((1, 0, class, bits))
         }
-        None => Ok((0, frame.header.simple_value()?.unwrap_or(0), 0, 0)),
+        None => Ok((0, frame.header.simple_value()?.ok_or(error(ErrorReason::WrongType))?, 0, 0)),
     }
 }
 

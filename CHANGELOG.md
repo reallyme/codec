@@ -10,6 +10,8 @@
   and reject empty tag-24 payloads.
 - Reject invalid native pointer arguments, forged TypeScript byte views and
   nonzero ProtoJSON pad bits. Map native-loader failures to typed errors.
+- Verify bundled Wasm bytes before initialization and reject precompiled modules.
+  Clear temporary PEM serialization copies.
 - Update SwiftProtobuf to 1.40.0.
 
 ## 0.3.3
