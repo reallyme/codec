@@ -63,7 +63,14 @@ jobs:
 
       - name: Select Xcode 26.4
         if: matrix.language == 'swift'
-        run: sudo xcode-select -s /Applications/Xcode_26.4.app
+        run: |
+          developer_dir=$(cd /Applications/Xcode_26.4.app/Contents/Developer && pwd -P)
+          sudo xcode-select -s "$developer_dir"
+          printf 'DEVELOPER_DIR=%s\n' "$developer_dir" >> "$GITHUB_ENV"
+          printf '%s/Toolchains/XcodeDefault.xctoolchain/usr/bin\n' "$developer_dir" >> "$GITHUB_PATH"
+          uname -m
+          xcodebuild -version
+          "$developer_dir/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift" --version
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
@@ -82,7 +89,8 @@ jobs:
 
       - name: Build Swift for analysis
         if: matrix.language == 'swift'
-        run: swift build --arch arm64
+        timeout-minutes: 20
+        run: swift build --arch arm64 --verbose
 
       - name: Analyze CodeQL
         uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
