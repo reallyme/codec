@@ -4,7 +4,19 @@ All packages in the ReallyMe Codec release line share one version. Security
 changes are called out when they affect accepted input or an integration
 boundary.
 
-## 0.3.3 (unreleased)
+## 0.3.4 (unreleased)
+
+- Derive C sanitizer harness version expectations from Cargo package metadata,
+  rejecting missing, invalid, and mismatched release versions without copying
+  release numbers into the harness.
+- Refresh all four Cargo lockfiles, including Proptest 1.12.0 and the itoa,
+  const-oid, and Syn patch updates.
+- Update SwiftProtobuf to 1.40.0, Gradle to 9.9.1, and the Bouncy Castle tooling
+  constraint to 1.87 with publisher-verified dependency hashes.
+- Update Rust to 1.100.0, Buf to 1.75.0, cargo-audit to 0.23.0, nextest to
+  0.9.151, wasm-pack to 0.15.1, and the OSV scanner action to 2.7.1.
+
+## 0.3.3
 
 - Add opt-in, bounded, schema-directed strict DER readers and an exact
   SEQUENCE-of-two-unsigned-INTEGER decoder for Rust consumers. Curve widths,

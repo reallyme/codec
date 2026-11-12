@@ -308,8 +308,8 @@ assertCargoFuzzWorkflowPolicy({
   },
 });
 
-const codecPackageVersion = "0.3.3";
-const codecProtoPackageVersion = "0.3.3";
+const codecPackageVersion = "0.3.4";
+const codecProtoPackageVersion = "0.3.4";
 try {
   verifyCheckedOutReleaseVersion(codecPackageVersion);
 } catch (error) {
@@ -395,7 +395,8 @@ assertContains(
 assertContains("crates/codec/README.md", `reallyme-codec = "${codecPackageVersion}"`);
 
 assertContains("crates/ffi/Cargo.toml", 'name = "reallyme-codec-ffi"');
-assertContains("crates/ffi/Cargo.toml", "publish = false");
+assertContains("Cargo.toml", "publish = false");
+assertContains("crates/ffi/Cargo.toml", "publish.workspace = true");
 assertContains("crates/ffi/src/codec.rs", "rm_codec_process_operation");
 assertContains("crates/ffi/src/codec.rs", "rm_codec_process_operation_json");
 assertContains("crates/ffi/src/codec.rs", "rm_codec_abi_version");
@@ -742,9 +743,9 @@ assertContains(
   "rm_codec_process_operation_json",
 );
 assertContains("scripts/build_swift_xcframework.sh", "rm_codec_process_operation");
-assertContains(".github/workflows/code-checks.yml", "cargo-nextest@0.9.143");
+assertContains(".github/workflows/code-checks.yml", "cargo-nextest@0.9.151");
 assertContains(".github/workflows/code-checks.yml", "cargo-deny@0.20.2");
-assertContains(".github/workflows/code-checks.yml", "cargo-audit@0.22.2");
+assertContains(".github/workflows/code-checks.yml", "cargo-audit@0.23.0");
 assertContains(".github/workflows/code-checks.yml", "scripts/audit_committed_lockfiles.sh");
 assertContains(
   ".github/workflows/code-checks.yml",
@@ -1679,12 +1680,12 @@ assertContains("packages/kotlin/build.gradle.kts", 'artifactId = "codec"');
 assertContains("packages/kotlin/build.gradle.kts", "Java, Kotlin, JVM, and Android");
 assertContains("packages/kotlin/build.gradle.kts", "com.google.protobuf:protobuf-javalite:4.36.2");
 assertContains("packages/kotlin/build.gradle.kts", "com.google.protobuf:protobuf-kotlin-lite:4.36.2");
-assertContains("packages/kotlin/build.gradle.kts", 'val bouncyCastleSecurityVersion = "1.86"');
+assertContains("packages/kotlin/build.gradle.kts", 'val bouncyCastleSecurityVersion = "1.87"');
 assertContains("packages/kotlin/build.gradle.kts", 'if (name == kotlinBouncyCastleConfiguration)');
 for (const artifact of ["bcpg", "bcpkix", "bcprov", "bcutil"]) {
   assertContains(
     "packages/kotlin/gradle.lockfile",
-    `org.bouncycastle:${artifact}-jdk18on:1.86=kotlinBouncyCastleConfiguration`,
+    `org.bouncycastle:${artifact}-jdk18on:1.87=kotlinBouncyCastleConfiguration`,
   );
 }
 assertContains("packages/kotlin/build.gradle.kts", "https://github.com/reallyme/codec");
@@ -1704,11 +1705,11 @@ assertContains("packages/kotlin/build.gradle.kts", "dependencyLocking {");
 assertContains("packages/kotlin/build.gradle.kts", "lockAllConfigurations()");
 assertContains(
   "packages/kotlin/gradle/wrapper/gradle-wrapper.properties",
-  "distributionSha256Sum=0b00b0ffe07c4d4789c12d4935a44a7057d55774b7540bd4a3f76f336deb177a",
+  "distributionSha256Sum=d8a18a7a841dd5df825d35a685fad6f2d7f12ac0c280e57b67c27b4a520ba228",
 );
 assertContains(
   "packages/kotlin/gradle/wrapper/gradle-wrapper.properties",
-  "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.9.0-bin.zip",
+  "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.9.1-bin.zip",
 );
 assertContains(
   "packages/kotlin/gradle.properties",
@@ -1753,7 +1754,7 @@ const packageReleaseWorkflows = Object.freeze([
 for (const workflowPath of packagePreflightWorkflows) {
   assertContains(workflowPath, "Resolve release SHA");
   assertContains(workflowPath, 'default: ""');
-  assertContains(workflowPath, "default: 0.3.3");
+  assertContains(workflowPath, "default: 0.3.4");
 }
 for (const workflowPath of packageReleaseWorkflows) {
   assertContains(workflowPath, "Verify reviewed release SHA");
@@ -1952,7 +1953,7 @@ assertContains(".github/workflows/kotlin-android-package-release.yml", "Test and
 assertContains(".github/workflows/kotlin-android-package-release.yml", "Build Android AAR");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "requireFullNativeResources=true");
 assertContains("packages/kotlin/settings.gradle.kts", 'rootProject.name = "reallyme-codec"');
-assertContains("packages/kotlin/README.md", "me.really:codec:0.3.3");
+assertContains("packages/kotlin/README.md", "me.really:codec:0.3.4");
 assertContains("packages/kotlin/README.md", "ships Rust JNI libraries as platform resources");
 assertContains(
   "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
@@ -2185,7 +2186,7 @@ assertNotContains("packages/swift/Sources/ReallyMeCodec/GeneratedCodecProto.swif
 assertNotContains("gen/swift/reallyme/codec/v1/codec.pb.swift", "public nonisolated struct ReallyMeProto");
 assertContains("buf.gen.yaml", "Visibility=Internal");
 assertContains("Package.swift", 'name: "ReallyMeCodecFFI"');
-assertContains("Package.swift", 'from: "1.39.0"');
+assertContains("Package.swift", 'from: "1.40.0"');
 assertContains("Package.swift", "ReallyMeCodecFFI.xcframework.zip");
 assertContains("Package.swift", 'let ffiArtifactLocalPathOverride = "');
 assertContains("Package.swift", 'ffiArtifactVersion == packageVersion');
@@ -2503,7 +2504,7 @@ assertContains(".github/workflows/swift-package-preflight.yml", "run-name: Swift
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "run-name: Kotlin Android package preflight ${{ inputs.version }}");
 assertContains(".github/workflows/npm-package-preflight.yml", "run-name: npm package preflight ${{ inputs.version }}");
 assertContains(".github/workflows/crates-package-preflight.yml", "run-name: Crates package preflight ${{ inputs.version }}");
-assertContains(".github/workflows/crates-package-preflight.yml", "cargo-audit@0.22.2");
+assertContains(".github/workflows/crates-package-preflight.yml", "cargo-audit@0.23.0");
 assertContains(".github/workflows/crates-package-preflight.yml", "scripts/audit_committed_lockfiles.sh");
 assertContains("deny.toml", 'yanked = "deny"');
 assertMinOccurrences(".github/workflows/swift-package-release.yml", "RELEASE_VERSION: ${{ inputs.version }}", 2);
@@ -2644,7 +2645,7 @@ assertContains(
   ".github/workflows/kotlin-android-package-release.yml",
   '{ yes 2>/dev/null || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "ndk;29.0.14206865"',
 );
-assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.3.3");
+assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.3.4");
 assertContains("packages/kotlin-android/README.md", "never sourced from the Git worktree");
 assertContains(
   "packages/kotlin-android/gradle.properties",
@@ -2706,7 +2707,7 @@ assertContains(".github/workflows/npm-package-preflight.yml", "Test TypeScript c
 
 assertContains("README.md", "https://github.com/reallyme/codec");
 assertContains("README.md", "https://www.npmjs.com/package/@reallyme/codec");
-assertContains("README.md", "me.really:codec:0.3.3");
+assertContains("README.md", "me.really:codec:0.3.4");
 assertContains("README.md", "reallyme-codec-proto");
 assertContains("README.md", "## Published Surfaces");
 assertContains("README.md", "`me.really:codec-android` AAR");

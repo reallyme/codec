@@ -5,9 +5,13 @@
 
 set -euo pipefail
 
-readonly ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly ROOT_DIR
 readonly SYMBOLS=(
   rm_codec_abi_version
+  rm_codec_package_version_major
+  rm_codec_package_version_minor
+  rm_codec_package_version_patch
   rm_codec_max_ffi_input_bytes
   rm_codec_max_ffi_output_bytes
   rm_codec_max_operation_response_bytes
@@ -56,6 +60,27 @@ if [[ ! -f "${LIBRARY_PATH}" ]]; then
   exit 1
 fi
 
+# Read expected release numbers from Cargo's selected package metadata. The
+# separate runtime check rejects stale libraries at the tested artifact path.
+if ! PACKAGE_ID="$(cargo pkgid --locked -p reallyme-codec-ffi)"; then
+  echo "could not resolve the release FFI package version" >&2
+  exit 1
+fi
+readonly PACKAGE_ID
+readonly VERSION_COMPONENT_PATTERN='(0|[1-9][0-9]{0,9})'
+if [[ ! "${PACKAGE_ID}" =~ \#reallyme-codec-ffi@${VERSION_COMPONENT_PATTERN}\.${VERSION_COMPONENT_PATTERN}\.${VERSION_COMPONENT_PATTERN}$ ]]; then
+  echo "release FFI package version is not a supported stable version" >&2
+  exit 1
+fi
+readonly VERSION_COMPONENTS=("${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}")
+readonly MAX_VERSION_COMPONENT=4294967295
+for component in "${VERSION_COMPONENTS[@]}"; do
+  if [[ "${component}" -gt "${MAX_VERSION_COMPONENT}" ]]; then
+    echo "release FFI package version component exceeds uint32" >&2
+    exit 1
+  fi
+done
+
 if command -v nm >/dev/null 2>&1; then
   readonly NM_TOOL="nm"
 elif command -v llvm-nm >/dev/null 2>&1; then
@@ -81,6 +106,9 @@ if ! command -v clang >/dev/null 2>&1; then
   exit 1
 fi
 clang -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer \
+  "-DCODEC_PACKAGE_VERSION_MAJOR=${VERSION_COMPONENTS[0]}U" \
+  "-DCODEC_PACKAGE_VERSION_MINOR=${VERSION_COMPONENTS[1]}U" \
+  "-DCODEC_PACKAGE_VERSION_PATCH=${VERSION_COMPONENTS[2]}U" \
   "${ROOT_DIR}/scripts/ffi_abi_sanitizer.c" \
   -L"${ROOT_DIR}/target/release" -lreallyme_codec_ffi \
   -Wl,-rpath,"${ROOT_DIR}/target/release" \

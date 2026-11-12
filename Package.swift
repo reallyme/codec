@@ -8,7 +8,7 @@
 // SwiftPM and Xcode only read `Package.swift` at the repository root when a
 // package is consumed by URL, e.g.
 //
-//     .package(url: "https://github.com/reallyme/codec", from: "0.3.3")
+//     .package(url: "https://github.com/reallyme/codec", from: "0.3.4")
 //     .product(name: "ReallyMeCodec", package: "codec")
 //
 // The Swift sources live under `packages/swift/` to keep symmetry with the
@@ -23,7 +23,7 @@ let ffiArtifactChecksumPlaceholder =
 let ffiArtifactChecksum = "348d6525669c530ee846f7989aadb861233e125422b7759f5cdde8e8715de9cf"
 let ffiArtifactVersion = "0.2.1"
 let ffiArtifactLocalPathOverride = ""
-let packageVersion = "0.3.3"
+let packageVersion = "0.3.4"
 let hasReleasedFfiArtifact =
     ffiArtifactChecksum != ffiArtifactChecksumPlaceholder && ffiArtifactVersion == packageVersion
 let useRuntimeFfiProvider =
@@ -107,7 +107,7 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/apple/swift-protobuf.git",
-            from: "1.39.0"
+            from: "1.40.0"
         ),
     ],
     targets: packageTargets

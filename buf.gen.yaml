@@ -29,6 +29,7 @@ plugins:
     out: gen/es
     opt:
       - target=js
+  # Pin the published BSR generator independently of the compatible Swift runtime.
   - remote: buf.build/apple/swift:v1.39.0
     out: gen/swift
     opt:
