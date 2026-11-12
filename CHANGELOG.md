@@ -4,6 +4,10 @@
 
 - Add borrowed general-CBOR framing, validation, cursors and float policies.
 - Add bounded general-CBOR encoding that preserves received items and map order.
+- Reduce work when validating large general-CBOR maps. Complex keys can still
+  exhaust the configured work budget.
+- Preserve general-CBOR policy during child inspection; report truncated strings
+  and reject empty tag-24 payloads.
 - Update SwiftProtobuf to 1.40.0.
 
 ## 0.3.3

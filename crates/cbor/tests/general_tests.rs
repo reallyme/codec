@@ -115,7 +115,7 @@ fn received_tag_and_length_widths_remain_exact_and_borrowed() {
 #[test]
 fn framing_and_tag_semantics_are_distinct() {
     for (hex, embedded_error) in [
-        ("d81840", ErrorReason::EmptyInput),
+        ("d81840", ErrorReason::EmptyEmbeddedItem),
         ("d818420001", ErrorReason::TrailingData),
         ("d81841ff", ErrorReason::UnexpectedBreak),
     ] {

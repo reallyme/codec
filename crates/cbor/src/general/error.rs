@@ -62,6 +62,9 @@ pub enum ErrorReason {
     /// Embedded-item validation requires the standard encoded-CBOR tag.
     #[error("unexpected tag")]
     WrongTag,
+    /// A tag-24 byte string is empty, so it holds no embedded data item.
+    #[error("empty embedded CBOR")]
+    EmptyEmbeddedItem,
     /// Chunked contents do not form one contiguous borrowed payload.
     #[error("non-contiguous string contents")]
     NonContiguousString,

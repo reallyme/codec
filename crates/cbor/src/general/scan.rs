@@ -2,12 +2,13 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use super::compare::{equivalent, ordered};
+use super::compare::ordered;
 use super::error::{error, CborError, ErrorReason};
 use super::limits::Budget;
 use super::profile::{LengthPolicy, MapOrdering, Profile, Serialization};
 use super::read_header::{read_header_prefix, ArgumentWidth, Header, MajorType};
 use super::receipt::Frame;
+use super::unique::{check_unique, KeyStarts};
 
 pub(super) fn add(left: usize, right: usize) -> Result<usize, CborError> {
     left.checked_add(right)
@@ -72,7 +73,13 @@ pub(super) fn scan<'a>(
     match header.major_type() {
         MajorType::Unsigned | MajorType::Negative | MajorType::Simple => {}
         MajorType::Bytes | MajorType::Text if !indefinite => {
-            let length = argument(&header)?;
+            // A declared length beyond the remaining input, including one
+            // too large for usize, is truncation rather than overflow.
+            let length = usize::try_from(header.argument().ok_or(error(ErrorReason::WrongType))?)
+                .map_err(|_| error(ErrorReason::Truncated))?;
+            if length > tail(input, start)?.len() {
+                return Err(error(ErrorReason::Truncated));
+            }
             end = add(start, length)?;
             let bytes = input.get(start..end).ok_or(error(ErrorReason::Truncated))?;
             if account {
@@ -162,6 +169,12 @@ pub(super) fn scan<'a>(
             }
             let mut count = 0_usize;
             let mut previous: Option<Frame<'_>> = None;
+            let mut out_of_order = false;
+            let mut key_starts = if map && profile.is_some() {
+                KeyStarts::new(declared)?
+            } else {
+                KeyStarts::new(None)?
+            };
             loop {
                 if declared == Some(count) {
                     body_end = end;
@@ -186,37 +199,18 @@ pub(super) fn scan<'a>(
                 end = add(end, child.received_bytes().len())?;
                 if map {
                     if let Some(profile) = profile {
-                        let mut prior = start;
-                        while prior < key_start {
-                            let key = scan(
-                                tail(input, prior)?,
-                                budget,
-                                next_depth,
-                                None,
-                                false,
-                                lengths,
-                            )?;
-                            if equivalent(&key, &child, budget, 0)? {
-                                return Err(error(ErrorReason::DuplicateMapKey));
-                            }
-                            prior = add(prior, key.received_bytes().len())?;
-                            let value = scan(
-                                tail(input, prior)?,
-                                budget,
-                                next_depth,
-                                None,
-                                false,
-                                lengths,
-                            )?;
-                            prior = add(prior, value.received_bytes().len())?;
-                        }
+                        // Offsets only: the bound comes from the entry limit.
+                        key_starts.push(key_start)?;
                         // Uniqueness and ordering are separate guarantees. A
-                        // duplicate remains a duplicate under an ordered profile.
+                        // duplicate remains a duplicate under an ordered profile,
+                        // so an order violation is reported only after the
+                        // uniqueness check below passes.
                         if let Some(previous) = &previous {
-                            if profile.ordering != MapOrdering::Received
+                            if !out_of_order
+                                && profile.ordering != MapOrdering::Received
                                 && !ordered(previous, &child, profile.ordering, budget)?
                             {
-                                return Err(error(ErrorReason::MapKeyOrder));
+                                out_of_order = true;
                             }
                         }
                     }
@@ -231,6 +225,10 @@ pub(super) fn scan<'a>(
                     )?;
                     end = add(end, value.received_bytes().len())?;
                 }
+            }
+            check_unique(input, &key_starts, budget)?;
+            if out_of_order {
+                return Err(error(ErrorReason::MapKeyOrder));
             }
         }
     }
