@@ -740,7 +740,7 @@ assertContains(
   ".github/workflows/code-checks.yml",
   'node --test --test-concurrency=4 "scripts/**/*.test.mjs" "packages/ts/scripts/*.test.mjs"',
 );
-assertContains(".github/workflows/code-checks.yml", "actionlint@1.7.12");
+assertContains(".github/workflows/code-checks.yml", "bash scripts/install_actionlint.sh");
 assertContains(".github/workflows/code-checks.yml", "run: actionlint");
 assertContains(".github/workflows/code-checks.yml", "--check-pins");
 assertContains(".github/workflows/protobuf-ci.yml", "--check-pins");
