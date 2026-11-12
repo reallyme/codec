@@ -94,6 +94,10 @@ fn bit_strings_reject_nonzero_padding_and_invalid_counts() {
             }
         }
     }
+    assert!(matches!(
+        decode_der(&[0x03, 0], DerLimits::default(), |r| r.read_bit_string()),
+        Err(error) if error.reason() == DerErrorReason::InvalidLength
+    ));
     for input in [
         &[0x03, 0][..],
         &[0x03, 1, 1],

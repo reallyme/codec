@@ -114,6 +114,16 @@ fn decode_value(
             value: u64::from(ai),
         });
     }
+    // DAG-CBOR admits only false, true, and null, which always use the
+    // one-byte form. Every two-byte simple value is disallowed; RFC 8949
+    // section 3.3 additionally makes values below 32 malformed, so this is
+    // checked before the shared integer-minimality rule could misreport it.
+    if major == 7 && ai == 24 {
+        let value = bytes.get(offset).ok_or(CborError::TruncatedArgument)?;
+        return Err(CborError::DisallowedSimpleValue {
+            value: u64::from(*value),
+        });
+    }
 
     let (arg, new_offset) = read_argument(bytes, offset, ai)?;
     offset = new_offset;
@@ -301,20 +311,29 @@ fn read_argument(bytes: &[u8], offset: usize, ai: u8) -> Result<(u64, usize), Cb
 }
 
 fn extract_bytes(bytes: &[u8], offset: usize, len: u64) -> Result<(Vec<u8>, usize), CborError> {
-    let len = usize::try_from(len).map_err(|_| CborError::LengthTooLarge)?;
-    let end = checked_end(offset, len)?;
-    if end > bytes.len() {
-        return Err(CborError::TruncatedBytes);
-    }
-    Ok((bytes[offset..end].to_vec(), end))
+    let raw = declared_contents(bytes, offset, len)?;
+    Ok((raw.to_vec(), checked_end(offset, raw.len())?))
 }
 
 fn extract_string(bytes: &[u8], offset: usize, len: u64) -> Result<(String, usize), CborError> {
-    let len = usize::try_from(len).map_err(|_| CborError::LengthTooLarge)?;
-    let end = checked_end(offset, len)?;
-    let raw = bytes.get(offset..end).ok_or(CborError::TruncatedBytes)?;
+    let raw = declared_contents(bytes, offset, len)?;
     let s = str::from_utf8(raw).map_err(|_| CborError::InvalidUtf8)?;
-    Ok((s.to_string(), end))
+    Ok((s.to_string(), checked_end(offset, raw.len())?))
+}
+
+/// Borrows the `len` content bytes that follow a string head at `offset`.
+///
+/// A declared length beyond the remaining input is truncation on every
+/// target. Comparing in `u64` before converting keeps 32-bit and WebAssembly
+/// builds from reporting the same input as a resource-limit failure.
+fn declared_contents(bytes: &[u8], offset: usize, len: u64) -> Result<&[u8], CborError> {
+    let remaining = bytes.get(offset..).ok_or(CborError::TruncatedBytes)?;
+    let available = u64::try_from(remaining.len()).map_err(|_| CborError::LengthTooLarge)?;
+    if len > available {
+        return Err(CborError::TruncatedBytes);
+    }
+    let len = usize::try_from(len).map_err(|_| CborError::LengthTooLarge)?;
+    remaining.get(..len).ok_or(CborError::TruncatedBytes)
 }
 
 fn checked_end(offset: usize, len: usize) -> Result<usize, CborError> {

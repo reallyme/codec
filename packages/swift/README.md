@@ -127,4 +127,7 @@ An untagged checkout without a matching binary artifact reports
 `providerUnavailable` from `ReallyMeCodec()`. Local tests can pass an explicit
 Rust C ABI library path through `ReallyMeCodecRustCAbiLibrary(path:)`, which
 does not verify the file. Use `ReallyMeCodecRustCAbiLibrary(path:expectedSHA256:)`
-to refuse any library whose SHA-256 does not match a pinned digest.
+to refuse any library whose SHA-256 does not match a pinned digest. Both
+initializers fail with `dynamicLibraryLoadFailed` when `DYLD_LIBRARY_PATH` or
+`DYLD_IMAGE_SUFFIX` would make the dynamic loader map a different file, or when
+the loaded image is not the file at the given path.

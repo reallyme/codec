@@ -15,9 +15,11 @@ import {
   CodecKeyMaterialKind,
   CodecTag,
 } from "./proto/generated/reallyme/codec/v1/codec_pb.js";
+import { frameOperationRequest } from "./frameSensitiveRequest.js";
 import {
   clearGeneratedOperationResult,
   processGeneratedOperationRequest,
+  processOperationRequestBytes,
 } from "./operationContract.js";
 import {
   ensureBytesInput,
@@ -214,8 +216,10 @@ export const multicodecLookupPrefix = (
   ensureBytesInput(bytes);
   const bytesSnapshot = snapshotBoundedBytesInput(bytes);
   try {
-    const operationResult = processGeneratedOperationRequest(
-      multicodecLookupPrefixRequest(bytesSnapshot),
+    const operationResult = processOperationRequestBytes(
+      frameOperationRequest(MULTICODEC_LOOKUP_PREFIX_OPERATION_FIELD, [
+        { field: MULTICODEC_LOOKUP_PREFIX_VALUE_FIELD, bytes: bytesSnapshot },
+      ]),
     );
     if (operationResult.result.case !== "multicodecLookupPrefix") {
       clearGeneratedOperationResult(operationResult);
@@ -240,16 +244,13 @@ export const multicodecLookupPrefix = (
   }
 };
 
-const multicodecLookupPrefixRequest = (
-  bytes: Uint8Array,
-) => create(CodecOperationRequestSchema, {
-    operation: {
-      case: "multicodecLookupPrefix",
-      value: create(CodecMulticodecLookupPrefixRequestSchema, {
-        value: bytes,
-      }),
-    },
-  });
+// Lookup input can be a complete private key, so the request is framed
+// directly instead of through the protobuf-es writer, whose abandoned growth
+// buffers would keep copies of it.
+const MULTICODEC_LOOKUP_PREFIX_OPERATION_FIELD =
+  CodecOperationRequestSchema.field.multicodecLookupPrefix.number;
+const MULTICODEC_LOOKUP_PREFIX_VALUE_FIELD =
+  CodecMulticodecLookupPrefixRequestSchema.field.value.number;
 
 export const multicodecStripPrefix = (bytes: Uint8Array): Uint8Array => {
   return withSnapshotBytesInput(bytes, (snapshot) =>

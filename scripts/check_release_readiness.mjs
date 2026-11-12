@@ -530,14 +530,15 @@ assertTypescriptExport({
   path: "packages/ts/src/cbor.ts",
   exportNeedle: "export const dagCborDecode = (bytes: Uint8Array): ReallyMeCborValue =>",
   requiredNeedles: [
-    "processGeneratedOperationRequest(",
-    'case: "dagCborDecode"',
+    "processOperationRequestBytes(",
+    "frameOperationRequest(DAG_CBOR_DECODE_OPERATION_FIELD",
     'operationResult.result.case !== "dagCborDecode"',
     "clearGeneratedOperationResult(operationResult)",
     "wipeProtoDeterministicCborValueBytes(result.value)",
     "requestBytes.fill(0)",
   ],
   forbiddenNeedles: [
+    "processGeneratedOperationRequest(",
     "processGeneratedProtoRequest(",
     "protoPayloadOrThrow(",
     "CodecDagCborDecodeResultSchema",
@@ -1011,9 +1012,15 @@ const generatedStructuredOperations = [
     tsPath: "packages/ts/src/multiformat.ts",
     tsExport: "export const multicodecLookupPrefix = (",
     tsNeedles: [
-      "processGeneratedOperationRequest(",
+      "processOperationRequestBytes(",
+      "frameOperationRequest(MULTICODEC_LOOKUP_PREFIX_OPERATION_FIELD",
+      "bytesSnapshot.fill(0)",
       'operationResult.result.case !== "multicodecLookupPrefix"',
       "requireNoProviderUnknownFields(result)",
+    ],
+    tsForbiddenNeedles: [
+      "processGeneratedOperationRequest(",
+      "toBinary(CodecOperationRequestSchema",
     ],
     forbiddenProviderCall: "requireReallyMeCodecWasmProvider().multicodecLookupPrefix",
   },
@@ -1075,8 +1082,15 @@ const generatedStructuredOperations = [
     tsExport:
       "export const dagCborVerifyCidDetails = (\n  cid: string,\n  bytes: Uint8Array,",
     tsNeedles: [
-      "processGeneratedOperationRequest(",
+      "processOperationRequestBytes(",
+      "frameOperationRequest(DAG_CBOR_VERIFY_CID_OPERATION_FIELD",
+      "cidBytes?.fill(0)",
+      "payloadSnapshot.fill(0)",
       'operationResult.result.case !== "dagCborVerifyCid"',
+    ],
+    tsForbiddenNeedles: [
+      "processGeneratedOperationRequest(",
+      "toBinary(CodecOperationRequestSchema",
     ],
     forbiddenProviderCall: "requireReallyMeCodecWasmProvider().dagCborVerifyCid",
   },
@@ -1147,11 +1161,15 @@ const generatedStructuredOperations = [
     tsExport:
       "export const deterministicCborDecode = (\n  bytes: Uint8Array,",
     tsNeedles: [
-      "case: \"deterministicCborDecode\"",
-      "processGeneratedOperationRequest(",
+      "processOperationRequestBytes(",
+      "frameOperationRequest(DETERMINISTIC_CBOR_DECODE_OPERATION_FIELD",
       'operationResult.result.case !== "deterministicCborDecode"',
       "requestBytes.fill(0)",
       "wipeProtoDeterministicCborValueBytes(result.value)",
+    ],
+    tsForbiddenNeedles: [
+      "processGeneratedOperationRequest(",
+      "toBinary(CodecOperationRequestSchema",
     ],
   },
 ];
@@ -1351,6 +1369,7 @@ for (const operation of generatedStructuredOperations) {
       operation.forbiddenProviderCall,
       "errorCodeForCodecError(",
       "CodecErrorReason.",
+      ...(operation.tsForbiddenNeedles ?? []),
     ].filter((needle) => needle !== undefined),
   });
 }
@@ -2530,6 +2549,10 @@ assertNotContains("packages/ts/src/pem.ts", "processGeneratedOperationRequest");
 assertNotContains("packages/ts/src/pem.ts", "toBinary(CodecOperationRequestSchema");
 assertContains("packages/ts/src/operationContract.ts", "export const processOperationRequestBytes = (");
 assertContains("packages/ts/test/reallyme-codec.test.mjs", "framed PEM requests match the generated protobuf serialization");
+// Decode, CID verification, and prefix lookup requests carry whole documents
+// or key bytes in one flat field and use the same exactly sized framing.
+assertContains("packages/ts/test/reallyme-codec.test.mjs", "framed CBOR and multicodec requests match the generated protobuf serialization");
+assertContains("packages/ts/test/reallyme-codec.test.mjs", "sensitive CBOR and multicodec lanes leave no serializer copy of caller bytes");
 // The packaged glue must refuse WASM bytes other than the ones built with it.
 assertContains("packages/ts/scripts/build-wasm.mjs", "wasmIntegritySource(wasmDigest)");
 assertContains("packages/ts/scripts/wasm-integrity.mjs", "__reallymeVerifiedWasmBytes");

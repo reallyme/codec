@@ -268,3 +268,38 @@ fn dag_cbor_values_support_explicit_recursive_zeroization() {
     scalar.zeroize();
     assert_eq!(scalar, CborValue::Int(0));
 }
+
+#[test]
+fn dag_string_lengths_beyond_input_are_truncation_on_every_target() {
+    // Each head declares more content bytes than remain. The comparison must
+    // not depend on `usize` width, so 32-bit and WebAssembly builds report
+    // the same error as 64-bit builds.
+    for input in [
+        &[0x5b, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00][..],
+        &[0x7b, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00],
+        &[0x5b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff],
+        &[0x7b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff],
+        &[0x5a, 0xff, 0xff, 0xff, 0xff],
+        &[0x59, 0x01, 0x00],
+        &[0x78, 0x18, b'a'],
+    ] {
+        assert_eq!(decode_dag_cbor(input), Err(CborError::TruncatedBytes));
+    }
+    assert_eq!(
+        decode_dag_cbor(&[0x58, 0x18, 0x00]),
+        Err(CborError::TruncatedBytes)
+    );
+}
+
+#[test]
+fn dag_two_byte_simple_values_are_disallowed_not_non_minimal_integers() {
+    for value in [0x00_u8, 0x10, 0x14, 0x17, 0x18, 0x1f, 0x20, 0xff] {
+        assert_eq!(
+            decode_dag_cbor(&[0xf8, value]),
+            Err(CborError::DisallowedSimpleValue {
+                value: u64::from(value)
+            })
+        );
+    }
+    assert_eq!(decode_dag_cbor(&[0xf8]), Err(CborError::TruncatedArgument));
+}

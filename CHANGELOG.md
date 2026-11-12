@@ -6,6 +6,22 @@ boundary.
 
 ## 0.3.4 (unreleased)
 
+- Security: make the Swift library loaders refuse to load when a
+  `DYLD_LIBRARY_PATH` or `DYLD_IMAGE_SUFFIX` candidate would make dyld map a
+  different file than the requested path, and verify after `dlopen` that the
+  loaded image is the hashed file. Previously a substitute library on the
+  search path could run in place of a digest-verified one.
+- Frame TypeScript DAG-CBOR decode, deterministic-CBOR decode, CID
+  verification, and multicodec prefix lookup requests into one exactly sized,
+  wiped buffer, so the protobuf-es writer no longer retains copies of the
+  encoded document or key bytes.
+- Report DAG-CBOR byte and text string lengths beyond the remaining input as
+  invalid CBOR on every target; 32-bit and WebAssembly builds previously
+  reported lengths of 2^32 or more as a resource limit. Report two-byte simple
+  values as disallowed simple values rather than non-minimal integers.
+- Return a malformed-request error for unknown numeric PEM labels, as for other
+  enum fields; an unspecified label remains an unsupported label. Report an
+  empty DER BIT STRING as an invalid length rather than arithmetic overflow.
 - Require a successful GPG agent acknowledgment before building Maven artifacts,
   including when the client exits successfully after an agent error. Align the
   TypeScript PEM text ceiling with Rust so maximum-size default DER encodings
