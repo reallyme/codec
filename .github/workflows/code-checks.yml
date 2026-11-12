@@ -14,9 +14,10 @@ on:
 permissions:
   contents: read
 
-# Separate event types so a manual run cannot cancel a required push check.
+# Separate event types and push commits so fresh checks do not wait for an
+# obsolete commit while a manual run cannot cancel a required push check.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -42,10 +43,13 @@ jobs:
       - name: Verify release readiness pins before testing
         run: node scripts/run_pinned_release_readiness.mjs --check-pins
 
-      - name: Install workflow linters
+      - name: Install ShellCheck
         uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
         with:
-          tool: actionlint@1.7.12,shellcheck@0.11.0
+          tool: shellcheck@0.11.0
+
+      - name: Install actionlint
+        run: bash scripts/install_actionlint.sh
 
       - name: Lint workflows
         run: actionlint
