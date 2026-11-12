@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.3.3 (unreleased)
+## 0.3.4 (unreleased)
+
+- Update SwiftProtobuf to 1.40.0.
+
+## 0.3.3
 
 - Add opt-in, bounded, schema-directed strict DER readers and an exact
   SEQUENCE-of-two-unsigned-INTEGER decoder for Rust consumers. Curve widths,

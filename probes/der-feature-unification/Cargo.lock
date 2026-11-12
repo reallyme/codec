@@ -38,7 +38,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "der",
  "thiserror",
@@ -46,7 +46,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-der-feature-unification-probe"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "der",
  "reallyme-codec",

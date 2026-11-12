@@ -31,12 +31,12 @@ Codecs for Rust, TypeScript, Swift, Java and Kotlin, covering base encodings, mu
 cargo add reallyme-codec
 ```
 
-The Rust crates require Rust `1.96.0` or newer. The default feature set enables
-every primitive codec family. Consumers that need a smaller dependency surface can select
-only the families they use:
+The Rust crates require Rust `1.96.0` or newer. Default features enable the
+base-encoding, CBOR/JCS, multiformat, and PEM families. Consumers can enable the
+strict DER reader separately and select only the families they use:
 
 ```toml
-reallyme-codec = { version = "0.3.3", default-features = false, features = [
+reallyme-codec = { version = "0.3.4", default-features = false, features = [
   "base64url",
   "multikey",
 ] }
@@ -51,7 +51,7 @@ feature enables the base64url field adapters.
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.3.3"
+    from: "0.3.4"
 )
 ```
 
@@ -63,7 +63,7 @@ feature enables the base64url field adapters.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.3.3")
+    implementation("me.really:codec:0.3.4")
 }
 ```
 
@@ -71,7 +71,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.3.3")
+    implementation("me.really:codec-android:0.3.4")
 }
 ```
 

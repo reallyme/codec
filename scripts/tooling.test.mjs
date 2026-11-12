@@ -316,6 +316,126 @@ test("ABI test stops immediately if private temporary storage cannot be created"
   assert.equal(result.stderr, "");
 });
 
+const abiFixture = (t, packageId) => {
+  const root = fixture(t);
+  const script = copy(root, "scripts/test_ffi_abi_release_artifact.sh");
+  command(root, "cargo", `
+    const fs = require("node:fs");
+    const path = require("node:path");
+    if (process.argv[2] === "pkgid") {
+      console.log(${JSON.stringify(packageId)});
+    } else if (!process.env.RUSTFLAGS?.includes("panic=unwind")) {
+      console.error("reallyme-codec-ffi must be compiled with panic=unwind");
+      process.exit(101);
+    } else {
+      const output = path.join(process.env.TOOLING_FIXTURE, "target/release");
+      fs.mkdirSync(output, { recursive: true });
+      fs.writeFileSync(path.join(output, process.platform === "darwin"
+        ? "libreallyme_codec_ffi.dylib" : "libreallyme_codec_ffi.so"), "fixture");
+    }
+  `);
+  command(root, "nm", `
+    for (const name of ${JSON.stringify([
+      "rm_codec_abi_version", "rm_codec_package_version_major", "rm_codec_package_version_minor",
+      "rm_codec_package_version_patch", "rm_codec_max_ffi_input_bytes", "rm_codec_max_ffi_output_bytes",
+      "rm_codec_max_operation_response_bytes", "rm_codec_process", "rm_codec_process_bool",
+      "rm_codec_process_operation", "rm_codec_process_operation_json",
+    ])}) console.log("T " + name);
+  `);
+  command(root, "clang", `
+    const fs = require("node:fs");
+    const path = require("node:path");
+    const args = process.argv.slice(2);
+    fs.writeFileSync(path.join(process.env.TOOLING_FIXTURE, "compiler-args"), JSON.stringify(args));
+    fs.writeFileSync(args[args.indexOf("-o") + 1], "#!/bin/sh\\nexit 0\\n", { mode: 0o700 });
+  `);
+  return { root, script };
+};
+
+for (const version of ["9.12.345", "4294967295.0.1"]) {
+  test(`ABI harness derives Cargo package version ${version}`, { skip: !posixHost }, (t) => {
+    // A version unrelated to this checkout catches another copied release number.
+    const { root, script } = abiFixture(t, `path+file:///fixture#reallyme-codec-ffi@${version}`);
+    const result = spawnSync("bash", [script], {
+      cwd: root, env: environment(root), encoding: "utf8", timeout: toolFixtureTimeoutMs,
+    });
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 0, result.stderr);
+    const args = JSON.parse(readFileSync(join(root, "compiler-args"), "utf8"));
+    const components = version.split(".");
+    for (const [index, component] of ["MAJOR", "MINOR", "PATCH"].entries()) {
+      assert.ok(args.includes(`-DCODEC_PACKAGE_VERSION_${component}=${components[index]}U`));
+    }
+    assert.ok(args.includes("-fsanitize=address,undefined"));
+    assert.deepEqual(readdirSync(root).filter((name) => name.startsWith("reallyme-ffi-abi.")), []);
+  });
+}
+
+for (const version of ["", "1.2", "01.2.3", "1.2.3-rc.1", "1.2.3+build", "4294967296.2.3", "1.99999999999.3"]) {
+  test(`ABI harness rejects unsupported package version ${version || "empty"}`, { skip: !posixHost }, (t) => {
+    const { root, script } = abiFixture(t, `path+file:///fixture#reallyme-codec-ffi@${version}`);
+    const result = spawnSync("bash", [script], {
+      cwd: root, env: environment(root), encoding: "utf8", timeout: toolFixtureTimeoutMs,
+    });
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /release FFI package version/u);
+    assert.equal(existsSync(join(root, "compiler-args")), false);
+    assert.deepEqual(readdirSync(root).filter((name) => name.startsWith("reallyme-ffi-abi.")), []);
+  });
+}
+
+test("ABI harness rejects metadata for another package", { skip: !posixHost }, (t) => {
+  const { root, script } = abiFixture(t, "path+file:///fixture#different-package@9.12.345");
+  const result = spawnSync("bash", [script], {
+    cwd: root, env: environment(root), encoding: "utf8", timeout: toolFixtureTimeoutMs,
+  });
+  assert.equal(result.error, undefined);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /release FFI package version/u);
+  assert.equal(existsSync(join(root, "compiler-args")), false);
+});
+
+test("C ABI harness rejects a library from a different package release", { skip: !posixHost }, (t) => {
+  const root = fixture(t);
+  const source = copy(root, "scripts/ffi_abi_sanitizer.c");
+  const missingVersion = spawnSync("clang", ["-std=c11", "-fsyntax-only", source], {
+    encoding: "utf8", timeout: toolFixtureTimeoutMs,
+  });
+  assert.equal(missingVersion.error, undefined);
+  assert.notEqual(missingVersion.status, 0);
+  assert.match(missingVersion.stderr, /release FFI package version definitions are required/u);
+  const stub = join(root, "stale-library.c");
+  writeFileSync(stub, `
+    #include <stddef.h>
+    #include <stdint.h>
+    uint32_t rm_codec_abi_version(void) { return 6; }
+    uint32_t rm_codec_package_version_major(void) { return 9; }
+    uint32_t rm_codec_package_version_minor(void) { return 12; }
+    uint32_t rm_codec_package_version_patch(void) { return 344; }
+    size_t rm_codec_max_ffi_output_bytes(void) { return 4096; }
+    int32_t rm_codec_process(uint32_t op, const uint8_t *a, size_t al,
+      const uint8_t *b, size_t bl, const uint8_t *c, size_t cl,
+      uint8_t *out, size_t cap, size_t *len) {
+      (void)op; (void)a; (void)al; (void)b; (void)bl; (void)c; (void)cl;
+      (void)out; (void)cap; (void)len;
+      return 0;
+    }
+  `);
+  const executable = join(root, "stale-library-check");
+  const compiler = spawnSync("clang", [
+    "-std=c11", "-Wall", "-Wextra", "-Werror", "-DCODEC_PACKAGE_VERSION_MAJOR=9U",
+    "-DCODEC_PACKAGE_VERSION_MINOR=12U", "-DCODEC_PACKAGE_VERSION_PATCH=345U",
+    source, stub, "-o", executable,
+  ], { encoding: "utf8", timeout: toolFixtureTimeoutMs });
+  assert.equal(compiler.error, undefined);
+  assert.equal(compiler.status, 0, compiler.stderr);
+  const result = spawnSync(executable, [], { encoding: "utf8", timeout: toolFixtureTimeoutMs });
+  assert.equal(result.error, undefined);
+  assert.equal(result.status, 1);
+  assert.equal(result.stderr, "release FFI package version mismatch\n");
+});
+
 for (const android of [false, true]) {
   test(`${android ? "Android" : "Kotlin"} builder stages this checkout's fresh artifacts from another working directory`, {
     skip: !["darwin", "linux"].includes(process.platform),

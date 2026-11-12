@@ -19,7 +19,7 @@ plugins {
 }
 
 group = "me.really"
-version = "0.3.3"
+version = "0.3.4"
 
 // The JVM jar and Android AAR expose the same me.really.codec classes.
 // The shared capability makes Gradle reject a graph containing both.
@@ -33,7 +33,7 @@ dependencyLocking {
 }
 
 val kotlinBouncyCastleConfiguration = "kotlinBouncyCastleConfiguration"
-val bouncyCastleSecurityVersion = "1.86"
+val bouncyCastleSecurityVersion = "1.87"
 // Kotlin's publishing validation resolves Bouncy Castle 1.84 internally.
 // Constrain that tooling classpath because 1.84 is affected by CVE-2026-8763.
 configurations.configureEach {
@@ -41,7 +41,7 @@ configurations.configureEach {
         resolutionStrategy.eachDependency {
             if (requested.group == "org.bouncycastle") {
                 useVersion(bouncyCastleSecurityVersion)
-                because("Bouncy Castle 1.86 includes the name-constraints fix")
+                because("Bouncy Castle 1.87 includes the name-constraints fix")
             }
         }
     }

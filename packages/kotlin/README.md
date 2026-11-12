@@ -6,7 +6,7 @@ The `me.really:codec` JVM package provides codecs for Java and Kotlin.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.3.3")
+    implementation("me.really:codec:0.3.4")
 }
 ```
 

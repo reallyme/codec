@@ -4,10 +4,10 @@
 
 [package]
 name = "reallyme-codec-wasm"
-version = "0.3.3"
+version = "0.3.4"
 edition.workspace = true
 rust-version.workspace = true
-publish = false
+publish.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "WASM bindings for the ReallyMe TypeScript codec package."
@@ -16,9 +16,9 @@ description = "WASM bindings for the ReallyMe TypeScript codec package."
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-codec-adapter = { package = "reallyme-codec-adapter", version = "=0.3.3", path = "../adapter" }
-codec-proto = { package = "reallyme-codec-proto", version = "=0.3.3", path = "../proto", default-features = false, features = ["generated"] }
-codec-core = { package = "reallyme-codec", version = "=0.3.3", path = "../codec", default-features = false, features = ["operation-contract"] }
+codec-adapter = { package = "reallyme-codec-adapter", version = "=0.3.4", path = "../adapter" }
+codec-proto = { package = "reallyme-codec-proto", version = "=0.3.4", path = "../proto", default-features = false, features = ["generated"] }
+codec-core = { package = "reallyme-codec", version = "=0.3.4", path = "../codec", default-features = false, features = ["operation-contract"] }
 js-sys = { workspace = true }
 wasm-bindgen = { workspace = true }
 zeroize = { workspace = true }

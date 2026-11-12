@@ -7,6 +7,13 @@
 #include <stdio.h>
 #include <string.h>
 
+// The release test supplies these from Cargo's selected package metadata.
+// Require definitions at compile time so callers cannot omit version checking.
+#if !defined(CODEC_PACKAGE_VERSION_MAJOR) || !defined(CODEC_PACKAGE_VERSION_MINOR) || \
+    !defined(CODEC_PACKAGE_VERSION_PATCH)
+#error "release FFI package version definitions are required"
+#endif
+
 extern uint32_t rm_codec_abi_version(void);
 extern uint32_t rm_codec_package_version_major(void);
 extern uint32_t rm_codec_package_version_minor(void);
@@ -19,9 +26,6 @@ extern int32_t rm_codec_process(uint32_t operation, const uint8_t *first, size_t
 
 enum {
     CODEC_ABI_VERSION = 6,
-    CODEC_PACKAGE_VERSION_MAJOR = 0,
-    CODEC_PACKAGE_VERSION_MINOR = 3,
-    CODEC_PACKAGE_VERSION_PATCH = 2,
     CODEC_BASE64_ENCODE = 1,
     CODEC_OK = 0,
     CODEC_INVALID_ARGUMENT = -1,

@@ -138,9 +138,18 @@ fn assert_generated_error(
 #[test]
 fn abi_version_export_matches_the_sdk_contract() {
     assert_eq!(rm_codec_abi_version(), CODEC_ABI_VERSION);
-    assert_eq!(rm_codec_package_version_major(), 0);
-    assert_eq!(rm_codec_package_version_minor(), 3);
-    assert_eq!(rm_codec_package_version_patch(), 3);
+    assert_eq!(
+        rm_codec_package_version_major().to_string(),
+        env!("CARGO_PKG_VERSION_MAJOR")
+    );
+    assert_eq!(
+        rm_codec_package_version_minor().to_string(),
+        env!("CARGO_PKG_VERSION_MINOR")
+    );
+    assert_eq!(
+        rm_codec_package_version_patch().to_string(),
+        env!("CARGO_PKG_VERSION_PATCH")
+    );
     assert_eq!(
         rm_codec_max_operation_response_bytes(),
         codec_proto::MAX_CODEC_PROTO_MESSAGE_BYTES
