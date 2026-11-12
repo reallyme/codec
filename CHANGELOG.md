@@ -2,6 +2,12 @@
 
 ## 0.3.4 (unreleased)
 
+- Refuse Swift native-library loads redirected by `DYLD_LIBRARY_PATH` or
+  `DYLD_IMAGE_SUFFIX`, including digest-verified loads.
+- Clear temporary TypeScript serialization copies of CBOR documents and keys.
+- Report oversized DAG-CBOR lengths consistently on native and Wasm hosts.
+- Distinguish malformed PEM labels from unsupported labels and reject invalid
+  DER BIT STRING lengths.
 - Accept the largest default PEM encoding with LF or CRLF line endings.
 - Add borrowed general-CBOR framing, validation, cursors and float policies.
 - Add bounded general-CBOR encoding that preserves received items and map order.

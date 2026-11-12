@@ -36,14 +36,17 @@ fn option_limit(value: u32, default: usize) -> Result<usize, CodecWireError> {
     })
 }
 
-fn pem_label(label: Option<CodecPemLabel>) -> Result<PemLabel, CodecWireError> {
-    match label {
+/// Converts a wire PEM label. An unknown numeric value is a malformed request,
+/// as for every other enum field; an unspecified label is an unsupported label.
+fn pem_label(label: EnumValue<CodecPemLabel>) -> Result<PemLabel, CodecWireError> {
+    match label.as_known() {
         Some(CodecPemLabel::CODEC_PEM_LABEL_PRIVATE_KEY) => Ok(PemLabel::PrivateKey),
         Some(CodecPemLabel::CODEC_PEM_LABEL_EC_PRIVATE_KEY) => Ok(PemLabel::EcPrivateKey),
         Some(CodecPemLabel::CODEC_PEM_LABEL_PUBLIC_KEY) => Ok(PemLabel::PublicKey),
-        Some(CodecPemLabel::CODEC_PEM_LABEL_UNSPECIFIED) | None => Err(wire_error(
+        Some(CodecPemLabel::CODEC_PEM_LABEL_UNSPECIFIED) => Err(wire_error(
             CodecWireErrorBranch::Pem,
             CodecErrorReason::CODEC_ERROR_REASON_PEM_UNSUPPORTED_LABEL,
         )),
+        None => Err(malformed_request_wire_error()),
     }
 }

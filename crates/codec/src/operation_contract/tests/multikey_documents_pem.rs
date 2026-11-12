@@ -601,6 +601,57 @@ fn pem_encode_rejects_unknown_line_ending_in_binary_and_json() {
 }
 
 #[test]
+fn pem_requests_reject_unknown_labels_as_malformed_and_unspecified_as_unsupported() {
+    use codec_proto::generated::proto::reallyme::codec::v1::CodecPemEncodeRequest;
+
+    let encode_request = |label: EnumValue<CodecPemLabel>| CodecOperationRequest {
+        operation: Some(
+            CodecPemEncodeRequest {
+                label,
+                der: vec![0x01],
+                options: buffa::MessageField::none(),
+                __buffa_unknown_fields: Default::default(),
+            }
+            .into(),
+        ),
+        __buffa_unknown_fields: Default::default(),
+    };
+    let decode_request = |label: EnumValue<CodecPemLabel>| {
+        pem_decode_request(
+            b"-----BEGIN PUBLIC KEY-----\nAQ==\n-----END PUBLIC KEY-----\n",
+            Some(CodecPemDecodeOptions {
+                allowed_labels: vec![label],
+                ..Default::default()
+            }),
+        )
+    };
+
+    for unknown in [-1, 4, 999, i32::MAX] {
+        for request in [
+            encode_request(EnumValue::from(unknown)),
+            decode_request(EnumValue::from(unknown)),
+        ] {
+            let error = codec_error_payload(&process_binary_and_proto_json(&request));
+            assert_eq!(error.branch(), CodecWireErrorBranch::Boundary);
+            assert_eq!(
+                error.reason(),
+                CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF
+            );
+        }
+    }
+
+    let unspecified = EnumValue::from(CodecPemLabel::CODEC_PEM_LABEL_UNSPECIFIED);
+    for request in [encode_request(unspecified), decode_request(unspecified)] {
+        let error = codec_error_payload(&process_binary_and_proto_json(&request));
+        assert_eq!(error.branch(), CodecWireErrorBranch::Pem);
+        assert_eq!(
+            error.reason(),
+            CodecErrorReason::CODEC_ERROR_REASON_PEM_UNSUPPORTED_LABEL
+        );
+    }
+}
+
+#[test]
 fn pem_encode_preserves_absent_unspecified_and_known_line_endings() {
     use codec_proto::generated::proto::reallyme::codec::v1::{CodecPemEncodeRequest, CodecPemEncodeResult};
     for (line_ending, newline) in [

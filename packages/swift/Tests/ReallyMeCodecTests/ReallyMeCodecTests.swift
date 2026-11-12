@@ -130,6 +130,43 @@ final class ReallyMeCodecTests: XCTestCase {
             XCTAssertEqual(error as? ReallyMeCodecError, .dynamicLibraryNotFound)
         }
     }
+
+    func testLoaderRefusesDyldLibraryPathSubstitution() throws {
+        let path = try Self.libraryPath()
+        let resolvedPath = URL(fileURLWithPath: path).resolvingSymlinksInPath()
+        let contents = try XCTUnwrap(FileManager.default.contents(atPath: resolvedPath.path))
+        let digest = Array(SHA256.hash(data: contents))
+
+        let searchDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("reallyme-codec-dyld-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: searchDirectory, withIntermediateDirectories: false)
+        defer { try? FileManager.default.removeItem(at: searchDirectory) }
+        let substitute = searchDirectory.appendingPathComponent(resolvedPath.lastPathComponent)
+        XCTAssertTrue(FileManager.default.createFile(atPath: substitute.path, contents: Data([0x00])))
+
+        let previous = ProcessInfo.processInfo.environment["DYLD_LIBRARY_PATH"]
+        setenv("DYLD_LIBRARY_PATH", searchDirectory.path, 1)
+        defer {
+            if let previous {
+                setenv("DYLD_LIBRARY_PATH", previous, 1)
+            } else {
+                unsetenv("DYLD_LIBRARY_PATH")
+            }
+        }
+
+        XCTAssertThrowsError(
+            try ReallyMeCodecRustCAbiLibrary(path: path, expectedSHA256: digest)
+        ) { error in
+            XCTAssertEqual(error as? ReallyMeCodecError, .dynamicLibraryLoadFailed)
+        }
+        XCTAssertThrowsError(try ReallyMeCodecRustCAbiLibrary(path: path)) { error in
+            XCTAssertEqual(error as? ReallyMeCodecError, .dynamicLibraryLoadFailed)
+        }
+
+        try FileManager.default.removeItem(at: substitute)
+        let library = try ReallyMeCodecRustCAbiLibrary(path: path, expectedSHA256: digest)
+        _ = try ReallyMeCodec(rustCAbiLibrary: library)
+    }
     #endif
 
     private static func libraryPath() throws -> String {

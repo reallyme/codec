@@ -131,7 +131,7 @@ fn process_operation_request(
                 reject_unknown_fields(&options.__buffa_unknown_fields)?;
             }
             Ok(operation_result(process_pem_encode(
-                request.label.as_known(),
+                request.label,
                 &request.der,
                 request.options.as_option(),
             )?))

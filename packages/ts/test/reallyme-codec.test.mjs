@@ -72,6 +72,7 @@ import {
 import {
   MAX_CODEC_FFI_INPUT_BYTES,
   MAX_CODEC_PEM_INPUT_BYTES,
+  encodeUtf8,
   MAX_CODEC_PROTO_JSON_BYTES,
   MAX_CODEC_PROTO_MESSAGE_BYTES,
 } from "../dist/boundary.js";
@@ -85,6 +86,9 @@ import {
   processGeneratedOperationRequest,
 } from "../dist/operationContract.js";
 import {
+  CodecDagCborVerifyCidRequestSchema,
+  CodecDeterministicCborDecodeRequestSchema,
+  CodecMulticodecLookupPrefixRequestSchema,
   CodecPemDecodeOptionsSchema,
   CodecPemDecodeRequestSchema,
   CodecPemEncodeOptionsSchema,
@@ -1584,6 +1588,147 @@ test("framed PEM requests match the generated protobuf serialization", () => {
     () => frameOperationRequest(4000, [{ field: 1, varint: -1 }]),
     "invalid-input",
   );
+});
+
+test("framed CBOR and multicodec requests match the generated protobuf serialization", () => {
+  const field = (schema, name) => schema.field[name].number;
+  const document = Uint8Array.from({ length: 300 }, (_, index) => index % 251);
+  const cid = "bafyreihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku";
+  const cases = [
+    [
+      "dagCborDecode",
+      create(CodecDagCborDecodeRequestSchema, { encoded: document }),
+      [{ field: field(CodecDagCborDecodeRequestSchema, "encoded"), bytes: document }],
+    ],
+    [
+      "deterministicCborDecode",
+      create(CodecDeterministicCborDecodeRequestSchema, { encoded: document }),
+      [{ field: field(CodecDeterministicCborDecodeRequestSchema, "encoded"), bytes: document }],
+    ],
+    [
+      "multicodecLookupPrefix",
+      create(CodecMulticodecLookupPrefixRequestSchema, { value: document }),
+      [{ field: field(CodecMulticodecLookupPrefixRequestSchema, "value"), bytes: document }],
+    ],
+    [
+      "dagCborVerifyCid",
+      create(CodecDagCborVerifyCidRequestSchema, { cid, payload: document }),
+      [
+        { field: field(CodecDagCborVerifyCidRequestSchema, "cid"), bytes: encodeUtf8(cid) },
+        { field: field(CodecDagCborVerifyCidRequestSchema, "payload"), bytes: document },
+      ],
+    ],
+    [
+      "dagCborVerifyCid",
+      create(CodecDagCborVerifyCidRequestSchema, { cid: "", payload: new Uint8Array(0) }),
+      [
+        { field: field(CodecDagCborVerifyCidRequestSchema, "cid"), bytes: encodeUtf8("") },
+        { field: field(CodecDagCborVerifyCidRequestSchema, "payload"), bytes: new Uint8Array(0) },
+      ],
+    ],
+  ];
+  for (const [operation, value, parts] of cases) {
+    const expected = toBinary(
+      CodecOperationRequestSchema,
+      create(CodecOperationRequestSchema, { operation: { case: operation, value } }),
+    );
+    const framed = frameOperationRequest(field(CodecOperationRequestSchema, operation), parts);
+    assert.deepEqual(framed, expected);
+  }
+});
+
+test("UTF-8 request framing matches the WHATWG encoder, including lone surrogates", () => {
+  const encoder = new TextEncoder();
+  const samples = [
+    "",
+    "ascii",
+    "\u00e9\u07ff\u0800\uffff",
+    "\ud83d\ude00",
+    "\ud800",
+    "\udc00",
+    "a\ud800b",
+    "\udc00\ud800",
+    "\ud800\ud800\udc00",
+  ];
+  for (const sample of samples) {
+    assert.deepEqual(encodeUtf8(sample), encoder.encode(sample));
+  }
+  fc.assert(
+    fc.property(fc.string({ unit: "binary", maxLength: 64 }), (sample) => {
+      assert.deepEqual(encodeUtf8(sample), encoder.encode(sample));
+    }),
+  );
+});
+
+test("DAG-CBOR string lengths beyond the input are invalid CBOR on the WASM lane", () => {
+  // Native 64-bit lanes report these as invalid CBOR; the 32-bit WASM lane
+  // must not reclassify them as a resource limit.
+  for (const hex of [
+    "5b0000000100000000",
+    "7b0000000100000000",
+    "5bffffffffffffffff",
+    "5affffffff",
+  ]) {
+    const request = toBinary(
+      CodecOperationRequestSchema,
+      create(CodecOperationRequestSchema, {
+        operation: {
+          case: "dagCborDecode",
+          value: create(CodecDagCborDecodeRequestSchema, {
+            encoded: Uint8Array.from(Buffer.from(hex, "hex")),
+          }),
+        },
+      }),
+    );
+    const response = fromBinary(CodecOperationResponseSchema, processOperation(request));
+    assert.equal(response.outcome.case, "error");
+    assert.equal(response.outcome.value.error.case, "canonicalization");
+    assert.equal(response.outcome.value.error.value.reason, 400);
+  }
+});
+
+test("sensitive CBOR and multicodec lanes leave no serializer copy of caller bytes", () => {
+  const sentinel = [0xde, 0xad, 0xbe, 0xef, 0x13, 0x37, 0xc0, 0xde];
+  const holdsSentinel = (bytes) => {
+    for (let start = 0; start + sentinel.length <= bytes.length; start += 1) {
+      if (sentinel.every((value, offset) => bytes[start + offset] === value)) {
+        return true;
+      }
+    }
+    return false;
+  };
+  const sliced = [];
+  const originalSlice = Uint8Array.prototype.slice;
+  const observe = (call) => {
+    sliced.length = 0;
+    Uint8Array.prototype.slice = function observedSlice(...args) {
+      sliced.push(this);
+      return originalSlice.apply(this, args);
+    };
+    let result;
+    try {
+      result = call();
+    } finally {
+      Uint8Array.prototype.slice = originalSlice;
+    }
+    return { result, retained: sliced.filter(holdsSentinel).length };
+  };
+
+  const privateKey = Uint8Array.from([0x80, 0x26, ...sentinel, ...new Array(24).fill(9)]);
+  assert.equal(observe(() => multicodecLookupPrefix(privateKey)).retained, 0);
+
+  const encodedBytes = Uint8Array.from([0x48, ...sentinel]);
+  const dagDecoded = observe(() => dagCborDecode(encodedBytes));
+  assert.equal(dagDecoded.retained, 0);
+  dagDecoded.result.value.fill(0);
+
+  const deterministicDecoded = observe(() => deterministicCborDecode(encodedBytes));
+  assert.equal(deterministicDecoded.retained, 0);
+
+  const cid = dagCborComputeCid(encodedBytes);
+  const verified = observe(() => dagCborVerifyCidDetails(cid, encodedBytes));
+  assert.equal(verified.retained, 0);
+  assert.equal(verified.result.valid, true);
 });
 
 test("PEM armor uses Rust policy for labels, wrapping, and decoding", () => {

@@ -9,6 +9,9 @@ use super::error::map_backend;
 use super::validate::validate_oid;
 use super::{DerBitStringRef, DerError, DerErrorReason, DerIntegerRef, DerLimits, DerOidRef};
 
+/// X.690 8.6.2.2: BIT STRING contents always begin with the unused-bits octet.
+const BIT_STRING_MIN_CONTENTS_LEN: usize = 1;
+
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub(super) enum Container {
     Document,
@@ -95,7 +98,7 @@ impl<'a> DerReader<'a> {
     ///
     /// Named-bit schemas must additionally enforce DER trailing-zero removal.
     pub fn read_bit_string(&mut self) -> Result<DerBitStringRef<'a>, DerError> {
-        let value = self.decode::<BitStringRef<'a>>(None)?;
+        let value = self.decode_bounded::<BitStringRef<'a>>(BIT_STRING_MIN_CONTENTS_LEN, None)?;
         // The foundation checks the unused-bit count, but does not reject
         // nonzero padding. X.690 11.2.1 requires those unused bits to be zero.
         if let Some(last) = value.raw_bytes().last() {
@@ -178,6 +181,15 @@ impl<'a> DerReader<'a> {
     }
 
     fn begin(&mut self, tag: Tag, contents_limit: Option<usize>) -> Result<usize, DerError> {
+        self.begin_bounded(tag, 0, contents_limit)
+    }
+
+    fn begin_bounded(
+        &mut self,
+        tag: Tag,
+        contents_minimum: usize,
+        contents_limit: Option<usize>,
+    ) -> Result<usize, DerError> {
         if let Some(reason) = self.failed {
             return Err(DerError::new(reason));
         }
@@ -207,6 +219,9 @@ impl<'a> DerReader<'a> {
         if contents_limit.is_some_and(|maximum| length > maximum) {
             return self.fail(DerErrorReason::IntegerTooLarge);
         }
+        if length < contents_minimum {
+            return self.fail(DerErrorReason::InvalidLength);
+        }
         self.elements = elements;
         let Some(values) = self.values.checked_add(1) else {
             return self.fail(DerErrorReason::ArithmeticOverflow);
@@ -222,7 +237,14 @@ impl<'a> DerReader<'a> {
     where
         T: Decode<'a, Error = der_core::Error> + FixedTag,
     {
-        let start = self.begin(T::TAG, maximum)?;
+        self.decode_bounded(0, maximum)
+    }
+
+    fn decode_bounded<T>(&mut self, minimum: usize, maximum: Option<usize>) -> Result<T, DerError>
+    where
+        T: Decode<'a, Error = der_core::Error> + FixedTag,
+    {
+        let start = self.begin_bounded(T::TAG, minimum, maximum)?;
         let value = match self.inner.decode::<T>() {
             Ok(value) => value,
             Err(error) => return self.record(map_backend(error)),

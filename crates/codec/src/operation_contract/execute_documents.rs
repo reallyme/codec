@@ -46,7 +46,7 @@ fn process_pem_decode(
             .try_reserve(options.allowed_labels.len())
             .map_err(|_| internal_wire_error())?;
         for label in &options.allowed_labels {
-            labels.push(pem_label(label.as_known())?);
+            labels.push(pem_label(*label)?);
         }
     }
     let allowed_labels = if labels.is_empty() {
@@ -75,7 +75,7 @@ fn process_pem_decode(
 }
 
 fn process_pem_encode(
-    label: Option<CodecPemLabel>,
+    label: EnumValue<CodecPemLabel>,
     der: &[u8],
     options: Option<&CodecPemEncodeOptions>,
 ) -> Result<CodecPemEncodeResult, CodecWireError> {

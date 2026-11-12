@@ -119,6 +119,55 @@ export const utf8ByteLength = (value: string): number =>
   utf8ByteLengthWithPolicy(value, false);
 
 /**
+ * Encodes a string as UTF-8 into an exactly sized buffer owned by the caller.
+ *
+ * Lone UTF-16 surrogates become U+FFFD, matching the WHATWG encoder that
+ * protobuf runtimes use for string fields, so framed requests stay byte
+ * identical to generated serialization.
+ */
+export const encodeUtf8 = (value: string): Uint8Array => {
+  const output = new Uint8Array(utf8ByteLength(value));
+  let offset = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    let codePoint = value.charCodeAt(index);
+    if (codePoint >= 0xd800 && codePoint <= 0xdbff && index + 1 < value.length) {
+      const next = value.charCodeAt(index + 1);
+      if (next >= 0xdc00 && next <= 0xdfff) {
+        codePoint = 0x10000 + ((codePoint - 0xd800) << 10) + (next - 0xdc00);
+        index += 1;
+      }
+    }
+    if (codePoint >= 0xd800 && codePoint <= 0xdfff) {
+      codePoint = 0xfffd;
+    }
+    if (codePoint <= 0x7f) {
+      output[offset] = codePoint;
+      offset += 1;
+    } else if (codePoint <= 0x7ff) {
+      output[offset] = 0xc0 | (codePoint >> 6);
+      output[offset + 1] = 0x80 | (codePoint & 0x3f);
+      offset += 2;
+    } else if (codePoint <= 0xffff) {
+      output[offset] = 0xe0 | (codePoint >> 12);
+      output[offset + 1] = 0x80 | ((codePoint >> 6) & 0x3f);
+      output[offset + 2] = 0x80 | (codePoint & 0x3f);
+      offset += 3;
+    } else {
+      output[offset] = 0xf0 | (codePoint >> 18);
+      output[offset + 1] = 0x80 | ((codePoint >> 12) & 0x3f);
+      output[offset + 2] = 0x80 | ((codePoint >> 6) & 0x3f);
+      output[offset + 3] = 0x80 | (codePoint & 0x3f);
+      offset += 4;
+    }
+  }
+  if (offset !== output.length) {
+    output.fill(0);
+    invalidInput();
+  }
+  return output;
+};
+
+/**
  * Returns UTF-8 length while rejecting strings that cannot be represented as
  * Unicode scalar values. TextEncoder and protobuf runtimes otherwise replace
  * lone UTF-16 surrogates, silently changing deterministic-CBOR semantics.
