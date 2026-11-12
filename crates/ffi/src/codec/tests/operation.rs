@@ -35,6 +35,29 @@ fn operation_ffi_rejects_request_aliasing_produced_length() {
 }
 
 #[test]
+fn operation_ffi_rejects_null_request_with_nonzero_length_before_limits() {
+    for process in [rm_codec_process_operation, rm_codec_process_operation_json] {
+        for request_len in [1_usize, 20_000_000] {
+            let mut output = [0xaa_u8; 64];
+            let mut produced_len = usize::MAX;
+            // SAFETY: The null request is the defect under test; the output
+            // and produced-length storage are valid caller-owned memory.
+            let status = unsafe {
+                process(
+                    core::ptr::null(),
+                    request_len,
+                    output.as_mut_ptr(),
+                    output.len(),
+                    &mut produced_len,
+                )
+            };
+            assert_eq!(status, CODEC_INVALID_ARGUMENT);
+            assert_eq!(output, [0xaa_u8; 64]);
+        }
+    }
+}
+
+#[test]
 fn operation_ffi_exports_return_resource_limit_responses_for_oversized_input() {
     type ProcessOperation =
         unsafe extern "C" fn(*const u8, usize, *mut u8, usize, *mut usize) -> i32;

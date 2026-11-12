@@ -20,7 +20,24 @@ fn checked_array_length(value: &Uint8Array) -> Result<u32, JsValue> {
     if !raw.is_instance_of::<Uint8Array>() {
         return Err(invalid_input());
     }
+    // `instanceof` accepts a Proxy, `Object.create(Uint8Array.prototype)`, or
+    // a DataView with a swapped prototype, and their `length` throws. Probe the
+    // internal typed-array slot through a catching getter call first, so a
+    // forged view fails as invalid input instead of throwing through Rust.
+    typed_array_length_getter()?
+        .call0(raw)
+        .map_err(|_| invalid_input())?;
     Ok(value.length())
+}
+
+fn typed_array_length_getter() -> Result<Function, JsValue> {
+    let typed_array_prototype =
+        Object::get_prototype_of(&Object::get_prototype_of(&Uint8Array::new_with_length(0)));
+    let descriptor =
+        Object::get_own_property_descriptor(&typed_array_prototype, &JsValue::from_str("length"));
+    Reflect::get(&descriptor, &JsValue::from_str("get"))?
+        .dyn_into::<Function>()
+        .map_err(|_| invalid_input())
 }
 
 fn typed_array_method(name: &str) -> Result<Function, JsValue> {

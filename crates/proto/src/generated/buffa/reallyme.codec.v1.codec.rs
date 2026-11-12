@@ -114,7 +114,7 @@ impl ::core::fmt::Display for __ReallyMeSensitiveBase64DecodeError {
 
 const __REALLYME_SENSITIVE_BASE64_CONFIG: ::base64::engine::general_purpose::GeneralPurposeConfig =
     ::base64::engine::general_purpose::GeneralPurposeConfig::new()
-        .with_decode_allow_trailing_bits(true)
+        .with_decode_allow_trailing_bits(false)
         .with_decode_padding_mode(::base64::engine::DecodePaddingMode::Indifferent);
 const __REALLYME_SENSITIVE_BASE64_STANDARD: ::base64::engine::general_purpose::GeneralPurpose =
     ::base64::engine::general_purpose::GeneralPurpose::new(

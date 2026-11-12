@@ -28,6 +28,7 @@ jobs:
       - name: Checkout main for release SHA resolution
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           ref: main
           fetch-depth: 0
 
@@ -78,6 +79,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ needs.verify-release-sha.outputs.release_sha }}
 
       - name: Install Rust toolchain
@@ -107,6 +109,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ needs.verify-release-sha.outputs.release_sha }}
 
       - name: Install Rust toolchain
@@ -119,9 +122,8 @@ jobs:
         with:
           node-version: '26'
 
-      - name: Cache Cargo
-        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
-
+      # No build cache is restored here: this job holds the registry token, and
+      # publishing uses --no-verify, so a cache could only add poisoning risk.
       - name: Publish crates in dependency order
         run: |
           node scripts/verify_release_attestation.mjs

@@ -124,5 +124,7 @@ Dual-licensed under the MIT License or Apache License, Version 2.0, at your
 option. See [MIT](../../LICENSE-MIT) and [Apache 2.0](../../LICENSE-APACHE).
 
 An untagged checkout without a matching binary artifact reports
-`providerUnavailable` from `ReallyMeCodec()`. Local tests can pass an explicit,
-verified Rust C ABI library path through `ReallyMeCodecRustCAbiLibrary`.
+`providerUnavailable` from `ReallyMeCodec()`. Local tests can pass an explicit
+Rust C ABI library path through `ReallyMeCodecRustCAbiLibrary(path:)`, which
+does not verify the file. Use `ReallyMeCodecRustCAbiLibrary(path:expectedSHA256:)`
+to refuse any library whose SHA-256 does not match a pinned digest.

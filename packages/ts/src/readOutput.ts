@@ -54,9 +54,29 @@ const requireBoundedProviderString = (value: string, allowEmpty: boolean): strin
   }
 };
 
+// %TypedArray%.prototype[@@toStringTag] reads the internal typed-array slot
+// and returns undefined, without throwing, for any other object. Capturing it
+// at load time keeps later prototype tampering from changing the brand check.
+const typedArrayPrototype: object = Object.getPrototypeOf(Uint8Array.prototype);
+const typedArrayBrandGetter: unknown = Object.getOwnPropertyDescriptor(
+  typedArrayPrototype,
+  Symbol.toStringTag,
+)?.get;
+
+const hasUint8ArrayBrand = (value: unknown): boolean => {
+  if (typeof typedArrayBrandGetter !== "function") {
+    return false;
+  }
+  const brand: unknown = Reflect.apply(typedArrayBrandGetter, value, []);
+  return brand === "Uint8Array";
+};
+
 export const ensureBytesInput = (value: Uint8Array): void => {
   try {
+    // `instanceof` and the prototype can be forged on another view such as a
+    // DataView; the internal brand cannot, so check it before any length read.
     if (
+      !hasUint8ArrayBrand(value) ||
       !(value instanceof Uint8Array) ||
       !ArrayBuffer.isView(value) ||
       Object.getPrototypeOf(value) !== Uint8Array.prototype

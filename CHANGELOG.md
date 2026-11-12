@@ -23,6 +23,19 @@ boundary.
 - Keep the validated receipt when navigating general-CBOR children, observe
   float preference on headers, report oversized string lengths as truncation,
   and reject empty tag-24 payloads with a dedicated embedded-item reason.
+- Harden boundaries found in a security review: reject a null C ABI operation
+  request with a non-zero length as an invalid argument; make the Kotlin
+  provider pin the native package version and map unchecked loader exceptions
+  to a typed provider failure; add a digest-pinned Swift library loader; reject
+  forged typed-array views with typed errors in the TypeScript facade and raw
+  WASM exports; reject nonzero base64 trailing bits in sensitive ProtoJSON
+  bytes; and raise the default PEM text limit so the largest default encoding
+  decodes.
+- Harden release automation: publish the npm tarball that was tested from a
+  job without build steps, keep publish tokens out of build environments, stop
+  persisting checkout credentials, drop the build cache from the crates publish
+  job, require the Android runtime gate to test the current main tip, pin every
+  release-readiness policy module, and run cargo-deny over all features.
 - Use the Intel macOS runner pool for portable tooling and sanitizers while retaining
   ARM macOS coverage in the Swift lane.
 - Derive C sanitizer harness version expectations from Cargo package metadata,

@@ -438,6 +438,10 @@ GPG_SIGN_ARGS=(
 if ! printf '%s' "$MAVEN_SIGNING_PASSWORD" | gpg "${GPG_SIGN_ARGS[@]}" >/dev/null 2>&1; then
   fail "GPG could not sign with the configured key id and passphrase; check MAVEN_SIGNING_KEY_ID and MAVEN_SIGNING_PASSWORD"
 fi
+# The check above may leave the passphrase cached in gpg-agent. Drop it so
+# build scripts that run before signing cannot reuse the unlocked key; signing
+# supplies the passphrase again on its own descriptor.
+gpg-connect-agent reloadagent /bye >/dev/null 2>&1 || true
 
 VERSION="${MAVEN_RELEASE_VERSION:-$(read_gradle_version "${ROOT_DIR}/packages/kotlin/build.gradle.kts")}"
 ANDROID_VERSION="$(read_gradle_version "${ROOT_DIR}/packages/kotlin-android/build.gradle.kts")"
@@ -485,7 +489,11 @@ if [ -z "$ANDROID_JNI_LIBS_DIR_WAS_SET" ]; then
   prepare_android_ndk_home
   info "Building Android JNI libraries into ${ANDROID_JNI_LIBS_DIR}"
   rm -rf "$ANDROID_JNI_LIBS_DIR"
-  "${ROOT_DIR}/scripts/build_android_native_resources.sh" "$ANDROID_JNI_LIBS_DIR"
+  # Cargo build scripts and proc macros must never see signing material.
+  (
+    unset MAVEN_SIGNING_KEY MAVEN_SIGNING_PASSWORD
+    "${ROOT_DIR}/scripts/build_android_native_resources.sh" "$ANDROID_JNI_LIBS_DIR"
+  )
 else
   require_dir "$ANDROID_JNI_LIBS_DIR"
   info "Using Android JNI libraries from ${ANDROID_JNI_LIBS_DIR}"

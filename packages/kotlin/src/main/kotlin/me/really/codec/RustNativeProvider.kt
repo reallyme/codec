@@ -44,6 +44,9 @@ public object ReallyMeCodecRustNativeProvider {
     private const val RESOURCE_ROOT: String = "/me/really/codec/native"
     private const val ANDROID_LIBRARY_NAME: String = "reallyme_codec_ffi"
     private const val EXPECTED_CODEC_ABI_VERSION: Int = 6
+    private const val EXPECTED_CODEC_PACKAGE_MAJOR: Int = 0
+    private const val EXPECTED_CODEC_PACKAGE_MINOR: Int = 3
+    private const val EXPECTED_CODEC_PACKAGE_PATCH: Int = 4
     private const val MAX_NATIVE_LIBRARY_BYTES: Long = 134_217_728L
     private const val MAX_MANAGED_FFI_LIMIT_BYTES: Long = Int.MAX_VALUE.toLong()
     private const val DIGEST_BYTE_LENGTH: Int = 32
@@ -149,7 +152,15 @@ public object ReallyMeCodecRustNativeProvider {
             loadFailed = true
             throw ReallyMeCodecException.ProviderFailure()
         }
-        if (!loadBundledLibrary()) {
+        // Path and attribute APIs can throw unchecked exceptions for unusual
+        // temporary-directory configurations; any of them is a typed,
+        // latched provider failure rather than an escaping JDK exception.
+        val bundledLoaded = try {
+            loadBundledLibrary()
+        } catch (_: RuntimeException) {
+            false
+        }
+        if (!bundledLoaded) {
             // A failed native load cannot be undone in this classloader. Keep
             // one terminal failure so repeated calls cannot fill temporary
             // storage with verified but unloadable native libraries.
@@ -342,6 +353,10 @@ public object ReallyMeCodecRustNativeProvider {
         } catch (_: IOException) {
             null
         } catch (_: SecurityException) {
+            null
+        } catch (_: RuntimeException) {
+            // InvalidPathException, UnsupportedOperationException, and
+            // IllegalArgumentException report an unusable temporary root.
             null
         }
     }
@@ -662,6 +677,11 @@ public object ReallyMeCodecRustNativeProvider {
     internal fun isCompatibleAbiVersion(actualVersion: Int): Boolean =
         actualVersion == EXPECTED_CODEC_ABI_VERSION
 
+    internal fun isCompatiblePackageVersion(major: Int, minor: Int, patch: Int): Boolean =
+        major == EXPECTED_CODEC_PACKAGE_MAJOR &&
+            minor == EXPECTED_CODEC_PACKAGE_MINOR &&
+            patch == EXPECTED_CODEC_PACKAGE_PATCH
+
     internal fun isValidNativeLimit(limit: Long): Boolean =
         limit in 1..MAX_MANAGED_FFI_LIMIT_BYTES
 
@@ -670,6 +690,17 @@ public object ReallyMeCodecRustNativeProvider {
             return false
         }
         if (!isCompatibleAbiVersion(ReallyMeCodecNative.abiVersionNative())) {
+            return false
+        }
+        // Android resolves the library by name, so another dependency can
+        // supply an older build with the same ABI. Pin the exact release too.
+        if (
+            !isCompatiblePackageVersion(
+                ReallyMeCodecNative.packageVersionMajorNative(),
+                ReallyMeCodecNative.packageVersionMinorNative(),
+                ReallyMeCodecNative.packageVersionPatchNative(),
+            )
+        ) {
             return false
         }
         val inputLimit = ReallyMeCodecNative.maxFfiInputBytesNative()

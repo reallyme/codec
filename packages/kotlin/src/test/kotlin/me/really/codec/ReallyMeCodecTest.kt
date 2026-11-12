@@ -92,6 +92,16 @@ class ReallyMeCodecTest {
         assertFalse(ReallyMeCodecRustNativeProvider.isCompatibleAbiVersion(5))
         assertFalse(ReallyMeCodecRustNativeProvider.isCompatibleAbiVersion(0))
 
+        assertTrue(ReallyMeCodecRustNativeProvider.isCompatiblePackageVersion(0, 3, 4))
+        assertFalse(ReallyMeCodecRustNativeProvider.isCompatiblePackageVersion(0, 3, 3))
+        assertFalse(ReallyMeCodecRustNativeProvider.isCompatiblePackageVersion(0, 2, 4))
+        assertFalse(ReallyMeCodecRustNativeProvider.isCompatiblePackageVersion(1, 3, 4))
+        assertFalse(ReallyMeCodecRustNativeProvider.isCompatiblePackageVersion(-1, -1, -1))
+
+        // A NUL in the configured temporary root makes Path.of throw an
+        // unchecked InvalidPathException; it must map to a typed refusal.
+        assertNull(ReallyMeCodecRustNativeProvider.createPrivateExtractionDirectory("bad\u0000root"))
+
         assertTrue(ReallyMeCodecRustNativeProvider.isValidNativeLimit(1))
         assertTrue(ReallyMeCodecRustNativeProvider.isValidNativeLimit(Int.MAX_VALUE.toLong()))
         assertFalse(ReallyMeCodecRustNativeProvider.isValidNativeLimit(0))

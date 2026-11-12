@@ -5,6 +5,7 @@
 
 import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 // Authenticate the core before importing it: a static import would execute its
@@ -19,6 +20,34 @@ const pinCheck = spawnSync(process.execPath, [
 if (pinCheck.error !== undefined || pinCheck.status !== 0) {
   console.error("release readiness check failed: readiness pins could not be verified");
   process.exit(1);
+}
+
+// Every local module this checker imports or spawns is pinned here. This file
+// is itself pinned by the runner, so changing any policy module requires
+// updating this table, which in turn trips the checker pin for review.
+const POLICY_MODULE_SHA256 = new Map([
+  ["scripts/release-readiness/source-policy.mjs", "a55e529143a42335caf59eae5a474048500192e633b515dab0c6abf493ea16ab"],
+  ["scripts/verify_release_version.mjs", "187f480910b98bdd180c0a194385eb6d63f4d48af53ad30625d8029b3cf632b2"],
+  ["scripts/codec_proto_sensitivity.mjs", "b1ae294f0a1113df2209d59824d02aca0604ad7103d8e0c3cc7332ab968b7621"],
+  ["scripts/validate_codec_vectors.mjs", "2441249555b41a4dddc20096ae56521a165058284f933bf418b074dd76420fb9"],
+  ["scripts/generate_codec_limits.mjs", "dbe5a7226f82aee0a23a1156c5814056a5ca680a5c01e27760c13a6d5edafa8e"],
+]);
+for (const [path, expected] of POLICY_MODULE_SHA256) {
+  let actual;
+  try {
+    actual = createHash("sha256")
+      .update(readFileSync(new URL(`../${path}`, import.meta.url)))
+      .digest("hex");
+  } catch {
+    actual = undefined;
+  }
+  if (actual !== expected) {
+    console.error(
+      `release readiness check failed: ${path} does not match its reviewed pin; ` +
+        "after reviewing the change, update POLICY_MODULE_SHA256 and refresh the checker pin",
+    );
+    process.exit(1);
+  }
 }
 
 const { createReleaseReadinessContext, scrubCommentsForAssertion } =
@@ -1788,7 +1817,8 @@ assertWorkflowPermissionsPolicy({
   workflow: { contents: "read" },
   jobs: {
     "verify-release-sha": { actions: "read", contents: "read" },
-    "npm-package": { actions: "read", contents: "read", "id-token": "write" },
+    "npm-package": { actions: "read", contents: "read" },
+    "npm-publish": { actions: "read", contents: "read", "id-token": "write" },
   },
 });
 assertWorkflowPermissionsPolicy({
@@ -1865,6 +1895,9 @@ assertContains(".github/workflows/swift-package-release.yml", "gh release create
 assertContains(".github/workflows/swift-package-release.yml", "git push origin");
 assertContains(".github/workflows/swift-package-release.yml", "Bind release manifest to verified Swift artifact");
 assertContains(".github/workflows/npm-package-release.yml", "npm publish");
+assertContains(".github/workflows/npm-package-release.yml", "npm pack --ignore-scripts");
+assertContains(".github/workflows/npm-package-release.yml", "--provenance --access public --ignore-scripts");
+assertContains(".github/workflows/npm-package-release.yml", "EXPECTED_TARBALL_SHA256");
 assertContains("Cargo.toml", 'wasm-bindgen = "=0.2.130"');
 assertContains(".github/workflows/code-checks.yml", "wasm-bindgen-cli@0.2.130");
 assertContains(".github/workflows/npm-package-preflight.yml", "wasm-bindgen-cli@0.2.130");

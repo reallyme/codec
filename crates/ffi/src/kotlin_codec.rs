@@ -14,9 +14,10 @@
 
 use crate::codec::{
     rm_codec_abi_version, rm_codec_max_ffi_input_bytes, rm_codec_max_ffi_output_bytes,
-    rm_codec_max_operation_response_bytes, rm_codec_process, rm_codec_process_bool,
-    rm_codec_process_operation, rm_codec_process_operation_json, MAX_CODEC_FFI_INPUT_BYTES,
-    MAX_CODEC_FFI_OUTPUT_BYTES,
+    rm_codec_max_operation_response_bytes, rm_codec_package_version_major,
+    rm_codec_package_version_minor, rm_codec_package_version_patch, rm_codec_process,
+    rm_codec_process_bool, rm_codec_process_operation, rm_codec_process_operation_json,
+    MAX_CODEC_FFI_INPUT_BYTES, MAX_CODEC_FFI_OUTPUT_BYTES,
 };
 use crate::guard::with_redacted_panic_hook;
 use crate::status::{
@@ -89,6 +90,36 @@ pub extern "system" fn Java_me_really_codec_ReallyMeCodecNative_abiVersionNative
     _receiver: JObject<'_>,
 ) -> jint {
     jint::try_from(rm_codec_abi_version()).unwrap_or(-1)
+}
+
+/// Returns the loaded native image's package major version.
+///
+/// Kotlin compares all three components with its own release so a stale
+/// library that shares the ABI version cannot silently serve newer sources.
+#[no_mangle]
+pub extern "system" fn Java_me_really_codec_ReallyMeCodecNative_packageVersionMajorNative(
+    _env: EnvUnowned<'_>,
+    _receiver: JObject<'_>,
+) -> jint {
+    jint::try_from(rm_codec_package_version_major()).unwrap_or(-1)
+}
+
+/// Returns the loaded native image's package minor version.
+#[no_mangle]
+pub extern "system" fn Java_me_really_codec_ReallyMeCodecNative_packageVersionMinorNative(
+    _env: EnvUnowned<'_>,
+    _receiver: JObject<'_>,
+) -> jint {
+    jint::try_from(rm_codec_package_version_minor()).unwrap_or(-1)
+}
+
+/// Returns the loaded native image's package patch version.
+#[no_mangle]
+pub extern "system" fn Java_me_really_codec_ReallyMeCodecNative_packageVersionPatchNative(
+    _env: EnvUnowned<'_>,
+    _receiver: JObject<'_>,
+) -> jint {
+    jint::try_from(rm_codec_package_version_patch()).unwrap_or(-1)
 }
 
 /// Returns Rust's authoritative generic C ABI input limit for Kotlin callers.

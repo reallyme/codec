@@ -9,6 +9,12 @@ internal object ReallyMeCodecNative {
 
     external fun abiVersionNative(): Int
 
+    external fun packageVersionMajorNative(): Int
+
+    external fun packageVersionMinorNative(): Int
+
+    external fun packageVersionPatchNative(): Int
+
     external fun maxFfiInputBytesNative(): Long
 
     external fun maxFfiOutputBytesNative(): Long

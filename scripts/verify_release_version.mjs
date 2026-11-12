@@ -62,6 +62,13 @@ export const verifyReleaseVersion = (expected, sources, workspaceVersions) => {
     if (declaredVersion(sources.swiftFfi, declaration) !== component) {
       fail("swift-ffi-version-mismatch");
     }
+    const kotlinDeclaration = new RegExp(
+      `^    private const val EXPECTED_CODEC_PACKAGE_${name.toUpperCase()}: Int = ([0-9]+)$`,
+      "gmu",
+    );
+    if (declaredVersion(sources.kotlinFfi, kotlinDeclaration) !== component) {
+      fail("kotlin-ffi-version-mismatch");
+    }
   }
   for (const [source, code] of [
     [sources.npm, "npm-version-mismatch"],
@@ -122,6 +129,7 @@ export const verifyCheckedOutReleaseVersion = (expected, cwd = root) => {
       swift: read(cwd, "Package.swift"),
       swiftFfi: read(cwd, "packages/swift/Sources/ReallyMeCodec/CallCodecWithRustCAbi.swift"),
       kotlin: read(cwd, "packages/kotlin/build.gradle.kts"),
+      kotlinFfi: read(cwd, "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt"),
       android: read(cwd, "packages/kotlin-android/build.gradle.kts"),
       npm: read(cwd, "packages/ts/package.json"),
       npmLock: read(cwd, "packages/ts/package-lock.json"),
