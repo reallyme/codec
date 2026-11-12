@@ -58,7 +58,11 @@ impl KeyStarts {
                 .get(..self.len)
                 .ok_or(error(ErrorReason::ArithmeticOverflow))?;
             self.heap
-                .try_reserve(INLINE_KEYS.checked_mul(2).ok_or(error(ErrorReason::ArithmeticOverflow))?)
+                .try_reserve(
+                    INLINE_KEYS
+                        .checked_mul(2)
+                        .ok_or(error(ErrorReason::ArithmeticOverflow))?,
+                )
                 .map_err(|_| error(ErrorReason::AllocationFailure))?;
             self.heap.extend_from_slice(inline);
         }
@@ -71,7 +75,9 @@ impl KeyStarts {
 
     fn as_slice(&self) -> Result<&[usize], CborError> {
         if self.heap.is_empty() {
-            self.inline.get(..self.len).ok_or(error(ErrorReason::ArithmeticOverflow))
+            self.inline
+                .get(..self.len)
+                .ok_or(error(ErrorReason::ArithmeticOverflow))
         } else {
             Ok(&self.heap)
         }
@@ -102,7 +108,9 @@ pub(super) fn check_unique(
 
     let mut run_start = 0_usize;
     for index in 1..=len {
-        let previous_index = index.checked_sub(1).ok_or(error(ErrorReason::ArithmeticOverflow))?;
+        let previous_index = index
+            .checked_sub(1)
+            .ok_or(error(ErrorReason::ArithmeticOverflow))?;
         let tied = match (order.get(previous_index), order.get(index)) {
             (Some(&previous), Some(&current)) => {
                 compare_at(input, starts, previous, current, budget)? == Ordering::Equal
@@ -136,7 +144,9 @@ fn check_run(
     budget: &mut Budget,
 ) -> Result<(), CborError> {
     for (position, &first) in run.iter().enumerate() {
-        let rest = run.get(add(position, 1)?..).ok_or(error(ErrorReason::ArithmeticOverflow))?;
+        let rest = run
+            .get(add(position, 1)?..)
+            .ok_or(error(ErrorReason::ArithmeticOverflow))?;
         for &second in rest {
             let left = frame_at(input, starts, first, budget)?;
             let right = frame_at(input, starts, second, budget)?;
@@ -174,9 +184,13 @@ fn merge_sort(
             merge(input, starts, left, right, output, budget)?;
             start = end;
         }
-        if order.len() != scratch.len() { return Err(error(ErrorReason::ArithmeticOverflow)); }
+        if order.len() != scratch.len() {
+            return Err(error(ErrorReason::ArithmeticOverflow));
+        }
         order.copy_from_slice(scratch);
-        width = width.checked_mul(2).ok_or(error(ErrorReason::ArithmeticOverflow))?;
+        width = width
+            .checked_mul(2)
+            .ok_or(error(ErrorReason::ArithmeticOverflow))?;
     }
     Ok(())
 }
@@ -301,7 +315,15 @@ fn simple_key(frame: &Frame<'_>) -> Result<(u8, u8, u8, u64), CborError> {
             let (class, bits) = value.equivalence_key();
             Ok((1, 0, class, bits))
         }
-        None => Ok((0, frame.header.simple_value()?.ok_or(error(ErrorReason::WrongType))?, 0, 0)),
+        None => Ok((
+            0,
+            frame
+                .header
+                .simple_value()?
+                .ok_or(error(ErrorReason::WrongType))?,
+            0,
+            0,
+        )),
     }
 }
 

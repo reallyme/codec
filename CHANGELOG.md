@@ -6,6 +6,10 @@ boundary.
 
 ## 0.3.4 (unreleased)
 
+- Require a successful GPG agent acknowledgment before building Maven artifacts,
+  including when the client exits successfully after an agent error. Align the
+  TypeScript PEM text ceiling with Rust so maximum-size default DER encodings
+  round-trip with LF and CRLF armor while preserving caller-lowered limits.
 - Add a separate borrowed general CBOR API with arbitrary tags, exact received
   wrapper and payload spans, prefix/full framing, cursors, unsorted unique maps,
   complete integer arguments, and binary16/32/64 floats. Basic validity,

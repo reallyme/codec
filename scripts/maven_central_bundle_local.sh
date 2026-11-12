@@ -59,6 +59,16 @@ require_tool() {
   fi
 }
 
+clear_signing_passphrase_cache() {
+  # A successful client exit does not imply a successful Assuan command:
+  # gpg-connect-agent also exits zero after an ERR response. Require the exact
+  # reload acknowledgment before any build can access the signing agent.
+  if ! gpg-connect-agent reloadagent /bye 2>/dev/null |
+    awk 'END { exit !(NR == 1 && $0 == "OK") }'; then
+    fail "GPG could not clear the signing passphrase cache before the build"
+  fi
+}
+
 read_gradle_version() {
   local file="$1"
   sed -n 's/^version = "\([^"]*\)".*/\1/p' "$file" | head -n 1
@@ -406,6 +416,7 @@ require_tool cargo
 require_tool find
 require_tool grep
 require_tool gpg
+require_tool gpg-connect-agent
 require_tool git
 require_tool gh
 require_tool jar
@@ -441,7 +452,7 @@ fi
 # The check above may leave the passphrase cached in gpg-agent. Drop it so
 # build scripts that run before signing cannot reuse the unlocked key; signing
 # supplies the passphrase again on its own descriptor.
-gpg-connect-agent reloadagent /bye >/dev/null 2>&1 || true
+clear_signing_passphrase_cache
 
 VERSION="${MAVEN_RELEASE_VERSION:-$(read_gradle_version "${ROOT_DIR}/packages/kotlin/build.gradle.kts")}"
 ANDROID_VERSION="$(read_gradle_version "${ROOT_DIR}/packages/kotlin-android/build.gradle.kts")"

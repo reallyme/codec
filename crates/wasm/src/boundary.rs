@@ -13,7 +13,12 @@ use crate::map_error::invalid_input;
 pub(crate) const MAX_WASM_INPUT_BYTES: usize = 1024 * 1024;
 const UINT8_ARRAY_BRAND: &str = "Uint8Array";
 const SHADOWED_BYTE_METADATA: [&str; 6] = [
-    "constructor", "length", "byteLength", "byteOffset", "buffer", "subarray",
+    "constructor",
+    "length",
+    "byteLength",
+    "byteOffset",
+    "buffer",
+    "subarray",
 ];
 
 fn checked_array_length(value: &Uint8Array) -> Result<u32, JsValue> {
@@ -38,7 +43,8 @@ fn checked_array_length(value: &Uint8Array) -> Result<u32, JsValue> {
     // Native subarray consults constructor/species. Reject caller overrides
     // before that operation can invoke a getter or substitute different bytes.
     for property in SHADOWED_BYTE_METADATA {
-        if !Object::get_own_property_descriptor(value, &JsValue::from_str(property)).is_undefined() {
+        if !Object::get_own_property_descriptor(value, &JsValue::from_str(property)).is_undefined()
+        {
             return Err(invalid_input());
         }
     }
@@ -48,10 +54,7 @@ fn checked_array_length(value: &Uint8Array) -> Result<u32, JsValue> {
     let number = length.as_f64().ok_or_else(invalid_input)?;
     // Bindgen's numeric conversion follows WebAssembly truncation semantics.
     // Prove the integer fits first, including views larger than four GiB.
-    if !number.is_finite()
-        || number < 0.0
-        || number.fract() != 0.0
-        || number > f64::from(u32::MAX)
+    if !number.is_finite() || number < 0.0 || number.fract() != 0.0 || number > f64::from(u32::MAX)
     {
         return Err(invalid_input());
     }

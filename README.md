@@ -266,8 +266,10 @@ is allocated once after bounded preflight, preventing populated reallocations.
 aggregate byte/text contents, and work. Hard ceilings are 1 MiB per input/output,
 64 open containers/tags, 65,536 nodes, 4,096 entries per container, 1 MiB per
 aggregate string category, and 64 Mi work credits (16 Mi by default). Duplicate
-checks revisit borrowed keys with bounded pairwise comparisons; nested/long keys
-can exhaust work before the other ceilings. Encoding shares work across preflight,
+checks use inline offsets for small maps and a bounded offset index for larger
+maps. Compound keys containing maps can require pairwise comparisons within tie
+groups; nested or long keys can exhaust work before the other ceilings.
+Encoding shares work across preflight,
 writing, and profile validation. The general API is currently Rust-only; the
 existing SDK and operation-contract profiles retain their existing behavior.
 

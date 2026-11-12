@@ -96,6 +96,10 @@ byte metadata are rejected. The facade copies bytes through captured prototype
 methods and does not invoke a caller-owned copy method. Create a plain `Uint8Array` copy
 when adapting other byte containers.
 
+PEM decoding accepts up to 1.5 MiB of armor, including the base64 expansion and
+line wrapping of a 1 MiB DER body. Smaller `maxInputLen` and `maxDerLen` policies
+remain enforced by Rust. Private-key labels require an explicit allowlist.
+
 JCS is a strict RFC 8785 subset. It rejects duplicate properties, unpaired
 UTF-16 surrogates, Unicode noncharacters, and integer-valued numbers outside
 the exact JavaScript integer range; this includes the RFC example `1e19`.

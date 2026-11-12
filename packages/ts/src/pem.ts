@@ -5,6 +5,7 @@
 import { create, toBinary } from "@bufbuild/protobuf";
 import type { Message } from "@bufbuild/protobuf";
 
+import { MAX_CODEC_PEM_INPUT_BYTES } from "./boundary.js";
 import { ReallyMeCodecError } from "./errors.js";
 import {
   CodecOperationRequestSchema,
@@ -331,7 +332,7 @@ export const decodePem = (
 ): ReallyMePemDocument => {
   ensureBytesInput(input);
   const optionsBytes = pemDecodeOptionsBytes(policy);
-  const pemSnapshot = snapshotBoundedBytesInput(input);
+  const pemSnapshot = snapshotBoundedBytesInput(input, MAX_CODEC_PEM_INPUT_BYTES);
   let requestBytes: Uint8Array;
   try {
     requestBytes = frameOperationRequest(PEM_DECODE_OPERATION_FIELD, [
