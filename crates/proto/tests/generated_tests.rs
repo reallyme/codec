@@ -147,14 +147,18 @@ fn sensitive_bytes_proto_json_is_canonical_for_owned_and_borrowed_messages() {
     for (json, expected_der) in [
         (r#"{"der":"_-7d"}"#, &[0xff, 0xee, 0xdd][..]),
         (r#"{"der":"/+4"}"#, &[0xff, 0xee][..]),
-        (r#"{"der":"/x=="}"#, &[0xff][..]),
         (r#"{"der":null}"#, &[][..]),
     ] {
         let decoded = serde_json::from_str::<CodecPemDecodeResult>(json).unwrap();
         assert_eq!(decoded.der, expected_der);
     }
 
-    assert!(serde_json::from_str::<CodecPemDecodeResult>(r#"{"der":"%%%%"}"#).is_err());
+    // Alternate alphabets and missing padding remain valid ProtoJSON input;
+    // unused bits must be zero so malformed encodings are rejected explicitly.
+    for malformed in ["%%%%", "/x==", "/x", "_x==", "/+5="] {
+        let json = format!(r#"{{"der":"{malformed}"}}"#);
+        assert!(serde_json::from_str::<CodecPemDecodeResult>(&json).is_err());
+    }
 }
 
 #[test]

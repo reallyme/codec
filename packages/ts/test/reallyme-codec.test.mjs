@@ -78,6 +78,15 @@ import {
   readIndependentBoundedBytesOutput,
   readStringProperty,
 } from "../dist/readOutput.js";
+import { frameOperationRequest } from "../dist/frameSensitiveRequest.js";
+import {
+  CodecPemDecodeOptionsSchema,
+  CodecPemDecodeRequestSchema,
+  CodecPemEncodeOptionsSchema,
+  CodecPemEncodeRequestSchema,
+  CodecPemLabel,
+  CodecPemLineEnding,
+} from "../dist/proto/generated/reallyme/codec/v1/codec_pb.js";
 
 const wasmBytes = readFileSync(
   new URL("../dist/wasm/reallyme_codec_wasm_bg.wasm", import.meta.url),
@@ -241,6 +250,28 @@ const deterministicFixtureValue = (value) => {
   throw new TypeError("invalid deterministic-CBOR value fixture");
 };
 
+test("WASM initialization refuses bytes other than the packaged module", async () => {
+  // A query string gives a fresh, uninitialized instance of the same glue.
+  const freshGlue = async (tag) =>
+    import(new URL(`../dist/wasm/reallyme_codec_wasm.js?${tag}`, import.meta.url).href);
+
+  const tampered = Uint8Array.from(wasmBytes);
+  tampered[tampered.length - 1] ^= 0x01;
+  const syncGlue = await freshGlue("sync-tampered");
+  assert.throws(() => syncGlue.initSync({ module: tampered }), /do not match/u);
+  assert.throws(
+    () => syncGlue.initSync({ module: new WebAssembly.Module(wasmBytes) }),
+    /supplied as bytes/u,
+  );
+
+  const asyncGlue = await freshGlue("async-tampered");
+  await assert.rejects(asyncGlue.default({ module_or_path: tampered }), /do not match/u);
+
+  const pinnedGlue = await freshGlue("pinned");
+  pinnedGlue.initSync({ module: Uint8Array.from(wasmBytes) });
+  assert.equal(pinnedGlue.dagCborCodecCode(), 0x71);
+});
+
 test("WASM exports match the TypeScript provider contract", () => {
   for (const name of REALLYME_CODEC_WASM_EXPORTS) {
     assert.equal(typeof wasm[name], "function", name);
@@ -399,18 +430,28 @@ test("raw WASM nullish byte calls fail without exhausting the instance", () => {
   for (let attempt = 0; attempt < 1_100; attempt += 1) {
     assertWasmError(() => wasm.base64Encode(null), "invalid-input");
     assertWasmError(() => wasm.base64Encode(undefined), "invalid-input");
-    // Forged views pass instanceof but throw from their length getter. Each
-    // must fail as typed input, and repeated failures must not exhaust the
-    // instance's externref table.
-    const forgedViews = [
-      Object.setPrototypeOf(new DataView(new ArrayBuffer(1)), Uint8Array.prototype),
-      Object.create(Uint8Array.prototype),
-      new Proxy(Uint8Array.of(0x12), {}),
-    ];
-    for (let attempt = 0; attempt < 1_200; attempt += 1) {
-      const forged = forgedViews[attempt % forgedViews.length];
-      assertWasmError(() => wasm.base64Encode(forged), "invalid-input");
-    }
+  }
+  // Exercise each invalid brand independently of the nullish-input loop.
+  // Repeating more than the initial externref capacity catches leaked handles.
+  const forgedViews = [
+    Object.setPrototypeOf(new DataView(new ArrayBuffer(1)), Uint8Array.prototype),
+    Object.create(Uint8Array.prototype),
+    new Proxy(Uint8Array.of(0x12), {}),
+    Object.setPrototypeOf(new Uint16Array([0x0102]), Uint8Array.prototype),
+    Object.setPrototypeOf(new Int8Array([-1]), Uint8Array.prototype),
+  ];
+  for (let attempt = 0; attempt < 1_200; attempt += 1) {
+    const forged = forgedViews[attempt % forgedViews.length];
+    assertWasmError(() => wasm.base64Encode(forged), "invalid-input");
+  }
+  for (const property of ["constructor", "length", "byteLength", "byteOffset", "buffer", "subarray"]) {
+    let invoked = false;
+    const shadowed = Uint8Array.of(0x12);
+    Object.defineProperty(shadowed, property, {
+      get() { invoked = true; throw new Error("shadowed metadata must not be read"); },
+    });
+    assertWasmError(() => wasm.base64Encode(shadowed), "invalid-input");
+    assert.equal(invoked, false);
   }
   assert.equal(wasm.base64Encode(Uint8Array.of(0x12)), "Eg==");
 });
@@ -1458,6 +1499,84 @@ test("JCS canonicalization rejects non-JSON JavaScript values with typed errors"
   assertCodecError(() => canonicalizeJsonText(oversizedText), "invalid-input");
   assertCodecError(
     () => base64urlDecodeBytes(new Uint8Array(1_048_578).fill(0x41)),
+    "invalid-input",
+  );
+});
+
+test("framed PEM requests match the generated protobuf serialization", () => {
+  const field = (schema, name) => schema.field[name].number;
+  const secret = Uint8Array.from({ length: 300 }, (_value, index) => index % 251);
+  const decodeOptions = create(CodecPemDecodeOptionsSchema, {
+    allowedLabels: [CodecPemLabel.PRIVATE_KEY, CodecPemLabel.PUBLIC_KEY],
+    maxInputLen: 70_000,
+    maxDerLen: 5,
+  });
+  const encodeOptions = create(CodecPemEncodeOptionsSchema, {
+    maxDerLen: 1 << 20,
+    lineWidth: 64,
+    lineEnding: CodecPemLineEnding.CRLF,
+  });
+  const cases = [
+    [
+      "pemDecode",
+      create(CodecPemDecodeRequestSchema, { pem: secret }),
+      [{ field: field(CodecPemDecodeRequestSchema, "pem"), bytes: secret }],
+    ],
+    [
+      "pemDecode",
+      create(CodecPemDecodeRequestSchema, { pem: secret, options: decodeOptions }),
+      [
+        { field: field(CodecPemDecodeRequestSchema, "pem"), bytes: secret },
+        {
+          field: field(CodecPemDecodeRequestSchema, "options"),
+          message: toBinary(CodecPemDecodeOptionsSchema, decodeOptions),
+        },
+      ],
+    ],
+    [
+      "pemDecode",
+      create(CodecPemDecodeRequestSchema, {
+        pem: new Uint8Array(0),
+        options: create(CodecPemDecodeOptionsSchema, {}),
+      }),
+      [
+        { field: field(CodecPemDecodeRequestSchema, "pem"), bytes: new Uint8Array(0) },
+        { field: field(CodecPemDecodeRequestSchema, "options"), message: new Uint8Array(0) },
+      ],
+    ],
+    [
+      "pemEncode",
+      create(CodecPemEncodeRequestSchema, {
+        label: CodecPemLabel.EC_PRIVATE_KEY,
+        der: secret,
+        options: encodeOptions,
+      }),
+      [
+        { field: field(CodecPemEncodeRequestSchema, "label"), varint: CodecPemLabel.EC_PRIVATE_KEY },
+        { field: field(CodecPemEncodeRequestSchema, "der"), bytes: secret },
+        {
+          field: field(CodecPemEncodeRequestSchema, "options"),
+          message: toBinary(CodecPemEncodeOptionsSchema, encodeOptions),
+        },
+      ],
+    ],
+  ];
+  for (const [operation, value, parts] of cases) {
+    const expected = toBinary(
+      CodecOperationRequestSchema,
+      create(CodecOperationRequestSchema, { operation: { case: operation, value } }),
+    );
+    const framed = frameOperationRequest(field(CodecOperationRequestSchema, operation), parts);
+    assert.deepEqual(framed, expected);
+  }
+  assertCodecError(
+    () => frameOperationRequest(field(CodecOperationRequestSchema, "pemDecode"), [
+      { field: 1, bytes: new Uint8Array(MAX_CODEC_PROTO_MESSAGE_BYTES) },
+    ]),
+    "invalid-input",
+  );
+  assertCodecError(
+    () => frameOperationRequest(4000, [{ field: 1, varint: -1 }]),
     "invalid-input",
   );
 });

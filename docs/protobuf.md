@@ -85,7 +85,9 @@ the same semantic error reasons apply to both transports.
 Use the binary protobuf entry point for private keys, decrypted plaintext, or
 other secret-bearing requests. JSON escape processing and duplicate field
 decoding can create immutable or temporary copies that cannot be reliably
-zeroized by the protobuf boundary.
+zeroized by the protobuf boundary. In particular, a JSON string that contains
+any escape sequence is unescaped into the JSON parser's internal scratch
+buffer, which is released without being wiped.
 
 Generation is intentionally checked in. After installing `protoc-gen-buffa`
 and `protoc-gen-buffa-packaging` at version `0.9.2`, regenerate and harden the artifacts with the complete enforced

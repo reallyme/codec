@@ -27,6 +27,7 @@ export const REALLYME_CODEC_WASM_EXPORTS = [
   "base64Decode",
   "base64Encode",
   "base64urlDecode",
+  "base64urlDecodeBytes",
   "base64urlEncode",
   "bytesToLowerHex",
   "lowerHexToBytes",
@@ -55,6 +56,7 @@ export type ReallyMeCodecWasmProvider = Readonly<{
   base64Decode: StringToBytesFn;
   base64Encode: BytesToStringFn;
   base64urlDecode: StringToBytesFn;
+  base64urlDecodeBytes: BytesToBytesFn;
   base64urlEncode: BytesToStringFn;
   bytesToLowerHex: BytesToStringFn;
   lowerHexToBytes: StringToBytesFn;
@@ -238,6 +240,7 @@ export const installReallyMeCodecWasmProvider = (module: unknown): void => {
     base64Decode: stringFunction1(providerModule, "base64Decode"),
     base64Encode: bytesFunction1(providerModule, "base64Encode"),
     base64urlDecode: stringFunction1(providerModule, "base64urlDecode"),
+    base64urlDecodeBytes: bytesFunction1(providerModule, "base64urlDecodeBytes"),
     base64urlEncode: bytesFunction1(providerModule, "base64urlEncode"),
     bytesToLowerHex: bytesFunction1(providerModule, "bytesToLowerHex"),
     lowerHexToBytes: stringFunction1(providerModule, "lowerHexToBytes"),

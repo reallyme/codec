@@ -35,6 +35,10 @@ const decoded = ReallyMeCodec.base64urlDecode(encoded);
 
 The installer accepts only this package's generated WASM module namespace.
 Initialize that module with the bundled `.wasm` file before installing it.
+Initialization verifies the module bytes against the SHA-256 recorded when the
+package was built and refuses any other bytes, including a tampered or
+misserved `.wasm`. Pass the file's bytes, a `Response`, or a URL; a precompiled
+`WebAssembly.Module` is refused because its bytes cannot be checked.
 If a WASM call fails unexpectedly, the facade creates a fresh instance from
 the compiled module before the next call and wipes the trapped instance's
 linear memory before activating it. A failed recovery returns

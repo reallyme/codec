@@ -44,6 +44,19 @@ pub fn base64url_decode(encoded: &JsString) -> Result<Uint8Array, JsValue> {
     Ok(Uint8Array::from(decoded.as_slice()))
 }
 
+#[wasm_bindgen(js_name = base64urlDecodeBytes)]
+/// Decode strict unpadded RFC 4648 URL-safe base64 supplied as ASCII bytes.
+///
+/// Encoded text such as a JWK private-key member is as sensitive as the key.
+/// Reading it from a byte view keeps every copy in wipeable storage instead of
+/// an immutable JavaScript string.
+pub fn base64url_decode_bytes(encoded: &Uint8Array) -> Result<Uint8Array, JsValue> {
+    let encoded = zeroizing_bytes(encoded)?;
+    let text = core::str::from_utf8(encoded.as_slice()).map_err(|_| invalid_input())?;
+    let decoded = Zeroizing::new(decode_base64url(text).map_err(|_| invalid_input())?);
+    Ok(Uint8Array::from(decoded.as_slice()))
+}
+
 #[wasm_bindgen(js_name = bytesToLowerHex)]
 /// Encode bytes as canonical lowercase hexadecimal.
 pub fn bytes_to_lower_hex_wasm(bytes: &Uint8Array) -> Result<JsString, JsValue> {

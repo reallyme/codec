@@ -16,8 +16,10 @@ boundary.
   failure. Cover semantic key equivalence, NaN payloads, allocation bounds, and
   memory erasure with regressions, properties, and a dedicated fuzz target.
 - Check general-CBOR map-key uniqueness with a bounded sort over key offsets
-  instead of rescanning every earlier entry, so maps up to the entry ceiling
-  validate within default work limits. Maps of up to 16 keys are still checked
+  so large maps of primitive keys avoid pairwise scans of every earlier entry.
+  Compound keys containing maps retain bounded pairwise comparison within coarse
+  tie groups and can exhaust work before the entry ceiling.
+  Maps of up to 16 keys are still checked
   without heap allocation, and duplicates are reported before key-order
   violations.
 - Keep the validated receipt when navigating general-CBOR children, observe
@@ -31,6 +33,11 @@ boundary.
   WASM exports; reject nonzero base64 trailing bits in sensitive ProtoJSON
   bytes; and raise the default PEM text limit so the largest default encoding
   decodes.
+- Verify the TypeScript package's WASM bytes against the SHA-256 recorded at
+  build time before compiling them, and refuse precompiled modules whose bytes
+  cannot be checked. Frame PEM decode and encode requests into one wiped,
+  exactly sized buffer so key material never lingers in serializer buffers,
+  and decode `base64urlDecodeBytes` input without converting it to a string.
 - Harden release automation: publish the npm tarball that was tested from a
   job without build steps, keep publish tokens out of build environments, stop
   persisting checkout credentials, drop the build cache from the crates publish

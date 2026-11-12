@@ -97,14 +97,14 @@ fn process_operation_boundary(
     if let Err(status) = validate_input_scalar_output(request_ptr, request_len, len_out) {
         return status;
     }
-    // A null request with a non-zero length is a caller pointer bug, not an
-    // oversized request; report it before the resource-limit response path.
-    if request_ptr.is_null() && request_len != 0 {
-        return CODEC_INVALID_ARGUMENT;
-    }
     let output_status = initialize_output_length(output_ptr, output_len, len_out);
     if output_status != CODEC_OK {
         return output_status;
+    }
+    // Initialize valid failure output before rejecting the pointer. A null
+    // request must still fail before the resource-limit response path.
+    if request_ptr.is_null() && request_len != 0 {
+        return CODEC_INVALID_ARGUMENT;
     }
     if request_len > max_request_len {
         return write_output(

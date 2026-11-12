@@ -3,9 +3,12 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { reallymeCodecSha256Hex, wasmIntegritySource } from "./wasm-integrity.mjs";
 
 const REQUIRED_WASM_PACK_VERSION = [0, 15, 0];
 const WASM_PACK_COMMAND = "wasm-pack";
@@ -162,7 +165,46 @@ const recoveryExport = `export function reinstantiate() {
 }
 
 ${footer}`;
-writeFileSync(gluePath, glue.replace(footer, recoveryExport));
+// Pin the exact module bytes built here. The glue refuses any other bytes,
+// including a tampered or misserved .wasm, before compiling them.
+const wasmBytes = readFileSync(resolve(outputDirectory, "reallyme_codec_wasm_bg.wasm"));
+const wasmDigest = createHash("sha256").update(wasmBytes).digest("hex");
+if (reallymeCodecSha256Hex(wasmBytes) !== wasmDigest) {
+  fail("The embedded SHA-256 implementation disagrees with node:crypto.");
+}
+const glueReplacements = [
+  [
+    `    const imports = __wbg_get_imports();
+    if (!(module instanceof WebAssembly.Module)) {
+        module = new WebAssembly.Module(module);
+    }
+    const instance = new WebAssembly.Instance(module, imports);`,
+    `    const imports = __wbg_get_imports();
+    module = new WebAssembly.Module(__reallymeVerifiedWasmBytes(module));
+    const instance = new WebAssembly.Instance(module, imports);`,
+  ],
+  [
+    "    const { instance, module } = await __wbg_load(await module_or_path, imports);",
+    `    const source = await module_or_path;
+    let bytes = source;
+    if (typeof Response === 'function' && source instanceof Response) {
+        if (!source.ok) {
+            throw new Error('failed to fetch ReallyMe codec WASM');
+        }
+        bytes = await source.arrayBuffer();
+    }
+    const { instance, module } = await WebAssembly.instantiate(__reallymeVerifiedWasmBytes(bytes), imports);`,
+  ],
+];
+let verifiedGlue = glue.replace(footer, `${wasmIntegritySource(wasmDigest)}
+${recoveryExport}`);
+for (const [generated, verified] of glueReplacements) {
+  if (verifiedGlue.split(generated).length !== 2) {
+    fail("The generated WASM initializer layout changed.");
+  }
+  verifiedGlue = verifiedGlue.replace(generated, () => verified);
+}
+writeFileSync(gluePath, verifiedGlue);
 
 const declarationsPath = resolve(outputDirectory, "reallyme_codec_wasm.d.ts");
 const declarations = readFileSync(declarationsPath, "utf8");

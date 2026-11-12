@@ -2,7 +2,8 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use js_sys::{Function, JsString, Object, Reflect, Uint8Array};
+use js_sys::{Function, JsString, Object, Reflect, Symbol, Uint8Array};
+use wasm_bindgen::convert::TryFromJsValue;
 use wasm_bindgen::{JsCast, JsValue};
 use zeroize::Zeroizing;
 
@@ -10,6 +11,10 @@ use crate::map_error::invalid_input;
 
 /// Maximum aggregate caller-controlled input accepted by one WASM operation.
 pub(crate) const MAX_WASM_INPUT_BYTES: usize = 1024 * 1024;
+const UINT8_ARRAY_BRAND: &str = "Uint8Array";
+const SHADOWED_BYTE_METADATA: [&str; 6] = [
+    "constructor", "length", "byteLength", "byteOffset", "buffer", "subarray",
+];
 
 fn checked_array_length(value: &Uint8Array) -> Result<u32, JsValue> {
     // A detached typed array reports length zero. Read it before and after
@@ -17,24 +22,46 @@ fn checked_array_length(value: &Uint8Array) -> Result<u32, JsValue> {
     // Raw WASM callers can bypass TypeScript and pass null despite the Rust
     // signature; js-sys length() would throw through a non-catch binding.
     let raw: &JsValue = value.as_ref();
-    if !raw.is_instance_of::<Uint8Array>() {
-        return Err(invalid_input());
-    }
-    // `instanceof` accepts a Proxy, `Object.create(Uint8Array.prototype)`, or
-    // a DataView with a swapped prototype, and their `length` throws. Probe the
-    // internal typed-array slot through a catching getter call first, so a
-    // forged view fails as invalid input instead of throwing through Rust.
-    typed_array_length_getter()?
+    // The intrinsic brand distinguishes the actual element type even when a
+    // different view has been given Uint8Array.prototype. Proxies lack the slot;
+    // inspect it before any operation that could invoke a proxy prototype trap.
+    let brand = typed_array_getter(Symbol::to_string_tag().as_ref())?
         .call0(raw)
         .map_err(|_| invalid_input())?;
-    Ok(value.length())
+    if brand != JsValue::from_str(UINT8_ARRAY_BRAND) {
+        return Err(invalid_input());
+    }
+    let native_prototype = Object::get_prototype_of(&Uint8Array::new_with_length(0));
+    if !Object::is(&Object::get_prototype_of(value), &native_prototype) {
+        return Err(invalid_input());
+    }
+    // Native subarray consults constructor/species. Reject caller overrides
+    // before that operation can invoke a getter or substitute different bytes.
+    for property in SHADOWED_BYTE_METADATA {
+        if !Object::get_own_property_descriptor(value, &JsValue::from_str(property)).is_undefined() {
+            return Err(invalid_input());
+        }
+    }
+    let length = typed_array_getter(&JsValue::from_str("length"))?
+        .call0(raw)
+        .map_err(|_| invalid_input())?;
+    let number = length.as_f64().ok_or_else(invalid_input)?;
+    // Bindgen's numeric conversion follows WebAssembly truncation semantics.
+    // Prove the integer fits first, including views larger than four GiB.
+    if !number.is_finite()
+        || number < 0.0
+        || number.fract() != 0.0
+        || number > f64::from(u32::MAX)
+    {
+        return Err(invalid_input());
+    }
+    u32::try_from_js_value(length).map_err(|_| invalid_input())
 }
 
-fn typed_array_length_getter() -> Result<Function, JsValue> {
+fn typed_array_getter(property: &JsValue) -> Result<Function, JsValue> {
     let typed_array_prototype =
         Object::get_prototype_of(&Object::get_prototype_of(&Uint8Array::new_with_length(0)));
-    let descriptor =
-        Object::get_own_property_descriptor(&typed_array_prototype, &JsValue::from_str("length"));
+    let descriptor = Object::get_own_property_descriptor(&typed_array_prototype, property);
     Reflect::get(&descriptor, &JsValue::from_str("get"))?
         .dyn_into::<Function>()
         .map_err(|_| invalid_input())
