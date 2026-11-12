@@ -195,6 +195,24 @@ impl Float {
         }
         self.to_f64() == other.to_f64()
     }
+
+    /// Total-order key whose equality is exactly [`Self::equivalent`].
+    ///
+    /// NaNs key by their right-zero-extended significand, ignoring sign and
+    /// width. Other values key by their exactly widened binary64 bits, with
+    /// both zeros sharing one key because `-0.0 == 0.0`.
+    pub(super) fn equivalence_key(&self) -> (u8, u64) {
+        if self.is_nan() {
+            let (fraction_bits, _, _) = self.layout();
+            return (1, self.fraction() << (64 - fraction_bits));
+        }
+        let value = self.to_f64();
+        if value == 0.0 {
+            (0, 0)
+        } else {
+            (0, value.to_bits())
+        }
+    }
 }
 
 impl Zeroize for Float {

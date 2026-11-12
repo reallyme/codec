@@ -71,6 +71,7 @@ mod profile;
 mod read_header;
 mod receipt;
 mod scan;
+mod unique;
 
 pub use cursor::Cursor;
 pub use encode::{encode, EncodedCbor, MapEntry, ValueRef};
@@ -80,6 +81,6 @@ pub use limits::{Limits, MAX_BYTES, MAX_DEPTH, MAX_ENTRIES, MAX_NODES, MAX_WORK}
 pub use profile::{FloatPolicy, LengthPolicy, MapOrdering, Profile, Serialization};
 pub use read_header::{read_header_prefix, ArgumentWidth, Header, MajorType};
 pub use receipt::{
-    frame_exact, frame_prefix, validate_exact, validate_prefix, Frame, Integer, Item, StringChunks,
-    TaggedBytes,
+    frame_exact, frame_prefix, validate_exact, validate_prefix, Frame, Integer, Item, ItemChildren,
+    StringChunks, TaggedBytes,
 };

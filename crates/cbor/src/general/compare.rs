@@ -26,7 +26,7 @@ pub(super) fn ordered(
     Ok(left.cmp(right) == Ordering::Less)
 }
 
-fn next<'a>(
+pub(super) fn next<'a>(
     bytes: &'a [u8],
     offset: &mut usize,
     budget: &mut Budget,

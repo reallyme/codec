@@ -187,7 +187,36 @@ impl<'a> Item<'a> {
     pub const fn profile(&self) -> Profile {
         self.profile
     }
+    /// Iterate direct children as validated items under the same profile.
+    ///
+    /// A parent validated under a profile has every descendant validated
+    /// under it, so children keep the validated receipt type. Map children
+    /// alternate key and value; a tag yields its single enclosed item.
+    pub fn children(&self) -> Result<ItemChildren<'a>, CborError> {
+        Ok(ItemChildren {
+            frames: self.frame.children()?,
+            profile: self.profile,
+        })
+    }
 }
+
+/// Validated direct children of an [`Item`], in received order.
+pub struct ItemChildren<'a> {
+    frames: Cursor<'a>,
+    profile: Profile,
+}
+
+impl<'a> Iterator for ItemChildren<'a> {
+    type Item = Result<Item<'a>, CborError>;
+    fn next(&mut self) -> Option<Self::Item> {
+        let profile = self.profile;
+        self.frames
+            .next()
+            .map(|frame| frame.map(|frame| Item { frame, profile }))
+    }
+}
+
+impl core::iter::FusedIterator for ItemChildren<'_> {}
 
 /// Exact tagged wrapper and opaque byte contents, both tied to the input owner.
 pub struct TaggedBytes<'a> {
@@ -222,6 +251,9 @@ impl<'a> TaggedBytes<'a> {
         const ENCODED_CBOR_TAG: u64 = 24;
         if self.tag != ENCODED_CBOR_TAG {
             return Err(error(ErrorReason::WrongTag));
+        }
+        if self.payload.is_empty() {
+            return Err(error(ErrorReason::EmptyEmbeddedItem));
         }
         validate_exact(self.payload, profile, limits)
     }

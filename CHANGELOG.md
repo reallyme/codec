@@ -15,6 +15,14 @@ boundary.
   items verbatim, with caller-lowerable resource/work limits and zeroization on
   failure. Cover semantic key equivalence, NaN payloads, allocation bounds, and
   memory erasure with regressions, properties, and a dedicated fuzz target.
+- Check general-CBOR map-key uniqueness with a bounded sort over key offsets
+  instead of rescanning every earlier entry, so maps up to the entry ceiling
+  validate within default work limits. Maps of up to 16 keys are still checked
+  without heap allocation, and duplicates are reported before key-order
+  violations.
+- Keep the validated receipt when navigating general-CBOR children, observe
+  float preference on headers, report oversized string lengths as truncation,
+  and reject empty tag-24 payloads with a dedicated embedded-item reason.
 - Use the Intel macOS runner pool for portable tooling and sanitizers while retaining
   ARM macOS coverage in the Swift lane.
 - Derive C sanitizer harness version expectations from Cargo package metadata,

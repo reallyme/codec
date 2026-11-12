@@ -140,6 +140,11 @@ impl<'a> Header<'a> {
         self.argument()
             .map(|value| preferred_width(value) == self.width)
     }
+    /// Observe whether a float uses the shortest width that holds its value
+    /// exactly, including NaN significands. Non-float headers return `None`.
+    pub fn has_preferred_float(&self) -> Result<Option<bool>, CborError> {
+        Ok(self.float()?.map(|value| value.width() == value.shortest()))
+    }
     /// Inspect whether this header carries IEEE floating-point bits.
     #[must_use]
     pub const fn is_float(&self) -> bool {
