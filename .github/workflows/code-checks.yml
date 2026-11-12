@@ -28,7 +28,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-15]
+        # Portable tooling shares the Intel pool with sanitizers. Swift retains
+        # ARM execution without making these jobs compete for ARM capacity.
+        os: [ubuntu-24.04, macos-15-intel]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -184,7 +186,9 @@ jobs:
 
   native-sanitizers:
     name: native sanitizer lanes
-    runs-on: macos-15
+    # Keep this portable lane off the capacity-constrained ARM pool. The Swift
+    # lane still exercises ARM macOS; sanitizer tests also cover Intel macOS.
+    runs-on: macos-15-intel
     timeout-minutes: 45
     steps:
       - name: Checkout
@@ -241,6 +245,8 @@ jobs:
           cargo +nightly-2026-07-01 miri test -p reallyme-codec-ffi --lib pointer::tests --locked
           cargo +nightly-2026-07-01 miri test -p reallyme-codec-ffi --lib guard::tests --locked
           cargo +nightly-2026-07-01 miri test -p reallyme-codec --no-default-features --features der --test der_canonical_tests --locked
+          cargo +nightly-2026-07-01 miri test -p reallyme-codec-cbor --test general_tests semantic_equivalent_keys_are_rejected_without_sorting --locked
+          cargo +nightly-2026-07-01 miri test -p reallyme-codec-cbor --test general_zeroization_tests --locked
 
   swift:
     name: swift codec package

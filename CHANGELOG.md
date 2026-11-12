@@ -2,6 +2,8 @@
 
 ## 0.3.4 (unreleased)
 
+- Add borrowed general-CBOR framing, validation, cursors and float policies.
+- Add bounded general-CBOR encoding that preserves received items and map order.
 - Update SwiftProtobuf to 1.40.0.
 
 ## 0.3.3

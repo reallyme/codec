@@ -2,15 +2,20 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-//! Deterministic generic CBOR and a DAG-CBOR subset with content-ID helpers.
+//! Borrowed general CBOR, deterministic CBOR, and a DAG-CBOR subset with CID helpers.
 //!
-//! Both profiles use length-first key ordering (RFC 8949 §4.2.3) and reject non-canonical
+//! The existing deterministic and DAG profiles use length-first key ordering
+//! (RFC 8949 §4.2.3) and reject non-canonical
 //! integers, indefinite-length items, floats, tags, out-of-order map keys,
 //! and trailing bytes, so a given value has exactly one accepted encoding.
 //! DAG-CBOR supports text map keys and signed 64-bit integers. Generic CBOR
 //! also supports integer map keys and the full unsigned 64-bit range.
 //! Input-size and nesting limits bound parser work; declared container lengths
 //! are checked against remaining input before allocating their contents.
+//!
+//! [`general`] is a separate borrowed surface for arbitrary tags, received spans,
+//! unsorted unique maps, complete integer arguments, and IEEE floats. Its framing,
+//! basic-validity, and preferred-encoding operations have distinct guarantees.
 
 mod cid;
 mod decode_dag_cbor;
@@ -20,6 +25,9 @@ mod encode_dag_cbor;
 mod encode_deterministic_cbor;
 mod error;
 mod value;
+
+/// Borrowed general CBOR with independently selected framing and validity policies.
+pub mod general;
 
 /// Maximum array/map nesting depth accepted by DAG-CBOR encode and decode.
 ///

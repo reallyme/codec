@@ -20,6 +20,7 @@ Codecs for Rust, TypeScript, Swift, Java and Kotlin, covering base encodings, mu
 | Base encodings | base64, unpadded base64url, lowercase hex, base58btc |
 | Multiformats | multibase, multicodec, multikey, key-binding validation |
 | Canonical data | deterministic generic CBOR, DAG-CBOR, CID helpers, SHA-256 content hash, multihash helpers, JCS |
+| General CBOR (Rust) | borrowed framing and received spans, arbitrary tags, unsorted unique maps, full integer range, floats, protected encoding |
 | PEM | PEM decode and encode with label, size, line-width, and line-ending policy; decoding permits public keys by default |
 | Protobuf | `reallyme.codec.v1` generated operation requests, generated ProtoJSON, and codec error envelopes |
 
@@ -171,6 +172,31 @@ const value = ReallyMeDeterministicCbor.mapText([
 ]);
 const cbor = ReallyMeCodec.deterministicCborEncode(value);
 ```
+
+Rust consumers also have `reallyme_codec::cbor::general` (or
+`codec_cbor::general` from `reallyme-codec-cbor`). `frame_prefix`/`frame_exact`
+return borrowed framing receipts; `validate_prefix`/`validate_exact` additionally
+check UTF-8 and semantic key uniqueness under an explicit `Profile`. Neither
+operation interprets arbitrary tag registrations. `Profile::received()` permits
+received widths and indefinite containers; `Profile::preferred()` requires
+definite lengths, shortest arguments, and shortest exact floats. Both accept
+unsorted unique maps. Optional map-order and finite-only/no-float policies are
+independent selections.
+
+`Frame::tagged_bytes()` exposes the complete received wrapper and contiguous
+opaque byte-string contents separately. Its `validate_embedded` operation
+requires tag 24 and exactly one embedded item; empty or trailing payloads fail.
+Chunked strings expose borrowed chunks instead of inventing a contiguous span.
+`Cursor` traverses received items with cumulative budgets and exact consumed and
+remaining spans. Framing receipts do not imply basic validity, and borrowed
+storage requires a caller-owned zeroizing buffer for sensitive input.
+
+General map keys use RFC 8949 section 5.6.1 basic-model equality. Integer and float types are distinct; float zero signs are equivalent. Registered-tag and application-specific equivalence require additional caller checks. Encoding preserves map order and received items; incompatible profiles return an error.
+
+`Limits` lets callers lower input/output bytes, depth, nodes, container entries,
+aggregate byte/text contents, and work. Hard ceilings are 1 MiB per input/output,
+64 open containers/tags, 65,536 nodes, 4,096 entries per container, 1 MiB per
+aggregate string category, and 64 Mi work credits (16 Mi by default). Complex keys can exhaust the work budget before other limits.
 
 Deterministic-CBOR encode canonicalizes map ordering. Decode rejects duplicate
 semantic map keys, non-canonical map order, non-minimal integer or length

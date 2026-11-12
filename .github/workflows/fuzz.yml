@@ -48,6 +48,7 @@ jobs:
           - base64url
           - dag_cbor
           - deterministic_cbor
+          - general_cbor
           - der
           - multibase
           - multicodec
@@ -67,6 +68,12 @@ jobs:
 
       - name: Install cargo-fuzz
         run: cargo install --git https://github.com/rust-fuzz/cargo-fuzz.git --rev 984c861c8dfea28055254c5f1d2659ab2cd63f76 --locked cargo-fuzz
+
+      - name: Seed general CBOR regressions
+        if: matrix.target == 'general_cbor'
+        run: |
+          mkdir -p fuzz/corpus/general_cbor
+          cp fuzz/seeds/general_cbor/* fuzz/corpus/general_cbor/
 
       - name: Run time-boxed fuzz target
         run: cargo +nightly-2026-07-01 fuzz run ${{ matrix.target }} -- -max_total_time=300 -rss_limit_mb=4096
