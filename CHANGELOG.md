@@ -4,17 +4,29 @@ All packages in the ReallyMe Codec release line share one version. Security
 changes are called out when they affect accepted input or an integration
 boundary.
 
-## 0.3.4 (unreleased)
+## 0.3.6 (unreleased)
+
+- Import the shipped C header in the Swift linked provider so calls use the C
+  ABI and signatures are checked by the compiler. Install the XCFramework
+  module map with its exported headers so SwiftPM can discover the C module.
+- Serialize TypeScript generated operation requests from their protobuf
+  descriptors into one exactly sized, wiped buffer, byte for byte as
+  protobuf-es would, so the protobuf-es writer no longer retains copies of
+  CBOR documents, CID payloads, or key bytes in its abandoned growth buffers.
+  PEM encode and decode use the same generated request lane in place of
+  hand-framed requests.
+- Recheck Android package and storage readiness before each runtime-gate APK
+  installation attempt, and recover from the framework's transient storage
+  initialization failure within the existing retry limit. Require a verified
+  16 KB device page size for the runtime gate.
+
+## 0.3.4 (2026-11-13)
 
 - Security: make the Swift library loaders refuse to load when a
   `DYLD_LIBRARY_PATH` or `DYLD_IMAGE_SUFFIX` candidate would make dyld map a
   different file than the requested path, and verify after `dlopen` that the
   loaded image is the hashed file. Previously a substitute library on the
   search path could run in place of a digest-verified one.
-- Frame TypeScript DAG-CBOR decode, deterministic-CBOR decode, CID
-  verification, and multicodec prefix lookup requests into one exactly sized,
-  wiped buffer, so the protobuf-es writer no longer retains copies of the
-  encoded document or key bytes.
 - Report DAG-CBOR byte and text string lengths beyond the remaining input as
   invalid CBOR on every target; 32-bit and WebAssembly builds previously
   reported lengths of 2^32 or more as a resource limit. Report two-byte simple

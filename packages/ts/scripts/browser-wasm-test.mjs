@@ -49,7 +49,9 @@ const browserTestPage = () => `<!doctype html>
 {
   "imports": {
     "@bufbuild/protobuf": "/node_modules/@bufbuild/protobuf/dist/esm/index.js",
-    "@bufbuild/protobuf/codegenv2": "/node_modules/@bufbuild/protobuf/dist/esm/codegenv2/index.js"
+    "@bufbuild/protobuf/codegenv2": "/node_modules/@bufbuild/protobuf/dist/esm/codegenv2/index.js",
+    "@bufbuild/protobuf/reflect": "/node_modules/@bufbuild/protobuf/dist/esm/reflect/index.js",
+    "@bufbuild/protobuf/wire": "/node_modules/@bufbuild/protobuf/dist/esm/wire/index.js"
   }
 }
 </script>

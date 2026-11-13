@@ -72,7 +72,8 @@ import {
 import {
   MAX_CODEC_FFI_INPUT_BYTES,
   MAX_CODEC_PEM_INPUT_BYTES,
-  encodeUtf8,
+  utf8ByteLength,
+  writeUtf8,
   MAX_CODEC_PROTO_JSON_BYTES,
   MAX_CODEC_PROTO_MESSAGE_BYTES,
 } from "../dist/boundary.js";
@@ -80,15 +81,28 @@ import {
   readIndependentBoundedBytesOutput,
   readStringProperty,
 } from "../dist/readOutput.js";
-import { frameOperationRequest } from "../dist/frameSensitiveRequest.js";
 import {
   clearGeneratedOperationResult,
   processGeneratedOperationRequest,
 } from "../dist/operationContract.js";
+import { serializeExactBinary } from "../dist/serializeExactBinary.js";
 import {
   CodecDagCborVerifyCidRequestSchema,
+  CodecDeterministicCborArraySchema,
+  CodecDeterministicCborBoolSchema,
+  CodecDeterministicCborBytesSchema,
+  CodecDeterministicCborIntegerSchema,
+  CodecDeterministicCborMapEntrySchema,
+  CodecDeterministicCborMapKeySchema,
+  CodecDeterministicCborMapSchema,
+  CodecDeterministicCborNegativeIntegerSchema,
+  CodecDeterministicCborNullSchema,
+  CodecDeterministicCborTextSchema,
+  CodecDeterministicCborUnsignedIntegerSchema,
   CodecDeterministicCborDecodeRequestSchema,
   CodecMulticodecLookupPrefixRequestSchema,
+  CodecMulticodecTableRequestSchema,
+  CodecMultikeyParseRequestSchema,
   CodecPemDecodeOptionsSchema,
   CodecPemDecodeRequestSchema,
   CodecPemEncodeOptionsSchema,
@@ -1512,132 +1526,250 @@ test("JCS canonicalization rejects non-JSON JavaScript values with typed errors"
   );
 });
 
-test("framed PEM requests match the generated protobuf serialization", () => {
-  const field = (schema, name) => schema.field[name].number;
-  const secret = Uint8Array.from({ length: 300 }, (_value, index) => index % 251);
-  const decodeOptions = create(CodecPemDecodeOptionsSchema, {
-    allowedLabels: [CodecPemLabel.PRIVATE_KEY, CodecPemLabel.PUBLIC_KEY],
-    maxInputLen: 70_000,
-    maxDerLen: 5,
+test("exact request serialization matches protobuf-es for every request shape", () => {
+  const unsigned = (value) => create(CodecDeterministicCborIntegerSchema, {
+    value: {
+      case: "unsignedValue",
+      value: create(CodecDeterministicCborUnsignedIntegerSchema, { value }),
+    },
   });
-  const encodeOptions = create(CodecPemEncodeOptionsSchema, {
-    maxDerLen: 1 << 20,
-    lineWidth: 64,
-    lineEnding: CodecPemLineEnding.CRLF,
+  const negative = (value) => create(CodecDeterministicCborIntegerSchema, {
+    value: {
+      case: "negativeValue",
+      value: create(CodecDeterministicCborNegativeIntegerSchema, { value }),
+    },
   });
-  const cases = [
-    [
-      "pemDecode",
-      create(CodecPemDecodeRequestSchema, { pem: secret }),
-      [{ field: field(CodecPemDecodeRequestSchema, "pem"), bytes: secret }],
-    ],
-    [
-      "pemDecode",
-      create(CodecPemDecodeRequestSchema, { pem: secret, options: decodeOptions }),
-      [
-        { field: field(CodecPemDecodeRequestSchema, "pem"), bytes: secret },
-        {
-          field: field(CodecPemDecodeRequestSchema, "options"),
-          message: toBinary(CodecPemDecodeOptionsSchema, decodeOptions),
-        },
-      ],
-    ],
-    [
-      "pemDecode",
-      create(CodecPemDecodeRequestSchema, {
-        pem: new Uint8Array(0),
-        options: create(CodecPemDecodeOptionsSchema, {}),
-      }),
-      [
-        { field: field(CodecPemDecodeRequestSchema, "pem"), bytes: new Uint8Array(0) },
-        { field: field(CodecPemDecodeRequestSchema, "options"), message: new Uint8Array(0) },
-      ],
-    ],
-    [
-      "pemEncode",
-      create(CodecPemEncodeRequestSchema, {
-        label: CodecPemLabel.EC_PRIVATE_KEY,
-        der: secret,
-        options: encodeOptions,
-      }),
-      [
-        { field: field(CodecPemEncodeRequestSchema, "label"), varint: CodecPemLabel.EC_PRIVATE_KEY },
-        { field: field(CodecPemEncodeRequestSchema, "der"), bytes: secret },
-        {
-          field: field(CodecPemEncodeRequestSchema, "options"),
-          message: toBinary(CodecPemEncodeOptionsSchema, encodeOptions),
-        },
-      ],
-    ],
-  ];
-  for (const [operation, value, parts] of cases) {
-    const expected = toBinary(
-      CodecOperationRequestSchema,
-      create(CodecOperationRequestSchema, { operation: { case: operation, value } }),
+  const integerArbitrary = fc.oneof(
+    fc.constantFrom(0n, 1n, 127n, 128n, 16_383n, 16_384n, 0xffff_ffff_ffff_ffffn).map(unsigned),
+    fc.bigInt({ min: 0n, max: 0xffff_ffff_ffff_ffffn }).map(unsigned),
+    fc.constantFrom(-1n, -64n, -65n, -0x8000_0000_0000_0000n).map(negative),
+    fc.bigInt({ min: -0x8000_0000_0000_0000n, max: -1n }).map(negative),
+  );
+  const textArbitrary = fc.oneof(
+    fc.constant(""),
+    fc.string({ unit: "binary", maxLength: 40 }),
+    fc.string({ maxLength: 200 }),
+  ).map((value) => create(CodecDeterministicCborTextSchema, { value }));
+  const { value: valueArbitrary } = fc.letrec((tie) => ({
+    value: fc.oneof(
+      { depthSize: "small", withCrossShrink: true },
+      fc.constant({ case: "nullValue", value: create(CodecDeterministicCborNullSchema) }),
+      fc.boolean().map((value) => ({
+        case: "boolValue",
+        value: create(CodecDeterministicCborBoolSchema, { value }),
+      })),
+      integerArbitrary.map((value) => ({ case: "integerValue", value })),
+      textArbitrary.map((value) => ({ case: "textValue", value })),
+      fc.uint8Array({ maxLength: 300 }).map((value) => ({
+        case: "bytesValue",
+        value: create(CodecDeterministicCborBytesSchema, { value }),
+      })),
+      fc.array(tie("node"), { maxLength: 4 }).map((values) => ({
+        case: "arrayValue",
+        value: create(CodecDeterministicCborArraySchema, { values }),
+      })),
+      fc.array(
+        fc.record({
+          key: fc.option(
+            fc.oneof(
+              integerArbitrary.map((value) => ({ case: "integerKey", value })),
+              textArbitrary.map((value) => ({ case: "textKey", value })),
+            ).map((key) => create(CodecDeterministicCborMapKeySchema, { key })),
+            { nil: undefined },
+          ),
+          value: fc.option(tie("node"), { nil: undefined }),
+        }).map((entry) => create(CodecDeterministicCborMapEntrySchema, entry)),
+        { maxLength: 4 },
+      ).map((entries) => ({
+        case: "mapValue",
+        value: create(CodecDeterministicCborMapSchema, { entries }),
+      })),
+    ).map((value) => create(CodecDeterministicCborValueSchema, { value })),
+    node: tie("value"),
+  }));
+  const request = (operation, value) =>
+    create(CodecOperationRequestSchema, { operation: { case: operation, value } });
+  const assertParity = (message) => {
+    assert.deepEqual(
+      serializeExactBinary(CodecOperationRequestSchema, message),
+      toBinary(CodecOperationRequestSchema, message),
     );
-    const framed = frameOperationRequest(field(CodecOperationRequestSchema, operation), parts);
-    assert.deepEqual(framed, expected);
+  };
+  const encodeLanes = [
+    ["dagCborEncode", CodecDagCborEncodeRequestSchema],
+    ["deterministicCborEncode", CodecDeterministicCborEncodeRequestSchema],
+  ];
+  for (const [operation, schema] of encodeLanes) {
+    assertParity(request(operation, create(schema)));
+    assertParity(request(operation, create(schema, { value: create(CodecDeterministicCborValueSchema) })));
   }
-  assertCodecError(
-    () => frameOperationRequest(field(CodecOperationRequestSchema, "pemDecode"), [
-      { field: 1, bytes: new Uint8Array(MAX_CODEC_PROTO_MESSAGE_BYTES) },
-    ]),
-    "invalid-input",
+  fc.assert(
+    fc.property(valueArbitrary, (value) => {
+      for (const [operation, schema] of encodeLanes) {
+        assertParity(request(operation, create(schema, { value })));
+      }
+    }),
+    { numRuns: 500 },
   );
-  assertCodecError(
-    () => frameOperationRequest(4000, [{ field: 1, varint: -1 }]),
-    "invalid-input",
-  );
-});
+  assertParity(request("dagCborEncode", create(CodecDagCborEncodeRequestSchema, {
+    value: create(CodecDeterministicCborValueSchema, {
+      value: {
+        case: "bytesValue",
+        value: create(CodecDeterministicCborBytesSchema, { value: new Uint8Array(70_000).fill(7) }),
+      },
+    }),
+  })));
 
-test("framed CBOR and multicodec requests match the generated protobuf serialization", () => {
-  const field = (schema, name) => schema.field[name].number;
   const document = Uint8Array.from({ length: 300 }, (_, index) => index % 251);
-  const cid = "bafyreihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku";
-  const cases = [
-    [
-      "dagCborDecode",
-      create(CodecDagCborDecodeRequestSchema, { encoded: document }),
-      [{ field: field(CodecDagCborDecodeRequestSchema, "encoded"), bytes: document }],
-    ],
-    [
-      "deterministicCborDecode",
-      create(CodecDeterministicCborDecodeRequestSchema, { encoded: document }),
-      [{ field: field(CodecDeterministicCborDecodeRequestSchema, "encoded"), bytes: document }],
-    ],
-    [
-      "multicodecLookupPrefix",
-      create(CodecMulticodecLookupPrefixRequestSchema, { value: document }),
-      [{ field: field(CodecMulticodecLookupPrefixRequestSchema, "value"), bytes: document }],
-    ],
-    [
-      "dagCborVerifyCid",
-      create(CodecDagCborVerifyCidRequestSchema, { cid, payload: document }),
-      [
-        { field: field(CodecDagCborVerifyCidRequestSchema, "cid"), bytes: encodeUtf8(cid) },
-        { field: field(CodecDagCborVerifyCidRequestSchema, "payload"), bytes: document },
-      ],
-    ],
-    [
-      "dagCborVerifyCid",
-      create(CodecDagCborVerifyCidRequestSchema, { cid: "", payload: new Uint8Array(0) }),
-      [
-        { field: field(CodecDagCborVerifyCidRequestSchema, "cid"), bytes: encodeUtf8("") },
-        { field: field(CodecDagCborVerifyCidRequestSchema, "payload"), bytes: new Uint8Array(0) },
-      ],
-    ],
+  const fixed = [
+    create(CodecOperationRequestSchema),
+    request("dagCborDecode", create(CodecDagCborDecodeRequestSchema, { encoded: document })),
+    request("dagCborDecode", create(CodecDagCborDecodeRequestSchema)),
+    request("deterministicCborDecode", create(CodecDeterministicCborDecodeRequestSchema, { encoded: document })),
+    request("multicodecLookupPrefix", create(CodecMulticodecLookupPrefixRequestSchema, { value: document })),
+    request("multicodecPrefixForName", create(CodecMulticodecPrefixForNameRequestSchema, { name: "ed25519-pub" })),
+    request("multicodecTable", create(CodecMulticodecTableRequestSchema)),
+    request("multikeyParse", create(CodecMultikeyParseRequestSchema, { multikey: "z6Mk\ud800" })),
+    request("dagCborVerifyCid", create(CodecDagCborVerifyCidRequestSchema, { cid: "bafy\udc00\u00e9", payload: document })),
+    request("dagCborVerifyCid", create(CodecDagCborVerifyCidRequestSchema)),
+    request("pemDecode", create(CodecPemDecodeRequestSchema, {
+      pem: document,
+      options: create(CodecPemDecodeOptionsSchema, {
+        allowedLabels: [CodecPemLabel.PRIVATE_KEY, CodecPemLabel.PUBLIC_KEY, -1, 0],
+        maxInputLen: 4_294_967_295,
+        maxDerLen: 128,
+      }),
+    })),
+    request("pemDecode", create(CodecPemDecodeRequestSchema, { options: create(CodecPemDecodeOptionsSchema) })),
+    request("pemDecode", create(CodecPemDecodeRequestSchema, { pem: document })),
+    request("pemEncode", create(CodecPemEncodeRequestSchema, {
+      label: CodecPemLabel.EC_PRIVATE_KEY,
+      der: document,
+      options: create(CodecPemEncodeOptionsSchema, {
+        maxDerLen: 1 << 20,
+        lineWidth: 64,
+        lineEnding: CodecPemLineEnding.CRLF,
+      }),
+    })),
+    request("pemEncode", create(CodecPemEncodeRequestSchema, { label: -7 })),
   ];
-  for (const [operation, value, parts] of cases) {
-    const expected = toBinary(
+  for (const message of fixed) {
+    assertParity(message);
+  }
+
+  const withUnknown = request("multikeyParse", create(CodecMultikeyParseRequestSchema, { multikey: "z" }));
+  withUnknown.$unknown = [{ no: 99, wireType: 0, data: Uint8Array.of(7) }];
+  withUnknown.operation.value.$unknown = [{ no: 12, wireType: 2, data: Uint8Array.of(2, 0xaa, 0xbb) }];
+  assertParity(withUnknown);
+
+  assertCodecError(
+    () => serializeExactBinary(
       CodecOperationRequestSchema,
-      create(CodecOperationRequestSchema, { operation: { case: operation, value } }),
-    );
-    const framed = frameOperationRequest(field(CodecOperationRequestSchema, operation), parts);
-    assert.deepEqual(framed, expected);
+      request("dagCborDecode", create(CodecDagCborDecodeRequestSchema, {
+        encoded: new Uint8Array(MAX_CODEC_PROTO_MESSAGE_BYTES),
+      })),
+    ),
+    "invalid-input",
+  );
+});
+
+// Observe allocations as well as slices: an exact writer never calls slice,
+// so watching only slice owners cannot detect an unwiped partial output.
+const observeByteAllocations = (operation) => {
+  const constructor = globalThis.Uint8Array;
+  const allocations = [];
+  globalThis.Uint8Array = new Proxy(constructor, {
+    construct(target, argumentsList) {
+      const bytes = Reflect.construct(target, argumentsList);
+      allocations.push(bytes);
+      return bytes;
+    },
+  });
+  try {
+    return { result: operation(), allocations };
+  } finally {
+    globalThis.Uint8Array = constructor;
+  }
+};
+
+const generatedArrayEncodeRequest = (values) => create(CodecOperationRequestSchema, {
+  operation: {
+    case: "dagCborEncode",
+    value: create(CodecDagCborEncodeRequestSchema, {
+      value: create(CodecDeterministicCborValueSchema, {
+        value: {
+          case: "arrayValue",
+          value: create(CodecDeterministicCborArraySchema, { values }),
+        },
+      }),
+    }),
+  },
+});
+
+test("exact request serialization retains only the returned sensitive buffer", () => {
+  const payload = new Uint8Array(70_000).fill(0xa5);
+  const leaf = create(CodecDeterministicCborValueSchema, {
+    value: {
+      case: "bytesValue",
+      value: create(CodecDeterministicCborBytesSchema, { value: payload }),
+    },
+  });
+  const request = generatedArrayEncodeRequest([leaf, leaf, leaf]);
+  const { result, allocations } = observeByteAllocations(
+    () => serializeExactBinary(CodecOperationRequestSchema, request),
+  );
+  try {
+    assert.equal(allocations.includes(result), true);
+    for (const allocation of allocations) {
+      if (allocation !== result) {
+        assert.equal(allocation.every((byte) => byte === 0), true);
+      }
+    }
+    assert.equal(result.includes(0xa5), true);
+    assert.equal(payload.every((byte) => byte === 0xa5), true);
+    result.fill(0);
+    for (const allocation of allocations) {
+      assert.equal(allocation.every((byte) => byte === 0), true);
+    }
+  } finally {
+    result.fill(0);
+    payload.fill(0);
   }
 });
 
-test("UTF-8 request framing matches the WHATWG encoder, including lone surrogates", () => {
+test("exact request serialization wipes partial output on failure", () => {
+  const payload = new Uint8Array(300).fill(0xa5);
+  const malformedBool = create(CodecDeterministicCborBoolSchema, { value: true });
+  malformedBool.value = "invalid";
+  // The malformed field follows bytes, so failure must clear an output that
+  // already contains a serialized payload while preserving caller storage.
+  const request = generatedArrayEncodeRequest([
+    create(CodecDeterministicCborValueSchema, {
+      value: {
+        case: "bytesValue",
+        value: create(CodecDeterministicCborBytesSchema, { value: payload }),
+      },
+    }),
+    create(CodecDeterministicCborValueSchema, {
+      value: { case: "boolValue", value: malformedBool },
+    }),
+  ]);
+  try {
+    const { allocations } = observeByteAllocations(() => assertCodecError(
+      () => serializeExactBinary(CodecOperationRequestSchema, request),
+      "provider-failure",
+    ));
+    assert.ok(allocations.length > 0);
+    for (const allocation of allocations) {
+      assert.equal(allocation.every((byte) => byte === 0), true);
+    }
+    assert.equal(payload.every((byte) => byte === 0xa5), true);
+  } finally {
+    payload.fill(0);
+  }
+});
+
+test("UTF-8 request serialization matches the WHATWG encoder, including lone surrogates", () => {
   const encoder = new TextEncoder();
   const samples = [
     "",
@@ -1650,12 +1782,17 @@ test("UTF-8 request framing matches the WHATWG encoder, including lone surrogate
     "\udc00\ud800",
     "\ud800\ud800\udc00",
   ];
+  const encode = (sample) => {
+    const output = new Uint8Array(utf8ByteLength(sample));
+    assert.equal(writeUtf8(output, 0, sample), output.length);
+    return output;
+  };
   for (const sample of samples) {
-    assert.deepEqual(encodeUtf8(sample), encoder.encode(sample));
+    assert.deepEqual(encode(sample), encoder.encode(sample));
   }
   fc.assert(
     fc.property(fc.string({ unit: "binary", maxLength: 64 }), (sample) => {
-      assert.deepEqual(encodeUtf8(sample), encoder.encode(sample));
+      assert.deepEqual(encode(sample), encoder.encode(sample));
     }),
   );
 });
@@ -1687,7 +1824,7 @@ test("DAG-CBOR string lengths beyond the input are invalid CBOR on the WASM lane
   }
 });
 
-test("sensitive CBOR and multicodec lanes leave no serializer copy of caller bytes", () => {
+test("sensitive CBOR, multicodec, and PEM lanes leave no serializer copy of caller bytes", () => {
   const sentinel = [0xde, 0xad, 0xbe, 0xef, 0x13, 0x37, 0xc0, 0xde];
   const holdsSentinel = (bytes) => {
     for (let start = 0; start + sentinel.length <= bytes.length; start += 1) {
@@ -1729,6 +1866,30 @@ test("sensitive CBOR and multicodec lanes leave no serializer copy of caller byt
   const verified = observe(() => dagCborVerifyCidDetails(cid, encodedBytes));
   assert.equal(verified.retained, 0);
   assert.equal(verified.result.valid, true);
+
+  const dagEncoded = observe(() => dagCborEncode({
+    type: "map",
+    value: [{ key: "k", value: { type: "bytes", value: Uint8Array.from(sentinel) } }],
+  }));
+  assert.equal(dagEncoded.retained, 0);
+  assert.equal(holdsSentinel(dagEncoded.result), true);
+  dagEncoded.result.fill(0);
+
+  const deterministicEncoded = observe(() => deterministicCborEncode({
+    type: "array",
+    value: [{ type: "bytes", value: Uint8Array.from(sentinel) }],
+  }));
+  assert.equal(deterministicEncoded.retained, 0);
+  assert.equal(holdsSentinel(deterministicEncoded.result), true);
+  deterministicEncoded.result.fill(0);
+
+  const pemEncoded = observe(() => encodePem("PRIVATE KEY", Uint8Array.from(sentinel)));
+  assert.equal(pemEncoded.retained, 0);
+  const pemDecoded = observe(() => decodePem(pemEncoded.result, { allowedLabels: ["PRIVATE KEY"] }));
+  assert.equal(pemDecoded.retained, 0);
+  assert.deepEqual(pemDecoded.result.der, Uint8Array.from(sentinel));
+  pemDecoded.result.der.fill(0);
+  pemEncoded.result.fill(0);
 });
 
 test("PEM armor uses Rust policy for labels, wrapping, and decoding", () => {

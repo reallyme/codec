@@ -892,9 +892,9 @@ final class ReallyMeCodecTests: XCTestCase {
         try ReallyMeCodecRustCAbiProvider.requireCompatiblePackageVersion(
             major: 0,
             minor: 3,
-            patch: 4
+            patch: 6
         )
-        let rejectedVersions: [(UInt32, UInt32, UInt32)] = [(0, 2, 4), (0, 3, 3), (1, 3, 4)]
+        let rejectedVersions: [(UInt32, UInt32, UInt32)] = [(0, 2, 6), (0, 3, 5), (1, 3, 6)]
         for version in rejectedVersions {
             Self.assertCodecError(
                 .providerFailure,
@@ -918,6 +918,10 @@ final class ReallyMeCodecTests: XCTestCase {
         )
         Self.assertCodecError(
             .providerFailure,
+            try ReallyMeCodecRustCAbiProvider.requireValidFfiLimit(-1)
+        )
+        Self.assertCodecError(
+            .providerFailure,
             try ReallyMeCodecRustCAbiProvider.requireValidFfiLimit(UInt(Int.max) + 1)
         )
         XCTAssertEqual(
@@ -931,6 +935,13 @@ final class ReallyMeCodecTests: XCTestCase {
             .providerFailure,
             try ReallyMeCodecRustCAbiProvider.requireValidOperationResponseLimit(
                 0,
+                maxFfiOutputLength: 67_108_864
+            )
+        )
+        Self.assertCodecError(
+            .providerFailure,
+            try ReallyMeCodecRustCAbiProvider.requireValidOperationResponseLimit(
+                -1,
                 maxFfiOutputLength: 67_108_864
             )
         )

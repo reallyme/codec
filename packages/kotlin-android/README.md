@@ -9,7 +9,7 @@ library manually.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.3.4")
+    implementation("me.really:codec-android:0.3.6")
 }
 ```
 

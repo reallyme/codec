@@ -638,7 +638,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec"
-version = "0.3.4"
+version = "0.3.6"
 dependencies = [
  "buffa",
  "der",
@@ -660,7 +660,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-adapter"
-version = "0.3.4"
+version = "0.3.6"
 dependencies = [
  "reallyme-codec-base64",
  "reallyme-codec-base64url",
@@ -674,7 +674,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-base64"
-version = "0.3.4"
+version = "0.3.6"
 dependencies = [
  "base64 0.23.1",
  "thiserror",
@@ -683,7 +683,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-base64url"
-version = "0.3.4"
+version = "0.3.6"
 dependencies = [
  "base64 0.23.1",
  "serde",
@@ -694,7 +694,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-cbor"
-version = "0.3.4"
+version = "0.3.6"
 dependencies = [
  "cid",
  "half",
@@ -709,7 +709,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-ffi"
-version = "0.3.4"
+version = "0.3.6"
 dependencies = [
  "buffa",
  "jni",
@@ -721,7 +721,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-hex"
-version = "0.3.4"
+version = "0.3.6"
 dependencies = [
  "thiserror",
  "zeroize",
@@ -729,7 +729,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-jcs"
-version = "0.3.4"
+version = "0.3.6"
 dependencies = [
  "itoa",
  "ryu-js",
@@ -742,7 +742,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-multibase"
-version = "0.3.4"
+version = "0.3.6"
 dependencies = [
  "base64 0.23.1",
  "bs58",
@@ -753,14 +753,14 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-multicodec"
-version = "0.3.4"
+version = "0.3.6"
 dependencies = [
  "thiserror",
 ]
 
 [[package]]
 name = "reallyme-codec-multikey"
-version = "0.3.4"
+version = "0.3.6"
 dependencies = [
  "reallyme-codec-base64url",
  "reallyme-codec-multibase",
@@ -771,7 +771,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-pem"
-version = "0.3.4"
+version = "0.3.6"
 dependencies = [
  "base64 0.23.1",
  "thiserror",
@@ -780,7 +780,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-proto"
-version = "0.3.4"
+version = "0.3.6"
 dependencies = [
  "base64 0.23.1",
  "buffa",
@@ -793,7 +793,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-wasm"
-version = "0.3.4"
+version = "0.3.6"
 dependencies = [
  "js-sys",
  "reallyme-codec",

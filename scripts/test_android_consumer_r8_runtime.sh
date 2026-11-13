@@ -17,6 +17,7 @@ readonly AVD_NAME="${REALLYME_CODEC_ANDROID_AVD:-}"
 readonly ANDROID_R8_PLATFORM="platforms;android-37.0"
 readonly ANDROID_R8_SYSTEM_IMAGE="system-images;android-37.1;google_apis_ps16k;x86_64"
 readonly ANDROID_R8_DATA_PARTITION_MB="4096"
+readonly ANDROID_R8_PAGE_SIZE_BYTES="16384"
 readonly RUNTIME_SERVICES_READY_TIMEOUT_SECONDS="60"
 readonly ADB_INSTALL_MAX_ATTEMPTS="3"
 readonly APP_ID="me.really.codec.consumer.r8"
@@ -55,23 +56,32 @@ fail() {
 
 wait_for_runtime_services() {
     local runtime_services_deadline=$((SECONDS + RUNTIME_SERVICES_READY_TIMEOUT_SECONDS))
+    local boot_completed=""
+    local user_state=""
     local package_manager_state=""
     local storage_manager_state=""
     local volume_state=""
     local android_package_path=""
     while (( SECONDS <= runtime_services_deadline )); do
+        boot_completed="$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+        user_state="$("$ADB" shell am get-started-user-state 0 2>/dev/null | tr -d '\r' || true)"
         package_manager_state="$("$ADB" shell service check package 2>/dev/null || true)"
         storage_manager_state="$("$ADB" shell service check mount 2>/dev/null || true)"
         volume_state="$("$ADB" shell sm list-volumes all 2>/dev/null || true)"
         android_package_path="$("$ADB" shell pm path android 2>/dev/null || true)"
-        if [[ "$package_manager_state" == *"found"* ]] &&
+        # Binder registration precedes full framework initialization. Waiting for
+        # the unlocked user also covers the storage service's internal PM link.
+        if [[ "$boot_completed" == "1" ]] &&
+            [[ "$user_state" == "RUNNING_UNLOCKED" ]] &&
+            [[ "$package_manager_state" == *"found"* ]] &&
             [[ "$storage_manager_state" == *"found"* ]] &&
-            [[ "$volume_state" == *"mounted"* ]] &&
+            [[ "$volume_state" == *" mounted "* ]] &&
             [[ "$android_package_path" == package:* ]]; then
             return
         fi
         sleep 2
     done
+    dump_emulator_log
     fail "Android package and storage services were not ready before timeout"
 }
 
@@ -79,6 +89,9 @@ install_apk() {
     local install_attempt=1
     local install_output=""
     while (( install_attempt <= ADB_INSTALL_MAX_ATTEMPTS )); do
+        # Native and Gradle builds may outlast a framework restart. Readiness
+        # observed before those builds cannot authorize a later installation.
+        wait_for_runtime_services
         if install_output="$("$ADB" install --no-streaming -r "$APK_PATH" 2>&1)"; then
             if [[ "$install_output" == *"Success"* ]]; then
                 return
@@ -86,18 +99,22 @@ install_apk() {
         fi
 
         printf '%s\n' "$install_output" >&2
-        if { [[ "$install_output" != *"Broken pipe"* ]] && [[ "$install_output" != *"StorageManager.getVolumes()"* ]]; } ||
+        # Retry only known framework-startup failures. APK validation errors must
+        # remain immediate failures rather than being hidden by generic retries.
+        if { [[ "$install_output" != *"Broken pipe"* ]] &&
+            [[ "$install_output" != *"StorageManager.getVolumes()"* ]] &&
+            [[ "$install_output" != *"PackageManagerInternal.freeStorage"* ]]; } ||
             (( install_attempt == ADB_INSTALL_MAX_ATTEMPTS )); then
             break
         fi
 
         printf 'Android runtime services rejected install attempt %s; retrying after recovery\n' "$install_attempt" >&2
         sleep 5
-        wait_for_runtime_services
         ((install_attempt += 1))
     done
 
     "$ADB" shell df -h /data >&2 || true
+    dump_emulator_log
     fail "Android consumer R8 APK installation failed"
 }
 
@@ -172,6 +189,11 @@ while [[ "$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" !
     sleep 2
 done
 wait_for_runtime_services
+page_size=""
+if ! page_size="$("$ADB" shell getconf PAGE_SIZE | tr -d '\r')"; then
+    fail "Android runtime page size could not be determined"
+fi
+[[ "$page_size" == "$ANDROID_R8_PAGE_SIZE_BYTES" ]] || fail "Android runtime gate requires a 16 KB page-size device"
 
 ANDROID_NDK_HOME="$ANDROID_NDK_HOME_VALUE" "$REPO_ROOT/scripts/build_android_native_resources.sh" "$JNILIBS_DIR"
 

@@ -87,7 +87,7 @@ base-encoding, CBOR/JCS, multiformat, and PEM families. Consumers can enable the
 strict DER reader separately and select only the families they use:
 
 ```toml
-reallyme-codec = { version = "0.3.4", default-features = false, features = [
+reallyme-codec = { version = "0.3.6", default-features = false, features = [
   "base64url",
   "multikey",
 ] }
@@ -102,7 +102,7 @@ feature enables the base64url field adapters.
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.3.4"
+    from: "0.3.6"
 )
 ```
 
@@ -114,7 +114,7 @@ feature enables the base64url field adapters.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.3.4")
+    implementation("me.really:codec:0.3.6")
 }
 ```
 
@@ -122,7 +122,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.3.4")
+    implementation("me.really:codec-android:0.3.6")
 }
 ```
 
@@ -142,7 +142,7 @@ an unbound manifest and make `ReallyMeCodec()` unavailable.
 ReallyMe Codec is pre-1.0. We follow the Rust community convention for
 [0.x compatibility](https://doc.rust-lang.org/cargo/reference/semver.html):
 breaking changes increment the minor version, such as `0.2.x` to `0.3.x`, and
-compatible fixes increment the patch version, such as `0.3.3` to `0.3.4`.
+compatible fixes increment the patch version, such as `0.3.5` to `0.3.6`.
 
 For Rust consumers, pin to the minor line you have reviewed, for example
 `reallyme-codec = "0.3"`. A full version written by `cargo add`, such as

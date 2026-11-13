@@ -49,6 +49,7 @@ import {
   snapshotBoundedBytesInput,
   snapshotProviderBytes,
 } from "./readOutput.js";
+import { serializeExactBinary } from "./serializeExactBinary.js";
 import { requireReallyMeCodecWasmProvider } from "./wasmProvider.js";
 
 const PROTO_REQUEST_OVERHEAD_BUDGET = 64;
@@ -713,8 +714,14 @@ export const processGeneratedOperationRequest = (
 
   let requestBytes: Uint8Array;
   try {
-    requestBytes = toBinary(CodecOperationRequestSchema, request);
-  } catch (_error: unknown) {
+    // Generated serialization through the descriptor, into one exactly sized
+    // buffer: the protobuf-es writer's abandoned growth buffers would keep
+    // copies of sensitive text and byte fields that cannot be wiped.
+    requestBytes = serializeExactBinary(CodecOperationRequestSchema, request);
+  } catch (error: unknown) {
+    if (error instanceof ReallyMeCodecError) {
+      throw error;
+    }
     throw new ReallyMeCodecError("provider-failure");
   }
   return processOperationRequestBytes(requestBytes);
@@ -724,7 +731,7 @@ export const processGeneratedOperationRequest = (
  * Execute a serialized request through the fully discriminated response lane.
  *
  * Takes ownership of `requestBytes` and wipes it on every exit path. Sensitive
- * operations frame their own request bytes so no serializer copy survives.
+ * operations use descriptor-driven serialization so no serializer copy survives.
  */
 export const processOperationRequestBytes = (
   requestBytes: Uint8Array,

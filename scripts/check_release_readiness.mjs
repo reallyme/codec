@@ -337,8 +337,8 @@ assertCargoFuzzWorkflowPolicy({
   },
 });
 
-const codecPackageVersion = "0.3.4";
-const codecProtoPackageVersion = "0.3.4";
+const codecPackageVersion = "0.3.6";
+const codecProtoPackageVersion = "0.3.6";
 try {
   verifyCheckedOutReleaseVersion(codecPackageVersion);
 } catch (error) {
@@ -530,15 +530,14 @@ assertTypescriptExport({
   path: "packages/ts/src/cbor.ts",
   exportNeedle: "export const dagCborDecode = (bytes: Uint8Array): ReallyMeCborValue =>",
   requiredNeedles: [
-    "processOperationRequestBytes(",
-    "frameOperationRequest(DAG_CBOR_DECODE_OPERATION_FIELD",
+    "processGeneratedOperationRequest(",
+    'case: "dagCborDecode"',
     'operationResult.result.case !== "dagCborDecode"',
     "clearGeneratedOperationResult(operationResult)",
     "wipeProtoDeterministicCborValueBytes(result.value)",
     "requestBytes.fill(0)",
   ],
   forbiddenNeedles: [
-    "processGeneratedOperationRequest(",
     "processGeneratedProtoRequest(",
     "protoPayloadOrThrow(",
     "CodecDagCborDecodeResultSchema",
@@ -912,22 +911,17 @@ assertReallyMeOperationBoundaryContract({
       binaryResponseNeedle: "processOperationResponse(",
       requiredNeedles: [
         "private typealias CodecSizeLimitFunction = @convention(c) () -> UInt",
-        '@_silgen_name("rm_codec_max_ffi_input_bytes")',
-        '@_silgen_name("rm_codec_max_ffi_output_bytes")',
-        '@_silgen_name("rm_codec_max_operation_response_bytes")',
-        "private func rmCodecMaxFfiInputBytesLinked() -> UInt",
-        "private func rmCodecMaxFfiOutputBytesLinked() -> UInt",
-        "private func rmCodecMaxOperationResponseBytesLinked() -> UInt",
+        "import ReallyMeCodecFFI",
         "private let maxFfiInputLength: Int",
         "private let maxFfiOutputLength: Int",
         "private let maxOperationResponseLength: Int",
-        "rmCodecMaxFfiInputBytesLinked()",
-        "rmCodecMaxFfiOutputBytesLinked()",
-        "rmCodecMaxOperationResponseBytesLinked()",
+        "rm_codec_max_ffi_input_bytes()",
+        "rm_codec_max_ffi_output_bytes()",
+        "rm_codec_max_operation_response_bytes()",
         '"rm_codec_max_ffi_input_bytes"',
         '"rm_codec_max_ffi_output_bytes"',
         '"rm_codec_max_operation_response_bytes"',
-        "static func requireValidOperationResponseLimit(_ limit: UInt, maxFfiOutputLength: Int) throws -> Int",
+        "static func requireValidOperationResponseLimit<Limit: BinaryInteger>(",
         "Int(exactly: limit)",
         "guard firstStatus == ReallyMeCodecRustCAbiStatus.bufferTooSmall else",
         "producedLength <= maxOperationResponseLength",
@@ -1012,15 +1006,10 @@ const generatedStructuredOperations = [
     tsPath: "packages/ts/src/multiformat.ts",
     tsExport: "export const multicodecLookupPrefix = (",
     tsNeedles: [
-      "processOperationRequestBytes(",
-      "frameOperationRequest(MULTICODEC_LOOKUP_PREFIX_OPERATION_FIELD",
+      "processGeneratedOperationRequest(",
       "bytesSnapshot.fill(0)",
       'operationResult.result.case !== "multicodecLookupPrefix"',
       "requireNoProviderUnknownFields(result)",
-    ],
-    tsForbiddenNeedles: [
-      "processGeneratedOperationRequest(",
-      "toBinary(CodecOperationRequestSchema",
     ],
     forbiddenProviderCall: "requireReallyMeCodecWasmProvider().multicodecLookupPrefix",
   },
@@ -1082,15 +1071,9 @@ const generatedStructuredOperations = [
     tsExport:
       "export const dagCborVerifyCidDetails = (\n  cid: string,\n  bytes: Uint8Array,",
     tsNeedles: [
-      "processOperationRequestBytes(",
-      "frameOperationRequest(DAG_CBOR_VERIFY_CID_OPERATION_FIELD",
-      "cidBytes?.fill(0)",
+      "processGeneratedOperationRequest(",
       "payloadSnapshot.fill(0)",
       'operationResult.result.case !== "dagCborVerifyCid"',
-    ],
-    tsForbiddenNeedles: [
-      "processGeneratedOperationRequest(",
-      "toBinary(CodecOperationRequestSchema",
     ],
     forbiddenProviderCall: "requireReallyMeCodecWasmProvider().dagCborVerifyCid",
   },
@@ -1111,9 +1094,9 @@ const generatedStructuredOperations = [
     tsPath: "packages/ts/src/pem.ts",
     tsExport: "export const decodePem = (",
     tsNeedles: [
-      "frameOperationRequest(PEM_DECODE_OPERATION_FIELD",
+      "processGeneratedOperationRequest(",
+      'case: "pemDecode"',
       "pemSnapshot.fill(0)",
-      "processOperationRequestBytes(requestBytes)",
       'operationResult.result.case !== "pemDecode"',
       "readPemDocument(operationResult.result.value)",
     ],
@@ -1161,15 +1144,11 @@ const generatedStructuredOperations = [
     tsExport:
       "export const deterministicCborDecode = (\n  bytes: Uint8Array,",
     tsNeedles: [
-      "processOperationRequestBytes(",
-      "frameOperationRequest(DETERMINISTIC_CBOR_DECODE_OPERATION_FIELD",
+      "case: \"deterministicCborDecode\"",
+      "processGeneratedOperationRequest(",
       'operationResult.result.case !== "deterministicCborDecode"',
       "requestBytes.fill(0)",
       "wipeProtoDeterministicCborValueBytes(result.value)",
-    ],
-    tsForbiddenNeedles: [
-      "processGeneratedOperationRequest(",
-      "toBinary(CodecOperationRequestSchema",
     ],
   },
 ];
@@ -1369,7 +1348,6 @@ for (const operation of generatedStructuredOperations) {
       operation.forbiddenProviderCall,
       "errorCodeForCodecError(",
       "CodecErrorReason.",
-      ...(operation.tsForbiddenNeedles ?? []),
     ].filter((needle) => needle !== undefined),
   });
 }
@@ -1804,7 +1782,7 @@ const packageReleaseWorkflows = Object.freeze([
 for (const workflowPath of packagePreflightWorkflows) {
   assertContains(workflowPath, "Resolve release SHA");
   assertContains(workflowPath, 'default: ""');
-  assertContains(workflowPath, "default: 0.3.4");
+  assertContains(workflowPath, "default: 0.3.6");
 }
 for (const workflowPath of packageReleaseWorkflows) {
   assertContains(workflowPath, "Verify reviewed release SHA");
@@ -2007,7 +1985,7 @@ assertContains(".github/workflows/kotlin-android-package-release.yml", "Test and
 assertContains(".github/workflows/kotlin-android-package-release.yml", "Build Android AAR");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "requireFullNativeResources=true");
 assertContains("packages/kotlin/settings.gradle.kts", 'rootProject.name = "reallyme-codec"');
-assertContains("packages/kotlin/README.md", "me.really:codec:0.3.4");
+assertContains("packages/kotlin/README.md", "me.really:codec:0.3.6");
 assertContains("packages/kotlin/README.md", "ships Rust JNI libraries as platform resources");
 assertContains(
   "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
@@ -2332,8 +2310,10 @@ assertContains("docs/protobuf.md", "any SwiftProtobuf.Message");
 assertContains("docs/protobuf.md", "serde_json::to_*");
 assertContains("docs/protobuf.md", "TypeScript protobuf-es messages are plain JavaScript objects");
 assertContains("docs/protobuf.md", "degrade toward quadratic behavior");
-assertContains("scripts/build_swift_xcframework.sh", "Modules/module.modulemap");
-assertNotContains("scripts/build_swift_xcframework.sh", "HEADERS_DIR}/module.modulemap");
+assertContains("scripts/build_swift_xcframework.sh", 'cat >"${slice}/Headers/module.modulemap"');
+assertContains("scripts/build_swift_xcframework.sh", 'header "reallyme_codec_ffi.h"');
+assertNotContains("packages/swift/Sources/ReallyMeCodec/CallCodecWithRustCAbi.swift", "@_silgen_name(");
+assertNotContains("scripts/build_swift_xcframework.sh", 'cat >"${slice}/Modules/module.modulemap"');
 assertContains("scripts/build_swift_xcframework.sh", "verify_xcframework_layout");
 assertContains("scripts/build_swift_xcframework.sh", "normalize_xcframework_info_plist");
 assertContains("scripts/build_swift_xcframework.sh", "Headers/module.modulemap");
@@ -2540,19 +2520,38 @@ assertContains("packages/ts/src/pem.ts", "const derSnapshot = snapshotBoundedByt
 assertContains("packages/ts/src/pem.ts", "derSnapshot.fill(0)");
 assertContains("packages/ts/test/reallyme-codec.test.mjs", "decodePem rejects oversized proto policy before provider work");
 assertContains("packages/ts/test/reallyme-codec.test.mjs", "encodePem rejects oversized proto options before provider work");
-// PEM text and DER may be private-key material. Frame them into one wiped,
-// exactly sized request instead of the generated serializer, whose internal
-// buffers cannot be wiped.
-assertContains("packages/ts/src/pem.ts", "frameOperationRequest(PEM_ENCODE_OPERATION_FIELD");
-assertContains("packages/ts/src/pem.ts", "derSnapshot.fill(0)");
-assertNotContains("packages/ts/src/pem.ts", "processGeneratedOperationRequest");
-assertNotContains("packages/ts/src/pem.ts", "toBinary(CodecOperationRequestSchema");
+// PEM text and DER may be private-key material. They use the generated
+// request lane, whose descriptor-driven serializer leaves one wiped copy.
+assertTypescriptExport({
+  path: "packages/ts/src/pem.ts",
+  exportNeedle: "export const encodePem = (",
+  requiredNeedles: [
+    "processGeneratedOperationRequest(",
+    'case: "pemEncode"',
+    "derSnapshot.fill(0)",
+  ],
+});
+assertNotContains("packages/ts/src/pem.ts", "toBinary(");
 assertContains("packages/ts/src/operationContract.ts", "export const processOperationRequestBytes = (");
-assertContains("packages/ts/test/reallyme-codec.test.mjs", "framed PEM requests match the generated protobuf serialization");
-// Decode, CID verification, and prefix lookup requests carry whole documents
-// or key bytes in one flat field and use the same exactly sized framing.
-assertContains("packages/ts/test/reallyme-codec.test.mjs", "framed CBOR and multicodec requests match the generated protobuf serialization");
-assertContains("packages/ts/test/reallyme-codec.test.mjs", "sensitive CBOR and multicodec lanes leave no serializer copy of caller bytes");
+// Generated requests are serialized from their descriptors into one exactly
+// sized, wiped buffer; the protobuf-es writer would leave unwipeable copies
+// of sensitive text and byte fields in its abandoned growth buffers.
+assertTypescriptExport({
+  path: "packages/ts/src/operationContract.ts",
+  exportNeedle: "export const processGeneratedOperationRequest = (",
+  requiredNeedles: [
+    "validateGeneratedOperationRequest(request)",
+    "serializeExactBinary(CodecOperationRequestSchema, request)",
+    "processOperationRequestBytes(requestBytes)",
+  ],
+  forbiddenNeedles: ["toBinary("],
+});
+assertContains("packages/ts/src/serializeExactBinary.ts", "reflect(schema, message, false)");
+assertContains("packages/ts/src/serializeExactBinary.ts", "message.sortedFields");
+assertContains("packages/ts/test/reallyme-codec.test.mjs", "exact request serialization matches protobuf-es for every request shape");
+assertContains("packages/ts/test/reallyme-codec.test.mjs", "exact request serialization retains only the returned sensitive buffer");
+assertContains("packages/ts/test/reallyme-codec.test.mjs", "exact request serialization wipes partial output on failure");
+assertContains("packages/ts/test/reallyme-codec.test.mjs", "sensitive CBOR, multicodec, and PEM lanes leave no serializer copy of caller bytes");
 // The packaged glue must refuse WASM bytes other than the ones built with it.
 assertContains("packages/ts/scripts/build-wasm.mjs", "wasmIntegritySource(wasmDigest)");
 assertContains("packages/ts/scripts/wasm-integrity.mjs", "__reallymeVerifiedWasmBytes");
@@ -2689,12 +2688,20 @@ assertContains("scripts/test_android_consumer_r8_runtime.sh", ":consumer-r8-runt
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "logcat");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", 'install --no-streaming -r "$APK_PATH"');
 assertContains("scripts/test_android_consumer_r8_runtime.sh", 'ADB_INSTALL_MAX_ATTEMPTS="3"');
+assertContains("scripts/test_android_consumer_r8_runtime.sh", 'am get-started-user-state 0');
+assertContains("scripts/test_android_consumer_r8_runtime.sh", '"$user_state" == "RUNNING_UNLOCKED"');
+assertContains("scripts/test_android_consumer_r8_runtime.sh", '"$volume_state" == *" mounted "*');
+assertContains("scripts/test_android_consumer_r8_runtime.sh", 'ANDROID_R8_PAGE_SIZE_BYTES="16384"');
+assertContains("scripts/test_android_consumer_r8_runtime.sh", 'shell getconf PAGE_SIZE');
+assertContains("scripts/test_android_consumer_r8_runtime.sh", '"$page_size" == "$ANDROID_R8_PAGE_SIZE_BYTES"');
 assertContains("scripts/test_android_consumer_r8_runtime.sh", 'service check package');
 assertContains("scripts/test_android_consumer_r8_runtime.sh", 'service check mount');
 assertContains("scripts/test_android_consumer_r8_runtime.sh", 'sm list-volumes all');
 assertContains("scripts/test_android_consumer_r8_runtime.sh", 'pm path android');
 assertContains("scripts/test_android_consumer_r8_runtime.sh", '"$install_output" != *"Broken pipe"*');
 assertContains("scripts/test_android_consumer_r8_runtime.sh", '"$install_output" != *"StorageManager.getVolumes()"*');
+assertContains("scripts/test_android_consumer_r8_runtime.sh", '"$install_output" != *"PackageManagerInternal.freeStorage"*');
+assertContains("scripts/test_android_consumer_r8_runtime.sh", '        wait_for_runtime_services\n        if install_output=');
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android consumer R8 APK installation failed");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android consumer R8 activity launch failed");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "ensure_avd_exists");
@@ -2716,7 +2723,7 @@ assertContains(
   ".github/workflows/kotlin-android-package-release.yml",
   '{ yes 2>/dev/null || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "ndk;29.0.14206865"',
 );
-assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.3.4");
+assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.3.6");
 assertContains("packages/kotlin-android/README.md", "never sourced from the Git worktree");
 assertContains(
   "packages/kotlin-android/gradle.properties",
@@ -2772,13 +2779,15 @@ assertContains("packages/ts/package.json", '"test:browser": "npm run build && no
 assertContains("packages/ts/scripts/browser-wasm-test.mjs", "__REALLYME_CODEC_BROWSER_WASM_RESULT__");
 assertContains("packages/ts/scripts/browser-wasm-test.mjs", "installReallyMeCodecWasmProvider");
 assertContains("packages/ts/scripts/browser-wasm-test.mjs", "deterministicCborDecode");
+assertContains("packages/ts/scripts/browser-wasm-test.mjs", '"@bufbuild/protobuf/reflect": "/node_modules/@bufbuild/protobuf/dist/esm/reflect/index.js"');
+assertContains("packages/ts/scripts/browser-wasm-test.mjs", '"@bufbuild/protobuf/wire": "/node_modules/@bufbuild/protobuf/dist/esm/wire/index.js"');
 assertContains("packages/ts/scripts/browser-wasm-test.mjs", "Chrome or Chromium is required");
 assertContains(".github/workflows/code-checks.yml", "Test TypeScript codec package in browser");
 assertContains(".github/workflows/npm-package-preflight.yml", "Test TypeScript codec package in browser");
 
 assertContains("README.md", "https://github.com/reallyme/codec");
 assertContains("README.md", "https://www.npmjs.com/package/@reallyme/codec");
-assertContains("README.md", "me.really:codec:0.3.4");
+assertContains("README.md", "me.really:codec:0.3.6");
 assertContains("README.md", "reallyme-codec-proto");
 assertContains("README.md", "## Published Surfaces");
 assertContains("README.md", "`me.really:codec-android` AAR");
