@@ -248,6 +248,7 @@ jobs:
           cargo +nightly-2026-07-01 miri test -p reallyme-codec-cbor --test general_tests semantic_equivalent_keys_are_rejected_without_sorting --locked
           cargo +nightly-2026-07-01 miri test -p reallyme-codec-cbor --test general_zeroization_tests --locked
 
+  # Run Swift against the Rust provider without the traced-build overhead.
   swift:
     name: swift codec package
     runs-on: macos-26
@@ -265,14 +266,21 @@ jobs:
 
       - name: Select Xcode 26.4
         run: |
-          sudo xcode-select -s /Applications/Xcode_26.4.app
-          swift --version
+          developer_dir=$(cd /Applications/Xcode_26.4.app/Contents/Developer && pwd -P)
+          sudo xcode-select -s "$developer_dir"
+          printf 'DEVELOPER_DIR=%s\n' "$developer_dir" >> "$GITHUB_ENV"
+          printf '%s/Toolchains/XcodeDefault.xctoolchain/usr/bin\n' "$developer_dir" >> "$GITHUB_PATH"
+          uname -m
+          test "$(uname -m)" = arm64
+          xcodebuild -version
+          "$developer_dir/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift" --version
 
       - name: Build codec FFI dylib
         run: cargo build --locked -p reallyme-codec-ffi
 
       - name: Test Swift package
-        run: swift test
+        timeout-minutes: 20
+        run: swift test --arch arm64 --verbose
         env:
           REALLYME_CODEC_FFI_LIBRARY_PATH: ${{ github.workspace }}/target/debug/libreallyme_codec_ffi.dylib
           REALLYME_CODEC_SWIFTPM_RUNTIME_FFI: "1"
