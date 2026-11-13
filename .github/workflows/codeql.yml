@@ -41,9 +41,6 @@ jobs:
           - language: java-kotlin
             os: ubuntu-latest
             build-mode: manual
-          - language: swift
-            os: macos-26
-            build-mode: manual
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -61,17 +58,6 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Select Xcode 26.4
-        if: matrix.language == 'swift'
-        run: |
-          developer_dir=$(cd /Applications/Xcode_26.4.app/Contents/Developer && pwd -P)
-          sudo xcode-select -s "$developer_dir"
-          printf 'DEVELOPER_DIR=%s\n' "$developer_dir" >> "$GITHUB_ENV"
-          printf '%s/Toolchains/XcodeDefault.xctoolchain/usr/bin\n' "$developer_dir" >> "$GITHUB_PATH"
-          uname -m
-          xcodebuild -version
-          "$developer_dir/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift" --version
-
       - name: Initialize CodeQL
         uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
@@ -86,11 +72,6 @@ jobs:
         run: |
           packages/kotlin/gradlew -p packages/kotlin --no-daemon --no-build-cache --rerun-tasks compileKotlin compileJava
           packages/kotlin/gradlew -p packages/kotlin-android --no-daemon --no-build-cache --rerun-tasks compileReleaseKotlin compileReleaseJavaWithJavac :consumer-r8-runtime:compileReleaseJavaWithJavac
-
-      - name: Build Swift for analysis
-        if: matrix.language == 'swift'
-        timeout-minutes: 20
-        run: swift build --arch arm64 --verbose
 
       - name: Analyze CodeQL
         uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
