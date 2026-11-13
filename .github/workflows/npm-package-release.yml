@@ -117,7 +117,7 @@ jobs:
         working-directory: packages/ts
 
       - name: Test TypeScript codec package in browser
-        run: npm run test:browser
+        run: npm run test:browser:built
         working-directory: packages/ts
 
       # Pack the dist the tests just exercised; skipping lifecycle scripts

@@ -34,7 +34,8 @@
     "build": "node scripts/clean-dist.mjs && npm run build:wasm && tsc",
     "build:wasm": "node scripts/build-wasm.mjs",
     "prepack": "npm run build",
-    "test:browser": "npm run build && node scripts/browser-wasm-test.mjs",
+    "test:browser": "npm run build && npm run test:browser:built",
+    "test:browser:built": "node scripts/browser-wasm-test.mjs",
     "typecheck": "tsc --noEmit",
     "test": "npm run build && node --test \"test/*.test.mjs\""
   },

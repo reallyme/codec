@@ -782,6 +782,26 @@ assertContains(
 );
 assertContains(".github/workflows/code-checks.yml", "bash scripts/install_actionlint.sh");
 assertContains(".github/workflows/code-checks.yml", "run: actionlint");
+const repositoryToolingSteps = extractWorkflowSteps(".github/workflows/code-checks.yml")
+  .filter((step) => step.job === "repository-policy");
+for (const stepName of ["Install ShellCheck", "Install actionlint", "Lint workflows"]) {
+  const steps = repositoryToolingSteps.filter((step) => step.name === stepName);
+  if (steps.length !== 1 || steps[0].condition !== "matrix.os == 'ubuntu-24.04'") {
+    fail(`${stepName} must run once in the Linux repository-policy lane`);
+  }
+}
+assertContains(
+  ".github/workflows/code-checks.yml",
+  "python3 -m unittest discover -s scripts -p '*_test.py'",
+);
+assertContains(
+  ".github/workflows/code-checks.yml",
+  "RUSTFLAGS=-Dwarnings cargo check --workspace --all-features --locked",
+);
+assertNotContains(
+  ".github/workflows/code-checks.yml",
+  "run: cargo check --workspace --all-features --locked",
+);
 assertContains(".github/workflows/code-checks.yml", "--check-pins");
 assertContains(
   ".github/workflows/code-checks.yml",
@@ -1759,6 +1779,21 @@ assertContains("scripts/write_native_manifest.mjs", "GITHUB_SHA does not match t
 assertContains("packages/kotlin-android/build.gradle.kts", "fun checkedOutCommitSha()");
 assertContains("packages/kotlin-android/build.gradle.kts", "GITHUB_SHA does not match the checked-out source SHA");
 const workflowFiles = listFiles(".github/workflows");
+for (const path of [
+  ".github/workflows/code-checks.yml",
+  ".github/workflows/codeql.yml",
+  ".github/workflows/dependency-security.yml",
+  ".github/workflows/fuzz.yml",
+  ".github/workflows/protobuf-ci.yml",
+]) {
+  // PR updates supersede older PR checks; push checks remain distinct evidence
+  // for the exact source SHA used by release attestation.
+  assertContains(
+    path,
+    "group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}",
+  );
+  assertContains(path, "cancel-in-progress: ${{ github.event_name == 'pull_request' }}");
+}
 for (const removedWorkflow of [
   ".github/workflows/package-release.yml",
   ".github/workflows/release-preflight.yml",
@@ -1929,6 +1964,7 @@ assertContains(".github/workflows/dependency-security.yml", "name: Gate publishe
 assertContains(".github/workflows/dependency-security.yml", "name: Report Gradle build tooling advisories");
 assertContains(".github/workflows/dependency-security.yml", "fail-on-vuln: true");
 assertContains(".github/workflows/dependency-security.yml", "fail-on-vuln: false");
+assertNotContains(".github/workflows/dependency-security.yml", "python3 -m unittest");
 assertContains(".github/workflows/codeql.yml", "queries: security-and-quality");
 assertContains(".github/workflows/codeql.yml", "- language: java-kotlin");
 assertContains(".github/workflows/codeql.yml", "build-mode: manual");
@@ -2325,8 +2361,9 @@ assertContains("scripts/build_swift_xcframework.sh", "Headers/module.modulemap")
 assertContains("scripts/prepare_swift_binary_manifest.mjs", "ffiArtifactChecksum");
 assertContains("scripts/prepare_swift_binary_manifest.mjs", "--local-artifact-path");
 assertContains("packages/swift/README.md", "REALLYME_CODEC_SWIFTPM_RUNTIME_FFI=1");
-assertContains(".github/workflows/swift-package-preflight.yml", "REALLYME_CODEC_SWIFTPM_RUNTIME_FFI");
-assertContains(".github/workflows/swift-package-preflight.yml", "cargo build --locked -p reallyme-codec-ffi");
+assertNotContains(".github/workflows/swift-package-preflight.yml", "REALLYME_CODEC_SWIFTPM_RUNTIME_FFI");
+assertNotContains(".github/workflows/swift-package-preflight.yml", "cargo build --locked -p reallyme-codec-ffi");
+assertNotContains(".github/workflows/swift-package-preflight.yml", "node --test scripts/verify_swift_release_artifact.test.mjs");
 assertContains(".github/workflows/code-checks.yml", "cargo build --locked -p reallyme-codec-ffi");
 assertContains(".github/workflows/swift-package-preflight.yml", "Build SwiftPM binary artifact");
 assertContains(".github/workflows/swift-package-preflight.yml", "Upload Swift release candidate");
@@ -2338,18 +2375,20 @@ assertContains(
 );
 assertContains(".github/workflows/swift-package-preflight.yml", "Prepare local SwiftPM binary manifest");
 assertContains(".github/workflows/swift-package-preflight.yml", "--local-artifact-path build/swift/ReallyMeCodecFFI.xcframework");
-assertContains(".github/workflows/swift-package-preflight.yml", "Reset SwiftPM package state");
-assertContains(".github/workflows/swift-package-preflight.yml", "swift package reset");
+assertNotContains(".github/workflows/swift-package-preflight.yml", "swift package reset");
 assertContains(".github/workflows/swift-package-preflight.yml", "Test Swift package with linked binary target");
+assertContains(".github/workflows/swift-package-preflight.yml", "swift test --arch arm64 --verbose");
 assertContains(
   ".github/workflows/swift-package-preflight.yml",
   "node scripts/run_pinned_release_readiness.mjs --release-packages",
 );
 assertSubstringsInOrder(".github/workflows/swift-package-preflight.yml", [
   "Build SwiftPM binary artifact",
-  "Upload Swift release candidate",
   "Bind manifest to Swift release candidate",
   "Verify generated SwiftPM manifest and release candidate",
+  "Prepare local SwiftPM binary manifest",
+  "Test Swift package with linked binary target",
+  "Upload Swift release candidate",
 ]);
 assertContains("packages/ts/src/multiformat.ts", "ensureStringValue(encoded)");
 assertContains("packages/ts/src/multiformat.ts", "snapshotBoundedBytesInput(bytes)");
@@ -2780,7 +2819,22 @@ assertContains("packages/kotlin-android/build.gradle.kts", 'val localReleaseRepo
 assertContains("packages/kotlin-android/build.gradle.kts", 'name = "localRelease"');
 assertContains("packages/kotlin-android/build.gradle.kts", 'if (name.endsWith("ToRemoteReleaseRepository"))');
 
-assertContains("packages/ts/package.json", '"test:browser": "npm run build && node scripts/browser-wasm-test.mjs"');
+assertContains("packages/ts/package.json", '"test:browser": "npm run build && npm run test:browser:built"');
+assertContains("packages/ts/package.json", '"test:browser:built": "node scripts/browser-wasm-test.mjs"');
+assertContains("packages/ts/package.json", '"test": "npm run build && node --test \\"test/*.test.mjs\\""');
+assertSubstringsInOrder(".github/workflows/code-checks.yml", [
+  "run: npm --prefix packages/ts test",
+  "run: npm --prefix packages/ts run test:browser:built",
+]);
+for (const path of [
+  ".github/workflows/npm-package-preflight.yml",
+  ".github/workflows/npm-package-release.yml",
+]) {
+  assertSubstringsInOrder(path, ["run: npm test", "run: npm run test:browser:built"]);
+  assertNotContains(path, "run: npm run test:browser\n");
+}
+assertNotContains(".github/workflows/code-checks.yml", "run: npm --prefix packages/ts run test:browser\n");
+assertContains(".github/workflows/npm-package-preflight.yml", "npm pack --dry-run --ignore-scripts");
 assertContains("packages/ts/scripts/browser-wasm-test.mjs", "__REALLYME_CODEC_BROWSER_WASM_RESULT__");
 assertContains("packages/ts/scripts/browser-wasm-test.mjs", "installReallyMeCodecWasmProvider");
 assertContains("packages/ts/scripts/browser-wasm-test.mjs", "deterministicCborDecode");

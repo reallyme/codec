@@ -94,32 +94,10 @@ jobs:
           sudo xcode-select -s /Applications/Xcode_26.4.app
           swift --version
 
-      - name: Build codec FFI dylib
-        run: cargo build --locked -p reallyme-codec-ffi
-
-      - name: Test Swift package
-        run: swift test
-        env:
-          REALLYME_CODEC_FFI_LIBRARY_PATH: ${{ github.workspace }}/target/debug/libreallyme_codec_ffi.dylib
-          REALLYME_CODEC_SWIFTPM_RUNTIME_FFI: "1"
-
+      # Code Checks covers the runtime-loaded provider for this exact SHA.
+      # Preflight exercises the distinct linked provider and its release archive.
       - name: Build SwiftPM binary artifact
         run: scripts/build_swift_xcframework.sh
-
-      # Preserve the exact tested candidate so the credentialed release job
-      # promotes these bytes rather than compiling a second archive.
-      - name: Upload Swift release candidate
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: swift-xcframework-${{ inputs.version }}-${{ needs.verify-source-sha.outputs.release_sha }}
-          path: |
-            build/swift/ReallyMeCodecFFI.xcframework.zip
-            build/swift/ReallyMeCodecFFI.xcframework.checksum
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Test Swift release artifact verifier
-        run: node --test scripts/verify_swift_release_artifact.test.mjs
 
       - name: Bind manifest to Swift release candidate
         run: |
@@ -142,8 +120,18 @@ jobs:
         env:
           RELEASE_VERSION: ${{ inputs.version }}
 
-      - name: Reset SwiftPM package state
-        run: swift package reset
-
       - name: Test Swift package with linked binary target
-        run: swift test
+        timeout-minutes: 20
+        run: swift test --arch arm64 --verbose
+
+      # Upload only after linked-provider tests pass. Publication promotes these
+      # exact tested bytes rather than compiling another archive.
+      - name: Upload Swift release candidate
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: swift-xcframework-${{ inputs.version }}-${{ needs.verify-source-sha.outputs.release_sha }}
+          path: |
+            build/swift/ReallyMeCodecFFI.xcframework.zip
+            build/swift/ReallyMeCodecFFI.xcframework.checksum
+          if-no-files-found: error
+          retention-days: 7

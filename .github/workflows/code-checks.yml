@@ -43,6 +43,7 @@ jobs:
           node-version: '26'
 
       - name: Verify release readiness pins before testing
+        if: matrix.os != 'ubuntu-24.04'
         run: node scripts/run_pinned_release_readiness.mjs --check-pins
 
       # The local digest pin cannot prove where the vendored core came from.
@@ -53,14 +54,17 @@ jobs:
         run: node scripts/run_pinned_release_readiness.mjs --check-pins --verify-upstream
 
       - name: Install ShellCheck
+        if: matrix.os == 'ubuntu-24.04'
         uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
         with:
           tool: shellcheck@0.11.0
 
       - name: Install actionlint
+        if: matrix.os == 'ubuntu-24.04'
         run: bash scripts/install_actionlint.sh
 
       - name: Lint workflows
+        if: matrix.os == 'ubuntu-24.04'
         run: actionlint
 
       # Globs include new regression suites without a second hand-maintained list.
@@ -128,9 +132,6 @@ jobs:
       - name: Format
         run: cargo fmt --check
 
-      - name: Check all features
-        run: cargo check --workspace --all-features --locked
-
       - name: Check warnings as errors
         run: RUSTFLAGS=-Dwarnings cargo check --workspace --all-features --locked
 
@@ -176,7 +177,8 @@ jobs:
         run: npm --prefix packages/ts test
 
       - name: Test TypeScript codec package in browser
-        run: npm --prefix packages/ts run test:browser
+        # Exercise the same dist as the Node tests; do not rebuild it here.
+        run: npm --prefix packages/ts run test:browser:built
 
       - name: Dependency policy
         run: cargo deny check

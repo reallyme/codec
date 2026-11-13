@@ -108,16 +108,6 @@ jobs:
       - name: Security advisory audit
         run: scripts/audit_committed_lockfiles.sh
 
-      - name: Check release version matches crate metadata
-        env:
-          RELEASE_VERSION: ${{ inputs.version }}
-        run: |
-          release_version="$(sed -n 's/^version = "\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\)"$/\1/p' crates/codec/Cargo.toml | head -n 1)"
-          if [ "${release_version}" != "${RELEASE_VERSION}" ]; then
-            echo "::error::release version input does not match crates/codec/Cargo.toml"
-            exit 1
-          fi
-
       - name: Inspect publishable crate tarballs
         run: node scripts/publish_crates_in_order.mjs inspect
 

@@ -17,6 +17,10 @@ permissions:
   contents: read
   security-events: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   verify-runtime-lockfiles:
     name: Verify published Gradle runtime dependencies
@@ -28,9 +32,9 @@ jobs:
           persist-credentials: false
 
       - name: Verify runtime lockfiles match Gradle locks
-        run: |
-          python3 -m unittest discover -s scripts -p 'gradle_runtime_lockfiles_test.py'
-          python3 scripts/gradle_runtime_lockfiles.py --check
+        # Code Checks runs the policy tool's unit suite on Linux and macOS.
+        # This gate verifies the actual lockfile inputs before advisory scanning.
+        run: python3 scripts/gradle_runtime_lockfiles.py --check
 
   scan:
     name: Gate published runtime dependencies
