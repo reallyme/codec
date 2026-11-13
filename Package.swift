@@ -20,8 +20,9 @@ import Foundation
 
 let ffiArtifactChecksumPlaceholder =
     "0000000000000000000000000000000000000000000000000000000000000000"
-let ffiArtifactChecksum = "348d6525669c530ee846f7989aadb861233e125422b7759f5cdde8e8715de9cf"
-let ffiArtifactVersion = "0.2.1"
+// Keep the binary dependency disabled until preflight binds the matching archive.
+let ffiArtifactChecksum = "0000000000000000000000000000000000000000000000000000000000000000"
+let ffiArtifactVersion = "0.3.6"
 let ffiArtifactLocalPathOverride = ""
 let packageVersion = "0.3.6"
 let hasReleasedFfiArtifact =
