@@ -112,9 +112,11 @@ jobs:
         working-directory: packages/ts
 
       - name: Test TypeScript codec package in browser
-        run: npm run test:browser
+        run: npm run test:browser:built
         working-directory: packages/ts
 
       - name: Build codec npm tarball dry run
-        run: npm pack --dry-run
+        # Inspect the dist both test environments exercised. The default prepack
+        # hook would rebuild it and replace those tested bytes.
+        run: npm pack --dry-run --ignore-scripts
         working-directory: packages/ts
