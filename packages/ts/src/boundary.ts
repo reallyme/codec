@@ -119,15 +119,15 @@ export const utf8ByteLength = (value: string): number =>
   utf8ByteLengthWithPolicy(value, false);
 
 /**
- * Encodes a string as UTF-8 into an exactly sized buffer owned by the caller.
+ * Writes `value` as UTF-8 into `target` at `offset` and returns the next
+ * offset. The caller sizes `target` with {@link utf8ByteLength}.
  *
  * Lone UTF-16 surrogates become U+FFFD, matching the WHATWG encoder that
  * protobuf runtimes use for string fields, so framed requests stay byte
  * identical to generated serialization.
  */
-export const encodeUtf8 = (value: string): Uint8Array => {
-  const output = new Uint8Array(utf8ByteLength(value));
-  let offset = 0;
+export const writeUtf8 = (target: Uint8Array, offset: number, value: string): number => {
+  let cursor = offset;
   for (let index = 0; index < value.length; index += 1) {
     let codePoint = value.charCodeAt(index);
     if (codePoint >= 0xd800 && codePoint <= 0xdbff && index + 1 < value.length) {
@@ -141,30 +141,26 @@ export const encodeUtf8 = (value: string): Uint8Array => {
       codePoint = 0xfffd;
     }
     if (codePoint <= 0x7f) {
-      output[offset] = codePoint;
-      offset += 1;
+      target[cursor] = codePoint;
+      cursor += 1;
     } else if (codePoint <= 0x7ff) {
-      output[offset] = 0xc0 | (codePoint >> 6);
-      output[offset + 1] = 0x80 | (codePoint & 0x3f);
-      offset += 2;
+      target[cursor] = 0xc0 | (codePoint >> 6);
+      target[cursor + 1] = 0x80 | (codePoint & 0x3f);
+      cursor += 2;
     } else if (codePoint <= 0xffff) {
-      output[offset] = 0xe0 | (codePoint >> 12);
-      output[offset + 1] = 0x80 | ((codePoint >> 6) & 0x3f);
-      output[offset + 2] = 0x80 | (codePoint & 0x3f);
-      offset += 3;
+      target[cursor] = 0xe0 | (codePoint >> 12);
+      target[cursor + 1] = 0x80 | ((codePoint >> 6) & 0x3f);
+      target[cursor + 2] = 0x80 | (codePoint & 0x3f);
+      cursor += 3;
     } else {
-      output[offset] = 0xf0 | (codePoint >> 18);
-      output[offset + 1] = 0x80 | ((codePoint >> 12) & 0x3f);
-      output[offset + 2] = 0x80 | ((codePoint >> 6) & 0x3f);
-      output[offset + 3] = 0x80 | (codePoint & 0x3f);
-      offset += 4;
+      target[cursor] = 0xf0 | (codePoint >> 18);
+      target[cursor + 1] = 0x80 | ((codePoint >> 12) & 0x3f);
+      target[cursor + 2] = 0x80 | ((codePoint >> 6) & 0x3f);
+      target[cursor + 3] = 0x80 | (codePoint & 0x3f);
+      cursor += 4;
     }
   }
-  if (offset !== output.length) {
-    output.fill(0);
-    invalidInput();
-  }
-  return output;
+  return cursor;
 };
 
 /**

@@ -1,10 +1,14 @@
 # Changelog
 
-## 0.3.4 (unreleased)
+## 0.3.6 (unreleased)
+
+- Fix Swift binary headers and module maps for linked consumers.
+- Clear temporary TypeScript serialization copies of CBOR and key data.
+
+## 0.3.4 (2026-11-13)
 
 - Refuse Swift native-library loads redirected by `DYLD_LIBRARY_PATH` or
   `DYLD_IMAGE_SUFFIX`, including digest-verified loads.
-- Clear temporary TypeScript serialization copies of CBOR documents and keys.
 - Report oversized DAG-CBOR lengths consistently on native and Wasm hosts.
 - Distinguish malformed PEM labels from unsupported labels and reject invalid
   DER BIT STRING lengths.

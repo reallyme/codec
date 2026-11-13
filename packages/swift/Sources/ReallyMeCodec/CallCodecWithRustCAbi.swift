@@ -4,10 +4,16 @@
 
 import Foundation
 
+#if REALLYME_CODEC_LINKED_FFI
+// Import the artifact's declarations so Clang supplies the C calling
+// convention and checks every linked function against the shipped header.
+import ReallyMeCodecFFI
+#endif
+
 private let expectedCodecAbiVersion: UInt32 = 6
 private let expectedCodecPackageMajor: UInt32 = 0
 private let expectedCodecPackageMinor: UInt32 = 3
-private let expectedCodecPackagePatch: UInt32 = 4
+private let expectedCodecPackagePatch: UInt32 = 6
 private let maxProtoJsonRequestLength = 16_082_264
 
 private typealias CodecAbiVersionFunction = @convention(c) () -> UInt32
@@ -43,71 +49,6 @@ private typealias CodecBoolFunction = @convention(c) (
     UnsafeMutablePointer<Int32>?
 ) -> Int32
 
-#if REALLYME_CODEC_LINKED_FFI
-@_silgen_name("rm_codec_abi_version")
-private func rmCodecAbiVersionLinked() -> UInt32
-
-@_silgen_name("rm_codec_package_version_major")
-private func rmCodecPackageVersionMajorLinked() -> UInt32
-
-@_silgen_name("rm_codec_package_version_minor")
-private func rmCodecPackageVersionMinorLinked() -> UInt32
-
-@_silgen_name("rm_codec_package_version_patch")
-private func rmCodecPackageVersionPatchLinked() -> UInt32
-
-@_silgen_name("rm_codec_max_operation_response_bytes")
-private func rmCodecMaxOperationResponseBytesLinked() -> UInt
-
-@_silgen_name("rm_codec_max_ffi_input_bytes")
-private func rmCodecMaxFfiInputBytesLinked() -> UInt
-
-@_silgen_name("rm_codec_max_ffi_output_bytes")
-private func rmCodecMaxFfiOutputBytesLinked() -> UInt
-
-@_silgen_name("rm_codec_process")
-private func rmCodecProcessLinked(
-    _ operation: UInt32,
-    _ firstPointer: UnsafePointer<UInt8>?,
-    _ firstLength: Int,
-    _ secondPointer: UnsafePointer<UInt8>?,
-    _ secondLength: Int,
-    _ thirdPointer: UnsafePointer<UInt8>?,
-    _ thirdLength: Int,
-    _ outputPointer: UnsafeMutablePointer<UInt8>?,
-    _ outputCapacity: Int,
-    _ producedLength: UnsafeMutablePointer<Int>?
-) -> Int32
-
-@_silgen_name("rm_codec_process_operation_json")
-private func rmCodecProcessOperationJsonLinked(
-    _ requestPointer: UnsafePointer<UInt8>?,
-    _ requestLength: Int,
-    _ outputPointer: UnsafeMutablePointer<UInt8>?,
-    _ outputCapacity: Int,
-    _ producedLength: UnsafeMutablePointer<Int>?
-) -> Int32
-
-@_silgen_name("rm_codec_process_operation")
-private func rmCodecProcessOperationLinked(
-    _ requestPointer: UnsafePointer<UInt8>?,
-    _ requestLength: Int,
-    _ outputPointer: UnsafeMutablePointer<UInt8>?,
-    _ outputCapacity: Int,
-    _ producedLength: UnsafeMutablePointer<Int>?
-) -> Int32
-
-@_silgen_name("rm_codec_process_bool")
-private func rmCodecProcessBoolLinked(
-    _ operation: UInt32,
-    _ firstPointer: UnsafePointer<UInt8>?,
-    _ firstLength: Int,
-    _ secondPointer: UnsafePointer<UInt8>?,
-    _ secondLength: Int,
-    _ resultPointer: UnsafeMutablePointer<Int32>?
-) -> Int32
-#endif
-
 struct ReallyMeCodecRustCAbiProvider: Sendable {
     // Keep the dlopen handle alive for as long as the dlsym function pointers
     // can be called; dropping it would let deinit dlclose the loaded image.
@@ -122,23 +63,23 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
 
     #if REALLYME_CODEC_LINKED_FFI
     init() throws {
-        try Self.requireCompatibleAbiVersion(rmCodecAbiVersionLinked())
+        try Self.requireCompatibleAbiVersion(rm_codec_abi_version())
         try Self.requireCompatiblePackageVersion(
-            major: rmCodecPackageVersionMajorLinked(),
-            minor: rmCodecPackageVersionMinorLinked(),
-            patch: rmCodecPackageVersionPatchLinked()
+            major: rm_codec_package_version_major(),
+            minor: rm_codec_package_version_minor(),
+            patch: rm_codec_package_version_patch()
         )
-        maxFfiInputLength = try Self.requireValidFfiLimit(rmCodecMaxFfiInputBytesLinked())
-        maxFfiOutputLength = try Self.requireValidFfiLimit(rmCodecMaxFfiOutputBytesLinked())
+        maxFfiInputLength = try Self.requireValidFfiLimit(rm_codec_max_ffi_input_bytes())
+        maxFfiOutputLength = try Self.requireValidFfiLimit(rm_codec_max_ffi_output_bytes())
         maxOperationResponseLength = try Self.requireValidOperationResponseLimit(
-            rmCodecMaxOperationResponseBytesLinked(),
+            rm_codec_max_operation_response_bytes(),
             maxFfiOutputLength: maxFfiOutputLength
         )
         library = nil
-        processFunction = rmCodecProcessLinked
-        processOperationFunction = rmCodecProcessOperationLinked
-        processOperationJsonFunction = rmCodecProcessOperationJsonLinked
-        boolFunction = rmCodecProcessBoolLinked
+        processFunction = rm_codec_process
+        processOperationFunction = rm_codec_process_operation
+        processOperationJsonFunction = rm_codec_process_operation_json
+        boolFunction = rm_codec_process_bool
     }
     #endif
 
@@ -210,14 +151,19 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
         }
     }
 
-    static func requireValidFfiLimit(_ limit: UInt) throws -> Int {
+    // Clang imports size_t as Int; the dynamically loaded C function exposes
+    // its unsigned machine word. Validate both before any allocation.
+    static func requireValidFfiLimit<Limit: BinaryInteger>(_ limit: Limit) throws -> Int {
         guard let converted = Int(exactly: limit), converted > 0 else {
             throw ReallyMeCodecError.providerFailure
         }
         return converted
     }
 
-    static func requireValidOperationResponseLimit(_ limit: UInt, maxFfiOutputLength: Int) throws -> Int {
+    static func requireValidOperationResponseLimit<Limit: BinaryInteger>(
+        _ limit: Limit,
+        maxFfiOutputLength: Int
+    ) throws -> Int {
         guard let converted = Int(exactly: limit),
               converted > 0,
               converted <= maxFfiOutputLength else {

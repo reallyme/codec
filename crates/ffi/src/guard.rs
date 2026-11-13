@@ -90,9 +90,13 @@ where
 /// - The operations act on caller-owned raw buffers and short-lived local
 ///   state; there is no shared `&mut`/interior-mutable state that could be
 ///   observed in a torn, half-updated form after a caught panic.
-/// - A panic between output writes leaves caller memory in its pre-existing
-///   state (each buffer write is a single `copy_from_slice`), so the caller
-///   never observes a partially mutated logical value across the boundary.
+/// - Exports initialize the caller's scalar output (the produced length, or
+///   the boolean result) to zero before running an operation, so a panic
+///   caught during the operation leaves it at zero and any output buffer
+///   untouched. Output bytes are written
+///   by a single `copy_from_slice` after the produced length is recorded, so
+///   the caller never observes a partially written output value; on any
+///   status other than success the caller must ignore the output buffer.
 /// - Secret-bearing temporaries that the FFI layer owns are held in
 ///   `Zeroizing`/`ZeroizeOnDrop` wrappers wherever the boundary must allocate
 ///   copied material. Those destructors run during the unwind, before this

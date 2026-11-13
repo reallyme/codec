@@ -16,7 +16,7 @@ plugins {
 }
 
 group = "me.really"
-version = "0.3.4"
+version = "0.3.6"
 
 // AGP's publication component reads these generated configurations, rather
 // than releaseApiElements/releaseRuntimeElements. Keep the implicit identity

@@ -47,8 +47,9 @@ install_modulemaps() {
   local slice
   for slice in "${FRAMEWORK_DIR}"/*; do
     if [ -d "${slice}/Headers" ]; then
-      mkdir -p "${slice}/Modules"
-      cat >"${slice}/Modules/module.modulemap" <<'MODULEMAP'
+      # SwiftPM copies a static library's Headers directory into its include
+      # search path. Keep the module map beside the header so both survive.
+      cat >"${slice}/Headers/module.modulemap" <<'MODULEMAP'
 module ReallyMeCodecFFI {
   header "reallyme_codec_ffi.h"
   export *
@@ -59,13 +60,17 @@ MODULEMAP
 }
 
 verify_xcframework_layout() {
-  local header_modulemap
-  header_modulemap="$(find "${FRAMEWORK_DIR}" -path '*/Headers/module.modulemap' -print -quit)"
-  if [ -n "${header_modulemap}" ]; then
-    printf 'invalid SwiftPM artifact layout: module map must not be exported from Headers: %s\n' \
-      "${header_modulemap}" >&2
-    exit 1
-  fi
+  local slice
+  for slice in "${FRAMEWORK_DIR}"/*; do
+    if [ -d "${slice}/Headers" ]; then
+      if [ ! -f "${slice}/Headers/module.modulemap" ] ||
+        [ ! -f "${slice}/Headers/reallyme_codec_ffi.h" ] ||
+        [ -e "${slice}/Modules/module.modulemap" ]; then
+        printf 'invalid SwiftPM static-library header layout: %s\n' "${slice}" >&2
+        exit 1
+      fi
+    fi
+  done
 }
 
 normalize_xcframework_info_plist() {

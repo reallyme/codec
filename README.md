@@ -37,7 +37,7 @@ base-encoding, CBOR/JCS, multiformat, and PEM families. Consumers can enable the
 strict DER reader separately and select only the families they use:
 
 ```toml
-reallyme-codec = { version = "0.3.4", default-features = false, features = [
+reallyme-codec = { version = "0.3.6", default-features = false, features = [
   "base64url",
   "multikey",
 ] }
@@ -52,7 +52,7 @@ feature enables the base64url field adapters.
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.3.4"
+    from: "0.3.6"
 )
 ```
 
@@ -64,7 +64,7 @@ feature enables the base64url field adapters.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.3.4")
+    implementation("me.really:codec:0.3.6")
 }
 ```
 
@@ -72,7 +72,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.3.4")
+    implementation("me.really:codec-android:0.3.6")
 }
 ```
 

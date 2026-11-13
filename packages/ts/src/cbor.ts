@@ -7,11 +7,8 @@ import type { Message } from "@bufbuild/protobuf";
 
 import {
   MAX_CODEC_BOUNDARY_NODES,
-  encodeUtf8,
-  requireBoundaryAggregate,
   strictUtf8ByteLength,
 } from "./boundary.js";
-import { frameOperationRequest } from "./frameSensitiveRequest.js";
 import {
   DETERMINISTIC_CBOR_I64_MIN,
   DETERMINISTIC_CBOR_NEGATIVE_MAX,
@@ -50,11 +47,11 @@ import type {
   CodecDeterministicCborMapEntry,
   CodecDeterministicCborMapKey,
   CodecDeterministicCborValue,
+  CodecOperationRequest,
 } from "./proto/generated/reallyme/codec/v1/codec_pb.js";
 import {
   clearGeneratedOperationResult,
   processGeneratedOperationRequest,
-  processOperationRequestBytes,
 } from "./operationContract.js";
 import {
   ensureBytesInput,
@@ -351,22 +348,6 @@ const i64Max = (1n << 63n) - 1n;
 const decimalIntegerPattern = /^-?(0|[1-9][0-9]*)$/u;
 const maxCborContainerDepth = 128;
 const maxDagCborInputLength = 1024 * 1024;
-
-// Decode and CID verification requests carry the encoded document as one flat
-// byte field, so they are framed directly instead of through the protobuf-es
-// writer, whose abandoned growth buffers would keep copies of the document.
-const DAG_CBOR_DECODE_OPERATION_FIELD =
-  CodecOperationRequestSchema.field.dagCborDecode.number;
-const DAG_CBOR_DECODE_ENCODED_FIELD = CodecDagCborDecodeRequestSchema.field.encoded.number;
-const DETERMINISTIC_CBOR_DECODE_OPERATION_FIELD =
-  CodecOperationRequestSchema.field.deterministicCborDecode.number;
-const DETERMINISTIC_CBOR_DECODE_ENCODED_FIELD =
-  CodecDeterministicCborDecodeRequestSchema.field.encoded.number;
-const DAG_CBOR_VERIFY_CID_OPERATION_FIELD =
-  CodecOperationRequestSchema.field.dagCborVerifyCid.number;
-const DAG_CBOR_VERIFY_CID_CID_FIELD = CodecDagCborVerifyCidRequestSchema.field.cid.number;
-const DAG_CBOR_VERIFY_CID_PAYLOAD_FIELD =
-  CodecDagCborVerifyCidRequestSchema.field.payload.number;
 
 type CborValidationState = {
   nodes: number;
@@ -1632,10 +1613,15 @@ export const dagCborDecode = (bytes: Uint8Array): ReallyMeCborValue => {
   }
   const requestBytes = snapshotDeterministicCborBytes(bytes, maxDagCborInputLength);
   try {
-    const operationResult = processOperationRequestBytes(
-      frameOperationRequest(DAG_CBOR_DECODE_OPERATION_FIELD, [
-        { field: DAG_CBOR_DECODE_ENCODED_FIELD, bytes: requestBytes },
-      ]),
+    const operationResult = processGeneratedOperationRequest(
+      create(CodecOperationRequestSchema, {
+        operation: {
+          case: "dagCborDecode",
+          value: create(CodecDagCborDecodeRequestSchema, {
+            encoded: requestBytes,
+          }),
+        },
+      }),
     );
     if (operationResult.result.case !== "dagCborDecode") {
       clearGeneratedOperationResult(operationResult);
@@ -1715,10 +1701,15 @@ export const deterministicCborDecode = (
     MAX_DETERMINISTIC_CBOR_INPUT_LEN,
   );
   try {
-    const operationResult = processOperationRequestBytes(
-      frameOperationRequest(DETERMINISTIC_CBOR_DECODE_OPERATION_FIELD, [
-        { field: DETERMINISTIC_CBOR_DECODE_ENCODED_FIELD, bytes: requestBytes },
-      ]),
+    const operationResult = processGeneratedOperationRequest(
+      create(CodecOperationRequestSchema, {
+        operation: {
+          case: "deterministicCborDecode",
+          value: create(CodecDeterministicCborDecodeRequestSchema, {
+            encoded: requestBytes,
+          }),
+        },
+      }),
     );
     if (operationResult.result.case !== "deterministicCborDecode") {
       clearGeneratedOperationResult(operationResult);
@@ -1757,18 +1748,9 @@ export const dagCborVerifyCidDetails = (
   ensureStringValue(cid);
   ensureBytesInput(bytes);
   const payloadSnapshot = snapshotDeterministicCborBytes(bytes, maxDagCborInputLength);
-  let cidBytes: Uint8Array | undefined;
   try {
-    // Every UTF-16 code unit encodes to at least one UTF-8 byte, so this
-    // bounds the string before it is encoded.
-    requireBoundaryAggregate([cid.length, payloadSnapshot.length]);
-    cidBytes = encodeUtf8(cid);
-    requireBoundaryAggregate([cidBytes.length, payloadSnapshot.length]);
-    const operationResult = processOperationRequestBytes(
-      frameOperationRequest(DAG_CBOR_VERIFY_CID_OPERATION_FIELD, [
-        { field: DAG_CBOR_VERIFY_CID_CID_FIELD, bytes: cidBytes },
-        { field: DAG_CBOR_VERIFY_CID_PAYLOAD_FIELD, bytes: payloadSnapshot },
-      ]),
+    const operationResult = processGeneratedOperationRequest(
+      dagCborVerifyCidRequest(cid, payloadSnapshot),
     );
     if (operationResult.result.case !== "dagCborVerifyCid") {
       clearGeneratedOperationResult(operationResult);
@@ -1782,7 +1764,6 @@ export const dagCborVerifyCidDetails = (
       actualCid: result.actualCid,
     };
   } finally {
-    cidBytes?.fill(0);
     payloadSnapshot.fill(0);
   }
 };
@@ -1793,6 +1774,19 @@ export const dagCborVerifyCid = (cid: string, bytes: Uint8Array): boolean =>
 
 /** Alias for callers that prefer an explicit comparison name. */
 export const dagCborCidMatches = dagCborVerifyCid;
+
+const dagCborVerifyCidRequest = (
+  cid: string,
+  bytes: Uint8Array,
+): CodecOperationRequest => create(CodecOperationRequestSchema, {
+  operation: {
+    case: "dagCborVerifyCid",
+    value: create(CodecDagCborVerifyCidRequestSchema, {
+      cid,
+      payload: bytes,
+    }),
+  },
+});
 
 export const dagCborSha256ContentHash = (bytes: Uint8Array): Uint8Array => {
   ensureBytesInput(bytes);

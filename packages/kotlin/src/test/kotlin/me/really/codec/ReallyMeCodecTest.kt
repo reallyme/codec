@@ -92,10 +92,10 @@ class ReallyMeCodecTest {
         assertFalse(ReallyMeCodecRustNativeProvider.isCompatibleAbiVersion(5))
         assertFalse(ReallyMeCodecRustNativeProvider.isCompatibleAbiVersion(0))
 
-        assertTrue(ReallyMeCodecRustNativeProvider.isCompatiblePackageVersion(0, 3, 4))
-        assertFalse(ReallyMeCodecRustNativeProvider.isCompatiblePackageVersion(0, 3, 3))
-        assertFalse(ReallyMeCodecRustNativeProvider.isCompatiblePackageVersion(0, 2, 4))
-        assertFalse(ReallyMeCodecRustNativeProvider.isCompatiblePackageVersion(1, 3, 4))
+        assertTrue(ReallyMeCodecRustNativeProvider.isCompatiblePackageVersion(0, 3, 6))
+        assertFalse(ReallyMeCodecRustNativeProvider.isCompatiblePackageVersion(0, 3, 5))
+        assertFalse(ReallyMeCodecRustNativeProvider.isCompatiblePackageVersion(0, 2, 6))
+        assertFalse(ReallyMeCodecRustNativeProvider.isCompatiblePackageVersion(1, 3, 6))
         assertFalse(ReallyMeCodecRustNativeProvider.isCompatiblePackageVersion(-1, -1, -1))
 
         // A NUL in the configured temporary root makes Path.of throw an
