@@ -90,6 +90,7 @@ const {
   requireTracked,
   assertContains,
   assertNotContains,
+  assertLockPackageVersion,
   assertNodeWorkflowJobsPinNode,
   assertProtoContract,
   assertReallyMeOperationBoundaryContract,
@@ -339,6 +340,19 @@ assertCargoFuzzWorkflowPolicy({
 
 const codecPackageVersion = "0.3.6";
 const codecProtoPackageVersion = "0.3.6";
+assertContains("Package.swift", `let ffiArtifactVersion = "${codecPackageVersion}"`);
+// The probes are separate Cargo workspaces. Root workspace metadata cannot
+// detect a release bump that leaves their own lockfile package entries stale.
+for (const [probePath, probeName] of [
+  ["probes/jcs-feature-unification", "reallyme-jcs-feature-unification-probe"],
+  ["probes/der-feature-unification", "reallyme-der-feature-unification-probe"],
+]) {
+  assertContains(
+    `${probePath}/Cargo.toml`,
+    `name = "${probeName}"\nversion = "${codecPackageVersion}"`,
+  );
+  assertLockPackageVersion(readText(`${probePath}/Cargo.lock`), probeName, codecPackageVersion);
+}
 try {
   verifyCheckedOutReleaseVersion(codecPackageVersion);
 } catch (error) {

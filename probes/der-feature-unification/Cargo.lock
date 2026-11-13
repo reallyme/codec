@@ -46,7 +46,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-der-feature-unification-probe"
-version = "0.3.4"
+version = "0.3.6"
 dependencies = [
  "der",
  "reallyme-codec",

@@ -146,7 +146,7 @@ compatible fixes increment the patch version, such as `0.3.5` to `0.3.6`.
 
 For Rust consumers, pin to the minor line you have reviewed, for example
 `reallyme-codec = "0.3"`. A full version written by `cargo add`, such as
-`reallyme-codec = "0.3.1"`, uses Cargo caret semantics and remains on the same
+`reallyme-codec = "0.3.6"`, uses Cargo caret semantics and remains on the same
 `0.3.x` compatibility line. For npm, Maven, SwiftPM, and release artifacts used
 in production, prefer exact versions or locked dependency files so every
 language lane runs the same reviewed codec release.
