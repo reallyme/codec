@@ -2,11 +2,86 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use super::{bounded_capacity, read_head, DeterministicCborError};
+use super::{
+    bounded_capacity, decode_map, decode_simple, read_head, read_value_head, DecodeLimits,
+    DeterministicCborError,
+};
 use crate::check_map_key_order::{MapKeyOrder, MapKeyOrderError};
+use crate::{DeterministicCborMapKey, DeterministicCborValue};
 
 const MAX_HEADER_BYTES: usize = 9;
 const MAX_KEY_BYTES: usize = 8;
+
+#[kani::proof]
+#[kani::unwind(3)]
+fn two_map_layers_retain_the_leaf_and_consume_the_wire() {
+    let bit: bool = kani::any();
+    let wire = [0xa1, 0x60, 0xa1, 0x60, 0xf4 | u8::from(bit)];
+    let mut limits = DecodeLimits::default();
+    let decoded = decode_single_map(&wire, 0, 0, &mut limits, |wire, offset, depth, limits| {
+        assert!(offset == 2 && depth == 1);
+        decode_single_map(
+            wire,
+            offset,
+            depth,
+            limits,
+            |wire, offset, depth, limits| {
+                assert!(offset == 4 && depth == 2);
+                let (major, arg, end) = read_value_head(wire, offset, limits)?;
+                assert!(major == 7);
+                Ok((decode_simple(arg)?.into_value(), end))
+            },
+        )
+    });
+    // Retain the returned tree so the harness ends at the parser's result.
+    // The runtime zeroization tests exercise the owner's subsequent drop.
+    let decoded = core::mem::ManuallyDrop::new(decoded);
+    let Ok((outer, end)) = &*decoded else {
+        kani::assert(false, "both map layers decode");
+        return;
+    };
+    assert!(*end == wire.len());
+    let Some(inner) = single_empty_key_child(outer) else {
+        kani::assert(false, "outer map owns the inner map under its empty key");
+        return;
+    };
+    assert!(
+        matches!(single_empty_key_child(inner), Some(DeterministicCborValue::Bool(actual)) if *actual == bit)
+    );
+    assert!(limits.nodes == 5 && limits.pending_nodes == 0);
+    kani::cover!(bit, "true leaf retained through both map layers");
+    kani::cover!(!bit, "false leaf retained through both map layers");
+}
+
+fn decode_single_map(
+    wire: &[u8],
+    offset: usize,
+    depth: usize,
+    limits: &mut DecodeLimits,
+    decode_child: impl FnMut(
+        &[u8],
+        usize,
+        usize,
+        &mut DecodeLimits,
+    ) -> Result<(DeterministicCborValue, usize), DeterministicCborError>,
+) -> Result<(DeterministicCborValue, usize), DeterministicCborError> {
+    let (major, argument, start) = read_value_head(wire, offset, limits)?;
+    assert!(major == 5 && argument == 1);
+    decode_map(wire, start, depth, argument, limits, decode_child)
+}
+
+fn single_empty_key_child(value: &DeterministicCborValue) -> Option<&DeterministicCborValue> {
+    let DeterministicCborValue::Map(entries) = value else {
+        return None;
+    };
+    let [entry] = entries.as_slice() else {
+        return None;
+    };
+    match entry.key() {
+        DeterministicCborMapKey::Text(key) if key.is_empty() => Some(entry.value()),
+        _ => None,
+    }
+}
 
 #[kani::proof]
 #[kani::unwind(9)]

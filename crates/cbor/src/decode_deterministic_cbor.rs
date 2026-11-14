@@ -102,8 +102,7 @@ fn decode_value(
     depth: usize,
     limits: &mut DecodeLimits,
 ) -> Result<(DeterministicCborValue, usize), DeterministicCborError> {
-    limits.add_node()?;
-    let (major, argument, mut offset) = read_head(bytes, offset)?;
+    let (major, argument, mut offset) = read_value_head(bytes, offset, limits)?;
 
     match major {
         MT_UINT => Ok((
@@ -141,40 +140,82 @@ fn decode_value(
             }
             Ok((DeterministicCborValue::Array(values), offset))
         }
-        MT_MAP => {
-            let child_depth = descend(depth)?;
-            let entry_count = container_count(argument)?;
-            let min_entry_len = checked_mul(MIN_ELEMENT_ENCODED_LEN, 2)?;
-            bounded_capacity(entry_count, bytes.len(), offset, min_entry_len)?;
-            limits.reserve_children(checked_mul(entry_count, 2)?)?;
-            let mut entries = try_vec_with_capacity(entry_count)?;
-            let mut key_order = MapKeyOrder::default();
-
-            for _ in 0..entry_count {
-                let key_start = offset;
-                let (key, key_end) = decode_key(bytes, offset, limits)?;
-                key_order
-                    .admit(checked_slice(bytes, key_start, key_end)?)
-                    .map_err(|error| match error {
-                        MapKeyOrderError::Duplicate => DeterministicCborError::DuplicateMapKey,
-                        MapKeyOrderError::Descending => DeterministicCborError::MapKeysOutOfOrder,
-                    })?;
-                offset = key_end;
-
-                let (value, next) = decode_value(bytes, offset, child_depth, limits)?;
-                entries.push(DeterministicCborMapEntry::new(key, value));
-                offset = next;
-            }
-            Ok((DeterministicCborValue::Map(entries), offset))
-        }
-        MT_SIMPLE => match argument {
-            SIMPLE_FALSE => Ok((DeterministicCborValue::Bool(false), offset)),
-            SIMPLE_TRUE => Ok((DeterministicCborValue::Bool(true), offset)),
-            SIMPLE_NULL => Ok((DeterministicCborValue::Null, offset)),
-            _ => Err(DeterministicCborError::UnsupportedSimpleValue),
-        },
+        MT_MAP => decode_map(bytes, offset, depth, argument, limits, decode_value),
+        MT_SIMPLE => Ok((decode_simple(argument)?.into_value(), offset)),
         _ => Err(DeterministicCborError::UnsupportedMajorType),
     }
+}
+
+fn read_value_head(
+    bytes: &[u8],
+    offset: usize,
+    limits: &mut DecodeLimits,
+) -> Result<(u8, u64, usize), DeterministicCborError> {
+    limits.add_node()?;
+    read_head(bytes, offset)
+}
+
+enum SimpleValue {
+    Bool(bool),
+    Null,
+}
+
+impl SimpleValue {
+    fn into_value(self) -> DeterministicCborValue {
+        match self {
+            Self::Bool(bit) => DeterministicCborValue::Bool(bit),
+            Self::Null => DeterministicCborValue::Null,
+        }
+    }
+}
+
+fn decode_simple(argument: u64) -> Result<SimpleValue, DeterministicCborError> {
+    match argument {
+        SIMPLE_FALSE => Ok(SimpleValue::Bool(false)),
+        SIMPLE_TRUE => Ok(SimpleValue::Bool(true)),
+        SIMPLE_NULL => Ok(SimpleValue::Null),
+        _ => Err(DeterministicCborError::UnsupportedSimpleValue),
+    }
+}
+
+fn decode_map(
+    bytes: &[u8],
+    mut offset: usize,
+    depth: usize,
+    argument: u64,
+    limits: &mut DecodeLimits,
+    mut decode_child: impl FnMut(
+        &[u8],
+        usize,
+        usize,
+        &mut DecodeLimits,
+    ) -> Result<(DeterministicCborValue, usize), DeterministicCborError>,
+) -> Result<(DeterministicCborValue, usize), DeterministicCborError> {
+    // Child decoding starts only after its key is admitted. Recursive calls
+    // share the same budget, including the reservations of open maps.
+    let child_depth = descend(depth)?;
+    let entry_count = container_count(argument)?;
+    let min_entry_len = checked_mul(MIN_ELEMENT_ENCODED_LEN, 2)?;
+    bounded_capacity(entry_count, bytes.len(), offset, min_entry_len)?;
+    limits.reserve_children(checked_mul(entry_count, 2)?)?;
+    let mut entries = try_vec_with_capacity(entry_count)?;
+    let mut key_order = MapKeyOrder::default();
+
+    for _ in 0..entry_count {
+        let key_start = offset;
+        let (key, key_end) = decode_key(bytes, offset, limits)?;
+        key_order
+            .admit(checked_slice(bytes, key_start, key_end)?)
+            .map_err(|error| match error {
+                MapKeyOrderError::Duplicate => DeterministicCborError::DuplicateMapKey,
+                MapKeyOrderError::Descending => DeterministicCborError::MapKeysOutOfOrder,
+            })?;
+
+        let (value, next) = decode_child(bytes, key_end, child_depth, limits)?;
+        entries.push(DeterministicCborMapEntry::new(key, value));
+        offset = next;
+    }
+    Ok((DeterministicCborValue::Map(entries), offset))
 }
 
 fn decode_key(
@@ -182,8 +223,7 @@ fn decode_key(
     offset: usize,
     limits: &mut DecodeLimits,
 ) -> Result<(DeterministicCborMapKey, usize), DeterministicCborError> {
-    limits.add_node()?;
-    let (major, argument, offset) = read_head(bytes, offset)?;
+    let (major, argument, offset) = read_value_head(bytes, offset, limits)?;
     match major {
         MT_UINT => Ok((
             DeterministicCborMapKey::Integer(DeterministicCborInteger::unsigned(argument)),

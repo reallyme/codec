@@ -20,6 +20,22 @@ fn enc(value: &CborValue) -> Vec<u8> {
 }
 
 #[test]
+fn nested_empty_keys_and_boolean_leaf_round_trip() {
+    // Exercise the public recursive dispatch on the wire shape used by
+    // the deterministic CBOR map-layer proofs.
+    for leaf in [0xf4, 0xf5] {
+        let wire = [0xa1, 0x60, 0xa1, 0x60, leaf];
+        assert_eq!(enc(&decode_dag_cbor(&wire).unwrap()), wire);
+        assert_eq!(
+            encode_deterministic_cbor(&decode_deterministic_cbor(&wire).unwrap())
+                .unwrap()
+                .as_slice(),
+            wire
+        );
+    }
+}
+
+#[test]
 fn every_inner_key_and_leaf_byte_has_expected_admission_and_round_trip() {
     // {"": {<one-byte text key>: <one-byte item>}}
     for key in u8::MIN..=u8::MAX {
