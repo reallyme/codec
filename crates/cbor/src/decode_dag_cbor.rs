@@ -381,3 +381,7 @@ fn compare_bytes(a: &[u8], b: &[u8]) -> Ordering {
         ordering => ordering,
     }
 }
+
+#[cfg(kani)]
+#[path = "decode_dag_cbor_proof_tests.rs"]
+mod proofs;

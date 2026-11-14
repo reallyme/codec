@@ -1965,6 +1965,7 @@ const readOnlyWorkflowPaths = [
   ".github/workflows/android-runtime-gate.yml",
   ".github/workflows/code-checks.yml",
   ".github/workflows/crates-package-preflight.yml",
+  ".github/workflows/formal-verification.yml",
   ".github/workflows/fuzz.yml",
   ".github/workflows/kotlin-android-package-preflight.yml",
   ".github/workflows/npm-package-preflight.yml",

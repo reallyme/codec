@@ -156,13 +156,7 @@ fn decode_value(
                 if let Some((previous_start, previous_end)) = previous_key_range {
                     let previous_key = checked_slice(bytes, previous_start, previous_end)?;
                     let current_key = checked_slice(bytes, key_start, key_end)?;
-                    match compare_encoded_keys(previous_key, current_key) {
-                        Ordering::Less => {}
-                        Ordering::Equal => return Err(DeterministicCborError::DuplicateMapKey),
-                        Ordering::Greater => {
-                            return Err(DeterministicCborError::MapKeysOutOfOrder);
-                        }
-                    }
+                    require_increasing_map_key(previous_key, current_key)?;
                 }
                 previous_key_range = Some((key_start, key_end));
                 offset = key_end;
@@ -356,10 +350,20 @@ fn bounded_capacity(
     Ok(())
 }
 
-fn compare_encoded_keys(left: &[u8], right: &[u8]) -> Ordering {
-    match left.len().cmp(&right.len()) {
-        Ordering::Equal => left.cmp(right),
+fn require_increasing_map_key(
+    previous: &[u8],
+    current: &[u8],
+) -> Result<(), DeterministicCborError> {
+    // Length-first ordering makes equal canonical encodings adjacent. The
+    // decoder can reject duplicates while reading without storing a key set.
+    let order = match previous.len().cmp(&current.len()) {
+        Ordering::Equal => previous.cmp(current),
         ordering => ordering,
+    };
+    match order {
+        Ordering::Less => Ok(()),
+        Ordering::Equal => Err(DeterministicCborError::DuplicateMapKey),
+        Ordering::Greater => Err(DeterministicCborError::MapKeysOutOfOrder),
     }
 }
 
@@ -407,3 +411,7 @@ fn checked_mul(left: usize, right: usize) -> Result<usize, DeterministicCborErro
 #[cfg(test)]
 #[path = "decode_deterministic_cbor_tests.rs"]
 mod node_limit_tests;
+
+#[cfg(kani)]
+#[path = "decode_deterministic_cbor_proof_tests.rs"]
+mod proofs;

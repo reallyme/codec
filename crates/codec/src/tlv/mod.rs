@@ -21,6 +21,10 @@ mod read_prefix;
 mod validate_options;
 mod view;
 
+#[cfg(kani)]
+#[path = "proof_tests.rs"]
+mod proofs;
+
 pub use codec_proto::generated::proto::reallyme::codec::v1::{
     CodecTlvLimits as Limits, CodecTlvOptions as Options, CodecTlvProfile as Profile,
 };

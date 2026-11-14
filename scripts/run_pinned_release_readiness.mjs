@@ -16,7 +16,7 @@ const RELEASE_READINESS_COMMIT = "01fe1556413f86e6f8fcf3c4d09a6778fa0805da";
 const RELEASE_READINESS_CORE_SHA256 =
   "1519b407c89eb2ecc2307f9a402efd8aa3a190dc5911a59b64ecec0e9742d14c";
 const LOCAL_CHECKER_SHA256 =
-  "3969f5875f549037de905aa8b5dd2ca5e0dc297c3c71e0def22f5cdb11da217b";
+  "dca3c4554eab2cda2c824a5e39cb54b1558e3bec623c9ebbd45fcb374f1a844a";
 const RELEASE_READINESS_CORE_URL =
   `https://raw.githubusercontent.com/reallyme/release-readiness/${RELEASE_READINESS_COMMIT}/core.mjs`;
 const RELEASE_READINESS_RUNNER_SHA256 =
