@@ -107,7 +107,7 @@ jobs:
           tool: cargo-nextest@0.9.151
 
       - name: Install cargo-deny
-        run: cargo +1.100.0 install cargo-deny --version '=0.20.2' --locked
+        run: cargo +1.100.0 install cargo-deny --version '=0.20.2' --locked --force
 
       - name: Install cargo-audit
         uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3, cargo-audit
