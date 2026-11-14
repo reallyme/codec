@@ -70,6 +70,75 @@ fn nested_unsigned_and_text_keys_reject_bytewise_order() {
 }
 
 #[test]
+fn three_entry_dag_cbor_stops_at_the_first_key_order_violation() {
+    let canonical = [
+        0xa1, 0x60, 0xa3, 0x61, b'a', 0xf4, 0x61, b'z', 0xf5, 0x62, b'a', b'a', 0xf6,
+    ];
+    // Array order gives the reference ranks for the three fixture keys.
+    let text = ["a", "z", "aa"];
+    let pairs: [&[u8]; 3] = [b"\x61a\xf4", b"\x61z\xf5", b"\x62aa\xf6"];
+    for first in 0..text.len() {
+        for second in 0..text.len() {
+            for third in 0..text.len() {
+                let keys = [first, second, third];
+                let mut wire = vec![0xa1, 0x60, 0xa3];
+                let mut value_offsets = [0; 3];
+                for (position, key) in keys.into_iter().enumerate() {
+                    wire.extend_from_slice(pairs[key]);
+                    value_offsets[position] = wire.len() - 1;
+                }
+                let rejected = keys.windows(2).position(|pair| pair[0] >= pair[1]);
+                if let Some(previous) = rejected {
+                    let invalid = previous + 1;
+                    let expected = if keys[previous] == keys[invalid] {
+                        CborError::DuplicateMapKey
+                    } else {
+                        CborError::MapKeysOutOfOrder
+                    };
+                    assert_eq!(decode_dag_cbor(&wire).unwrap_err(), expected, "{keys:?}");
+                    // A tag at an admitted value takes precedence. The same
+                    // tag at the rejected entry must remain unread.
+                    let mut tagged = wire.clone();
+                    tagged[value_offsets[previous]] = 0xc0;
+                    assert_eq!(
+                        decode_dag_cbor(&tagged).unwrap_err(),
+                        CborError::DisallowedMajorType { major: 6 },
+                        "{keys:?}"
+                    );
+                    wire[value_offsets[invalid]] = 0xc0;
+                    assert_eq!(decode_dag_cbor(&wire).unwrap_err(), expected, "{keys:?}");
+                } else {
+                    assert_eq!(wire.as_slice(), canonical);
+                    assert_eq!(enc(&decode_dag_cbor(&wire).unwrap()), canonical);
+                }
+                let inner = CborValue::Map(
+                    keys.into_iter()
+                        .map(|key| {
+                            let value = match key {
+                                0 => CborValue::Bool(false),
+                                1 => CborValue::Bool(true),
+                                _ => CborValue::Null,
+                            };
+                            (String::from(text[key]), value)
+                        })
+                        .collect(),
+                );
+                let outer = CborValue::Map(vec![(String::new(), inner)]);
+                if first != second && second != third && first != third {
+                    assert_eq!(enc(&outer), canonical, "{keys:?}");
+                } else {
+                    assert_eq!(
+                        encode_dag_cbor(&outer).unwrap_err(),
+                        CborError::DuplicateMapKey,
+                        "{keys:?}"
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
 fn nested_dag_cbor_text_keys_round_trip_in_length_first_order() {
     let canonical = [0xa1, 0x60, 0xa2, 0x61, b'z', 0xf4, 0x62, b'a', b'a', 0xf5];
     let reversed = [0xa1, 0x60, 0xa2, 0x62, b'a', b'a', 0xf5, 0x61, b'z', 0xf4];

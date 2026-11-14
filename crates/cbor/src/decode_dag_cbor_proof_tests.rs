@@ -464,3 +464,6 @@ fn dag_boolean_leaves_advance_one_byte() {
     kani::cover!(bit, "true leaf advances one byte");
     kani::cover!(!bit, "false leaf advances one byte");
 }
+
+#[path = "decode_three_entry_dag_cbor_proof_tests.rs"]
+mod three_entry;

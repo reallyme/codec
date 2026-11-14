@@ -159,3 +159,6 @@ fn encode_leaf(
     count_node(nodes)?;
     encode_bool(*bit, output)
 }
+
+#[path = "encode_three_entry_dag_cbor_proof_tests.rs"]
+mod three_entry;
