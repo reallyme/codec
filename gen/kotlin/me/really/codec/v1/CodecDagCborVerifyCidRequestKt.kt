@@ -47,6 +47,10 @@ public object CodecDagCborVerifyCidRequestKt {
     }
 
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `bytes payload = 2 [json_name = "payload"];`
      */
     public var payload: com.google.protobuf.ByteString
@@ -57,6 +61,10 @@ public object CodecDagCborVerifyCidRequestKt {
         _builder.payload = value
       }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `bytes payload = 2 [json_name = "payload"];`
      */
     public fun clearPayload() {

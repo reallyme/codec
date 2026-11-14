@@ -68,6 +68,10 @@ public object CodecMultikeyParseResultKt {
     }
 
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `bytes public_key = 3 [json_name = "publicKey"];`
      */
     public var publicKey: com.google.protobuf.ByteString
@@ -78,6 +82,10 @@ public object CodecMultikeyParseResultKt {
         _builder.publicKey = value
       }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `bytes public_key = 3 [json_name = "publicKey"];`
      */
     public fun clearPublicKey() {
@@ -85,6 +93,11 @@ public object CodecMultikeyParseResultKt {
     }
 
     /**
+     * ```
+     * Legacy length rule: nonzero/false is fixed and must match public_key's
+     * byte length; zero/true is variable. The other combinations are invalid.
+     * ```
+     *
      * `uint32 expected_public_key_length = 4 [json_name = "expectedPublicKeyLength"];`
      */
     public var expectedPublicKeyLength: kotlin.Int
@@ -95,6 +108,11 @@ public object CodecMultikeyParseResultKt {
         _builder.expectedPublicKeyLength = value
       }
     /**
+     * ```
+     * Legacy length rule: nonzero/false is fixed and must match public_key's
+     * byte length; zero/true is variable. The other combinations are invalid.
+     * ```
+     *
      * `uint32 expected_public_key_length = 4 [json_name = "expectedPublicKeyLength"];`
      */
     public fun clearExpectedPublicKeyLength() {

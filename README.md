@@ -34,10 +34,11 @@ cargo add reallyme-codec
 
 The Rust crates require Rust `1.96.0` or newer. Default features enable the
 base-encoding, CBOR/JCS, multiformat, and PEM families. Consumers can enable the
-strict DER reader separately and select only the families they use:
+strict DER reader or the borrowed `tlv` framing surface separately and select
+only the families they use:
 
 ```toml
-reallyme-codec = { version = "0.3.6", default-features = false, features = [
+reallyme-codec = { version = "0.4.0", default-features = false, features = [
   "base64url",
   "multikey",
 ] }
@@ -47,12 +48,20 @@ The generated operation boundary is opt-in for Rust consumers: enable
 `operation-contract` to use `reallyme_codec::operation_contract`. The `serde`
 feature enables the base64url field adapters.
 
+The `tlv` feature reads identifiers, definite lengths, or complete headers
+with BER/ISO 7816 or canonical DER rules. It frames prefix or exact values
+without copying payloads. Callers can opt into source limits up to 16 MiB.
+See the
+[TLV contract](docs/protobuf.md#definite-tlv-framing) for profiles, checked source
+spans, limits, and typed failures. Schema-directed DER remains a separate strict
+reader.
+
 ### Swift
 
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.3.6"
+    from: "0.4.0"
 )
 ```
 
@@ -64,7 +73,7 @@ feature enables the base64url field adapters.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.3.6")
+    implementation("me.really:codec:0.4.0")
 }
 ```
 
@@ -72,7 +81,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.3.6")
+    implementation("me.really:codec-android:0.4.0")
 }
 ```
 

@@ -49,6 +49,10 @@
 //! ```
 
 mod decode;
+#[cfg(feature = "operation-contract")]
+mod decode_contract;
+#[cfg(feature = "operation-contract")]
+pub(crate) use decode_contract::decode_contract;
 mod error;
 mod limits;
 mod read;

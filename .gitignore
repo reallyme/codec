@@ -22,7 +22,11 @@ target/
 *~
 
 # Local environment
-/.claude/
+AGENTS.md
+.agents/
+.claude/
+.codex/
+.local/
 .env
 .env.*
 !.env.example
@@ -95,4 +99,5 @@ externalNativeBuild/
 .cxx/
 **/.cxx/
 
-AGENTS.md
+# Pinned external policy package; never vendor shared enforcement.
+/.release-readiness/

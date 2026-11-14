@@ -129,7 +129,7 @@ export const verifyCheckedOutReleaseVersion = (expected, cwd = root) => {
       swift: read(cwd, "Package.swift"),
       swiftFfi: read(cwd, "packages/swift/Sources/ReallyMeCodec/CallCodecWithRustCAbi.swift"),
       kotlin: read(cwd, "packages/kotlin/build.gradle.kts"),
-      kotlinFfi: read(cwd, "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt"),
+      kotlinFfi: read(cwd, "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodecRustNativeProvider.kt"),
       android: read(cwd, "packages/kotlin-android/build.gradle.kts"),
       npm: read(cwd, "packages/ts/package.json"),
       npmLock: read(cwd, "packages/ts/package-lock.json"),

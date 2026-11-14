@@ -7,9 +7,9 @@ use thiserror::Error;
 
 use crate::generated::proto::reallyme::codec::v1::{
     __buffa::oneof::codec_error::Error as CodecErrorBranchProto, CodecBackendError,
-    CodecBaseEncodingError, CodecBoundaryError, CodecCanonicalizationError, CodecError,
-    CodecErrorOrigin as CodecErrorOriginProto, CodecErrorReason, CodecMultiformatError,
-    CodecPemError,
+    CodecBaseEncodingError, CodecBoundaryError, CodecCanonicalizationError, CodecDerErrorReason,
+    CodecError, CodecErrorOrigin as CodecErrorOriginProto, CodecErrorReason,
+    CodecGeneralCborErrorReason, CodecMultiformatError, CodecPemError, CodecTlvErrorReason,
 };
 
 /// Stable codec wire-error branch.
@@ -47,6 +47,15 @@ pub struct CodecWireError {
     branch: CodecWireErrorBranch,
     reason: CodecErrorReason,
     origin: CodecWireErrorOrigin,
+    detail: ErrorDetail,
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+enum ErrorDetail {
+    None,
+    GeneralCbor(CodecGeneralCborErrorReason),
+    Der(CodecDerErrorReason),
+    Tlv(CodecTlvErrorReason),
 }
 
 /// Error returned when constructing a codec wire error with an invalid reason.
@@ -97,6 +106,7 @@ impl CodecWireError {
             branch,
             reason,
             origin: error_origin(branch, reason),
+            detail: ErrorDetail::None,
         })
     }
 
@@ -107,6 +117,7 @@ impl CodecWireError {
             branch,
             reason,
             origin: error_origin(branch, reason),
+            detail: ErrorDetail::None,
         }
     }
 
@@ -127,6 +138,154 @@ impl CodecWireError {
             CodecErrorReason::CODEC_ERROR_REASON_BACKEND_INTERNAL,
         )
     }
+
+    /// Map a generated general-CBOR reason to its stable category and origin.
+    #[must_use]
+    pub fn from_general_cbor_reason(reason: CodecGeneralCborErrorReason) -> Self {
+        use CodecGeneralCborErrorReason as Detail;
+        let (branch, shared) = match reason {
+            Detail::CODEC_GENERAL_CBOR_ERROR_REASON_UNSPECIFIED => return Self::internal(),
+            Detail::InputLimit
+            | Detail::OutputLimit
+            | Detail::DepthLimit
+            | Detail::NodeLimit
+            | Detail::EntryLimit
+            | Detail::ByteStringLimit
+            | Detail::TextLimit
+            | Detail::WorkLimit
+            | Detail::ContainerExceedsInput => (
+                CodecWireErrorBranch::Boundary,
+                CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED,
+            ),
+            Detail::ArithmeticOverflow | Detail::AllocationFailure => (
+                CodecWireErrorBranch::Backend,
+                CodecErrorReason::CODEC_ERROR_REASON_BACKEND_INTERNAL,
+            ),
+            Detail::InvalidLimit | Detail::UnsupportedPolicy => (
+                CodecWireErrorBranch::Boundary,
+                CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF,
+            ),
+            Detail::NonPreferredArgument => (
+                CodecWireErrorBranch::Canonicalization,
+                CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_NON_CANONICAL_CBOR,
+            ),
+            Detail::NonPreferredFloat => (
+                CodecWireErrorBranch::Canonicalization,
+                CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_NON_CANONICAL_CBOR,
+            ),
+            Detail::DuplicateMapKey => (
+                CodecWireErrorBranch::Canonicalization,
+                CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_DUPLICATE_CBOR_MAP_KEY,
+            ),
+            Detail::MapKeyOrder => (
+                CodecWireErrorBranch::Canonicalization,
+                CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_CBOR_MAP_KEYS_OUT_OF_ORDER,
+            ),
+            Detail::TrailingData => (
+                CodecWireErrorBranch::Canonicalization,
+                CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_CBOR_TRAILING_BYTES,
+            ),
+            Detail::EmptyInput
+            | Detail::Truncated
+            | Detail::ReservedAdditionalInformation
+            | Detail::InvalidIndefiniteArgument
+            | Detail::UnexpectedBreak
+            | Detail::InvalidSimpleValue
+            | Detail::InvalidChunk
+            | Detail::IndefiniteNotAllowed
+            | Detail::FloatNotAllowed
+            | Detail::NonFiniteFloat
+            | Detail::InvalidUtf8
+            | Detail::WrongType
+            | Detail::WrongTag
+            | Detail::EmptyEmbeddedItem
+            | Detail::NonContiguousString => (
+                CodecWireErrorBranch::Canonicalization,
+                CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_INVALID_CBOR,
+            ),
+        };
+        let mut error = Self::known_good(branch, shared);
+        error.detail = ErrorDetail::GeneralCbor(reason);
+        error
+    }
+
+    /// Map a generated DER reason to its stable category and origin.
+    #[must_use]
+    pub fn from_der_reason(reason: CodecDerErrorReason) -> Self {
+        use CodecDerErrorReason as Detail;
+        let (branch, shared) = match reason {
+            Detail::CODEC_DER_ERROR_REASON_UNSPECIFIED => return Self::internal(),
+            Detail::InputTooLarge
+            | Detail::NestingTooDeep
+            | Detail::TooManyElements
+            | Detail::IntegerTooLarge => (
+                CodecWireErrorBranch::Boundary,
+                CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED,
+            ),
+            Detail::ArithmeticOverflow | Detail::AllocationFailure => (
+                CodecWireErrorBranch::Backend,
+                CodecErrorReason::CODEC_ERROR_REASON_BACKEND_INTERNAL,
+            ),
+            Detail::InvalidLimits => (
+                CodecWireErrorBranch::Boundary,
+                CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF,
+            ),
+            Detail::EmptyInput
+            | Detail::TruncatedInput
+            | Detail::IndefiniteLength
+            | Detail::NonCanonicalEncoding
+            | Detail::InvalidInteger
+            | Detail::InvalidTag
+            | Detail::UnexpectedTag
+            | Detail::InvalidLength
+            | Detail::InvalidValue
+            | Detail::TrailingData
+            | Detail::SetOrdering => (
+                CodecWireErrorBranch::Canonicalization,
+                CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_INVALID_DER,
+            ),
+        };
+        let mut error = Self::known_good(branch, shared);
+        error.detail = ErrorDetail::Der(reason);
+        error
+    }
+
+    /// Map every schema-defined TLV reason to its category and explicit origin.
+    #[must_use]
+    pub fn from_tlv_reason(reason: CodecTlvErrorReason) -> Self {
+        use CodecTlvErrorReason as Detail;
+        let (branch, shared) = match reason {
+            Detail::CODEC_TLV_ERROR_REASON_UNSPECIFIED => return Self::internal(),
+            Detail::InputLimit | Detail::IdentifierLimit | Detail::LengthLimit => (
+                CodecWireErrorBranch::Boundary,
+                CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED,
+            ),
+            Detail::InvalidProfile | Detail::InvalidLimits => (
+                CodecWireErrorBranch::Boundary,
+                CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF,
+            ),
+            Detail::ArithmeticOverflow => (
+                CodecWireErrorBranch::Backend,
+                CodecErrorReason::CODEC_ERROR_REASON_BACKEND_INTERNAL,
+            ),
+            Detail::EmptyInput
+            | Detail::TruncatedIdentifier
+            | Detail::TruncatedLength
+            | Detail::TruncatedValue
+            | Detail::UnsupportedIndefiniteLength
+            | Detail::NoncanonicalIdentifier
+            | Detail::NoncanonicalLength
+            | Detail::TrailingData
+            | Detail::InvalidLength
+            | Detail::InvalidIdentifier => (
+                CodecWireErrorBranch::Canonicalization,
+                CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_INVALID_TLV,
+            ),
+        };
+        let mut error = Self::known_good(branch, shared);
+        error.detail = ErrorDetail::Tlv(reason);
+        error
+    }
 }
 
 /// Builds the structured `CodecError` protobuf message for a validated error.
@@ -135,38 +294,20 @@ pub fn codec_error(error: CodecWireError) -> CodecError {
     let reason = EnumValue::from(error.reason());
     let branch = match error.branch() {
         CodecWireErrorBranch::BaseEncoding => {
-            CodecErrorBranchProto::BaseEncoding(Box::new(CodecBaseEncodingError {
-                reason,
-                __buffa_unknown_fields: Default::default(),
-            }))
+            CodecErrorBranchProto::BaseEncoding(Box::new(CodecBaseEncodingError { reason }))
         }
-        CodecWireErrorBranch::Pem => CodecErrorBranchProto::Pem(Box::new(CodecPemError {
-            reason,
-            __buffa_unknown_fields: Default::default(),
-        })),
+        CodecWireErrorBranch::Pem => CodecErrorBranchProto::Pem(Box::new(CodecPemError { reason })),
         CodecWireErrorBranch::Multiformat => {
-            CodecErrorBranchProto::Multiformat(Box::new(CodecMultiformatError {
-                reason,
-                __buffa_unknown_fields: Default::default(),
-            }))
+            CodecErrorBranchProto::Multiformat(Box::new(CodecMultiformatError { reason }))
         }
         CodecWireErrorBranch::Canonicalization => {
-            CodecErrorBranchProto::Canonicalization(Box::new(CodecCanonicalizationError {
-                reason,
-                __buffa_unknown_fields: Default::default(),
-            }))
+            CodecErrorBranchProto::Canonicalization(Box::new(CodecCanonicalizationError { reason }))
         }
         CodecWireErrorBranch::Backend => {
-            CodecErrorBranchProto::Backend(Box::new(CodecBackendError {
-                reason,
-                __buffa_unknown_fields: Default::default(),
-            }))
+            CodecErrorBranchProto::Backend(Box::new(CodecBackendError { reason }))
         }
         CodecWireErrorBranch::Boundary => {
-            CodecErrorBranchProto::Boundary(Box::new(CodecBoundaryError {
-                reason,
-                __buffa_unknown_fields: Default::default(),
-            }))
+            CodecErrorBranchProto::Boundary(Box::new(CodecBoundaryError { reason }))
         }
     };
 
@@ -176,7 +317,57 @@ pub fn codec_error(error: CodecWireError) -> CodecError {
             CodecWireErrorOrigin::Caller => CodecErrorOriginProto::CODEC_ERROR_ORIGIN_CALLER,
             CodecWireErrorOrigin::Provider => CodecErrorOriginProto::CODEC_ERROR_ORIGIN_PROVIDER,
         }),
-        __buffa_unknown_fields: Default::default(),
+    }
+}
+
+/// Builds the expanded error envelope without changing the legacy Rust oneof.
+#[must_use]
+pub fn codec_api_error(
+    error: CodecWireError,
+) -> crate::generated::proto::reallyme::codec::v1::CodecApiError {
+    use crate::generated::proto::reallyme::codec::v1 as proto;
+    use proto::codec_api_error::Error as ApiError;
+    let mut legacy = codec_error(error);
+    let branch = match error.detail {
+        ErrorDetail::GeneralCbor(detail) => {
+            ApiError::GeneralCbor(Box::new(proto::CodecGeneralCborError {
+                reason: error.reason.into(),
+                detail: detail.into(),
+            }))
+        }
+        ErrorDetail::Der(detail) => ApiError::Der(Box::new(proto::CodecDerError {
+            reason: error.reason.into(),
+            detail: detail.into(),
+        })),
+        ErrorDetail::Tlv(detail) => ApiError::Tlv(Box::new(proto::CodecTlvError {
+            reason: error.reason.into(),
+            detail: detail.into(),
+        })),
+        ErrorDetail::None => match legacy.error.as_mut() {
+            Some(CodecErrorBranchProto::BaseEncoding(value)) => {
+                ApiError::BaseEncoding(Box::new(core::mem::take(value.as_mut())))
+            }
+            Some(CodecErrorBranchProto::Pem(value)) => {
+                ApiError::Pem(Box::new(core::mem::take(value.as_mut())))
+            }
+            Some(CodecErrorBranchProto::Multiformat(value)) => {
+                ApiError::Multiformat(Box::new(core::mem::take(value.as_mut())))
+            }
+            Some(CodecErrorBranchProto::Canonicalization(value)) => {
+                ApiError::Canonicalization(Box::new(core::mem::take(value.as_mut())))
+            }
+            Some(CodecErrorBranchProto::Backend(value)) => {
+                ApiError::Backend(Box::new(core::mem::take(value.as_mut())))
+            }
+            Some(CodecErrorBranchProto::Boundary(value)) => {
+                ApiError::Boundary(Box::new(core::mem::take(value.as_mut())))
+            }
+            None => return codec_api_error(CodecWireError::internal()),
+        },
+    };
+    proto::CodecApiError {
+        error: Some(branch),
+        origin: legacy.origin,
     }
 }
 

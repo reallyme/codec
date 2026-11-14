@@ -14,18 +14,18 @@ fn fixed_internal_error_response_matches_generated_wire_format() {
 }
 
 fn result_payload(response_bytes: &[u8]) -> TestOperationPayload {
-    let mut response = decode_protobuf::<CodecOperationResponse>(response_bytes).unwrap();
-    let outcome = response.outcome.take();
+    let response = decode_protobuf::<CodecOperationResponse>(response_bytes).unwrap();
+    let outcome = response.outcome.as_ref();
     assert!(
         matches!(outcome, Some(codec_operation_response::Outcome::Result(_))),
         "expected generated operation result"
     );
-    let Some(codec_operation_response::Outcome::Result(mut result)) = outcome else {
+    let Some(codec_operation_response::Outcome::Result(result)) = outcome else {
         return TestOperationPayload {
             bytes: Zeroizing::new(Vec::new()),
         };
     };
-    let bytes = match result.result.take().unwrap() {
+    let bytes = match result.result.as_ref().unwrap() {
         codec_operation_result::Result::MulticodecPrefixForName(value) => {
             encode_test_protobuf(value.as_ref())
         }
@@ -54,16 +54,16 @@ fn result_payload(response_bytes: &[u8]) -> TestOperationPayload {
 }
 
 fn codec_error_payload(response_bytes: &[u8]) -> CodecWireError {
-    let mut response = decode_protobuf::<CodecOperationResponse>(response_bytes).unwrap();
-    let outcome = response.outcome.take();
+    let response = decode_protobuf::<CodecOperationResponse>(response_bytes).unwrap();
+    let outcome = response.outcome.as_ref();
     assert!(
         matches!(outcome, Some(codec_operation_response::Outcome::Error(_))),
         "expected generated operation error"
     );
-    let Some(codec_operation_response::Outcome::Error(mut error)) = outcome else {
+    let Some(codec_operation_response::Outcome::Error(error)) = outcome else {
         return CodecWireError::malformed_protobuf();
     };
-    let (branch, reason) = match error.error.take().unwrap() {
+    let (branch, reason) = match error.error.as_ref().unwrap() {
         codec_error::Error::BaseEncoding(value) => {
             (CodecWireErrorBranch::BaseEncoding, value.reason)
         }
@@ -102,12 +102,12 @@ fn multikey_parse_request(multikey: &str) -> CodecOperationRequest {
     CodecOperationRequest {
         operation: Some(
             CodecMultikeyParseRequest {
-                multikey: multikey.to_owned(),
-                __buffa_unknown_fields: Default::default(),
+                multikey: multikey.to_owned().into(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     }
 }
 
@@ -115,13 +115,13 @@ fn dag_cbor_verify_cid_request(cid: &str, payload: &[u8]) -> CodecOperationReque
     CodecOperationRequest {
         operation: Some(
             CodecDagCborVerifyCidRequest {
-                cid: cid.to_owned(),
-                payload: payload.to_vec(),
-                __buffa_unknown_fields: Default::default(),
+                cid: cid.to_owned().into(),
+                payload: payload.to_vec().into(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     }
 }
 
@@ -132,16 +132,16 @@ fn pem_decode_request(
     CodecOperationRequest {
         operation: Some(
             CodecPemDecodeRequest {
-                pem: pem.to_vec(),
+                pem: pem.to_vec().into(),
                 options: match options {
                     Some(options) => buffa::MessageField::some(options),
                     None => buffa::MessageField::none(),
                 },
-                __buffa_unknown_fields: Default::default(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     }
 }
 
@@ -154,12 +154,12 @@ fn deterministic_cbor_map_fixture() -> CodecDeterministicCborValue {
                         key: buffa::MessageField::some(CodecDeterministicCborMapKey {
                             key: Some(
                                 CodecDeterministicCborText {
-                                    value: "a".to_owned(),
-                                    __buffa_unknown_fields: Default::default(),
+                                    value: "a".to_owned().into(),
+
                                 }
                                 .into(),
                             ),
-                            __buffa_unknown_fields: Default::default(),
+
                         }),
                         value: buffa::MessageField::some(CodecDeterministicCborValue {
                             value: Some(
@@ -167,17 +167,17 @@ fn deterministic_cbor_map_fixture() -> CodecDeterministicCborValue {
                                     value: Some(
                                         CodecDeterministicCborUnsignedInteger {
                                             value: 1,
-                                            __buffa_unknown_fields: Default::default(),
+
                                         }
                                         .into(),
                                     ),
-                                    __buffa_unknown_fields: Default::default(),
+
                                 }
                                 .into(),
                             ),
-                            __buffa_unknown_fields: Default::default(),
+
                         }),
-                        __buffa_unknown_fields: Default::default(),
+
                     },
                     CodecDeterministicCborMapEntry {
                         key: buffa::MessageField::some(CodecDeterministicCborMapKey {
@@ -186,26 +186,26 @@ fn deterministic_cbor_map_fixture() -> CodecDeterministicCborValue {
                                     value: Some(
                                         CodecDeterministicCborUnsignedInteger {
                                             value: 24,
-                                            __buffa_unknown_fields: Default::default(),
+
                                         }
                                         .into(),
                                     ),
-                                    __buffa_unknown_fields: Default::default(),
+
                                 }
                                 .into(),
                             ),
-                            __buffa_unknown_fields: Default::default(),
+
                         }),
                         value: buffa::MessageField::some(CodecDeterministicCborValue {
                             value: Some(
                                 CodecDeterministicCborNull {
-                                    __buffa_unknown_fields: Default::default(),
+
                                 }
                                 .into(),
                             ),
-                            __buffa_unknown_fields: Default::default(),
+
                         }),
-                        __buffa_unknown_fields: Default::default(),
+
                     },
                     CodecDeterministicCborMapEntry {
                         key: buffa::MessageField::some(CodecDeterministicCborMapKey {
@@ -214,34 +214,34 @@ fn deterministic_cbor_map_fixture() -> CodecDeterministicCborValue {
                                     value: Some(
                                         CodecDeterministicCborUnsignedInteger {
                                             value: 0,
-                                            __buffa_unknown_fields: Default::default(),
+
                                         }
                                         .into(),
                                     ),
-                                    __buffa_unknown_fields: Default::default(),
+
                                 }
                                 .into(),
                             ),
-                            __buffa_unknown_fields: Default::default(),
+
                         }),
                         value: buffa::MessageField::some(CodecDeterministicCborValue {
                             value: Some(
                                 CodecDeterministicCborText {
-                                    value: "zero".to_owned(),
-                                    __buffa_unknown_fields: Default::default(),
+                                    value: "zero".to_owned().into(),
+
                                 }
                                 .into(),
                             ),
-                            __buffa_unknown_fields: Default::default(),
+
                         }),
-                        __buffa_unknown_fields: Default::default(),
+
                     },
-                ],
-                __buffa_unknown_fields: Default::default(),
+                ].into(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     }
 }
 
@@ -254,12 +254,12 @@ fn dag_cbor_proto_fixture() -> CodecDeterministicCborValue {
                         key: buffa::MessageField::some(CodecDeterministicCborMapKey {
                             key: Some(
                                 CodecDeterministicCborText {
-                                    value: "z".to_owned(),
-                                    __buffa_unknown_fields: Default::default(),
+                                    value: "z".to_owned().into(),
+
                                 }
                                 .into(),
                             ),
-                            __buffa_unknown_fields: Default::default(),
+
                         }),
                         value: buffa::MessageField::some(CodecDeterministicCborValue {
                             value: Some(
@@ -267,47 +267,47 @@ fn dag_cbor_proto_fixture() -> CodecDeterministicCborValue {
                                     value: Some(
                                         CodecDeterministicCborNegativeInteger {
                                             value: -1,
-                                            __buffa_unknown_fields: Default::default(),
+
                                         }
                                         .into(),
                                     ),
-                                    __buffa_unknown_fields: Default::default(),
+
                                 }
                                 .into(),
                             ),
-                            __buffa_unknown_fields: Default::default(),
+
                         }),
-                        __buffa_unknown_fields: Default::default(),
+
                     },
                     CodecDeterministicCborMapEntry {
                         key: buffa::MessageField::some(CodecDeterministicCborMapKey {
                             key: Some(
                                 CodecDeterministicCborText {
-                                    value: "a".to_owned(),
-                                    __buffa_unknown_fields: Default::default(),
+                                    value: "a".to_owned().into(),
+
                                 }
                                 .into(),
                             ),
-                            __buffa_unknown_fields: Default::default(),
+
                         }),
                         value: buffa::MessageField::some(CodecDeterministicCborValue {
                             value: Some(
                                 CodecDeterministicCborBytes {
-                                    value: vec![1, 2, 3],
-                                    __buffa_unknown_fields: Default::default(),
+                                    value: vec![1, 2, 3].into(),
+
                                 }
                                 .into(),
                             ),
-                            __buffa_unknown_fields: Default::default(),
+
                         }),
-                        __buffa_unknown_fields: Default::default(),
+
                     },
-                ],
-                __buffa_unknown_fields: Default::default(),
+                ].into(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     }
 }
 
@@ -315,11 +315,11 @@ fn deterministic_cbor_nested_map_fixture(depth: usize) -> CodecDeterministicCbor
     let mut value = CodecDeterministicCborValue {
         value: Some(
             CodecDeterministicCborNull {
-                __buffa_unknown_fields: Default::default(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
     for _ in 0..depth {
         value = CodecDeterministicCborValue {
@@ -332,25 +332,41 @@ fn deterministic_cbor_nested_map_fixture(depth: usize) -> CodecDeterministicCbor
                                     value: Some(
                                         CodecDeterministicCborUnsignedInteger {
                                             value: 1,
-                                            __buffa_unknown_fields: Default::default(),
+
                                         }
                                         .into(),
                                     ),
-                                    __buffa_unknown_fields: Default::default(),
+
                                 }
                                 .into(),
                             ),
-                            __buffa_unknown_fields: Default::default(),
+
                         }),
                         value: buffa::MessageField::some(value),
-                        __buffa_unknown_fields: Default::default(),
-                    }],
-                    __buffa_unknown_fields: Default::default(),
+
+                    }].into(),
+
                 }
                 .into(),
             ),
-            __buffa_unknown_fields: Default::default(),
+
         };
     }
     value
+}
+
+// Unknown storage is disabled in native cleanup messages. Inject the original
+// offending wire bytes so admission is tested before anything can be discarded.
+fn with_unknown_wire_field<M: buffa::Message>(message: &M) -> Vec<u8> {
+    let mut bytes = message.encode_to_vec();
+    bytes.extend([0x98, 0x06, 0x07]); // field 99, varint 7
+    bytes
+}
+
+fn length_delimited_wire(field: u32, payload: &[u8]) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    buffa::encoding::encode_varint(u64::from(field).checked_mul(8).unwrap() | 2, &mut bytes);
+    buffa::encoding::encode_varint(u64::try_from(payload.len()).unwrap(), &mut bytes);
+    bytes.extend_from_slice(payload);
+    bytes
 }

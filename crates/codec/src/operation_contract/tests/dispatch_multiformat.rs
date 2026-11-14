@@ -23,12 +23,12 @@ fn binary_and_proto_json_dispatch_match() {
             CodecOperationRequest {
                 operation: Some(
                     CodecMulticodecPrefixForNameRequest {
-                        name: "ed25519-pub".to_owned(),
-                        __buffa_unknown_fields: Default::default(),
+                        name: "ed25519-pub".to_owned().into(),
+
                     }
                     .into(),
                 ),
-                __buffa_unknown_fields: Default::default(),
+
             },
             true,
         ),
@@ -36,12 +36,12 @@ fn binary_and_proto_json_dispatch_match() {
             CodecOperationRequest {
                 operation: Some(
                     CodecMulticodecLookupPrefixRequest {
-                        value: vec![0xed, 0x01, 0xaa],
-                        __buffa_unknown_fields: Default::default(),
+                        value: vec![0xed, 0x01, 0xaa].into(),
+
                     }
                     .into(),
                 ),
-                __buffa_unknown_fields: Default::default(),
+
             },
             true,
         ),
@@ -49,12 +49,12 @@ fn binary_and_proto_json_dispatch_match() {
             CodecOperationRequest {
                 operation: Some(
                     CodecMulticodecPrefixForNameRequest {
-                        name: "not-a-codec".to_owned(),
-                        __buffa_unknown_fields: Default::default(),
+                        name: "not-a-codec".to_owned().into(),
+
                     }
                     .into(),
                 ),
-                __buffa_unknown_fields: Default::default(),
+
             },
             false,
         ),
@@ -62,12 +62,12 @@ fn binary_and_proto_json_dispatch_match() {
             CodecOperationRequest {
                 operation: Some(
                     CodecMulticodecLookupPrefixRequest {
-                        value: vec![0, 0, 7],
-                        __buffa_unknown_fields: Default::default(),
+                        value: vec![0, 0, 7].into(),
+
                     }
                     .into(),
                 ),
-                __buffa_unknown_fields: Default::default(),
+
             },
             false,
         ),
@@ -95,12 +95,12 @@ fn discriminated_response_selects_the_exact_generated_result_variant() {
     let request = CodecOperationRequest {
         operation: Some(
             CodecMulticodecPrefixForNameRequest {
-                name: "ed25519-pub".to_owned(),
-                __buffa_unknown_fields: Default::default(),
+                name: "ed25519-pub".to_owned().into(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
 
     let encoded = process_operation_response(&request.encode_to_vec());
@@ -127,12 +127,12 @@ fn discriminated_response_preserves_typed_error_attribution() {
     let request = CodecOperationRequest {
         operation: Some(
             CodecMulticodecPrefixForNameRequest {
-                name: "not-a-codec".to_owned(),
-                __buffa_unknown_fields: Default::default(),
+                name: "not-a-codec".to_owned().into(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
 
     let encoded = process_operation_response(&request.encode_to_vec());
@@ -157,12 +157,12 @@ fn multicodec_prefix_for_name_dispatch_uses_semantic_result() {
     let request = CodecOperationRequest {
         operation: Some(
             CodecMulticodecPrefixForNameRequest {
-                name: "ed25519-pub".to_owned(),
-                __buffa_unknown_fields: Default::default(),
+                name: "ed25519-pub".to_owned().into(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
 
     let result = result_payload(&process_operation_response(&request.encode_to_vec()));
@@ -180,12 +180,12 @@ fn multicodec_lookup_prefix_dispatch_uses_semantic_result() {
     let request = CodecOperationRequest {
         operation: Some(
             CodecMulticodecLookupPrefixRequest {
-                value: vec![0xed, 0x01, 0xaa],
-                __buffa_unknown_fields: Default::default(),
+                value: vec![0xed, 0x01, 0xaa].into(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
 
     let result = result_payload(&process_operation_response(&request.encode_to_vec()));
@@ -254,12 +254,12 @@ fn multicodec_dispatch_preserves_semantic_errors() {
     let unknown_name = CodecOperationRequest {
         operation: Some(
             CodecMulticodecPrefixForNameRequest {
-                name: "not-a-codec".to_owned(),
-                __buffa_unknown_fields: Default::default(),
+                name: "not-a-codec".to_owned().into(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
     let unknown_error =
         codec_error_payload(&process_operation_response(&unknown_name.encode_to_vec()));
@@ -272,12 +272,12 @@ fn multicodec_dispatch_preserves_semantic_errors() {
     let invalid_prefix = CodecOperationRequest {
         operation: Some(
             CodecMulticodecLookupPrefixRequest {
-                value: vec![0, 0, 7],
-                __buffa_unknown_fields: Default::default(),
+                value: vec![0, 0, 7].into(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
     let prefix_error =
         codec_error_payload(&process_operation_response(&invalid_prefix.encode_to_vec()));
@@ -306,54 +306,18 @@ fn multicodec_registry_invariant_is_a_provider_failure() {
 
 #[test]
 fn multicodec_requests_reject_nested_unknown_fields() {
-    let mut prefix_for_name = CodecMulticodecPrefixForNameRequest {
-        name: "ed25519-pub".to_owned(),
-        __buffa_unknown_fields: Default::default(),
-    };
-    prefix_for_name.__buffa_unknown_fields.push(UnknownField {
-        number: 99,
-        data: UnknownFieldData::Varint(7),
-    });
-
-    let mut lookup_prefix = CodecMulticodecLookupPrefixRequest {
-        value: vec![0xed, 0x01],
-        __buffa_unknown_fields: Default::default(),
-    };
-    lookup_prefix.__buffa_unknown_fields.push(UnknownField {
-        number: 99,
-        data: UnknownFieldData::Varint(7),
-    });
-
-    let mut table = CodecMulticodecTableRequest {
-        __buffa_unknown_fields: Default::default(),
-    };
-    table.__buffa_unknown_fields.push(UnknownField {
-        number: 99,
-        data: UnknownFieldData::Varint(7),
-    });
-
+    let prefix_for_name = CodecMulticodecPrefixForNameRequest { name: "ed25519-pub".into() };
+    let lookup_prefix = CodecMulticodecLookupPrefixRequest { value: vec![0xed, 0x01].into() };
+    let table = CodecMulticodecTableRequest::default();
     let requests = [
-        CodecOperationRequest {
-            operation: Some(prefix_for_name.into()),
-            __buffa_unknown_fields: Default::default(),
-        },
-        CodecOperationRequest {
-            operation: Some(lookup_prefix.into()),
-            __buffa_unknown_fields: Default::default(),
-        },
-        CodecOperationRequest {
-            operation: Some(CodecOperation::MulticodecTable(Box::new(table))),
-            __buffa_unknown_fields: Default::default(),
-        },
+        length_delimited_wire(1000, &with_unknown_wire_field(&prefix_for_name)),
+        length_delimited_wire(1001, &with_unknown_wire_field(&lookup_prefix)),
+        length_delimited_wire(1002, &with_unknown_wire_field(&table)),
     ];
-
     for request in requests {
-        let error = codec_error_payload(&process_operation_response(&request.encode_to_vec()));
+        let error = codec_error_payload(&process_operation_response(&request));
         assert_eq!(error.branch(), CodecWireErrorBranch::Boundary);
-        assert_eq!(
-            error.reason(),
-            CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF
-        );
+        assert_eq!(error.reason(), CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF);
     }
 }
 

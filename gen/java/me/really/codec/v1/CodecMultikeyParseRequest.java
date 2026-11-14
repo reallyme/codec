@@ -38,6 +38,10 @@ public  final class CodecMultikeyParseRequest extends
   public static final int MULTIKEY_FIELD_NUMBER = 1;
   private java.lang.String multikey_;
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>string multikey = 1 [json_name = "multikey"];</code>
    * @return The multikey.
    */
@@ -46,6 +50,10 @@ public  final class CodecMultikeyParseRequest extends
     return multikey_;
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>string multikey = 1 [json_name = "multikey"];</code>
    * @return The bytes for multikey.
    */
@@ -55,6 +63,10 @@ public  final class CodecMultikeyParseRequest extends
     return com.google.protobuf.ByteString.copyFromUtf8(multikey_);
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>string multikey = 1 [json_name = "multikey"];</code>
    * @param value The multikey to set.
    */
@@ -65,6 +77,10 @@ public  final class CodecMultikeyParseRequest extends
     multikey_ = value;
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>string multikey = 1 [json_name = "multikey"];</code>
    */
   private void clearMultikey() {
@@ -72,6 +88,10 @@ public  final class CodecMultikeyParseRequest extends
     multikey_ = getDefaultInstance().getMultikey();
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>string multikey = 1 [json_name = "multikey"];</code>
    * @param value The bytes for multikey to set.
    */
@@ -180,6 +200,10 @@ public  final class CodecMultikeyParseRequest extends
 
 
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>string multikey = 1 [json_name = "multikey"];</code>
      * @return The multikey.
      */
@@ -188,6 +212,10 @@ public  final class CodecMultikeyParseRequest extends
       return instance.getMultikey();
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>string multikey = 1 [json_name = "multikey"];</code>
      * @return The bytes for multikey.
      */
@@ -197,6 +225,10 @@ public  final class CodecMultikeyParseRequest extends
       return instance.getMultikeyBytes();
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>string multikey = 1 [json_name = "multikey"];</code>
      * @param value The multikey to set.
      * @return This builder for chaining.
@@ -208,6 +240,10 @@ public  final class CodecMultikeyParseRequest extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>string multikey = 1 [json_name = "multikey"];</code>
      * @return This builder for chaining.
      */
@@ -217,6 +253,10 @@ public  final class CodecMultikeyParseRequest extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>string multikey = 1 [json_name = "multikey"];</code>
      * @param value The bytes for multikey to set.
      * @return This builder for chaining.

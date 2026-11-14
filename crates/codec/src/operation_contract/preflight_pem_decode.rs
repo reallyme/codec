@@ -2,16 +2,12 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-// The schema currently has three PemLabel values. More entries cannot add a
-// capability, but a packed field can allocate millions of generated enum
-// wrappers before the semantic request is examined.
-const MAX_PEM_ALLOWED_LABELS: usize = 3;
-const PEM_DECODE_OPERATION_FIELD: u64 = 4000;
-const PEM_DECODE_OPTIONS_FIELD: u64 = 2;
-const PEM_ALLOWED_LABELS_FIELD: u64 = 1;
-const OPERATION_FIELD_NUMBERS: [u64; 11] = [
-    1000, 1001, 1002, 2000, 3000, 3001, 3002, 4000, 4001, 5000, 5001,
-];
+// Derive operation and field tags from protobuf so newly generated operations
+// inherit the same pre-allocation duplicate and policy-size guards.
+use codec_proto::generated::wire_policy::{
+    MAX_PEM_ALLOWED_LABELS, OPERATION_FIELD_NUMBERS, PEM_ALLOWED_LABELS_FIELD,
+    PEM_DECODE_OPERATION_FIELD, PEM_DECODE_OPTIONS_FIELD,
+};
 const WIRE_VARINT: u64 = 0;
 const WIRE_LENGTH_DELIMITED: u64 = 2;
 
@@ -131,7 +127,7 @@ fn preflight_binary_request(bytes: &[u8]) -> Result<(), CodecWireError> {
     let mut seen_operation = false;
     while offset < bytes.len() {
         let operation = read_wire_field(bytes, &mut offset)?;
-        if !OPERATION_FIELD_NUMBERS.contains(&operation.number) {
+        if OPERATION_FIELD_NUMBERS.binary_search(&operation.number).is_err() {
             continue;
         }
         if seen_operation || operation.wire_type != WIRE_LENGTH_DELIMITED {

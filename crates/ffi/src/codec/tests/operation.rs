@@ -123,11 +123,9 @@ fn operation_error_is_carried_in_the_discriminated_response() {
     let request = CodecOperationRequest {
         operation: Some(CodecOperation::MultikeyParse(Box::new(
             CodecMultikeyParseRequest {
-                multikey: "not-a-key".to_owned(),
-                __buffa_unknown_fields: Default::default(),
+                multikey: "not-a-key".to_owned().into(),
             },
         ))),
-        __buffa_unknown_fields: Default::default(),
     };
     let input = encode_protobuf(&request).unwrap();
     let mut produced_len = 0_usize;
@@ -176,12 +174,10 @@ fn operation_ffi_returns_a_fully_discriminated_generated_response() {
     let request = CodecOperationRequest {
         operation: Some(
             CodecMulticodecPrefixForNameRequest {
-                name: "ed25519-pub".to_owned(),
-                __buffa_unknown_fields: Default::default(),
+                name: "ed25519-pub".to_owned().into(),
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
     };
     let input = encode_protobuf(&request).unwrap();
     let mut produced_len = 0_usize;

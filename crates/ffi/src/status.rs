@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use codec_proto::generated::proto::reallyme::codec::v1::CodecErrorReason;
+use codec_proto::generated::proto::reallyme::codec::v1::{CodecErrorReason, CodecLegacyAbiStatus};
 
 /// Signed 32-bit status code returned by every C ABI entry point
 /// (`rm_codec_status_t` at the boundary); `0` is success and negatives are
@@ -10,13 +10,16 @@ use codec_proto::generated::proto::reallyme::codec::v1::CodecErrorReason;
 pub type CodecStatus = i32;
 
 /// Operation succeeded (`0`).
-pub const CODEC_OK: CodecStatus = 0;
+pub const CODEC_OK: CodecStatus = CodecLegacyAbiStatus::CODEC_LEGACY_ABI_STATUS_UNSPECIFIED as i32;
 /// A pointer/length argument was invalid, null where required, or malformed (`-1`).
-pub const CODEC_INVALID_ARGUMENT: CodecStatus = -1;
+pub const CODEC_INVALID_ARGUMENT: CodecStatus =
+    CodecLegacyAbiStatus::CODEC_LEGACY_ABI_STATUS_INVALID_ARGUMENT as i32;
 /// The caller-provided output buffer was too small for the result (`-5`).
-pub const CODEC_BUFFER_TOO_SMALL: CodecStatus = -5;
+pub const CODEC_BUFFER_TOO_SMALL: CodecStatus =
+    CodecLegacyAbiStatus::CODEC_LEGACY_ABI_STATUS_BUFFER_TOO_SMALL as i32;
 /// An unexpected internal failure, including a caught panic (`-128`).
-pub const CODEC_INTERNAL_ERROR: CodecStatus = -128;
+pub const CODEC_INTERNAL_ERROR: CodecStatus =
+    CodecLegacyAbiStatus::CODEC_LEGACY_ABI_STATUS_INTERNAL_ERROR as i32;
 
 /// Canonical lowercase hex was violated; sourced from the wire reason enum.
 pub const CODEC_NON_CANONICAL_HEX: CodecStatus =

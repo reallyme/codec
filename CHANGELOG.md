@@ -1,6 +1,18 @@
 # Changelog
 
-## 0.3.6 (unreleased)
+## 0.4.0 (unreleased)
+
+- Use ReallyMe Buffa 0.1.1 generated types. Sensitive fields clear on drop;
+  use `.into()` for owned byte/string fields and borrowing or `mem::take`
+  when moving fields from a message with `Drop`.
+- Add TLV identifier, length, header, prefix, and exact framing operations
+  with bounded source spans. Read identifiers and declared lengths without a
+  value, and opt into source limits up to 16 MiB. Definite BER and strict
+  DER framing remain separate from schema-directed DER decoding.
+- Align the TypeScript WASM initializer declarations with the integrity check:
+  both reject precompiled `WebAssembly.Module` values.
+
+### Changes since 0.3.4
 
 - Fix Swift binary headers and module maps for linked consumers.
 - Clear temporary TypeScript serialization copies of CBOR and key data.

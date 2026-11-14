@@ -30,6 +30,10 @@ public object CodecDeterministicCborMapEntryKt {
     internal fun _build(): me.really.codec.v1.CodecDeterministicCborMapEntry = _builder.build()
 
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `.reallyme.codec.v1.CodecDeterministicCborMapKey key = 1 [json_name = "key"];`
      */
     public var key: me.really.codec.v1.CodecDeterministicCborMapKey
@@ -40,12 +44,20 @@ public object CodecDeterministicCborMapEntryKt {
         _builder.key = value
       }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `.reallyme.codec.v1.CodecDeterministicCborMapKey key = 1 [json_name = "key"];`
      */
     public fun clearKey() {
       _builder.clearKey()
     }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `.reallyme.codec.v1.CodecDeterministicCborMapKey key = 1 [json_name = "key"];`
      * @return Whether the key field is set.
      */
@@ -57,6 +69,10 @@ public object CodecDeterministicCborMapEntryKt {
       get() = _builder.keyOrNull
 
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `.reallyme.codec.v1.CodecDeterministicCborValue value = 2 [json_name = "value"];`
      */
     public var value: me.really.codec.v1.CodecDeterministicCborValue
@@ -67,12 +83,20 @@ public object CodecDeterministicCborMapEntryKt {
         _builder.value = value
       }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `.reallyme.codec.v1.CodecDeterministicCborValue value = 2 [json_name = "value"];`
      */
     public fun clearValue() {
       _builder.clearValue()
     }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `.reallyme.codec.v1.CodecDeterministicCborValue value = 2 [json_name = "value"];`
      * @return Whether the value field is set.
      */

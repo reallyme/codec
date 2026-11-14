@@ -95,6 +95,7 @@ public  final class CodecPemDecodeResult extends
    * decode results are responsible for copying it into their language's
    * sensitive-buffer owner and wiping intermediate protobuf containers as soon
    * as practical.
+   * SENSITIVE: payload ownership requires redaction and zeroization.
    * </pre>
    *
    * <code>bytes der = 2 [json_name = "der"];</code>
@@ -110,6 +111,7 @@ public  final class CodecPemDecodeResult extends
    * decode results are responsible for copying it into their language's
    * sensitive-buffer owner and wiping intermediate protobuf containers as soon
    * as practical.
+   * SENSITIVE: payload ownership requires redaction and zeroization.
    * </pre>
    *
    * <code>bytes der = 2 [json_name = "der"];</code>
@@ -126,6 +128,7 @@ public  final class CodecPemDecodeResult extends
    * decode results are responsible for copying it into their language's
    * sensitive-buffer owner and wiping intermediate protobuf containers as soon
    * as practical.
+   * SENSITIVE: payload ownership requires redaction and zeroization.
    * </pre>
    *
    * <code>bytes der = 2 [json_name = "der"];</code>
@@ -291,6 +294,7 @@ public  final class CodecPemDecodeResult extends
      * decode results are responsible for copying it into their language's
      * sensitive-buffer owner and wiping intermediate protobuf containers as soon
      * as practical.
+     * SENSITIVE: payload ownership requires redaction and zeroization.
      * </pre>
      *
      * <code>bytes der = 2 [json_name = "der"];</code>
@@ -306,6 +310,7 @@ public  final class CodecPemDecodeResult extends
      * decode results are responsible for copying it into their language's
      * sensitive-buffer owner and wiping intermediate protobuf containers as soon
      * as practical.
+     * SENSITIVE: payload ownership requires redaction and zeroization.
      * </pre>
      *
      * <code>bytes der = 2 [json_name = "der"];</code>
@@ -323,6 +328,7 @@ public  final class CodecPemDecodeResult extends
      * decode results are responsible for copying it into their language's
      * sensitive-buffer owner and wiping intermediate protobuf containers as soon
      * as practical.
+     * SENSITIVE: payload ownership requires redaction and zeroization.
      * </pre>
      *
      * <code>bytes der = 2 [json_name = "der"];</code>

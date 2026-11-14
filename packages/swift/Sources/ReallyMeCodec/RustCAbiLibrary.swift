@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 #if canImport(CryptoKit)
-import CryptoKit
+    import CryptoKit
 #endif
 #if canImport(Darwin)
-import Darwin
+    import Darwin
 #endif
 import Foundation
 
@@ -26,31 +26,45 @@ public final class ReallyMeCodecRustCAbiLibrary: @unchecked Sendable {
     /// Store the library where only its owner can write it; this check does
     /// not close the window between hashing and loading if another process
     /// can rewrite the file.
-    public convenience init(path: String, expectedSHA256: [UInt8]) throws {
+    public convenience init(path: String, expectedSHA256: [UInt8]) throws(ReallyMeCodecError) {
+        var request = ReallyMeProtoCodecVerifiedLibraryRequest()
+        request.absolutePath = path
+        request.expectedSha256 = Data(expectedSHA256)
+        try self.init(verificationRequest: request)
+    }
+
+    private convenience init(verificationRequest request: ReallyMeProtoCodecVerifiedLibraryRequest)
+        throws(ReallyMeCodecError)
+    {
+        let path = request.absolutePath
+        let expectedSHA256 = Array(request.expectedSha256)
         #if canImport(CryptoKit) && canImport(Darwin)
-        guard expectedSHA256.count == SHA256.byteCount,
-              (path as NSString).isAbsolutePath else {
-            throw ReallyMeCodecError.dynamicLibraryNotFound
-        }
-        let resolvedPath = URL(fileURLWithPath: path).resolvingSymlinksInPath().path
-        guard let hashedIdentity = LoadedFileIdentity(path: resolvedPath),
-              let attributes = try? FileManager.default.attributesOfItem(atPath: resolvedPath),
-              let size = attributes[.size] as? Int,
-              size > 0,
-              size <= Self.maximumVerifiedLibraryBytes,
-              let contents = FileManager.default.contents(atPath: resolvedPath),
-              contents.count == size else {
-            throw ReallyMeCodecError.dynamicLibraryNotFound
-        }
-        guard Array(SHA256.hash(data: contents)) == expectedSHA256,
-              LoadedFileIdentity(path: resolvedPath) == hashedIdentity else {
-            throw ReallyMeCodecError.dynamicLibraryLoadFailed
-        }
-        try self.init(resolvedPath: resolvedPath, requiredIdentity: hashedIdentity)
+            guard expectedSHA256.count == SHA256.byteCount,
+                (path as NSString).isAbsolutePath
+            else {
+                throw ReallyMeCodecError.dynamicLibraryNotFound
+            }
+            let resolvedPath = URL(fileURLWithPath: path).resolvingSymlinksInPath().path
+            guard let hashedIdentity = LoadedFileIdentity(path: resolvedPath),
+                let attributes = try? FileManager.default.attributesOfItem(atPath: resolvedPath),
+                let size = attributes[.size] as? Int,
+                size > 0,
+                size <= Self.maximumVerifiedLibraryBytes,
+                let contents = FileManager.default.contents(atPath: resolvedPath),
+                contents.count == size
+            else {
+                throw ReallyMeCodecError.dynamicLibraryNotFound
+            }
+            guard Array(SHA256.hash(data: contents)) == expectedSHA256,
+                LoadedFileIdentity(path: resolvedPath) == hashedIdentity
+            else {
+                throw ReallyMeCodecError.dynamicLibraryLoadFailed
+            }
+            try self.init(resolvedPath: resolvedPath, requiredIdentity: hashedIdentity)
         #else
-        _ = path
-        _ = expectedSHA256
-        throw ReallyMeCodecError.unsupportedPlatform
+            _ = path
+            _ = expectedSHA256
+            throw ReallyMeCodecError.unsupportedPlatform
         #endif
     }
 
@@ -62,108 +76,117 @@ public final class ReallyMeCodecRustCAbiLibrary: @unchecked Sendable {
     ///
     /// Loading fails when the dynamic loader maps a file other than the one
     /// at `path`.
-    public convenience init(path: String) throws {
+    public convenience init(path: String) throws(ReallyMeCodecError) {
+        var request = ReallyMeProtoCodecLibraryLoadRequest()
+        request.absolutePath = path
+        try self.init(loadRequest: request)
+    }
+
+    private convenience init(loadRequest request: ReallyMeProtoCodecLibraryLoadRequest) throws(ReallyMeCodecError) {
+        let path = request.absolutePath
         #if canImport(Darwin)
-        guard (path as NSString).isAbsolutePath else {
-            throw ReallyMeCodecError.dynamicLibraryNotFound
-        }
-        let resolvedPath = URL(fileURLWithPath: path).resolvingSymlinksInPath().path
-        guard let identity = LoadedFileIdentity(path: resolvedPath) else {
-            throw ReallyMeCodecError.dynamicLibraryNotFound
-        }
-        try self.init(resolvedPath: resolvedPath, requiredIdentity: identity)
+            guard (path as NSString).isAbsolutePath else {
+                throw ReallyMeCodecError.dynamicLibraryNotFound
+            }
+            let resolvedPath = URL(fileURLWithPath: path).resolvingSymlinksInPath().path
+            guard let identity = LoadedFileIdentity(path: resolvedPath) else {
+                throw ReallyMeCodecError.dynamicLibraryNotFound
+            }
+            try self.init(resolvedPath: resolvedPath, requiredIdentity: identity)
         #else
-        _ = path
-        throw ReallyMeCodecError.unsupportedPlatform
+            _ = path
+            throw ReallyMeCodecError.unsupportedPlatform
         #endif
     }
 
     /// Symbol used to locate the image that `dlopen` actually mapped.
     private static let identitySymbol = "rm_codec_abi_version"
 
-    private init(resolvedPath: String, requiredIdentity: LoadedFileIdentity) throws {
+    private init(resolvedPath: String, requiredIdentity: LoadedFileIdentity) throws(ReallyMeCodecError) {
         #if canImport(Darwin)
-        // dyld consults these variables before the absolute path, so a
-        // matching candidate would be mapped, and its initializers run,
-        // instead of the requested file.
-        guard !Self.dyldOverrideCandidates(for: resolvedPath).contains(where: { candidate in
-            guard let candidateIdentity = LoadedFileIdentity(path: candidate) else {
-                return false
+            // dyld consults these variables before the absolute path, so a
+            // matching candidate would be mapped, and its initializers run,
+            // instead of the requested file.
+            guard
+                !Self.dyldOverrideCandidates(for: resolvedPath).contains(where: { candidate in
+                    guard let candidateIdentity = LoadedFileIdentity(path: candidate) else {
+                        return false
+                    }
+                    return candidateIdentity != requiredIdentity
+                })
+            else {
+                throw ReallyMeCodecError.dynamicLibraryLoadFailed
             }
-            return candidateIdentity != requiredIdentity
-        }) else {
-            throw ReallyMeCodecError.dynamicLibraryLoadFailed
-        }
-        guard let loadedHandle = dlopen(resolvedPath, RTLD_NOW | RTLD_LOCAL) else {
-            throw ReallyMeCodecError.dynamicLibraryLoadFailed
-        }
-        guard Self.loadedImageIdentity(handle: loadedHandle) == requiredIdentity else {
-            dlclose(loadedHandle)
-            throw ReallyMeCodecError.dynamicLibraryLoadFailed
-        }
-        handle = loadedHandle
+            guard let loadedHandle = dlopen(resolvedPath, RTLD_NOW | RTLD_LOCAL) else {
+                throw ReallyMeCodecError.dynamicLibraryLoadFailed
+            }
+            guard Self.loadedImageIdentity(handle: loadedHandle) == requiredIdentity else {
+                dlclose(loadedHandle)
+                throw ReallyMeCodecError.dynamicLibraryLoadFailed
+            }
+            handle = loadedHandle
         #else
-        _ = resolvedPath
-        _ = requiredIdentity
-        throw ReallyMeCodecError.unsupportedPlatform
+            _ = resolvedPath
+            _ = requiredIdentity
+            throw ReallyMeCodecError.unsupportedPlatform
         #endif
     }
 
     #if canImport(Darwin)
-    private static func loadedImageIdentity(handle: UnsafeMutableRawPointer) -> LoadedFileIdentity? {
-        guard let symbol = dlsym(handle, identitySymbol) else {
-            return nil
-        }
-        var info = Dl_info()
-        guard dladdr(symbol, &info) != 0, let imagePath = info.dli_fname else {
-            return nil
-        }
-        return LoadedFileIdentity(path: String(cString: imagePath))
-    }
-
-    private static func dyldOverrideCandidates(for resolvedPath: String) -> [String] {
-        let environment = ProcessInfo.processInfo.environment
-        let url = URL(fileURLWithPath: resolvedPath)
-        let leafName = url.lastPathComponent
-        var leafNames = [leafName]
-        if let suffix = environment["DYLD_IMAGE_SUFFIX"], !suffix.isEmpty {
-            leafNames.append(leafName + suffix)
-            let stem = url.deletingPathExtension().lastPathComponent
-            if !url.pathExtension.isEmpty {
-                leafNames.append(stem + suffix + "." + url.pathExtension)
+        private static func loadedImageIdentity(handle: UnsafeMutableRawPointer) -> LoadedFileIdentity? {
+            guard let symbol = dlsym(handle, identitySymbol) else {
+                return nil
             }
+            var info = Dl_info()
+            guard dladdr(symbol, &info) != 0, let imagePath = info.dli_fname else {
+                return nil
+            }
+            return LoadedFileIdentity(path: String(cString: imagePath))
         }
-        var candidates: [String] = []
-        let directory = url.deletingLastPathComponent().path
-        for name in leafNames.dropFirst() {
-            candidates.append((directory as NSString).appendingPathComponent(name))
-        }
-        if let searchPath = environment["DYLD_LIBRARY_PATH"] {
-            for searchDirectory in searchPath.split(separator: ":") where !searchDirectory.isEmpty {
-                for name in leafNames {
-                    candidates.append((String(searchDirectory) as NSString).appendingPathComponent(name))
+
+        private static func dyldOverrideCandidates(for resolvedPath: String) -> [String] {
+            let environment = ProcessInfo.processInfo.environment
+            let url = URL(fileURLWithPath: resolvedPath)
+            let leafName = url.lastPathComponent
+            var leafNames = [leafName]
+            if let suffix = environment["DYLD_IMAGE_SUFFIX"], !suffix.isEmpty {
+                leafNames.append(leafName + suffix)
+                let stem = url.deletingPathExtension().lastPathComponent
+                if !url.pathExtension.isEmpty {
+                    leafNames.append(stem + suffix + "." + url.pathExtension)
                 }
             }
+            var candidates: [String] = []
+            let directory = url.deletingLastPathComponent().path
+            for name in leafNames.dropFirst() {
+                candidates.append((directory as NSString).appendingPathComponent(name))
+            }
+            if let searchPath = environment["DYLD_LIBRARY_PATH"] {
+                for searchDirectory in searchPath.split(separator: ":") where !searchDirectory.isEmpty {
+                    for name in leafNames {
+                        candidates.append((String(searchDirectory) as NSString).appendingPathComponent(name))
+                    }
+                }
+            }
+            return candidates
         }
-        return candidates
-    }
     #endif
 
     deinit {
         #if canImport(Darwin)
-        dlclose(handle)
+            dlclose(handle)
         #endif
     }
 
-    func loadFunction<Function>(_ symbol: StaticString, as _: Function.Type) throws -> Function {
+    func loadFunction<Function>(_ symbol: StaticString, as _: Function.Type) throws(ReallyMeCodecError) -> Function {
         #if canImport(Darwin)
-        guard let rawSymbol = dlsym(handle, symbol.description) else {
-            throw ReallyMeCodecError.symbolNotFound
-        }
-        return unsafeBitCast(rawSymbol, to: Function.self)
+            guard let rawSymbol = dlsym(handle, symbol.description) else {
+                throw ReallyMeCodecError.symbolNotFound
+            }
+            return unsafeBitCast(rawSymbol, to: Function.self)
         #else
-        _ = symbol
-        throw ReallyMeCodecError.unsupportedPlatform
+            _ = symbol
+            throw ReallyMeCodecError.unsupportedPlatform
         #endif
     }
 }
@@ -175,15 +198,15 @@ private struct LoadedFileIdentity: Equatable {
 
     init?(path: String) {
         #if canImport(Darwin)
-        var status = stat()
-        guard stat(path, &status) == 0, (status.st_mode & S_IFMT) == S_IFREG else {
-            return nil
-        }
-        device = Int64(status.st_dev)
-        inode = UInt64(status.st_ino)
+            var status = stat()
+            guard stat(path, &status) == 0, (status.st_mode & S_IFMT) == S_IFREG else {
+                return nil
+            }
+            device = Int64(status.st_dev)
+            inode = UInt64(status.st_ino)
         #else
-        _ = path
-        return nil
+            _ = path
+            return nil
         #endif
     }
 }

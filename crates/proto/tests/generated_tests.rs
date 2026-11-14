@@ -42,8 +42,8 @@ fn proto_package_name_is_stable() {
 
 #[test]
 fn recursive_transport_caps_are_stable() {
-    assert_eq!(MAX_CODEC_PROTO_MESSAGE_BYTES, 10_489_856);
-    assert_eq!(MAX_CODEC_PROTO_JSON_BYTES, 16_082_264);
+    assert_eq!(MAX_CODEC_PROTO_MESSAGE_BYTES, 16_781_312);
+    assert_eq!(MAX_CODEC_PROTO_JSON_BYTES, 22_373_720);
 }
 
 #[test]
@@ -63,11 +63,9 @@ fn codec_error_envelope_round_trips_with_buffa() {
     let error = CodecError {
         error: CodecPemError {
             reason: EnumValue::from(CodecErrorReason::CODEC_ERROR_REASON_PEM_INVALID_BOUNDARY),
-            __buffa_unknown_fields: Default::default(),
         }
         .into(),
         origin: EnumValue::from(CodecErrorOrigin::CODEC_ERROR_ORIGIN_CALLER),
-        __buffa_unknown_fields: Default::default(),
     };
 
     let encoded = error.encode_to_vec();
@@ -79,9 +77,8 @@ fn codec_error_envelope_round_trips_with_buffa() {
 #[test]
 fn codec_result_envelope_round_trips_with_buffa() {
     let result = CodecPemDecodeResult {
-        label: "PUBLIC KEY".to_owned(),
-        der: vec![0x30, 0x03, 0x02, 0x01, 0x01],
-        __buffa_unknown_fields: Default::default(),
+        label: "PUBLIC KEY".to_owned().into(),
+        der: vec![0x30, 0x03, 0x02, 0x01, 0x01].into(),
     };
 
     let encoded = result.encode_to_vec();
@@ -93,19 +90,18 @@ fn codec_result_envelope_round_trips_with_buffa() {
 #[test]
 fn pem_decode_result_debug_redacts_der() {
     let result = CodecPemDecodeResult {
-        label: "PRIVATE KEY".to_owned(),
-        der: vec![0x30, 0x82, 0x01, 0x0a],
-        __buffa_unknown_fields: Default::default(),
+        label: "PRIVATE KEY".to_owned().into(),
+        der: vec![0x30, 0x82, 0x01, 0x0a].into(),
     };
 
     let debug = format!("{result:?}");
-    assert!(debug.contains("<redacted>"));
+    assert!(debug.contains("[REDACTED]"));
     assert!(!debug.contains("130"));
 
     let encoded = result.encode_to_vec();
     let view = CodecPemDecodeResultView::decode_view(&encoded).unwrap();
     let view_debug = format!("{view:?}");
-    assert!(view_debug.contains("<redacted>"));
+    assert!(view_debug.contains("[REDACTED]"));
     assert!(!view_debug.contains("130"));
 }
 
@@ -127,9 +123,8 @@ fn sensitive_bytes_proto_json_is_canonical_for_owned_and_borrowed_messages() {
 
     for (der, expected_json) in cases {
         let message = CodecPemDecodeResult {
-            label: "PRIVATE KEY".to_owned(),
-            der: der.to_vec(),
-            __buffa_unknown_fields: Default::default(),
+            label: "PRIVATE KEY".to_owned().into(),
+            der: der.to_vec().into(),
         };
         let owned_json = serde_json::to_string(&message).unwrap();
         assert_eq!(owned_json, *expected_json);
@@ -252,49 +247,32 @@ fn proto_json_accepts_maximum_nodes_with_distinct_integer_map_keys() {
                                 key: Some(
                                     CodecDeterministicCborInteger {
                                         value: Some(
-                                            CodecDeterministicCborUnsignedInteger {
-                                                value: key,
-                                                __buffa_unknown_fields: Default::default(),
-                                            }
-                                            .into(),
+                                            CodecDeterministicCborUnsignedInteger { value: key }
+                                                .into(),
                                         ),
-                                        __buffa_unknown_fields: Default::default(),
                                     }
                                     .into(),
                                 ),
-                                __buffa_unknown_fields: Default::default(),
                             }),
                             value: buffa::MessageField::some(deterministic_cbor_unsigned_value(
                                 key,
                             )),
-                            __buffa_unknown_fields: Default::default(),
                         })
                         .collect(),
-                    __buffa_unknown_fields: Default::default(),
                 }
                 .into(),
             ),
-            __buffa_unknown_fields: Default::default(),
         })
         .collect();
     let request = CodecOperationRequest {
         operation: Some(
             CodecDeterministicCborEncodeRequest {
                 value: buffa::MessageField::some(CodecDeterministicCborValue {
-                    value: Some(
-                        CodecDeterministicCborArray {
-                            values: maps,
-                            __buffa_unknown_fields: Default::default(),
-                        }
-                        .into(),
-                    ),
-                    __buffa_unknown_fields: Default::default(),
+                    value: Some(CodecDeterministicCborArray { values: maps }.into()),
                 }),
-                __buffa_unknown_fields: Default::default(),
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
     };
     let json = serde_json::to_vec(&request).unwrap();
     let binary = request.encode_to_vec();
@@ -314,80 +292,74 @@ fn proto_json_accepts_maximum_nodes_with_distinct_integer_map_keys() {
 #[test]
 fn generated_sensitive_fields_redact_debug_output() {
     let lookup = CodecMulticodecLookupPrefixRequest {
-        value: vec![241, 242, 243, 244],
-        __buffa_unknown_fields: Default::default(),
+        value: vec![241, 242, 243, 244].into(),
     };
     assert_redacts_field(format!("{lookup:?}"), "value");
 
     let dag_cbor = CodecDagCborVerifyCidRequest {
-        cid: "bafy".to_owned(),
-        payload: vec![241, 242, 243, 244],
-        __buffa_unknown_fields: Default::default(),
+        cid: "bafy".to_owned().into(),
+        payload: vec![241, 242, 243, 244].into(),
     };
     assert_redacts_field(format!("{dag_cbor:?}"), "payload");
 
     let pem_request = CodecPemDecodeRequest {
-        pem: b"-----BEGIN PRIVATE KEY-----".to_vec(),
+        pem: b"-----BEGIN PRIVATE KEY-----".to_vec().into(),
         options: buffa::MessageField::none(),
-        __buffa_unknown_fields: Default::default(),
     };
     let pem_debug = format!("{pem_request:?}");
     assert!(pem_debug.contains("pem"));
-    assert!(pem_debug.contains("<redacted>"));
+    assert!(pem_debug.contains("[REDACTED]"));
     assert!(!pem_debug.contains("PRIVATE KEY"));
 
     let multikey = CodecMultikeyParseResult {
-        codec_name: "ed25519-pub".to_owned(),
-        algorithm_name: "Ed25519".to_owned(),
-        public_key: vec![241, 242, 243, 244],
+        codec_name: "ed25519-pub".to_owned().into(),
+        algorithm_name: "Ed25519".to_owned().into(),
+        public_key: vec![241, 242, 243, 244].into(),
         expected_public_key_length: 32,
         variable_public_key_length: false,
-        __buffa_unknown_fields: Default::default(),
     };
     assert_redacts_field(format!("{multikey:?}"), "public_key");
 
     let operation = CodecOperationRequest {
         operation: Some(pem_request.into()),
-        __buffa_unknown_fields: Default::default(),
     };
     let operation_debug = format!("{operation:?}");
-    assert!(operation_debug.contains("<redacted>"));
+    assert!(operation_debug.contains("[REDACTED]"));
     assert!(!operation_debug.contains("PRIVATE KEY"));
 
     let encoded = operation.encode_to_vec();
     let operation_view = CodecOperationRequestView::decode_view(&encoded).unwrap();
     let operation_view_debug = format!("{operation_view:?}");
-    assert!(operation_view_debug.contains("<redacted>"));
+    assert!(operation_view_debug.contains("[REDACTED]"));
     assert!(!operation_view_debug.contains("PRIVATE KEY"));
+    let view_oneof_debug = format!("{:?}", operation_view.operation.as_ref().unwrap());
+    assert!(view_oneof_debug.contains("[REDACTED]"));
+    assert!(!view_oneof_debug.contains("PRIVATE KEY"));
 
     let encode_request = CodecDeterministicCborEncodeRequest {
         value: buffa::MessageField::some(deterministic_cbor_text_value("P123456789")),
-        __buffa_unknown_fields: Default::default(),
     };
     assert_redacts_sensitive_debug(format!("{encode_request:?}"));
 
     let encode_result = CodecDeterministicCborEncodeResult {
-        encoded: vec![241, 242, 243, 244],
-        __buffa_unknown_fields: Default::default(),
+        encoded: vec![241, 242, 243, 244].into(),
     };
     assert_redacts_field(format!("{encode_result:?}"), "encoded");
 
     let decode_request = CodecDeterministicCborDecodeRequest {
-        encoded: vec![241, 242, 243, 244],
-        __buffa_unknown_fields: Default::default(),
+        encoded: vec![241, 242, 243, 244].into(),
     };
     assert_redacts_field(format!("{decode_request:?}"), "encoded");
 
     let decode_result = CodecDeterministicCborDecodeResult {
         value: buffa::MessageField::some(deterministic_cbor_text_value("P123456789")),
-        __buffa_unknown_fields: Default::default(),
     };
     assert_redacts_sensitive_debug(format!("{decode_result:?}"));
 }
 
 fn assert_redacts_field(debug: String, field_name: &str) {
     assert!(debug.contains(field_name));
-    assert!(debug.contains("<redacted>"));
+    assert!(debug.contains("[REDACTED]"));
     assert!(!debug.contains("241"));
     assert!(!debug.contains("242"));
     assert!(!debug.contains("243"));
@@ -395,7 +367,7 @@ fn assert_redacts_field(debug: String, field_name: &str) {
 }
 
 fn assert_redacts_sensitive_debug(debug: String) {
-    assert!(debug.contains("<redacted>"));
+    assert!(debug.contains("[REDACTED]"));
     assert!(!debug.contains("P123456789"));
     assert!(!debug.contains("passport-number"));
     assert!(!debug.contains("987654321"));
@@ -409,12 +381,10 @@ fn deterministic_cbor_text_value(value: &str) -> CodecDeterministicCborValue {
     CodecDeterministicCborValue {
         value: Some(
             CodecDeterministicCborText {
-                value: value.to_owned(),
-                __buffa_unknown_fields: Default::default(),
+                value: value.to_owned().into(),
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
     }
 }
 
@@ -422,18 +392,10 @@ fn deterministic_cbor_unsigned_value(value: u64) -> CodecDeterministicCborValue 
     CodecDeterministicCborValue {
         value: Some(
             CodecDeterministicCborInteger {
-                value: Some(
-                    CodecDeterministicCborUnsignedInteger {
-                        value,
-                        __buffa_unknown_fields: Default::default(),
-                    }
-                    .into(),
-                ),
-                __buffa_unknown_fields: Default::default(),
+                value: Some(CodecDeterministicCborUnsignedInteger { value }.into()),
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
     }
 }
 
@@ -441,18 +403,10 @@ fn deterministic_cbor_negative_value(value: i64) -> CodecDeterministicCborValue 
     CodecDeterministicCborValue {
         value: Some(
             CodecDeterministicCborInteger {
-                value: Some(
-                    CodecDeterministicCborNegativeInteger {
-                        value,
-                        __buffa_unknown_fields: Default::default(),
-                    }
-                    .into(),
-                ),
-                __buffa_unknown_fields: Default::default(),
+                value: Some(CodecDeterministicCborNegativeInteger { value }.into()),
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
     }
 }
 
@@ -463,55 +417,39 @@ fn deterministic_cbor_map_value(secret: &str) -> CodecDeterministicCborValue {
                 key: buffa::MessageField::some(CodecDeterministicCborMapKey {
                     key: Some(
                         CodecDeterministicCborText {
-                            value: "passport-number".to_owned(),
-                            __buffa_unknown_fields: Default::default(),
+                            value: "passport-number".to_owned().into(),
                         }
                         .into(),
                     ),
-                    __buffa_unknown_fields: Default::default(),
                 }),
                 value: buffa::MessageField::some(deterministic_cbor_text_value(secret)),
-                __buffa_unknown_fields: Default::default(),
             },
             CodecDeterministicCborMapEntry {
                 key: buffa::MessageField::some(CodecDeterministicCborMapKey {
                     key: Some(
                         CodecDeterministicCborInteger {
-                            value: Some(
-                                CodecDeterministicCborUnsignedInteger {
-                                    value: 1,
-                                    __buffa_unknown_fields: Default::default(),
-                                }
-                                .into(),
-                            ),
-                            __buffa_unknown_fields: Default::default(),
+                            value: Some(CodecDeterministicCborUnsignedInteger { value: 1 }.into()),
                         }
                         .into(),
                     ),
-                    __buffa_unknown_fields: Default::default(),
                 }),
                 value: buffa::MessageField::some(CodecDeterministicCborValue {
                     value: Some(
                         CodecDeterministicCborBytes {
-                            value: vec![241, 242, 243, 244],
-                            __buffa_unknown_fields: Default::default(),
+                            value: vec![241, 242, 243, 244].into(),
                         }
                         .into(),
                     ),
-                    __buffa_unknown_fields: Default::default(),
                 }),
-                __buffa_unknown_fields: Default::default(),
             },
             CodecDeterministicCborMapEntry {
                 key: buffa::MessageField::some(CodecDeterministicCborMapKey {
                     key: Some(
                         CodecDeterministicCborText {
-                            value: "array".to_owned(),
-                            __buffa_unknown_fields: Default::default(),
+                            value: "array".to_owned().into(),
                         }
                         .into(),
                     ),
-                    __buffa_unknown_fields: Default::default(),
                 }),
                 value: buffa::MessageField::some(CodecDeterministicCborValue {
                     value: Some(
@@ -520,30 +458,20 @@ fn deterministic_cbor_map_value(secret: &str) -> CodecDeterministicCborValue {
                                 deterministic_cbor_unsigned_value(987654321),
                                 deterministic_cbor_negative_value(-987654321),
                                 CodecDeterministicCborValue {
-                                    value: Some(
-                                        CodecDeterministicCborBool {
-                                            value: true,
-                                            __buffa_unknown_fields: Default::default(),
-                                        }
-                                        .into(),
-                                    ),
-                                    __buffa_unknown_fields: Default::default(),
+                                    value: Some(CodecDeterministicCborBool { value: true }.into()),
                                 },
-                            ],
-                            __buffa_unknown_fields: Default::default(),
+                            ]
+                            .into(),
                         }
                         .into(),
                     ),
-                    __buffa_unknown_fields: Default::default(),
                 }),
-                __buffa_unknown_fields: Default::default(),
             },
-        ],
-        __buffa_unknown_fields: Default::default(),
+        ]
+        .into(),
     };
 
     CodecDeterministicCborValue {
         value: Some(map.into()),
-        __buffa_unknown_fields: Default::default(),
     }
 }

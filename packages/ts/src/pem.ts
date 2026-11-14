@@ -31,8 +31,9 @@ import {
   snapshotBoundedBytesInput,
 } from "./readOutput.js";
 
-export type ReallyMePemLabel = "PRIVATE KEY" | "EC PRIVATE KEY" | "PUBLIC KEY";
-export type ReallyMePemLineEnding = "lf" | "crlf";
+import { isPemLabel, isPemLineEnding, labelToProto, lineEndingToProto } from "./proto/generated/sdkContract.js";
+import type { ReallyMePemLabel, ReallyMePemLineEnding } from "./proto/generated/sdkContract.js";
+export type { ReallyMePemLabel, ReallyMePemLineEnding } from "./proto/generated/sdkContract.js";
 
 export type ReallyMePemDecodePolicy = Readonly<{
   allowedLabels?: ReadonlyArray<ReallyMePemLabel>;
@@ -51,12 +52,6 @@ export type ReallyMePemDocument = Readonly<{
   der: Uint8Array;
 }>;
 
-const validLabels: ReadonlySet<string> = new Set([
-  "PRIVATE KEY",
-  "EC PRIVATE KEY",
-  "PUBLIC KEY",
-]);
-
 const MAX_PEM_ALLOWED_LABELS = 1_024;
 const pemDecodePolicyFields: ReadonlySet<string> = new Set([
   "allowedLabels",
@@ -70,31 +65,13 @@ const pemEncodeOptionFields: ReadonlySet<string> = new Set([
 ]);
 
 const requirePemLabel = (label: string): ReallyMePemLabel => {
-  if (!validLabels.has(label)) {
-    throw new ReallyMeCodecError("invalid-input");
-  }
-  switch (label) {
-    case "PRIVATE KEY":
-    case "EC PRIVATE KEY":
-    case "PUBLIC KEY":
-      return label;
-    default:
-      throw new ReallyMeCodecError("invalid-input");
-  }
+  if (!isPemLabel(label)) throw new ReallyMeCodecError("invalid-input");
+  return label;
 };
 
 const readPemLabel = (label: string): ReallyMePemLabel => {
-  if (!validLabels.has(label)) {
-    throw new ReallyMeCodecError("provider-failure");
-  }
-  switch (label) {
-    case "PRIVATE KEY":
-    case "EC PRIVATE KEY":
-    case "PUBLIC KEY":
-      return label;
-    default:
-      throw new ReallyMeCodecError("provider-failure");
-  }
+  if (!isPemLabel(label)) throw new ReallyMeCodecError("provider-failure");
+  return label;
 };
 
 const requireNoProviderUnknownFields = (message: Message): void => {
@@ -220,7 +197,7 @@ const snapshotEncodeOptions = (
   const lineEndingValue = readSnapshotProperty(snapshot, "lineEnding");
   let lineEnding: ReallyMePemLineEnding | undefined;
   if (lineEndingValue !== undefined) {
-    if (lineEndingValue !== "lf" && lineEndingValue !== "crlf") {
+    if (!isPemLineEnding(lineEndingValue)) {
       throw new ReallyMeCodecError("invalid-input");
     }
     lineEnding = lineEndingValue;
@@ -243,16 +220,7 @@ const requireProtoUint32 = (value: number | undefined): number => {
   return value;
 };
 
-const protoPemLabel = (label: ReallyMePemLabel): CodecPemLabel => {
-  switch (label) {
-    case "PRIVATE KEY":
-      return CodecPemLabel.PRIVATE_KEY;
-    case "EC PRIVATE KEY":
-      return CodecPemLabel.EC_PRIVATE_KEY;
-    case "PUBLIC KEY":
-      return CodecPemLabel.PUBLIC_KEY;
-  }
-};
+
 
 const readPemDocument = (result: CodecPemDecodeResult): ReallyMePemDocument => {
   try {
@@ -279,7 +247,7 @@ const pemDecodeOptions = (policy?: ReallyMePemDecodePolicy): CodecPemDecodeOptio
   const allowedLabels: CodecPemLabel[] = [];
   if (snapshot.allowedLabels !== undefined) {
     for (const label of snapshot.allowedLabels) {
-      allowedLabels.push(protoPemLabel(requirePemLabel(label)));
+      allowedLabels.push(labelToProto[requirePemLabel(label)]);
     }
   }
   return create(CodecPemDecodeOptionsSchema, {
@@ -297,11 +265,9 @@ const pemEncodeOptions = (options?: ReallyMePemEncodeOptions): CodecPemEncodeOpt
   return create(CodecPemEncodeOptionsSchema, {
     maxDerLen: requireProtoUint32(snapshot.maxDerLen),
     lineWidth: requireProtoUint32(snapshot.lineWidth),
-    lineEnding: snapshot.lineEnding === "crlf"
-      ? CodecPemLineEnding.CRLF
-      : snapshot.lineEnding === "lf"
-        ? CodecPemLineEnding.LF
-        : CodecPemLineEnding.UNSPECIFIED,
+    lineEnding: snapshot.lineEnding === undefined
+      ? CodecPemLineEnding.UNSPECIFIED
+      : lineEndingToProto[snapshot.lineEnding],
   });
 };
 
@@ -352,7 +318,7 @@ export const encodePem = (
         operation: {
           case: "pemEncode",
           value: create(CodecPemEncodeRequestSchema, {
-            label: protoPemLabel(label),
+            label: labelToProto[label],
             der: derSnapshot,
             options: encodeOptions,
           }),

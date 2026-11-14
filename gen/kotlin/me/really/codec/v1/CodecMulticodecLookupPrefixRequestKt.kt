@@ -30,6 +30,10 @@ public object CodecMulticodecLookupPrefixRequestKt {
     internal fun _build(): me.really.codec.v1.CodecMulticodecLookupPrefixRequest = _builder.build()
 
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `bytes value = 1 [json_name = "value"];`
      */
     public var value: com.google.protobuf.ByteString
@@ -40,6 +44,10 @@ public object CodecMulticodecLookupPrefixRequestKt {
         _builder.value = value
       }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `bytes value = 1 [json_name = "value"];`
      */
     public fun clearValue() {

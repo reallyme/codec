@@ -245,16 +245,17 @@ fn compare_at(
     key_order(&left, &right, budget, 0)
 }
 
-const fn rank(major: MajorType) -> u8 {
+const fn rank(major: MajorType) -> Result<u8, CborError> {
     match major {
-        MajorType::Unsigned => 0,
-        MajorType::Negative => 1,
-        MajorType::Bytes => 2,
-        MajorType::Text => 3,
-        MajorType::Array => 4,
-        MajorType::Map => 5,
-        MajorType::Tag => 6,
-        MajorType::Simple => 7,
+        MajorType::Unsigned => Ok(0),
+        MajorType::Negative => Ok(1),
+        MajorType::Bytes => Ok(2),
+        MajorType::Text => Ok(3),
+        MajorType::Array => Ok(4),
+        MajorType::Map => Ok(5),
+        MajorType::Tag => Ok(6),
+        MajorType::Simple => Ok(7),
+        _ => Err(error(ErrorReason::UnsupportedPolicy)),
     }
 }
 
@@ -266,7 +267,7 @@ fn key_order(
 ) -> Result<Ordering, CborError> {
     budget.charge(1)?;
     let major = left.header.major_type();
-    match rank(major).cmp(&rank(right.header.major_type())) {
+    match rank(major)?.cmp(&rank(right.header.major_type())?) {
         Ordering::Equal => {}
         different => return Ok(different),
     }
@@ -306,6 +307,7 @@ fn key_order(
             }
         }
         MajorType::Map => Ok(entry_count(left, budget)?.cmp(&entry_count(right, budget)?)),
+        _ => Err(error(ErrorReason::UnsupportedPolicy)),
     }
 }
 

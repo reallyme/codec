@@ -1,0 +1,1671 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "name": "acceptance-1",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af05090a0304017a12020801",
+      "responseHex": "0a16c2af05120a0210011204080110011a02100220012802"
+    },
+    {
+      "name": "acceptance-1",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf05090a0304017a12020801",
+      "responseHex": "0a24caaf05200a120a0210011204080110011a02100220012802120210031a04080210012003"
+    },
+    {
+      "name": "acceptance-1",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af05090a0304017a12020801",
+      "responseHex": "0a24d2af05200a120a0210011204080110011a02100220012802120210031a04080210012003"
+    },
+    {
+      "name": "acceptance-2",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BIEBeg==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af050a0a040481017a12020801",
+      "responseHex": "0a16c2af05120a0210011204080110021a02100320012803"
+    },
+    {
+      "name": "acceptance-2",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BIEBeg==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf050a0a040481017a12020801",
+      "responseHex": "0a24caaf05200a120a0210011204080110021a02100320012803120210041a04080310012004"
+    },
+    {
+      "name": "acceptance-2",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BIEBeg==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af050a0a040481017a12020801",
+      "responseHex": "0a24d2af05200a120a0210011204080110021a02100320012803120210041a04080310012004"
+    },
+    {
+      "name": "acceptance-3",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BIIAAXo=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af050b0a05048200017a12020801",
+      "responseHex": "0a16c2af05120a0210011204080110031a02100420012804"
+    },
+    {
+      "name": "acceptance-3",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BIIAAXo=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf050b0a05048200017a12020801",
+      "responseHex": "0a24caaf05200a120a0210011204080110031a02100420012804120210051a04080410012005"
+    },
+    {
+      "name": "acceptance-3",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BIIAAXo=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af050b0a05048200017a12020801",
+      "responseHex": "0a24d2af05200a120a0210011204080110031a02100420012804120210051a04080410012005"
+    },
+    {
+      "name": "acceptance-4",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BIEBeg==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "c2af050a0a040481017a12020802",
+      "responseHex": "120a4a05089b03100ca00601"
+    },
+    {
+      "name": "acceptance-4",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BIEBeg==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "caaf050a0a040481017a12020802",
+      "responseHex": "120a4a05089b03100ca00601"
+    },
+    {
+      "name": "acceptance-4",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BIEBeg==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "d2af050a0a040481017a12020802",
+      "responseHex": "120a4a05089b03100ca00601"
+    },
+    {
+      "name": "acceptance-5",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BIIAAXo=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "c2af050b0a05048200017a12020802",
+      "responseHex": "120a4a05089b03100ca00601"
+    },
+    {
+      "name": "acceptance-5",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BIIAAXo=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "caaf050b0a05048200017a12020802",
+      "responseHex": "120a4a05089b03100ca00601"
+    },
+    {
+      "name": "acceptance-5",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BIIAAXo=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "d2af050b0a05048200017a12020802",
+      "responseHex": "120a4a05089b03100ca00601"
+    },
+    {
+      "name": "acceptance-6",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAF6/w==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af050a0a0404017aff12020801",
+      "responseHex": "0a16c2af05120a0210011204080110011a02100220012802"
+    },
+    {
+      "name": "acceptance-6",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAF6/w==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf050a0a0404017aff12020801",
+      "responseHex": "0a24caaf05200a120a0210011204080110011a02100220012802120210031a04080210012003"
+    },
+    {
+      "name": "acceptance-6",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAF6/w==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af050a0a0404017aff12020801",
+      "responseHex": "120a4a05089b03100da00601"
+    },
+    {
+      "name": "acceptance-7",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BIIBAKq7\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af050c0a0604820100aabb12020801",
+      "responseHex": "0a17c2af05130a0210011204080110031a0210042080022804"
+    },
+    {
+      "name": "acceptance-7",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BIIBAKq7\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf050c0a0604820100aabb12020801",
+      "responseHex": "120a4a05089b031009a00601"
+    },
+    {
+      "name": "acceptance-7",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BIIBAKq7\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af050c0a0604820100aabb12020801",
+      "responseHex": "120a4a05089b031009a00601"
+    },
+    {
+      "name": "acceptance-8",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"XwEEMDEwNw==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af050d0a075f01043031303712020801",
+      "responseHex": "0a16c2af05120a0210021204080210011a02100320042803"
+    },
+    {
+      "name": "acceptance-8",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"XwEEMDEwNw==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf050d0a075f01043031303712020801",
+      "responseHex": "0a24caaf05200a120a0210021204080210011a02100320042803120210071a04080310042007"
+    },
+    {
+      "name": "acceptance-8",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"XwEEMDEwNw==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af050d0a075f01043031303712020801",
+      "responseHex": "0a24d2af05200a120a0210021204080210011a02100320042803120210071a04080310042007"
+    },
+    {
+      "name": "acceptance-9",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"XwEEMDEwNw==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "c2af050d0a075f01043031303712020802",
+      "responseHex": "120a4a05089b03100ba00601"
+    },
+    {
+      "name": "acceptance-9",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"XwEEMDEwNw==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "caaf050d0a075f01043031303712020802",
+      "responseHex": "120a4a05089b03100ba00601"
+    },
+    {
+      "name": "acceptance-9",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"XwEEMDEwNw==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "d2af050d0a075f01043031303712020802",
+      "responseHex": "120a4a05089b03100ba00601"
+    },
+    {
+      "name": "acceptance-10",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"3/9/AQA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af050b0a05dfff7f010012020801",
+      "responseHex": "0a16c2af05120a0210031204080310011a02100420012804"
+    },
+    {
+      "name": "acceptance-10",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"3/9/AQA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf050b0a05dfff7f010012020801",
+      "responseHex": "0a24caaf05200a120a0210031204080310011a02100420012804120210051a04080410012005"
+    },
+    {
+      "name": "acceptance-10",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"3/9/AQA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af050b0a05dfff7f010012020801",
+      "responseHex": "0a24d2af05200a120a0210031204080310011a02100420012804120210051a04080410012005"
+    },
+    {
+      "name": "acceptance-11",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BIA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af05080a02048012020801",
+      "responseHex": "120a4a05089b03100aa00601"
+    },
+    {
+      "name": "acceptance-11",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BIA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf05080a02048012020801",
+      "responseHex": "120a4a05089b03100aa00601"
+    },
+    {
+      "name": "acceptance-11",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BIA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af05080a02048012020801",
+      "responseHex": "120a4a05089b03100aa00601"
+    },
+    {
+      "name": "acceptance-12",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BIIB\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af05090a0304820112020801",
+      "responseHex": "120a4a05089b031008a00601"
+    },
+    {
+      "name": "acceptance-12",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BIIB\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf05090a0304820112020801",
+      "responseHex": "120a4a05089b031008a00601"
+    },
+    {
+      "name": "acceptance-12",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BIIB\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af05090a0304820112020801",
+      "responseHex": "120a4a05089b031008a00601"
+    },
+    {
+      "name": "acceptance-13",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BIT/////AA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af050d0a070484ffffffff0012020801",
+      "responseHex": "0a1ac2af05160a0210011204080110051a02100620ffffffff0f2806"
+    },
+    {
+      "name": "acceptance-13",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BIT/////AA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf050d0a070484ffffffff0012020801",
+      "responseHex": "120a4a05089b031009a00601"
+    },
+    {
+      "name": "acceptance-13",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BIT/////AA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af050d0a070484ffffffff0012020801",
+      "responseHex": "120a4a05089b031009a00601"
+    },
+    {
+      "name": "acceptance-14",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BIEB\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af05090a0304810112020801",
+      "responseHex": "0a16c2af05120a0210011204080110021a02100320012803"
+    },
+    {
+      "name": "acceptance-14",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BIEB\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf05090a0304810112020801",
+      "responseHex": "120a4a05089b031009a00601"
+    },
+    {
+      "name": "acceptance-14",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BIEB\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af05090a0304810112020801",
+      "responseHex": "120a4a05089b031009a00601"
+    },
+    {
+      "name": "iso7816_definite_ber-empty-value",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af05080a02040012020801",
+      "responseHex": "0a14c2af05100a0210011204080110011a0210022802"
+    },
+    {
+      "name": "iso7816_definite_ber-empty-value",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf05080a02040012020801",
+      "responseHex": "0a20caaf051c0a100a0210011204080110011a0210022802120210021a0208022002"
+    },
+    {
+      "name": "iso7816_definite_ber-empty-value",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af05080a02040012020801",
+      "responseHex": "0a20d2af051c0a100a0210011204080110011a0210022802120210021a0208022002"
+    },
+    {
+      "name": "iso7816_definite_ber-canonical-long-length",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BIGApaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaU=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af058a010a8301048180a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a512020801",
+      "responseHex": "0a17c2af05130a0210011204080110021a0210032080012803"
+    },
+    {
+      "name": "iso7816_definite_ber-canonical-long-length",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BIGApaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaU=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf058a010a8301048180a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a512020801",
+      "responseHex": "0a28caaf05240a130a0210011204080110021a021003208001280312031083011a050803108001208301"
+    },
+    {
+      "name": "iso7816_definite_ber-canonical-long-length",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BIGApaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaU=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af058a010a8301048180a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a512020801",
+      "responseHex": "0a28d2af05240a130a0210011204080110021a021003208001280312031083011a050803108001208301"
+    },
+    {
+      "name": "iso7816_definite_ber-canonical-high-tag",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"nx8BAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af050a0a049f1f010012020801",
+      "responseHex": "0a16c2af05120a0210021204080210011a02100320012803"
+    },
+    {
+      "name": "iso7816_definite_ber-canonical-high-tag",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"nx8BAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf050a0a049f1f010012020801",
+      "responseHex": "0a24caaf05200a120a0210021204080210011a02100320012803120210041a04080310012004"
+    },
+    {
+      "name": "iso7816_definite_ber-canonical-high-tag",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"nx8BAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af050a0a049f1f010012020801",
+      "responseHex": "0a24d2af05200a120a0210021204080210011a02100320012803120210041a04080310012004"
+    },
+    {
+      "name": "iso7816_definite_ber-constructed-opaque",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"MAMEgQA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af050b0a05300304810012020801",
+      "responseHex": "0a16c2af05120a0210011204080110011a02100220032802"
+    },
+    {
+      "name": "iso7816_definite_ber-constructed-opaque",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"MAMEgQA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf050b0a05300304810012020801",
+      "responseHex": "0a24caaf05200a120a0210011204080110011a02100220032802120210051a04080210032005"
+    },
+    {
+      "name": "iso7816_definite_ber-constructed-opaque",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"MAMEgQA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af050b0a05300304810012020801",
+      "responseHex": "0a24d2af05200a120a0210011204080110011a02100220032802120210051a04080210032005"
+    },
+    {
+      "name": "iso7816_definite_ber-missing-identifier",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af050412020801",
+      "responseHex": "120a4a05089b031001a00601"
+    },
+    {
+      "name": "iso7816_definite_ber-missing-identifier",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf050412020801",
+      "responseHex": "120a4a05089b031001a00601"
+    },
+    {
+      "name": "iso7816_definite_ber-missing-identifier",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af050412020801",
+      "responseHex": "120a4a05089b031001a00601"
+    },
+    {
+      "name": "iso7816_definite_ber-missing-length",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af05070a010412020801",
+      "responseHex": "120a4a05089b031008a00601"
+    },
+    {
+      "name": "iso7816_definite_ber-missing-length",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf05070a010412020801",
+      "responseHex": "120a4a05089b031008a00601"
+    },
+    {
+      "name": "iso7816_definite_ber-missing-length",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af05070a010412020801",
+      "responseHex": "120a4a05089b031008a00601"
+    },
+    {
+      "name": "iso7816_definite_ber-unterminated-identifier",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"X4E=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af05080a025f8112020801",
+      "responseHex": "120a4a05089b031007a00601"
+    },
+    {
+      "name": "iso7816_definite_ber-unterminated-identifier",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"X4E=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf05080a025f8112020801",
+      "responseHex": "120a4a05089b031007a00601"
+    },
+    {
+      "name": "iso7816_definite_ber-unterminated-identifier",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"X4E=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af05080a025f8112020801",
+      "responseHex": "120a4a05089b031007a00601"
+    },
+    {
+      "name": "iso7816_definite_ber-indefinite-constructed",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"MIAAAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af050a0a043080000012020801",
+      "responseHex": "120a4a05089b03100aa00601"
+    },
+    {
+      "name": "iso7816_definite_ber-indefinite-constructed",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"MIAAAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf050a0a043080000012020801",
+      "responseHex": "120a4a05089b03100aa00601"
+    },
+    {
+      "name": "iso7816_definite_ber-indefinite-constructed",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"MIAAAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af050a0a043080000012020801",
+      "responseHex": "120a4a05089b03100aa00601"
+    },
+    {
+      "name": "iso7816_definite_ber-reserved-length",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BP8=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af05080a0204ff12020801",
+      "responseHex": "120a4a05089b03100fa00601"
+    },
+    {
+      "name": "iso7816_definite_ber-reserved-length",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BP8=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf05080a0204ff12020801",
+      "responseHex": "120a4a05089b03100fa00601"
+    },
+    {
+      "name": "iso7816_definite_ber-reserved-length",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BP8=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af05080a0204ff12020801",
+      "responseHex": "120a4a05089b03100fa00601"
+    },
+    {
+      "name": "iso7816_definite_ber-uint64-max",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BIj//////////wA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"lengthOctets\":\"8\"}}}}",
+      "requestHex": "c2af05150a0b0488ffffffffffffffff001206080112021808",
+      "responseHex": "0a1fc2af051b0a0210011204080110091a02100a20ffffffffffffffffff01280a"
+    },
+    {
+      "name": "iso7816_definite_ber-uint64-max",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BIj//////////wA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"lengthOctets\":\"8\"}}}}",
+      "requestHex": "caaf05150a0b0488ffffffffffffffff001206080112021808",
+      "responseHex": "120a4a05089b031009a00601"
+    },
+    {
+      "name": "iso7816_definite_ber-uint64-max",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BIj//////////wA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"lengthOctets\":\"8\"}}}}",
+      "requestHex": "d2af05150a0b0488ffffffffffffffff001206080112021808",
+      "responseHex": "120a4a05089b031009a00601"
+    },
+    {
+      "name": "iso7816_definite_ber-identifier-limit",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"34GBgQEA\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af050c0a06df818181010012020801",
+      "responseHex": "120a4a0508da041005a00601"
+    },
+    {
+      "name": "iso7816_definite_ber-identifier-limit",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"34GBgQEA\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf050c0a06df818181010012020801",
+      "responseHex": "120a4a0508da041005a00601"
+    },
+    {
+      "name": "iso7816_definite_ber-identifier-limit",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"34GBgQEA\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af050c0a06df818181010012020801",
+      "responseHex": "120a4a0508da041005a00601"
+    },
+    {
+      "name": "iso7816_definite_ber-length-limit",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BIUBAAAAAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af050d0a070485010000000012020801",
+      "responseHex": "120a4a0508da041006a00601"
+    },
+    {
+      "name": "iso7816_definite_ber-length-limit",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BIUBAAAAAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf050d0a070485010000000012020801",
+      "responseHex": "120a4a0508da041006a00601"
+    },
+    {
+      "name": "iso7816_definite_ber-length-limit",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BIUBAAAAAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af050d0a070485010000000012020801",
+      "responseHex": "120a4a0508da041006a00601"
+    },
+    {
+      "name": "iso7816_definite_ber-input-limit",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAF6/w==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"inputBytes\":\"3\"}}}}",
+      "requestHex": "c2af050e0a0404017aff1206080112020803",
+      "responseHex": "120a4a0508da041004a00601"
+    },
+    {
+      "name": "iso7816_definite_ber-input-limit",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAF6/w==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"inputBytes\":\"3\"}}}}",
+      "requestHex": "caaf050e0a0404017aff1206080112020803",
+      "responseHex": "120a4a0508da041004a00601"
+    },
+    {
+      "name": "iso7816_definite_ber-input-limit",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAF6/w==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"inputBytes\":\"3\"}}}}",
+      "requestHex": "d2af050e0a0404017aff1206080112020803",
+      "responseHex": "120a4a0508da041004a00601"
+    },
+    {
+      "name": "iso7816_definite_ber-maximum-identifier",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"34GBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgQEA\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"identifierOctets\":\"32\"}}}}",
+      "requestHex": "c2af052b0a21df81818181818181818181818181818181818181818181818181818181818101001206080112021020",
+      "responseHex": "0a14c2af05100a0210201204082010011a0210212821"
+    },
+    {
+      "name": "iso7816_definite_ber-maximum-identifier",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"34GBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgQEA\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"identifierOctets\":\"32\"}}}}",
+      "requestHex": "caaf052b0a21df81818181818181818181818181818181818181818181818181818181818101001206080112021020",
+      "responseHex": "0a20caaf051c0a100a0210201204082010011a0210212821120210211a0208212021"
+    },
+    {
+      "name": "iso7816_definite_ber-maximum-identifier",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"34GBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgQEA\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"identifierOctets\":\"32\"}}}}",
+      "requestHex": "d2af052b0a21df81818181818181818181818181818181818181818181818181818181818101001206080112021020",
+      "responseHex": "0a20d2af051c0a100a0210201204082010011a0210212821120210211a0208212021"
+    },
+    {
+      "name": "asn1_der-empty-value",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "c2af05080a02040012020802",
+      "responseHex": "0a14c2af05100a0210011204080110011a0210022802"
+    },
+    {
+      "name": "asn1_der-empty-value",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "caaf05080a02040012020802",
+      "responseHex": "0a20caaf051c0a100a0210011204080110011a0210022802120210021a0208022002"
+    },
+    {
+      "name": "asn1_der-empty-value",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "d2af05080a02040012020802",
+      "responseHex": "0a20d2af051c0a100a0210011204080110011a0210022802120210021a0208022002"
+    },
+    {
+      "name": "asn1_der-canonical-long-length",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BIGApaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaU=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "c2af058a010a8301048180a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a512020802",
+      "responseHex": "0a17c2af05130a0210011204080110021a0210032080012803"
+    },
+    {
+      "name": "asn1_der-canonical-long-length",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BIGApaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaU=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "caaf058a010a8301048180a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a512020802",
+      "responseHex": "0a28caaf05240a130a0210011204080110021a021003208001280312031083011a050803108001208301"
+    },
+    {
+      "name": "asn1_der-canonical-long-length",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BIGApaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaU=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "d2af058a010a8301048180a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a512020802",
+      "responseHex": "0a28d2af05240a130a0210011204080110021a021003208001280312031083011a050803108001208301"
+    },
+    {
+      "name": "asn1_der-canonical-high-tag",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"nx8BAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "c2af050a0a049f1f010012020802",
+      "responseHex": "0a16c2af05120a0210021204080210011a02100320012803"
+    },
+    {
+      "name": "asn1_der-canonical-high-tag",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"nx8BAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "caaf050a0a049f1f010012020802",
+      "responseHex": "0a24caaf05200a120a0210021204080210011a02100320012803120210041a04080310012004"
+    },
+    {
+      "name": "asn1_der-canonical-high-tag",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"nx8BAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "d2af050a0a049f1f010012020802",
+      "responseHex": "0a24d2af05200a120a0210021204080210011a02100320012803120210041a04080310012004"
+    },
+    {
+      "name": "asn1_der-constructed-opaque",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"MAMEgQA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "c2af050b0a05300304810012020802",
+      "responseHex": "0a16c2af05120a0210011204080110011a02100220032802"
+    },
+    {
+      "name": "asn1_der-constructed-opaque",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"MAMEgQA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "caaf050b0a05300304810012020802",
+      "responseHex": "0a24caaf05200a120a0210011204080110011a02100220032802120210051a04080210032005"
+    },
+    {
+      "name": "asn1_der-constructed-opaque",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"MAMEgQA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "d2af050b0a05300304810012020802",
+      "responseHex": "0a24d2af05200a120a0210011204080110011a02100220032802120210051a04080210032005"
+    },
+    {
+      "name": "asn1_der-missing-identifier",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "c2af050412020802",
+      "responseHex": "120a4a05089b031001a00601"
+    },
+    {
+      "name": "asn1_der-missing-identifier",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "caaf050412020802",
+      "responseHex": "120a4a05089b031001a00601"
+    },
+    {
+      "name": "asn1_der-missing-identifier",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "d2af050412020802",
+      "responseHex": "120a4a05089b031001a00601"
+    },
+    {
+      "name": "asn1_der-missing-length",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "c2af05070a010412020802",
+      "responseHex": "120a4a05089b031008a00601"
+    },
+    {
+      "name": "asn1_der-missing-length",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "caaf05070a010412020802",
+      "responseHex": "120a4a05089b031008a00601"
+    },
+    {
+      "name": "asn1_der-missing-length",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "d2af05070a010412020802",
+      "responseHex": "120a4a05089b031008a00601"
+    },
+    {
+      "name": "asn1_der-unterminated-identifier",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"X4E=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "c2af05080a025f8112020802",
+      "responseHex": "120a4a05089b031007a00601"
+    },
+    {
+      "name": "asn1_der-unterminated-identifier",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"X4E=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "caaf05080a025f8112020802",
+      "responseHex": "120a4a05089b031007a00601"
+    },
+    {
+      "name": "asn1_der-unterminated-identifier",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"X4E=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "d2af05080a025f8112020802",
+      "responseHex": "120a4a05089b031007a00601"
+    },
+    {
+      "name": "asn1_der-indefinite-constructed",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"MIAAAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "c2af050a0a043080000012020802",
+      "responseHex": "120a4a05089b03100aa00601"
+    },
+    {
+      "name": "asn1_der-indefinite-constructed",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"MIAAAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "caaf050a0a043080000012020802",
+      "responseHex": "120a4a05089b03100aa00601"
+    },
+    {
+      "name": "asn1_der-indefinite-constructed",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"MIAAAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "d2af050a0a043080000012020802",
+      "responseHex": "120a4a05089b03100aa00601"
+    },
+    {
+      "name": "asn1_der-reserved-length",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BP8=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "c2af05080a0204ff12020802",
+      "responseHex": "120a4a05089b03100fa00601"
+    },
+    {
+      "name": "asn1_der-reserved-length",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BP8=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "caaf05080a0204ff12020802",
+      "responseHex": "120a4a05089b03100fa00601"
+    },
+    {
+      "name": "asn1_der-reserved-length",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BP8=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "d2af05080a0204ff12020802",
+      "responseHex": "120a4a05089b03100fa00601"
+    },
+    {
+      "name": "asn1_der-uint64-max",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BIj//////////wA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\",\"limits\":{\"lengthOctets\":\"8\"}}}}",
+      "requestHex": "c2af05150a0b0488ffffffffffffffff001206080212021808",
+      "responseHex": "0a1fc2af051b0a0210011204080110091a02100a20ffffffffffffffffff01280a"
+    },
+    {
+      "name": "asn1_der-uint64-max",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BIj//////////wA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\",\"limits\":{\"lengthOctets\":\"8\"}}}}",
+      "requestHex": "caaf05150a0b0488ffffffffffffffff001206080212021808",
+      "responseHex": "120a4a05089b031009a00601"
+    },
+    {
+      "name": "asn1_der-uint64-max",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BIj//////////wA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\",\"limits\":{\"lengthOctets\":\"8\"}}}}",
+      "requestHex": "d2af05150a0b0488ffffffffffffffff001206080212021808",
+      "responseHex": "120a4a05089b031009a00601"
+    },
+    {
+      "name": "asn1_der-identifier-limit",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"34GBgQEA\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "c2af050c0a06df818181010012020802",
+      "responseHex": "120a4a0508da041005a00601"
+    },
+    {
+      "name": "asn1_der-identifier-limit",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"34GBgQEA\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "caaf050c0a06df818181010012020802",
+      "responseHex": "120a4a0508da041005a00601"
+    },
+    {
+      "name": "asn1_der-identifier-limit",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"34GBgQEA\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "d2af050c0a06df818181010012020802",
+      "responseHex": "120a4a0508da041005a00601"
+    },
+    {
+      "name": "asn1_der-length-limit",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BIUBAAAAAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "c2af050d0a070485010000000012020802",
+      "responseHex": "120a4a0508da041006a00601"
+    },
+    {
+      "name": "asn1_der-length-limit",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BIUBAAAAAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "caaf050d0a070485010000000012020802",
+      "responseHex": "120a4a0508da041006a00601"
+    },
+    {
+      "name": "asn1_der-length-limit",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BIUBAAAAAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "d2af050d0a070485010000000012020802",
+      "responseHex": "120a4a0508da041006a00601"
+    },
+    {
+      "name": "asn1_der-input-limit",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAF6/w==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\",\"limits\":{\"inputBytes\":\"3\"}}}}",
+      "requestHex": "c2af050e0a0404017aff1206080212020803",
+      "responseHex": "120a4a0508da041004a00601"
+    },
+    {
+      "name": "asn1_der-input-limit",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAF6/w==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\",\"limits\":{\"inputBytes\":\"3\"}}}}",
+      "requestHex": "caaf050e0a0404017aff1206080212020803",
+      "responseHex": "120a4a0508da041004a00601"
+    },
+    {
+      "name": "asn1_der-input-limit",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAF6/w==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\",\"limits\":{\"inputBytes\":\"3\"}}}}",
+      "requestHex": "d2af050e0a0404017aff1206080212020803",
+      "responseHex": "120a4a0508da041004a00601"
+    },
+    {
+      "name": "asn1_der-maximum-identifier",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"34GBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgQEA\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\",\"limits\":{\"identifierOctets\":\"32\"}}}}",
+      "requestHex": "c2af052b0a21df81818181818181818181818181818181818181818181818181818181818101001206080212021020",
+      "responseHex": "0a14c2af05100a0210201204082010011a0210212821"
+    },
+    {
+      "name": "asn1_der-maximum-identifier",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"34GBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgQEA\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\",\"limits\":{\"identifierOctets\":\"32\"}}}}",
+      "requestHex": "caaf052b0a21df81818181818181818181818181818181818181818181818181818181818101001206080212021020",
+      "responseHex": "0a20caaf051c0a100a0210201204082010011a0210212821120210211a0208212021"
+    },
+    {
+      "name": "asn1_der-maximum-identifier",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"34GBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgQEA\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\",\"limits\":{\"identifierOctets\":\"32\"}}}}",
+      "requestHex": "d2af052b0a21df81818181818181818181818181818181818181818181818181818181818101001206080212021020",
+      "responseHex": "0a20d2af051c0a100a0210201204082010011a0210212821120210211a0208212021"
+    },
+    {
+      "name": "preserve-continuation-bits",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"X4EBAQA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af050b0a055f8101010012020801",
+      "responseHex": "0a16c2af05120a0210031204080310011a02100420012804"
+    },
+    {
+      "name": "preserve-continuation-bits",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"X4EBAQA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf050b0a055f8101010012020801",
+      "responseHex": "0a24caaf05200a120a0210031204080310011a02100420012804120210051a04080410012005"
+    },
+    {
+      "name": "preserve-continuation-bits",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"X4EBAQA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af050b0a055f8101010012020801",
+      "responseHex": "0a24d2af05200a120a0210031204080310011a02100420012804120210051a04080410012005"
+    },
+    {
+      "name": "der-reject-zero-high-tag-group",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"X4ABAQA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "c2af050b0a055f8001010012020802",
+      "responseHex": "120a4a05089b03100ba00601"
+    },
+    {
+      "name": "der-reject-zero-high-tag-group",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"X4ABAQA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "caaf050b0a055f8001010012020802",
+      "responseHex": "120a4a05089b03100ba00601"
+    },
+    {
+      "name": "der-reject-zero-high-tag-group",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"X4ABAQA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "d2af050b0a055f8001010012020802",
+      "responseHex": "120a4a05089b03100ba00601"
+    },
+    {
+      "name": "redundant-eight-octet-length",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BIgAAAAAAAAAAXo=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"lengthOctets\":\"8\"}}}}",
+      "requestHex": "c2af05150a0b048800000000000000017a1206080112021808",
+      "responseHex": "0a16c2af05120a0210011204080110091a02100a2001280a"
+    },
+    {
+      "name": "redundant-eight-octet-length",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BIgAAAAAAAAAAXo=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"lengthOctets\":\"8\"}}}}",
+      "requestHex": "caaf05150a0b048800000000000000017a1206080112021808",
+      "responseHex": "0a24caaf05200a120a0210011204080110091a02100a2001280a1202100b1a04080a1001200b"
+    },
+    {
+      "name": "redundant-eight-octet-length",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BIgAAAAAAAAAAXo=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"lengthOctets\":\"8\"}}}}",
+      "requestHex": "d2af05150a0b048800000000000000017a1206080112021808",
+      "responseHex": "0a24d2af05200a120a0210011204080110091a02100a2001280a1202100b1a04080a1001200b"
+    },
+    {
+      "name": "invalid-profile-0",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":0}}}",
+      "requestHex": "c2af05070a0304017a1200",
+      "responseHex": "120a4a0508d8041002a00601"
+    },
+    {
+      "name": "invalid-profile-0",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":0}}}",
+      "requestHex": "caaf05070a0304017a1200",
+      "responseHex": "120a4a0508d8041002a00601"
+    },
+    {
+      "name": "invalid-profile-0",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":0}}}",
+      "requestHex": "d2af05070a0304017a1200",
+      "responseHex": "120a4a0508d8041002a00601"
+    },
+    {
+      "name": "invalid-profile-999",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":999}}}",
+      "requestHex": "c2af050a0a0304017a120308e707",
+      "responseHex": "120a4a0508d8041002a00601"
+    },
+    {
+      "name": "invalid-profile-999",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":999}}}",
+      "requestHex": "caaf050a0a0304017a120308e707",
+      "responseHex": "120a4a0508d8041002a00601"
+    },
+    {
+      "name": "invalid-profile-999",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":999}}}",
+      "requestHex": "d2af050a0a0304017a120308e707",
+      "responseHex": "120a4a0508d8041002a00601"
+    },
+    {
+      "name": "missing-options",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAF6\"}}",
+      "requestHex": "c2af05050a0304017a",
+      "responseHex": "120a4a0508d8041002a00601"
+    },
+    {
+      "name": "missing-options",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAF6\"}}",
+      "requestHex": "caaf05050a0304017a",
+      "responseHex": "120a4a0508d8041002a00601"
+    },
+    {
+      "name": "missing-options",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAF6\"}}",
+      "requestHex": "d2af05050a0304017a",
+      "responseHex": "120a4a0508d8041002a00601"
+    },
+    {
+      "name": "invalid-inputBytes-0",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"inputBytes\":\"0\"}}}}",
+      "requestHex": "c2af050d0a0304017a1206080112020800",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-inputBytes-0",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"inputBytes\":\"0\"}}}}",
+      "requestHex": "caaf050d0a0304017a1206080112020800",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-inputBytes-0",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"inputBytes\":\"0\"}}}}",
+      "requestHex": "d2af050d0a0304017a1206080112020800",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "explicit-input-limit-above-default",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"inputBytes\":\"1048577\"}}}}",
+      "requestHex": "c2af050f0a0304017a12080801120408818040",
+      "responseHex": "0a16c2af05120a0210011204080110011a02100220012802"
+    },
+    {
+      "name": "explicit-input-limit-above-default",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"inputBytes\":\"1048577\"}}}}",
+      "requestHex": "caaf050f0a0304017a12080801120408818040",
+      "responseHex": "0a24caaf05200a120a0210011204080110011a02100220012802120210031a04080210012003"
+    },
+    {
+      "name": "explicit-input-limit-above-default",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"inputBytes\":\"1048577\"}}}}",
+      "requestHex": "d2af050f0a0304017a12080801120408818040",
+      "responseHex": "0a24d2af05200a120a0210011204080110011a02100220012802120210031a04080210012003"
+    },
+    {
+      "name": "invalid-inputBytes-18446744073709551615",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"inputBytes\":\"18446744073709551615\"}}}}",
+      "requestHex": "c2af05160a0304017a120f0801120b08ffffffffffffffffff01",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-inputBytes-18446744073709551615",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"inputBytes\":\"18446744073709551615\"}}}}",
+      "requestHex": "caaf05160a0304017a120f0801120b08ffffffffffffffffff01",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-inputBytes-18446744073709551615",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"inputBytes\":\"18446744073709551615\"}}}}",
+      "requestHex": "d2af05160a0304017a120f0801120b08ffffffffffffffffff01",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-identifierOctets-0",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"identifierOctets\":\"0\"}}}}",
+      "requestHex": "c2af050d0a0304017a1206080112021000",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-identifierOctets-0",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"identifierOctets\":\"0\"}}}}",
+      "requestHex": "caaf050d0a0304017a1206080112021000",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-identifierOctets-0",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"identifierOctets\":\"0\"}}}}",
+      "requestHex": "d2af050d0a0304017a1206080112021000",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-identifierOctets-33",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"identifierOctets\":\"33\"}}}}",
+      "requestHex": "c2af050d0a0304017a1206080112021021",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-identifierOctets-33",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"identifierOctets\":\"33\"}}}}",
+      "requestHex": "caaf050d0a0304017a1206080112021021",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-identifierOctets-33",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"identifierOctets\":\"33\"}}}}",
+      "requestHex": "d2af050d0a0304017a1206080112021021",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-identifierOctets-18446744073709551615",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"identifierOctets\":\"18446744073709551615\"}}}}",
+      "requestHex": "c2af05160a0304017a120f0801120b10ffffffffffffffffff01",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-identifierOctets-18446744073709551615",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"identifierOctets\":\"18446744073709551615\"}}}}",
+      "requestHex": "caaf05160a0304017a120f0801120b10ffffffffffffffffff01",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-identifierOctets-18446744073709551615",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"identifierOctets\":\"18446744073709551615\"}}}}",
+      "requestHex": "d2af05160a0304017a120f0801120b10ffffffffffffffffff01",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-lengthOctets-0",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"lengthOctets\":\"0\"}}}}",
+      "requestHex": "c2af050d0a0304017a1206080112021800",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-lengthOctets-0",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"lengthOctets\":\"0\"}}}}",
+      "requestHex": "caaf050d0a0304017a1206080112021800",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-lengthOctets-0",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"lengthOctets\":\"0\"}}}}",
+      "requestHex": "d2af050d0a0304017a1206080112021800",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-lengthOctets-9",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"lengthOctets\":\"9\"}}}}",
+      "requestHex": "c2af050d0a0304017a1206080112021809",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-lengthOctets-9",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"lengthOctets\":\"9\"}}}}",
+      "requestHex": "caaf050d0a0304017a1206080112021809",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-lengthOctets-9",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"lengthOctets\":\"9\"}}}}",
+      "requestHex": "d2af050d0a0304017a1206080112021809",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-lengthOctets-18446744073709551615",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"lengthOctets\":\"18446744073709551615\"}}}}",
+      "requestHex": "c2af05160a0304017a120f0801120b18ffffffffffffffffff01",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-lengthOctets-18446744073709551615",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"lengthOctets\":\"18446744073709551615\"}}}}",
+      "requestHex": "caaf05160a0304017a120f0801120b18ffffffffffffffffff01",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-lengthOctets-18446744073709551615",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"lengthOctets\":\"18446744073709551615\"}}}}",
+      "requestHex": "d2af05160a0304017a120f0801120b18ffffffffffffffffff01",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "truncated-high-tag-1",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"34E=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af05080a02df8112020801",
+      "responseHex": "120a4a05089b031007a00601"
+    },
+    {
+      "name": "truncated-high-tag-1",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"34E=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf05080a02df8112020801",
+      "responseHex": "120a4a05089b031007a00601"
+    },
+    {
+      "name": "truncated-high-tag-1",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"34E=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af05080a02df8112020801",
+      "responseHex": "120a4a05089b031007a00601"
+    },
+    {
+      "name": "truncated-high-tag-2",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"34GB\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af05090a03df818112020801",
+      "responseHex": "120a4a05089b031007a00601"
+    },
+    {
+      "name": "truncated-high-tag-2",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"34GB\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf05090a03df818112020801",
+      "responseHex": "120a4a05089b031007a00601"
+    },
+    {
+      "name": "truncated-high-tag-2",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"34GB\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af05090a03df818112020801",
+      "responseHex": "120a4a05089b031007a00601"
+    },
+    {
+      "name": "truncated-high-tag-3",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"34GBgQ==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af050a0a04df81818112020801",
+      "responseHex": "120a4a0508da041005a00601"
+    },
+    {
+      "name": "truncated-high-tag-3",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"34GBgQ==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf050a0a04df81818112020801",
+      "responseHex": "120a4a0508da041005a00601"
+    },
+    {
+      "name": "truncated-high-tag-3",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"34GBgQ==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af050a0a04df81818112020801",
+      "responseHex": "120a4a0508da041005a00601"
+    },
+    {
+      "name": "truncated-high-tag-4",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"34GBgYE=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af050b0a05df8181818112020801",
+      "responseHex": "120a4a0508da041005a00601"
+    },
+    {
+      "name": "truncated-high-tag-4",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"34GBgYE=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf050b0a05df8181818112020801",
+      "responseHex": "120a4a0508da041005a00601"
+    },
+    {
+      "name": "truncated-high-tag-4",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"34GBgYE=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af050b0a05df8181818112020801",
+      "responseHex": "120a4a0508da041005a00601"
+    },
+    {
+      "name": "truncated-four-octet-length-0",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BIQ=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af05080a02048412020801",
+      "responseHex": "120a4a05089b031008a00601"
+    },
+    {
+      "name": "truncated-four-octet-length-0",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BIQ=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf05080a02048412020801",
+      "responseHex": "120a4a05089b031008a00601"
+    },
+    {
+      "name": "truncated-four-octet-length-0",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BIQ=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af05080a02048412020801",
+      "responseHex": "120a4a05089b031008a00601"
+    },
+    {
+      "name": "truncated-four-octet-length-1",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BIQA\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af05090a0304840012020801",
+      "responseHex": "120a4a05089b031008a00601"
+    },
+    {
+      "name": "truncated-four-octet-length-1",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BIQA\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf05090a0304840012020801",
+      "responseHex": "120a4a05089b031008a00601"
+    },
+    {
+      "name": "truncated-four-octet-length-1",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BIQA\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af05090a0304840012020801",
+      "responseHex": "120a4a05089b031008a00601"
+    },
+    {
+      "name": "truncated-four-octet-length-2",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BIQAAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af050a0a040484000012020801",
+      "responseHex": "120a4a05089b031008a00601"
+    },
+    {
+      "name": "truncated-four-octet-length-2",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BIQAAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf050a0a040484000012020801",
+      "responseHex": "120a4a05089b031008a00601"
+    },
+    {
+      "name": "truncated-four-octet-length-2",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BIQAAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af050a0a040484000012020801",
+      "responseHex": "120a4a05089b031008a00601"
+    },
+    {
+      "name": "truncated-four-octet-length-3",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BIQAAAA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af050b0a05048400000012020801",
+      "responseHex": "120a4a05089b031008a00601"
+    },
+    {
+      "name": "truncated-four-octet-length-3",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BIQAAAA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf050b0a05048400000012020801",
+      "responseHex": "120a4a05089b031008a00601"
+    },
+    {
+      "name": "truncated-four-octet-length-3",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BIQAAAA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af050b0a05048400000012020801",
+      "responseHex": "120a4a05089b031008a00601"
+    },
+    {
+      "name": "truncated-value-0",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAM=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af05080a02040312020801",
+      "responseHex": "0a16c2af05120a0210011204080110011a02100220032802"
+    },
+    {
+      "name": "truncated-value-0",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAM=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf05080a02040312020801",
+      "responseHex": "120a4a05089b031009a00601"
+    },
+    {
+      "name": "truncated-value-0",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAM=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af05080a02040312020801",
+      "responseHex": "120a4a05089b031009a00601"
+    },
+    {
+      "name": "truncated-value-1",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAOl\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af05090a030403a512020801",
+      "responseHex": "0a16c2af05120a0210011204080110011a02100220032802"
+    },
+    {
+      "name": "truncated-value-1",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAOl\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf05090a030403a512020801",
+      "responseHex": "120a4a05089b031009a00601"
+    },
+    {
+      "name": "truncated-value-1",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAOl\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af05090a030403a512020801",
+      "responseHex": "120a4a05089b031009a00601"
+    },
+    {
+      "name": "truncated-value-2",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAOlpQ==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af050a0a040403a5a512020801",
+      "responseHex": "0a16c2af05120a0210011204080110011a02100220032802"
+    },
+    {
+      "name": "truncated-value-2",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAOlpQ==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf050a0a040403a5a512020801",
+      "responseHex": "120a4a05089b031009a00601"
+    },
+    {
+      "name": "truncated-value-2",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAOlpQ==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af050a0a040403a5a512020801",
+      "responseHex": "120a4a05089b031009a00601"
+    },
+    {
+      "name": "end-of-contents-1",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"AAA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af05080a02000012020801",
+      "responseHex": "120a4a05089b031010a00601"
+    },
+    {
+      "name": "end-of-contents-1",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"AAA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf05080a02000012020801",
+      "responseHex": "120a4a05089b031010a00601"
+    },
+    {
+      "name": "end-of-contents-1",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"AAA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af05080a02000012020801",
+      "responseHex": "120a4a05089b031010a00601"
+    },
+    {
+      "name": "end-of-contents-2",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"AAA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "c2af05080a02000012020802",
+      "responseHex": "120a4a05089b031010a00601"
+    },
+    {
+      "name": "end-of-contents-2",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"AAA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "caaf05080a02000012020802",
+      "responseHex": "120a4a05089b031010a00601"
+    },
+    {
+      "name": "end-of-contents-2",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"AAA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "d2af05080a02000012020802",
+      "responseHex": "120a4a05089b031010a00601"
+    },
+    {
+      "name": "zero-high-tag-1",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"XwAA\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af05090a035f000012020801",
+      "responseHex": "120a4a05089b031010a00601"
+    },
+    {
+      "name": "zero-high-tag-1",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"XwAA\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf05090a035f000012020801",
+      "responseHex": "120a4a05089b031010a00601"
+    },
+    {
+      "name": "zero-high-tag-1",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"XwAA\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af05090a035f000012020801",
+      "responseHex": "120a4a05089b031010a00601"
+    },
+    {
+      "name": "zero-high-tag-2",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"XwAA\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "c2af05090a035f000012020802",
+      "responseHex": "120a4a05089b03100ba00601"
+    },
+    {
+      "name": "zero-high-tag-2",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"XwAA\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "caaf05090a035f000012020802",
+      "responseHex": "120a4a05089b03100ba00601"
+    },
+    {
+      "name": "zero-high-tag-2",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"XwAA\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "d2af05090a035f000012020802",
+      "responseHex": "120a4a05089b03100ba00601"
+    },
+    {
+      "name": "zero-continuation-high-tag-1",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"X4ABAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af050a0a045f80010012020801",
+      "responseHex": "120a4a05089b031010a00601"
+    },
+    {
+      "name": "zero-continuation-high-tag-1",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"X4ABAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf050a0a045f80010012020801",
+      "responseHex": "120a4a05089b031010a00601"
+    },
+    {
+      "name": "zero-continuation-high-tag-1",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"X4ABAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af050a0a045f80010012020801",
+      "responseHex": "120a4a05089b031010a00601"
+    },
+    {
+      "name": "zero-continuation-high-tag-2",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"X4ABAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "c2af050a0a045f80010012020802",
+      "responseHex": "120a4a05089b03100ba00601"
+    },
+    {
+      "name": "zero-continuation-high-tag-2",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"X4ABAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "caaf050a0a045f80010012020802",
+      "responseHex": "120a4a05089b03100ba00601"
+    },
+    {
+      "name": "zero-continuation-high-tag-2",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"X4ABAA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "d2af050a0a045f80010012020802",
+      "responseHex": "120a4a05089b03100ba00601"
+    },
+    {
+      "name": "primitive-prefix-1",
+      "operation": "tlvReadIdentifier",
+      "requestJson": "{\"tlvReadIdentifier\":{\"encoded\":\"Xw5fEA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "daaf050a0a045f0e5f1012020801",
+      "responseHex": "0a0adaaf05060a0210021002"
+    },
+    {
+      "name": "primitive-prefix-2",
+      "operation": "tlvReadIdentifier",
+      "requestJson": "{\"tlvReadIdentifier\":{\"encoded\":\"3/9/AQA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "daaf050b0a05dfff7f010012020801",
+      "responseHex": "0a0adaaf05060a0210031003"
+    },
+    {
+      "name": "primitive-prefix-3",
+      "operation": "tlvReadIdentifier",
+      "requestJson": "{\"tlvReadIdentifier\":{\"encoded\":\"Xw==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "daaf05070a015f12020801",
+      "responseHex": "120a4a05089b031007a00601"
+    },
+    {
+      "name": "primitive-prefix-4",
+      "operation": "tlvReadIdentifier",
+      "requestJson": "{\"tlvReadIdentifier\":{\"encoded\":\"XwE=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "daaf05080a025f0112020802",
+      "responseHex": "120a4a05089b03100ba00601"
+    },
+    {
+      "name": "primitive-prefix-5",
+      "operation": "tlvReadLength",
+      "requestJson": "{\"tlvReadLength\":{\"encoded\":\"ggEAqrs=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "e2af050b0a05820100aabb12020801",
+      "responseHex": "0a0de2af05090a0210031080021803"
+    },
+    {
+      "name": "primitive-prefix-6",
+      "operation": "tlvReadLength",
+      "requestJson": "{\"tlvReadLength\":{\"encoded\":\"gQF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "e2af05090a0381017a12020801",
+      "responseHex": "0a0ce2af05080a02100210011802"
+    },
+    {
+      "name": "primitive-prefix-7",
+      "operation": "tlvReadLength",
+      "requestJson": "{\"tlvReadLength\":{\"encoded\":\"gQF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ASN1_DER_FRAMING\"}}}",
+      "requestHex": "e2af05090a0381017a12020802",
+      "responseHex": "120a4a05089b03100ca00601"
+    },
+    {
+      "name": "primitive-prefix-8",
+      "operation": "tlvReadLength",
+      "requestJson": "{\"tlvReadLength\":{\"encoded\":\"hP////8A\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "e2af050c0a0684ffffffff0012020801",
+      "responseHex": "0a10e2af050c0a02100510ffffffff0f1805"
+    },
+    {
+      "name": "primitive-prefix-9",
+      "operation": "tlvReadLength",
+      "requestJson": "{\"tlvReadLength\":{\"encoded\":\"gv8=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "e2af05080a0282ff12020801",
+      "responseHex": "120a4a05089b031008a00601"
+    },
+    {
+      "name": "primitive-prefix-10",
+      "operation": "tlvReadLength",
+      "requestJson": "{\"tlvReadLength\":{\"encoded\":\"gA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "e2af05070a018012020801",
+      "responseHex": "120a4a05089b03100aa00601"
+    },
+    {
+      "name": "invalid-input-limit-above-hard-ceiling",
+      "operation": "tlvReadHeader",
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"inputBytes\":\"16777217\"}}}}",
+      "requestHex": "c2af05100a0304017a1209080112050881808008",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-input-limit-above-hard-ceiling",
+      "operation": "tlvFramePrefix",
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"inputBytes\":\"16777217\"}}}}",
+      "requestHex": "caaf05100a0304017a1209080112050881808008",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "invalid-input-limit-above-hard-ceiling",
+      "operation": "tlvFrameExact",
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"inputBytes\":\"16777217\"}}}}",
+      "requestHex": "d2af05100a0304017a1209080112050881808008",
+      "responseHex": "120a4a0508d8041003a00601"
+    },
+    {
+      "name": "caller-input-limit-counts-suffix",
+      "operation": "tlvReadIdentifier",
+      "requestJson": "{\"tlvReadIdentifier\":{\"encoded\":\"AQA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"inputBytes\":\"1\"}}}}",
+      "requestHex": "daaf050c0a0201001206080112020801",
+      "responseHex": "120a4a0508da041004a00601"
+    },
+    {
+      "name": "caller-input-limit-counts-suffix",
+      "operation": "tlvReadLength",
+      "requestJson": "{\"tlvReadLength\":{\"encoded\":\"AQA=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"inputBytes\":\"1\"}}}}",
+      "requestHex": "e2af050c0a0201001206080112020801",
+      "responseHex": "120a4a0508da041004a00601"
+    },
+    {
+      "name": "standalone-length-uint64-maximum",
+      "operation": "tlvReadLength",
+      "requestJson": "{\"tlvReadLength\":{\"encoded\":\"iP//////////\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\",\"limits\":{\"lengthOctets\":\"8\"}}}}",
+      "requestHex": "e2af05130a0988ffffffffffffffff1206080112021808",
+      "responseHex": "0a15e2af05110a02100910ffffffffffffffffff011809"
+    }
+  ]
+}

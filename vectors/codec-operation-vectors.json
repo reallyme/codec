@@ -1,0 +1,523 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "operation": "multicodecPrefixForName",
+      "requestJson": "{\"multicodecPrefixForName\":{\"name\":\"ed25519-pub\"}}",
+      "checks": {
+        "/name": "ed25519-pub",
+        "/fixedLength": 32
+      },
+      "fieldNumber": 1000,
+      "requestHex": "c23e0d0a0b656432353531392d707562"
+    },
+    {
+      "operation": "multicodecLookupPrefix",
+      "requestJson": "{\"multicodecLookupPrefix\":{\"value\":\"7QE=\"}}",
+      "checks": {
+        "/metadata/name": "ed25519-pub",
+        "/prefixLength": 2
+      },
+      "fieldNumber": 1001,
+      "requestHex": "ca3e040a02ed01"
+    },
+    {
+      "operation": "multicodecTable",
+      "requestJson": "{\"multicodecTable\":{}}",
+      "checks": {},
+      "fieldNumber": 1002,
+      "requestHex": "d23e00"
+    },
+    {
+      "operation": "multikeyParse",
+      "requestJson": "{\"multikeyParse\":{\"multikey\":\"z6Mkfbt52NAcPcYKV36L6eWTnyfxyGrGrxvJBxF5pjjCctGQ\"}}",
+      "checks": {
+        "/publicKey": "ERERERERERERERERERERERERERERERERERERERERERE=",
+        "/expectedPublicKeyLength": 32
+      },
+      "fieldNumber": 2000,
+      "requestHex": "827d320a307a364d6b66627435324e41635063594b5633364c366557546e796678794772477278764a42784635706a6a4363744751"
+    },
+    {
+      "operation": "dagCborVerifyCid",
+      "requestJson": "{\"dagCborVerifyCid\":{\"cid\":\"bafyreif4z6kmioecw6y3p7ni7dai425j26acbo66xy5s6q4bykanuxlnry\",\"payload\":\"Ymhp\"}}",
+      "checks": {
+        "/valid": true,
+        "/actualCid": "bafyreif4z6kmioecw6y3p7ni7dai425j26acbo66xy5s6q4bykanuxlnry",
+        "/expectedCid": "bafyreif4z6kmioecw6y3p7ni7dai425j26acbo66xy5s6q4bykanuxlnry"
+      },
+      "fieldNumber": 3000,
+      "requestHex": "c2bb01420a3b6261667972656966347a366b6d696f65637736793370376e69376461693432356a32366163626f36367879357336713462796b616e75786c6e72791203626869"
+    },
+    {
+      "operation": "dagCborEncode",
+      "requestJson": "{\"dagCborEncode\":{\"value\":{\"textValue\":{\"value\":\"hi\"}}}}",
+      "checks": {
+        "/encoded": "Ymhp"
+      },
+      "fieldNumber": 3001,
+      "requestHex": "cabb01080a0622040a026869"
+    },
+    {
+      "operation": "deterministicCborEncode",
+      "requestJson": "{\"deterministicCborEncode\":{\"value\":{\"textValue\":{\"value\":\"hi\"}}}}",
+      "checks": {
+        "/encoded": "Ymhp"
+      },
+      "fieldNumber": 5000,
+      "requestHex": "c2b802080a0622040a026869"
+    },
+    {
+      "operation": "dagCborDecode",
+      "requestJson": "{\"dagCborDecode\":{\"encoded\":\"Ymhp\"}}",
+      "checks": {
+        "/value/textValue/value": "hi"
+      },
+      "fieldNumber": 3002,
+      "requestHex": "d2bb01050a03626869"
+    },
+    {
+      "operation": "deterministicCborDecode",
+      "requestJson": "{\"deterministicCborDecode\":{\"encoded\":\"Ymhp\"}}",
+      "checks": {
+        "/value/textValue/value": "hi"
+      },
+      "fieldNumber": 5001,
+      "requestHex": "cab802050a03626869"
+    },
+    {
+      "operation": "pemDecode",
+      "requestJson": "{\"pemDecode\":{\"pem\":\"LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KQVE9PQotLS0tLUVORCBQVUJMSUMgS0VZLS0tLS0K\"}}",
+      "checks": {
+        "/label": "PUBLIC KEY",
+        "/der": "AQ=="
+      },
+      "fieldNumber": 4000,
+      "requestHex": "82fa013b0a392d2d2d2d2d424547494e205055424c4943204b45592d2d2d2d2d0a41513d3d0a2d2d2d2d2d454e44205055424c4943204b45592d2d2d2d2d0a"
+    },
+    {
+      "operation": "pemEncode",
+      "requestJson": "{\"pemEncode\":{\"label\":\"CODEC_PEM_LABEL_PUBLIC_KEY\",\"der\":\"AQ==\"}}",
+      "checks": {
+        "/pem": "LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KQVE9PQotLS0tLUVORCBQVUJMSUMgS0VZLS0tLS0K"
+      },
+      "fieldNumber": 4001,
+      "requestHex": "8afa01050878120101"
+    },
+    {
+      "operation": "multicodecStripPrefix",
+      "requestJson": "{\"multicodecStripPrefix\":{\"value\":\"7QEREREREREREREREREREREREREREREREREREREREREREQ==\"}}",
+      "checks": {
+        "/value": "ERERERERERERERERERERERERERERERERERERERERERE="
+      },
+      "fieldNumber": 1003,
+      "requestHex": "da3e240a22ed011111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "operation": "multikeyEncode",
+      "requestJson": "{\"multikeyEncode\":{\"codecName\":\"ed25519-pub\",\"publicKey\":\"ERERERERERERERERERERERERERERERERERERERERERE=\"}}",
+      "checks": {
+        "/value": "z6Mkfbt52NAcPcYKV36L6eWTnyfxyGrGrxvJBxF5pjjCctGQ"
+      },
+      "fieldNumber": 2001,
+      "requestHex": "8a7d2f0a0b656432353531392d70756212201111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "operation": "bindingTypeMatchesCodec",
+      "requestJson": "{\"bindingTypeMatchesCodec\":{\"bindingType\":\"Multikey\",\"codecName\":\"ed25519-pub\"}}",
+      "checks": {
+        "/value": true
+      },
+      "fieldNumber": 2002,
+      "requestHex": "927d170a084d756c74696b6579120b656432353531392d707562"
+    },
+    {
+      "operation": "validateKeyBinding",
+      "requestJson": "{\"validateKeyBinding\":{\"bindingType\":\"Multikey\",\"algorithm\":\"Ed25519\",\"multikey\":\"z6Mkfbt52NAcPcYKV36L6eWTnyfxyGrGrxvJBxF5pjjCctGQ\"}}",
+      "checks": {},
+      "fieldNumber": 2003,
+      "requestHex": "9a7d450a084d756c74696b65791207456432353531391a307a364d6b66627435324e41635063594b5633364c366557546e796678794772477278764a42784635706a6a4363744751"
+    },
+    {
+      "operation": "requireSupportedMulticodec",
+      "requestJson": "{\"requireSupportedMulticodec\":{\"value\":\"ed25519-pub\"}}",
+      "checks": {
+        "/value": "ed25519-pub"
+      },
+      "fieldNumber": 2004,
+      "requestHex": "a27d0d0a0b656432353531392d707562"
+    },
+    {
+      "operation": "dagCborComputeCid",
+      "requestJson": "{\"dagCborComputeCid\":{\"value\":\"Ymhp\"}}",
+      "checks": {
+        "/value": "bafyreif4z6kmioecw6y3p7ni7dai425j26acbo66xy5s6q4bykanuxlnry"
+      },
+      "fieldNumber": 3003,
+      "requestHex": "dabb01050a03626869"
+    },
+    {
+      "operation": "dagCborMultihash",
+      "requestJson": "{\"dagCborMultihash\":{\"value\":\"Ymhp\"}}",
+      "checks": {
+        "/value": "EiC8z5TEOIK3sbf9qPjAjmup14Agu96+Oy9DgcKA2l1tjg=="
+      },
+      "fieldNumber": 3004,
+      "requestHex": "e2bb01050a03626869"
+    },
+    {
+      "operation": "dagCborSha256ContentHash",
+      "requestJson": "{\"dagCborSha256ContentHash\":{\"value\":\"Ymhp\"}}",
+      "checks": {
+        "/value": "vM+UxDiCt7G3/aj4wI5rqdeAILvevjsvQ4HCgNpdbY4="
+      },
+      "fieldNumber": 3005,
+      "requestHex": "eabb01050a03626869"
+    },
+    {
+      "operation": "isValidCidString",
+      "requestJson": "{\"isValidCidString\":{\"value\":\"bafyreif4z6kmioecw6y3p7ni7dai425j26acbo66xy5s6q4bykanuxlnry\"}}",
+      "checks": {
+        "/value": true
+      },
+      "fieldNumber": 3006,
+      "requestHex": "f2bb013d0a3b6261667972656966347a366b6d696f65637736793370376e69376461693432356a32366163626f36367879357336713462796b616e75786c6e7279"
+    },
+    {
+      "operation": "tryParseCid",
+      "requestJson": "{\"tryParseCid\":{\"value\":\"bafyreif4z6kmioecw6y3p7ni7dai425j26acbo66xy5s6q4bykanuxlnry\"}}",
+      "checks": {
+        "/value/value": "bafyreif4z6kmioecw6y3p7ni7dai425j26acbo66xy5s6q4bykanuxlnry"
+      },
+      "fieldNumber": 3007,
+      "requestHex": "fabb013d0a3b6261667972656966347a366b6d696f65637736793370376e69376461693432356a32366163626f36367879357336713462796b616e75786c6e7279"
+    },
+    {
+      "operation": "dagCborCodecCode",
+      "requestJson": "{\"dagCborCodecCode\":{}}",
+      "checks": {
+        "/value": 113
+      },
+      "fieldNumber": 3008,
+      "requestHex": "82bc0100"
+    },
+    {
+      "operation": "generalCborReadHeader",
+      "requestJson": "{\"generalCborReadHeader\":{\"encoded\":\"GAE=\"}}",
+      "checks": {
+        "/argument": "1",
+        "/encodedLength": "2",
+        "/preferredArgument": false
+      },
+      "fieldNumber": 6000,
+      "requestHex": "82f702040a021801"
+    },
+    {
+      "operation": "generalCborFrameExact",
+      "requestJson": "{\"generalCborFrameExact\":{\"encoded\":\"GAE=\"}}",
+      "checks": {
+        "/received/length": "2",
+        "/header/argument": "1"
+      },
+      "fieldNumber": 6001,
+      "requestHex": "8af702040a021801"
+    },
+    {
+      "operation": "generalCborFramePrefix",
+      "requestJson": "{\"generalCborFramePrefix\":{\"encoded\":\"GAEA\"}}",
+      "checks": {
+        "/received/length": "2",
+        "/header/argument": "1"
+      },
+      "fieldNumber": 6002,
+      "requestHex": "92f702050a03180100"
+    },
+    {
+      "operation": "generalCborValidateExact",
+      "requestJson": "{\"generalCborValidateExact\":{\"encoded\":\"GAE=\"}}",
+      "checks": {
+        "/received/length": "2",
+        "/header/argument": "1",
+        "/validated": true
+      },
+      "fieldNumber": 6003,
+      "requestHex": "9af702040a021801"
+    },
+    {
+      "operation": "generalCborValidatePrefix",
+      "requestJson": "{\"generalCborValidatePrefix\":{\"encoded\":\"GAEA\"}}",
+      "checks": {
+        "/received/length": "2",
+        "/header/argument": "1",
+        "/validated": true
+      },
+      "fieldNumber": 6004,
+      "requestHex": "a2f702050a03180100"
+    },
+    {
+      "operation": "generalCborEncode",
+      "requestJson": "{\"generalCborEncode\":{\"value\":{\"unsignedValue\":{\"argument\":\"1\"}}}}",
+      "checks": {
+        "/value": "AQ=="
+      },
+      "fieldNumber": 6005,
+      "requestHex": "aaf702060a040a020801"
+    },
+    {
+      "operation": "generalCborInspect",
+      "requestJson": "{\"generalCborInspect\":{\"encoded\":\"GAE=\",\"inspection\":\"CODEC_GENERAL_CBOR_INSPECTION_INTEGER\",\"validate\":true}}",
+      "checks": {
+        "/integerValue/argument": "1"
+      },
+      "fieldNumber": 6006,
+      "requestHex": "b2f702080a02180118032001"
+    },
+    {
+      "operation": "generalCborCursor",
+      "requestJson": "{\"generalCborCursor\":{\"encoded\":\"AAE=\"}}",
+      "checks": {
+        "/consumedBytes": "2",
+        "/values/1/received/offset": "1"
+      },
+      "fieldNumber": 6007,
+      "requestHex": "baf702040a020001"
+    },
+    {
+      "operation": "generalCborValidateEmbedded",
+      "requestJson": "{\"generalCborValidateEmbedded\":{\"encoded\":\"2BhBAA==\"}}",
+      "checks": {
+        "/received/offset": "3",
+        "/received/length": "1",
+        "/validated": true
+      },
+      "fieldNumber": 6008,
+      "requestHex": "c2f702060a04d8184100"
+    },
+    {
+      "operation": "derDecode",
+      "requestJson": "{\"derDecode\":{\"encoded\":\"AgEB\",\"schema\":{\"kind\":\"CODEC_DER_TYPE_UNSIGNED_INTEGER\"}}}",
+      "checks": {
+        "/bytesValue": "AQ==",
+        "/received/length": "3"
+      },
+      "fieldNumber": 7000,
+      "requestHex": "c2b503090a030201011a020801"
+    },
+    {
+      "operation": "derDecodeUnsignedIntegerPair",
+      "requestJson": "{\"derDecodeUnsignedIntegerPair\":{\"encoded\":\"MAYCAQECAQI=\"}}",
+      "checks": {
+        "/first": "AQ==",
+        "/second": "Ag=="
+      },
+      "fieldNumber": 7001,
+      "requestHex": "cab5030a0a083006020101020102"
+    },
+    {
+      "operation": "derRead",
+      "requestJson": "{\"derRead\":{\"encoded\":\"AQEABQA=\",\"kind\":\"CODEC_DER_TYPE_BOOLEAN\"}}",
+      "checks": {
+        "/value/boolValue": false,
+        "/consumedBytes": "3"
+      },
+      "fieldNumber": 7002,
+      "requestHex": "d2b503090a0501010005001803"
+    },
+    {
+      "operation": "base64Encode",
+      "requestJson": "{\"base64Encode\":{\"value\":\"+/8=\"}}",
+      "checks": {
+        "/value": "+/8="
+      },
+      "fieldNumber": 8000,
+      "requestHex": "82f403040a02fbff"
+    },
+    {
+      "operation": "base64Decode",
+      "requestJson": "{\"base64Decode\":{\"value\":\"+/8=\"}}",
+      "checks": {
+        "/value": "+/8="
+      },
+      "fieldNumber": 8001,
+      "requestHex": "8af403060a042b2f383d"
+    },
+    {
+      "operation": "base64urlEncode",
+      "requestJson": "{\"base64urlEncode\":{\"value\":\"+/8=\"}}",
+      "checks": {
+        "/value": "-_8"
+      },
+      "fieldNumber": 8010,
+      "requestHex": "d2f403040a02fbff"
+    },
+    {
+      "operation": "base64urlDecode",
+      "requestJson": "{\"base64urlDecode\":{\"value\":\"-_8\"}}",
+      "checks": {
+        "/value": "+/8="
+      },
+      "fieldNumber": 8011,
+      "requestHex": "daf403050a032d5f38"
+    },
+    {
+      "operation": "base64urlDecodeBytes",
+      "requestJson": "{\"base64urlDecodeBytes\":{\"value\":\"LV84\"}}",
+      "checks": {
+        "/value": "+/8="
+      },
+      "fieldNumber": 8012,
+      "requestHex": "e2f403050a032d5f38"
+    },
+    {
+      "operation": "lowerHexEncode",
+      "requestJson": "{\"lowerHexEncode\":{\"value\":\"+/8=\"}}",
+      "checks": {
+        "/value": "fbff"
+      },
+      "fieldNumber": 8020,
+      "requestHex": "a2f503040a02fbff"
+    },
+    {
+      "operation": "lowerHexDecode",
+      "requestJson": "{\"lowerHexDecode\":{\"value\":\"fbff\"}}",
+      "checks": {
+        "/value": "+/8="
+      },
+      "fieldNumber": 8021,
+      "requestHex": "aaf503060a0466626666"
+    },
+    {
+      "operation": "base58btcEncode",
+      "requestJson": "{\"base58btcEncode\":{\"value\":\"SGVsbG8gV29ybGQ=\"}}",
+      "checks": {
+        "/value": "JxF12TrwUP45BMd"
+      },
+      "fieldNumber": 8030,
+      "requestHex": "f2f5030d0a0b48656c6c6f20576f726c64"
+    },
+    {
+      "operation": "base58btcDecode",
+      "requestJson": "{\"base58btcDecode\":{\"value\":\"JxF12TrwUP45BMd\"}}",
+      "checks": {
+        "/value": "SGVsbG8gV29ybGQ="
+      },
+      "fieldNumber": 8031,
+      "requestHex": "faf503110a0f4a7846313254727755503435424d64"
+    },
+    {
+      "operation": "multibaseBase58btcEncode",
+      "requestJson": "{\"multibaseBase58btcEncode\":{\"value\":\"SGVsbG8gV29ybGQ=\"}}",
+      "checks": {
+        "/value": "zJxF12TrwUP45BMd"
+      },
+      "fieldNumber": 8040,
+      "requestHex": "c2f6030d0a0b48656c6c6f20576f726c64"
+    },
+    {
+      "operation": "multibaseBase64urlEncode",
+      "requestJson": "{\"multibaseBase64urlEncode\":{\"value\":\"+/8=\"}}",
+      "checks": {
+        "/value": "u-_8"
+      },
+      "fieldNumber": 8041,
+      "requestHex": "caf603040a02fbff"
+    },
+    {
+      "operation": "multibaseDecode",
+      "requestJson": "{\"multibaseDecode\":{\"value\":\"u-_8\"}}",
+      "checks": {
+        "/value": "+/8="
+      },
+      "fieldNumber": 8042,
+      "requestHex": "d2f603060a04752d5f38"
+    },
+    {
+      "operation": "canonicalizeJson",
+      "requestJson": "{\"canonicalizeJson\":{\"value\":\"{\\\"b\\\":2,\\\"a\\\":1}\"}}",
+      "checks": {
+        "/value": "{\"a\":1,\"b\":2}"
+      },
+      "fieldNumber": 9000,
+      "requestHex": "c2b2040f0a0d7b2262223a322c2261223a317d"
+    },
+    {
+      "operation": "providerInfo",
+      "requestJson": "{\"providerInfo\":{}}",
+      "checks": {
+        "/abiVersion": 6
+      },
+      "fieldNumber": 10000,
+      "requestHex": "82f10400"
+    },
+    {
+      "operation": "generalCborFloatProperties",
+      "requestJson": "{\"generalCborFloatProperties\":{\"value\":{\"width\":\"CODEC_GENERAL_CBOR_FLOAT_WIDTH_BINARY16\",\"bits\":\"15360\"}}}",
+      "checks": {
+        "/finite": true,
+        "/widenedBinary64Bits": "4607182418800017408"
+      },
+      "fieldNumber": 6009,
+      "requestHex": "caf702070a050801108078"
+    },
+    {
+      "operation": "generalCborFloatEquivalent",
+      "requestJson": "{\"generalCborFloatEquivalent\":{\"left\":{\"width\":\"CODEC_GENERAL_CBOR_FLOAT_WIDTH_BINARY16\",\"bits\":\"15360\"},\"right\":{\"width\":\"CODEC_GENERAL_CBOR_FLOAT_WIDTH_BINARY64\",\"bits\":\"4607182418800017408\"}}}",
+      "checks": {
+        "/value": true
+      },
+      "fieldNumber": 6010,
+      "requestHex": "d2f702150a050801108078120c08031080808080808080f83f"
+    },
+    {
+      "operation": "tlvReadHeader",
+      "fieldNumber": 11000,
+      "requestJson": "{\"tlvReadHeader\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "c2af05090a0304017a12020801",
+      "checks": {
+        "/declaredValueLength": "1",
+        "/consumedBytes": "2"
+      }
+    },
+    {
+      "operation": "tlvFramePrefix",
+      "fieldNumber": 11001,
+      "requestJson": "{\"tlvFramePrefix\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "caaf05090a0304017a12020801",
+      "checks": {
+        "/consumedBytes": "3",
+        "/header/declaredValueLength": "1"
+      }
+    },
+    {
+      "operation": "tlvFrameExact",
+      "fieldNumber": 11002,
+      "requestJson": "{\"tlvFrameExact\":{\"encoded\":\"BAF6\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "d2af05090a0304017a12020801",
+      "checks": {
+        "/consumedBytes": "3",
+        "/header/declaredValueLength": "1"
+      }
+    },
+    {
+      "operation": "tlvReadIdentifier",
+      "fieldNumber": 11003,
+      "requestJson": "{\"tlvReadIdentifier\":{\"encoded\":\"Xw5fEA==\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "daaf050a0a045f0e5f1012020801",
+      "checks": {
+        "/identifier/length": "2",
+        "/consumedBytes": "2"
+      }
+    },
+    {
+      "operation": "tlvReadLength",
+      "fieldNumber": 11004,
+      "requestJson": "{\"tlvReadLength\":{\"encoded\":\"ggEAqrs=\",\"options\":{\"profile\":\"CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER\"}}}",
+      "requestHex": "e2af050b0a05820100aabb12020801",
+      "checks": {
+        "/lengthOctets/length": "3",
+        "/declaredValueLength": "256",
+        "/consumedBytes": "3"
+      }
+    }
+  ]
+}

@@ -12,75 +12,43 @@ const SIMPLE_EXTENDED_MINIMUM: u64 = 32;
 const ADDITIONAL_INFORMATION_MASK: u8 = 0x1f;
 const MAJOR_TYPE_SHIFT: u32 = 5;
 
-/// CBOR major type, independent of application or tag semantics.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-#[non_exhaustive]
-pub enum MajorType {
-    /// Unsigned integer.
-    Unsigned,
-    /// Negative integer, represented by its complete unsigned argument.
-    Negative,
-    /// Byte string.
-    Bytes,
-    /// Text string.
-    Text,
-    /// Array.
-    Array,
-    /// Map.
-    Map,
-    /// Tagged value.
-    Tag,
-    /// Simple value, float, or a standalone header break token.
-    Simple,
+/// Schema-generated CBOR major type and received argument width.
+pub use codec_proto::generated::proto::reallyme::codec::v1::{
+    CodecGeneralCborArgumentWidth as ArgumentWidth, CodecGeneralCborMajorType as MajorType,
+};
+
+fn decode_major_type(code: u8) -> Result<MajorType, CborError> {
+    match code {
+        0 => Ok(MajorType::Unsigned),
+        1 => Ok(MajorType::Negative),
+        2 => Ok(MajorType::Bytes),
+        3 => Ok(MajorType::Text),
+        4 => Ok(MajorType::Array),
+        5 => Ok(MajorType::Map),
+        6 => Ok(MajorType::Tag),
+        7 => Ok(MajorType::Simple),
+        _ => Err(error(ErrorReason::ReservedAdditionalInformation)),
+    }
 }
 
-impl MajorType {
-    fn decode(code: u8) -> Result<Self, CborError> {
-        match code {
-            0 => Ok(Self::Unsigned),
-            1 => Ok(Self::Negative),
-            2 => Ok(Self::Bytes),
-            3 => Ok(Self::Text),
-            4 => Ok(Self::Array),
-            5 => Ok(Self::Map),
-            6 => Ok(Self::Tag),
-            7 => Ok(Self::Simple),
+pub(super) trait MajorTypeCode {
+    fn prefix(self) -> Result<u8, CborError>;
+}
+
+impl MajorTypeCode for MajorType {
+    fn prefix(self) -> Result<u8, CborError> {
+        match self {
+            Self::Unsigned => Ok(0x00),
+            Self::Negative => Ok(0x20),
+            Self::Bytes => Ok(0x40),
+            Self::Text => Ok(0x60),
+            Self::Array => Ok(0x80),
+            Self::Map => Ok(0xa0),
+            Self::Tag => Ok(0xc0),
+            Self::Simple => Ok(0xe0),
             _ => Err(error(ErrorReason::ReservedAdditionalInformation)),
         }
     }
-
-    pub(super) const fn prefix(self) -> u8 {
-        match self {
-            Self::Unsigned => 0x00,
-            Self::Negative => 0x20,
-            Self::Bytes => 0x40,
-            Self::Text => 0x60,
-            Self::Array => 0x80,
-            Self::Map => 0xa0,
-            Self::Tag => 0xc0,
-            Self::Simple => 0xe0,
-        }
-    }
-}
-
-/// Received argument/payload width, including indefinite and break tokens.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-#[non_exhaustive]
-pub enum ArgumentWidth {
-    /// The argument is in the initial byte.
-    Inline,
-    /// One additional byte.
-    One,
-    /// Two additional bytes, or a binary16 float.
-    Two,
-    /// Four additional bytes, or a binary32 float.
-    Four,
-    /// Eight additional bytes, or a binary64 float.
-    Eight,
-    /// An indefinite-length header.
-    Indefinite,
-    /// A break token, which is not itself a data item.
-    Break,
 }
 
 pub(super) fn preferred_width(value: u64) -> ArgumentWidth {
@@ -204,7 +172,7 @@ fn argument_bytes<const N: usize>(input: &[u8]) -> Result<[u8; N], CborError> {
 /// Decode at most nine header bytes, without inspecting or normalizing the payload.
 pub fn read_header_prefix(input: &[u8]) -> Result<Header<'_>, CborError> {
     let initial = *input.first().ok_or(error(ErrorReason::EmptyInput))?;
-    let major = MajorType::decode(initial >> MAJOR_TYPE_SHIFT)?;
+    let major = decode_major_type(initial >> MAJOR_TYPE_SHIFT)?;
     let info = initial & ADDITIONAL_INFORMATION_MASK;
     let (width, argument, length) = match info {
         0..=23 => (ArgumentWidth::Inline, Some(u64::from(info)), 1),

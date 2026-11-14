@@ -30,6 +30,10 @@ public object CodecDeterministicCborTextKt {
     internal fun _build(): me.really.codec.v1.CodecDeterministicCborText = _builder.build()
 
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `string value = 1 [json_name = "value"];`
      */
     public var value: kotlin.String
@@ -40,6 +44,10 @@ public object CodecDeterministicCborTextKt {
         _builder.value = value
       }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `string value = 1 [json_name = "value"];`
      */
     public fun clearValue() {

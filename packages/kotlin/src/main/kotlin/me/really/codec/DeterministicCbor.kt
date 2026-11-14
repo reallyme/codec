@@ -5,16 +5,18 @@
 package me.really.codec
 
 public sealed class ReallyMeDeterministicCborInteger {
-    public class Unsigned public constructor(public val value: ULong) :
-        ReallyMeDeterministicCborInteger() {
+    public class Unsigned public constructor(
+        public val value: ULong,
+    ) : ReallyMeDeterministicCborInteger() {
         /** Java-friendly exact decimal view of the unsigned value. */
         public fun toUnsignedDecimalString(): String = value.toString()
 
         override fun toString(): String = "ReallyMeDeterministicCborInteger(<redacted>)"
     }
 
-    public class Negative private constructor(public val value: Long) :
-        ReallyMeDeterministicCborInteger() {
+    public class Negative private constructor(
+        public val value: Long,
+    ) : ReallyMeDeterministicCborInteger() {
         public companion object {
             public fun of(value: Long): Negative {
                 if (value >= 0) {
@@ -36,13 +38,15 @@ public sealed class ReallyMeDeterministicCborInteger {
 }
 
 public sealed class ReallyMeDeterministicCborMapKey {
-    public class Integer public constructor(public val value: ReallyMeDeterministicCborInteger) :
-        ReallyMeDeterministicCborMapKey() {
+    public class Integer public constructor(
+        public val value: ReallyMeDeterministicCborInteger,
+    ) : ReallyMeDeterministicCborMapKey() {
         override fun toString(): String = "ReallyMeDeterministicCborMapKey(<redacted>)"
     }
 
-    public class Text public constructor(public val value: String) :
-        ReallyMeDeterministicCborMapKey() {
+    public class Text public constructor(
+        public val value: String,
+    ) : ReallyMeDeterministicCborMapKey() {
         override fun toString(): String = "ReallyMeDeterministicCborMapKey(<redacted>)"
     }
 }
@@ -56,12 +60,10 @@ public class ReallyMeDeterministicCborMapEntry public constructor(
 
 public object ReallyMeDeterministicCbor {
     @JvmStatic
-    public fun nullValue(): ReallyMeDeterministicCborValue =
-        ReallyMeDeterministicCborValue.Null
+    public fun nullValue(): ReallyMeDeterministicCborValue = ReallyMeDeterministicCborValue.Null
 
     @JvmStatic
-    public fun bool(value: Boolean): ReallyMeDeterministicCborValue =
-        ReallyMeDeterministicCborValue.Bool(value)
+    public fun bool(value: Boolean): ReallyMeDeterministicCborValue = ReallyMeDeterministicCborValue.Bool(value)
 
     @JvmStatic
     public fun unsigned(value: ULong): ReallyMeDeterministicCborValue =
@@ -97,38 +99,31 @@ public object ReallyMeDeterministicCbor {
         )
 
     @JvmStatic
-    public fun text(value: String): ReallyMeDeterministicCborValue =
-        ReallyMeDeterministicCborValue.Text(value)
+    public fun text(value: String): ReallyMeDeterministicCborValue = ReallyMeDeterministicCborValue.Text(value)
 
     @JvmStatic
-    public fun bytes(value: ByteArray): ReallyMeDeterministicCborValue =
-        ReallyMeDeterministicCborValue.Bytes(value)
+    public fun bytes(value: ByteArray): ReallyMeDeterministicCborValue = ReallyMeDeterministicCborValue.Bytes(value)
 
     @JvmStatic
-    public fun array(
-        values: List<ReallyMeDeterministicCborValue>,
-    ): ReallyMeDeterministicCborValue =
+    public fun array(values: List<ReallyMeDeterministicCborValue>): ReallyMeDeterministicCborValue =
         ReallyMeDeterministicCborValue.Array(values)
 
     @JvmStatic
-    public fun mapInt(
-        entries: List<Pair<ULong, ReallyMeDeterministicCborValue>>,
-    ): ReallyMeDeterministicCborValue =
+    public fun mapInt(entries: List<Pair<ULong, ReallyMeDeterministicCborValue>>): ReallyMeDeterministicCborValue =
         ReallyMeDeterministicCborValue.Map(
             entries.map { entry ->
                 ReallyMeDeterministicCborMapEntry(
-                    key = ReallyMeDeterministicCborMapKey.Integer(
-                        ReallyMeDeterministicCborInteger.Unsigned(entry.first),
-                    ),
+                    key =
+                        ReallyMeDeterministicCborMapKey.Integer(
+                            ReallyMeDeterministicCborInteger.Unsigned(entry.first),
+                        ),
                     value = entry.second,
                 )
             },
         )
 
     @JvmStatic
-    public fun mapUnsignedLong(
-        entries: Map<Long, ReallyMeDeterministicCborValue>,
-    ): ReallyMeDeterministicCborValue =
+    public fun mapUnsignedLong(entries: Map<Long, ReallyMeDeterministicCborValue>): ReallyMeDeterministicCborValue =
         ReallyMeDeterministicCborValue.Map(
             entries.entries.map { entry ->
                 val key = entry.key
@@ -136,18 +131,17 @@ public object ReallyMeDeterministicCbor {
                     throw ReallyMeCodecException.InvalidInput()
                 }
                 ReallyMeDeterministicCborMapEntry(
-                    key = ReallyMeDeterministicCborMapKey.Integer(
-                        ReallyMeDeterministicCborInteger.Unsigned(key.toULong()),
-                    ),
+                    key =
+                        ReallyMeDeterministicCborMapKey.Integer(
+                            ReallyMeDeterministicCborInteger.Unsigned(key.toULong()),
+                        ),
                     value = entry.value,
                 )
             },
         )
 
     @JvmStatic
-    public fun mapText(
-        entries: List<Pair<String, ReallyMeDeterministicCborValue>>,
-    ): ReallyMeDeterministicCborValue =
+    public fun mapText(entries: List<Pair<String, ReallyMeDeterministicCborValue>>): ReallyMeDeterministicCborValue =
         ReallyMeDeterministicCborValue.Map(
             entries.map { entry ->
                 ReallyMeDeterministicCborMapEntry(
@@ -158,9 +152,7 @@ public object ReallyMeDeterministicCbor {
         )
 
     @JvmStatic
-    public fun mapText(
-        entries: Map<String, ReallyMeDeterministicCborValue>,
-    ): ReallyMeDeterministicCborValue =
+    public fun mapText(entries: Map<String, ReallyMeDeterministicCborValue>): ReallyMeDeterministicCborValue =
         ReallyMeDeterministicCborValue.Map(
             entries.entries.map { entry ->
                 ReallyMeDeterministicCborMapEntry(
@@ -189,62 +181,46 @@ public object ReallyMeDeterministicCbor {
         }
 
     @JvmStatic
-    public fun textKey(value: String): ReallyMeDeterministicCborMapKey =
-        ReallyMeDeterministicCborMapKey.Text(value)
+    public fun textKey(value: String): ReallyMeDeterministicCborMapKey = ReallyMeDeterministicCborMapKey.Text(value)
 
     @JvmStatic
     public fun entry(
         key: ReallyMeDeterministicCborMapKey,
         value: ReallyMeDeterministicCborValue,
-    ): ReallyMeDeterministicCborMapEntry =
-        ReallyMeDeterministicCborMapEntry(key, value)
+    ): ReallyMeDeterministicCborMapEntry = ReallyMeDeterministicCborMapEntry(key, value)
 }
 
 public object ReallyMeDagCbor {
     @JvmStatic
-    public fun nullValue(): ReallyMeDeterministicCborValue =
-        ReallyMeDeterministicCbor.nullValue()
+    public fun nullValue(): ReallyMeDeterministicCborValue = ReallyMeDeterministicCbor.nullValue()
 
     @JvmStatic
-    public fun bool(value: Boolean): ReallyMeDeterministicCborValue =
-        ReallyMeDeterministicCbor.bool(value)
+    public fun bool(value: Boolean): ReallyMeDeterministicCborValue = ReallyMeDeterministicCbor.bool(value)
 
     @JvmStatic
-    public fun unsigned(value: ULong): ReallyMeDeterministicCborValue =
-        ReallyMeDeterministicCbor.unsigned(value)
+    public fun unsigned(value: ULong): ReallyMeDeterministicCborValue = ReallyMeDeterministicCbor.unsigned(value)
 
     @JvmStatic
-    public fun unsignedLong(value: Long): ReallyMeDeterministicCborValue =
-        ReallyMeDeterministicCbor.unsignedLong(value)
+    public fun unsignedLong(value: Long): ReallyMeDeterministicCborValue = ReallyMeDeterministicCbor.unsignedLong(value)
 
     @JvmStatic
-    public fun negative(value: Long): ReallyMeDeterministicCborValue =
-        ReallyMeDeterministicCbor.negative(value)
+    public fun negative(value: Long): ReallyMeDeterministicCborValue = ReallyMeDeterministicCbor.negative(value)
 
     @JvmStatic
-    public fun text(value: String): ReallyMeDeterministicCborValue =
-        ReallyMeDeterministicCbor.text(value)
+    public fun text(value: String): ReallyMeDeterministicCborValue = ReallyMeDeterministicCbor.text(value)
 
     @JvmStatic
-    public fun bytes(value: ByteArray): ReallyMeDeterministicCborValue =
-        ReallyMeDeterministicCbor.bytes(value)
+    public fun bytes(value: ByteArray): ReallyMeDeterministicCborValue = ReallyMeDeterministicCbor.bytes(value)
 
     @JvmStatic
-    public fun array(
-        values: List<ReallyMeDeterministicCborValue>,
-    ): ReallyMeDeterministicCborValue =
-        ReallyMeDeterministicCbor.array(values)
+    public fun array(values: List<ReallyMeDeterministicCborValue>): ReallyMeDeterministicCborValue = ReallyMeDeterministicCbor.array(values)
 
     @JvmStatic
-    public fun mapText(
-        entries: List<Pair<String, ReallyMeDeterministicCborValue>>,
-    ): ReallyMeDeterministicCborValue =
+    public fun mapText(entries: List<Pair<String, ReallyMeDeterministicCborValue>>): ReallyMeDeterministicCborValue =
         ReallyMeDeterministicCbor.mapText(entries)
 
     @JvmStatic
-    public fun mapText(
-        entries: Map<String, ReallyMeDeterministicCborValue>,
-    ): ReallyMeDeterministicCborValue =
+    public fun mapText(entries: Map<String, ReallyMeDeterministicCborValue>): ReallyMeDeterministicCborValue =
         ReallyMeDeterministicCbor.mapText(entries)
 }
 
@@ -253,26 +229,31 @@ public sealed class ReallyMeDeterministicCborValue {
         override fun toString(): String = "ReallyMeDeterministicCborValue(<redacted>)"
     }
 
-    public class Bool public constructor(public val value: Boolean) :
-        ReallyMeDeterministicCborValue() {
+    public class Bool public constructor(
+        public val value: Boolean,
+    ) : ReallyMeDeterministicCborValue() {
         override fun toString(): String = "ReallyMeDeterministicCborValue(<redacted>)"
     }
 
-    public class Integer public constructor(public val value: ReallyMeDeterministicCborInteger) :
-        ReallyMeDeterministicCborValue() {
+    public class Integer public constructor(
+        public val value: ReallyMeDeterministicCborInteger,
+    ) : ReallyMeDeterministicCborValue() {
         override fun toString(): String = "ReallyMeDeterministicCborValue(<redacted>)"
     }
 
-    public class Text public constructor(public val value: String) :
-        ReallyMeDeterministicCborValue() {
+    public class Text public constructor(
+        public val value: String,
+    ) : ReallyMeDeterministicCborValue() {
         override fun toString(): String = "ReallyMeDeterministicCborValue(<redacted>)"
     }
 
     public class Bytes private constructor(
-        private val bytes: ByteArray,
-        @Suppress("UNUSED_PARAMETER") owned: Unit,
+        bytes: ByteArray,
+        takeOwnership: Boolean,
     ) : ReallyMeDeterministicCborValue() {
-        public constructor(bytes: ByteArray) : this(bytes.copyOf(), Unit)
+        private val bytes: ByteArray = if (takeOwnership) bytes else bytes.copyOf()
+
+        public constructor(bytes: ByteArray) : this(bytes, false)
 
         internal companion object {
             /**
@@ -280,7 +261,7 @@ public sealed class ReallyMeDeterministicCborValue {
              * public value owner. This avoids copying the bytes only to leave
              * the short-lived source array unwipeable until garbage collection.
              */
-            internal fun fromOwnedProviderBytes(bytes: ByteArray): Bytes = Bytes(bytes, Unit)
+            internal fun fromOwnedProviderBytes(bytes: ByteArray): Bytes = Bytes(bytes, true)
         }
 
         public fun bytes(): ByteArray = bytes.copyOf()

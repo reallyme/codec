@@ -13,6 +13,7 @@ public interface CodecDeterministicCborDecodeRequestOrBuilder extends
   /**
    * <pre>
    * Encoded CBOR bytes may contain the complete sensitive document.
+   * SENSITIVE: payload ownership requires redaction and zeroization.
    * </pre>
    *
    * <code>bytes encoded = 1 [json_name = "encoded"];</code>

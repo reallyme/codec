@@ -53,6 +53,7 @@ pub(super) fn scan<'a>(
     account: bool,
     lengths: LengthPolicy,
 ) -> Result<Frame<'a>, CborError> {
+    super::profile::ensure_lengths_supported(lengths)?;
     budget.charge(1)?;
     let header = read_header_prefix(input)?;
     budget.charge(header.received_bytes().len())?;
@@ -227,6 +228,7 @@ pub(super) fn scan<'a>(
                 return Err(error(ErrorReason::MapKeyOrder));
             }
         }
+        _ => return Err(error(ErrorReason::UnsupportedPolicy)),
     }
     let encoded = input.get(..end).ok_or(error(ErrorReason::Truncated))?;
     let body = input

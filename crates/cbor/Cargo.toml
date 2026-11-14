@@ -4,7 +4,7 @@
 
 [package]
 name = "reallyme-codec-cbor"
-version = "0.3.6"
+version = "0.4.0"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -17,6 +17,8 @@ include = ["/src/**/*.rs", "/tests/**/*.rs", "/tests/fixtures/**", "/Cargo.toml"
 name = "codec_cbor"
 
 [dependencies]
+buffa.workspace = true
+codec-proto = { package = "reallyme-codec-proto", version = "=0.4.0", path = "../proto", features = ["generated"] }
 half = { workspace = true }
 cid = { workspace = true }
 multihash = { workspace = true }

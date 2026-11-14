@@ -31,6 +31,13 @@ ARTIFACT_DOWNLOAD_ATTEMPTS = 3
 COORDINATE_PART = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._+-]*\Z")
 SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 
+# Gradle records the variant's file name; its published module metadata points
+# to a different Maven filename. Verify the publisher bytes at that URL.
+PUBLISHED_ARTIFACT_NAMES = {
+    ("com.github.ajalt.clikt", "clikt-jvm", "5.0.2", "clikt-mordant-jvm-sources.jar"):
+        "clikt-jvm-5.0.2-sources.jar",
+}
+
 
 def validated_coordinate_part(value):
     if value is None or ".." in value or COORDINATE_PART.fullmatch(value) is None:
@@ -66,7 +73,8 @@ def entries():
 def verify(item):
     """Return the publisher evidence for one locally pinned artifact hash."""
     (group, name, version, artifact), expected = item
-    path = f"{group.replace('.', '/')}/{name}/{version}/{artifact}.sha256"
+    published_name = PUBLISHED_ARTIFACT_NAMES.get((group, name, version, artifact), artifact)
+    path = f"{group.replace('.', '/')}/{name}/{version}/{published_name}.sha256"
     if group.startswith(("androidx.", "com.android.", "com.google.android.")):
         preferred = (REPOSITORIES[1], REPOSITORIES[0], REPOSITORIES[2])
     elif name.endswith(".gradle.plugin"):

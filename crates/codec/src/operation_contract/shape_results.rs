@@ -11,15 +11,15 @@ fn codec_spec_proto(spec: &MulticodecSpec<'_>) -> Result<CodecMulticodecSpec, Co
         MulticodecLength::NotApplicable => (0, false),
     };
     Ok(CodecMulticodecSpec {
-        name: try_copy_result_string(spec.name())?,
-        code: try_copy_result_bytes(spec.code())?,
-        prefix: try_copy_result_bytes(spec.prefix())?,
+        name: try_copy_result_string(spec.name())?.into(),
+        code: try_copy_result_bytes(spec.code())?.into(),
+        prefix: try_copy_result_bytes(spec.prefix())?.into(),
         tag: EnumValue::from(codec_tag_proto(spec.tag())?),
         key_material_kind: EnumValue::from(key_material_kind_proto(spec.key_material())?),
         fixed_length,
         variable_length,
-        algorithm_name: try_copy_result_string(spec.algorithm_name())?,
-        __buffa_unknown_fields: Default::default(),
+        algorithm_name: try_copy_result_string(spec.algorithm_name())?.into(),
+
     })
 }
 
@@ -29,10 +29,10 @@ fn multicodec_lookup_result_proto(
     found: &MulticodecLookup<'_>,
 ) -> Result<CodecMulticodecLookupResult, CodecWireError> {
     Ok(CodecMulticodecLookupResult {
-        name: try_copy_result_string(found.name())?,
+        name: try_copy_result_string(found.name())?.into(),
         prefix_length: usize_to_u32(found.prefix_length())?,
         metadata: codec_spec_proto(found.metadata())?.into(),
-        __buffa_unknown_fields: Default::default(),
+
     })
 }
 
@@ -49,8 +49,8 @@ fn multicodec_table_result_proto(
         entries.push(codec_spec_proto(spec)?);
     }
     Ok(CodecMulticodecTableResult {
-        entries,
-        __buffa_unknown_fields: Default::default(),
+        entries: entries.into(),
+
     })
 }
 
@@ -65,12 +65,12 @@ fn multikey_parse_result_proto(
         None => 0,
     };
     Ok(CodecMultikeyParseResult {
-        codec_name: try_copy_result_string(parsed.codec_name())?,
-        algorithm_name: try_copy_result_string(parsed.algorithm_name())?,
-        public_key: parsed.into_public_key(),
+        codec_name: try_copy_result_string(parsed.codec_name())?.into(),
+        algorithm_name: try_copy_result_string(parsed.algorithm_name())?.into(),
+        public_key: parsed.into_public_key().into(),
         expected_public_key_length,
         variable_public_key_length,
-        __buffa_unknown_fields: Default::default(),
+
     })
 }
 
@@ -83,9 +83,9 @@ fn dag_cbor_verify_cid_result_proto(
     let (valid, expected_cid, actual_cid) = verification.into_parts();
     CodecDagCborVerifyCidResult {
         valid,
-        expected_cid,
-        actual_cid,
-        __buffa_unknown_fields: Default::default(),
+        expected_cid: expected_cid.into(),
+        actual_cid: actual_cid.into(),
+
     }
 }
 
@@ -99,9 +99,9 @@ fn pem_decode_result_proto(
     let label = try_copy_result_string(decoded.label().as_str())?;
     let der = decoded.into_der();
     Ok(CodecPemDecodeResult {
-        label,
-        der,
-        __buffa_unknown_fields: Default::default(),
+        label: label.into(),
+        der: der.into(),
+
     })
 }
 

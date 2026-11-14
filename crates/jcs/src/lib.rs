@@ -24,8 +24,5 @@ mod parse_json;
 pub use canonicalize::{canonicalize_json_text, canonicalize_trusted_json_value};
 pub use error::JcsError;
 
-/// Maximum array/object nesting depth accepted by both JCS entry points.
-///
-/// The text parser applies this guard after disabling serde_json's recursion
-/// limit, and trusted values apply it during canonicalization.
-pub const MAX_NESTING_DEPTH: usize = 128;
+mod limits;
+pub use limits::MAX_NESTING_DEPTH;

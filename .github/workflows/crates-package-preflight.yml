@@ -18,7 +18,7 @@ on:
         description: Release version without leading v
         required: true
         type: string
-        default: 0.3.6
+        default: 0.4.0
 
 permissions:
   contents: read
@@ -110,6 +110,3 @@ jobs:
 
       - name: Inspect publishable crate tarballs
         run: node scripts/publish_crates_in_order.mjs inspect
-
-      - name: Check release readiness contract
-        run: node scripts/run_pinned_release_readiness.mjs

@@ -37,6 +37,10 @@ public  final class CodecDeterministicCborUnsignedInteger extends
   public static final int VALUE_FIELD_NUMBER = 1;
   private long value_;
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>uint64 value = 1 [json_name = "value"];</code>
    * @return The value.
    */
@@ -45,6 +49,10 @@ public  final class CodecDeterministicCborUnsignedInteger extends
     return value_;
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>uint64 value = 1 [json_name = "value"];</code>
    * @param value The value to set.
    */
@@ -53,6 +61,10 @@ public  final class CodecDeterministicCborUnsignedInteger extends
     value_ = value;
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>uint64 value = 1 [json_name = "value"];</code>
    */
   private void clearValue() {
@@ -158,6 +170,10 @@ public  final class CodecDeterministicCborUnsignedInteger extends
 
 
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>uint64 value = 1 [json_name = "value"];</code>
      * @return The value.
      */
@@ -166,6 +182,10 @@ public  final class CodecDeterministicCborUnsignedInteger extends
       return instance.getValue();
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>uint64 value = 1 [json_name = "value"];</code>
      * @param value The value to set.
      * @return This builder for chaining.
@@ -176,6 +196,10 @@ public  final class CodecDeterministicCborUnsignedInteger extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>uint64 value = 1 [json_name = "value"];</code>
      * @return This builder for chaining.
      */

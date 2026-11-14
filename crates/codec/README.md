@@ -8,7 +8,7 @@ Use the public APIs below for encoding and parsing. Cryptographic signing and ve
 
 ```toml
 [dependencies]
-reallyme-codec = "0.3.6"
+reallyme-codec = "0.4.0"
 ```
 
 The default feature set enables the base-encoding, CBOR/JCS, multiformat, and PEM
@@ -17,7 +17,7 @@ families they use:
 
 ```toml
 [dependencies]
-reallyme-codec = { version = "0.3.6", default-features = false, features = ["base64url", "multikey"] }
+reallyme-codec = { version = "0.4.0", default-features = false, features = ["base64url", "multikey"] }
 ```
 
 ## Quick Start
@@ -45,6 +45,7 @@ DTOs that carry byte fields as unpadded base64url strings can enable the
 - `base64url`
 - `cbor`
 - `der` — opt-in strict, bounded DER readers for Rust consumers
+- `tlv` — opt-in borrowed definite BER/ISO 7816 and canonical DER header framing
 - `hex`
 - `jcs`
 - `multibase`
@@ -54,7 +55,7 @@ DTOs that carry byte fields as unpadded base64url strings can enable the
 - `serde` — base64url serde field adapters
 - `operation-contract` — generated binary protobuf and ProtoJSON dispatch
 
-`der`, `serde`, and `operation-contract` are opt-in; they are not part of the default
+`der`, `tlv`, `serde`, and `operation-contract` are opt-in; they are not part of the default
 feature set. The operation contract enables its required codec families.
 
 The `der` module provides borrowed, schema-directed readers and a strict
@@ -70,3 +71,21 @@ The DER reader does not expose a Swift, Kotlin, or TypeScript facade.
 
 Dual-licensed under the MIT License or Apache License, Version 2.0, at your
 option. See the crate's `LICENSE` file for both license texts.
+
+### Borrowed TLV framing
+
+The `tlv` feature provides `tlv::read_identifier`, `tlv::read_length`,
+`tlv::read_header`, `tlv::frame_prefix`, and `tlv::frame_exact`. Options and
+profiles are generated from the protobuf schema; choose a profile explicitly.
+The default source limit is 1 MiB, with explicit limits up to 16 MiB.
+Prefix and header reads can succeed before the value arrives. Frames expose
+exact borrowed received/value bytes and checked
+source spans; prefix framing also returns the unconsumed suffix. No payload is
+copied or allocated from a declared length. Receipt metadata is bounded.
+
+The ISO 7816 profile retains wire identifiers and redundant definite lengths.
+The DER framing profile checks canonical outer headers only; constructed
+contents remain opaque. The existing `der` schema reader remains strict and
+provides recursive value and canonicality checks. See
+[the protobuf contract](../../docs/protobuf.md#definite-tlv-framing) for limits,
+receipts, and typed failures.

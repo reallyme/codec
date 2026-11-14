@@ -2,23 +2,18 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-/**
- * Typed codec error codes. Errors intentionally carry no raw input bytes so
- * callers can log them without leaking request payloads.
- */
-export type ReallyMeCodecErrorCode =
-  | "invalid-input"
-  | "non-canonical"
-  | "provider-failure"
-  | "unsupported-codec"
-  | "unsupported-ipld-value";
+import { isReallyMeCodecErrorCode } from "./proto/generated/sdkContract.js";
+import type { ReallyMeCodecErrorCode } from "./proto/generated/sdkContract.js";
+export type { ReallyMeCodecErrorCode } from "./proto/generated/sdkContract.js";
 
+/** Typed codec errors never publish untrusted diagnostic text. */
 export class ReallyMeCodecError extends Error {
   readonly code: ReallyMeCodecErrorCode;
 
   constructor(code: ReallyMeCodecErrorCode) {
-    super(code);
+    const checkedCode = isReallyMeCodecErrorCode(code) ? code : "provider-failure";
+    super(checkedCode);
     this.name = "ReallyMeCodecError";
-    this.code = code;
+    this.code = checkedCode;
   }
 }

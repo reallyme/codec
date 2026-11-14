@@ -62,8 +62,10 @@
 //! ```
 
 mod compare;
+mod contract;
 mod cursor;
 mod encode;
+mod encode_contract;
 mod error;
 mod float;
 mod limits;
@@ -73,6 +75,7 @@ mod receipt;
 mod scan;
 mod unique;
 
+pub use contract::{encode_value, float_equivalent, float_properties};
 pub use cursor::Cursor;
 pub use encode::{encode, EncodedCbor, MapEntry, ValueRef};
 pub use error::{CborError, ErrorReason};

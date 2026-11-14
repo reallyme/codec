@@ -36,6 +36,10 @@ public object CodecDeterministicCborMapKt {
     @kotlin.OptIn(com.google.protobuf.kotlin.OnlyForUseByGeneratedProtoCode::class)
     public class EntriesProxy private constructor() : com.google.protobuf.kotlin.DslProxy()
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];`
      */
      public val entries: com.google.protobuf.kotlin.DslList<me.really.codec.v1.CodecDeterministicCborMapEntry, EntriesProxy>
@@ -44,6 +48,10 @@ public object CodecDeterministicCborMapKt {
         _builder.entriesList
       )
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];`
      * @param value The entries to add.
      */
@@ -53,6 +61,10 @@ public object CodecDeterministicCborMapKt {
       _builder.addEntries(value)
     }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];`
      * @param value The entries to add.
      */
@@ -63,6 +75,10 @@ public object CodecDeterministicCborMapKt {
       add(value)
     }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];`
      * @param values The entries to add.
      */
@@ -72,6 +88,10 @@ public object CodecDeterministicCborMapKt {
       _builder.addAllEntries(values)
     }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];`
      * @param values The entries to add.
      */
@@ -82,6 +102,10 @@ public object CodecDeterministicCborMapKt {
       addAll(values)
     }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];`
      * @param index The index to set the value at.
      * @param value The entries to set.
@@ -92,6 +116,10 @@ public object CodecDeterministicCborMapKt {
       _builder.setEntries(index, value)
     }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];`
      */
     @kotlin.jvm.JvmSynthetic

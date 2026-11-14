@@ -8,7 +8,7 @@
 // SwiftPM and Xcode only read `Package.swift` at the repository root when a
 // package is consumed by URL, e.g.
 //
-//     .package(url: "https://github.com/reallyme/codec", from: "0.3.6")
+//     .package(url: "https://github.com/reallyme/codec", from: "0.4.0")
 //     .product(name: "ReallyMeCodec", package: "codec")
 //
 // The Swift sources live under `packages/swift/` to keep symmetry with the
@@ -22,9 +22,9 @@ let ffiArtifactChecksumPlaceholder =
     "0000000000000000000000000000000000000000000000000000000000000000"
 // Keep the binary dependency disabled until preflight binds the matching archive.
 let ffiArtifactChecksum = "0000000000000000000000000000000000000000000000000000000000000000"
-let ffiArtifactVersion = "0.3.6"
+let ffiArtifactVersion = "0.4.0"
 let ffiArtifactLocalPathOverride = ""
-let packageVersion = "0.3.6"
+let packageVersion = "0.4.0"
 let hasReleasedFfiArtifact =
     ffiArtifactChecksum != ffiArtifactChecksumPlaceholder && ffiArtifactVersion == packageVersion
 let useRuntimeFfiProvider =

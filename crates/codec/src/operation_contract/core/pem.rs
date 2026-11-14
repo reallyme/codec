@@ -89,12 +89,6 @@ impl DecodedPem {
         self.label
     }
 
-    /// Return the decoded DER payload.
-    #[cfg(test)]
-    pub fn der(&self) -> &[u8] {
-        self.der.as_slice()
-    }
-
     /// Consume the semantic owner and transfer its DER allocation.
     ///
     /// The generated protobuf result becomes the next zeroizing owner. Moving
@@ -147,52 +141,5 @@ fn pem_operation_error(error: PemError) -> PemOperationError {
 }
 
 #[cfg(test)]
-mod tests {
-    #![allow(clippy::unwrap_used)]
-
-    use codec_pem::{encode_pem, PemDecodePolicy, PemEncodeOptions, PemLabel};
-
-    use super::{decode_pem, decode_primitive_pem, PemOperationError};
-
-    #[test]
-    fn decode_pem_preserves_primitive_decode_semantics() {
-        let der = b"not real der";
-        let pem = encode_pem(PemLabel::PublicKey, der, PemEncodeOptions::default()).unwrap();
-        let policy = PemDecodePolicy {
-            allowed_labels: &[PemLabel::PublicKey],
-            ..PemDecodePolicy::default()
-        };
-        let primitive = decode_primitive_pem(&pem, policy).unwrap();
-        let decoded = decode_pem(&pem, policy).unwrap();
-
-        assert_eq!(decoded.label(), primitive.label);
-        assert_eq!(decoded.der(), primitive.der.as_slice());
-    }
-
-    #[test]
-    fn decode_pem_maps_label_mismatch_without_input_context() {
-        let pem = "-----BEGIN PUBLIC KEY-----\nAA==\n-----END PRIVATE KEY-----\n";
-        let error = match decode_pem(pem, PemDecodePolicy::default()) {
-            Ok(_) => PemOperationError::OperationInvariant,
-            Err(error) => error,
-        };
-
-        assert_eq!(error, PemOperationError::LabelMismatch);
-    }
-
-    #[test]
-    fn decode_pem_maps_unsupported_label_without_input_context() {
-        let der = b"not real der";
-        let pem = encode_pem(PemLabel::PublicKey, der, PemEncodeOptions::default()).unwrap();
-        let policy = PemDecodePolicy {
-            allowed_labels: &[PemLabel::PrivateKey],
-            ..PemDecodePolicy::default()
-        };
-        let error = match decode_pem(&pem, policy) {
-            Ok(_) => PemOperationError::OperationInvariant,
-            Err(error) => error,
-        };
-
-        assert_eq!(error, PemOperationError::UnsupportedLabel);
-    }
-}
+#[path = "pem_tests.rs"]
+mod tests;

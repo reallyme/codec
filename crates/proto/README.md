@@ -5,11 +5,12 @@ Generated Rust bindings for codec requests, results, options and errors in `real
 This crate declares protobuf messages, not a service.
 
 JSON is a generated ProtoJSON request convenience. Results remain one fully
-discriminated binary `CodecOperationResponse`.
+discriminated binary `CodecOperationResponse` for existing operations, or the expanded
+`CodecApiOperationResponse`.
 
 ```toml
 [dependencies]
-reallyme-codec-proto = { version = "0.3.6", features = ["generated"] }
+reallyme-codec-proto = { version = "0.4.0", features = ["generated"] }
 ```
 
 The protobuf source is published with this crate at
@@ -17,9 +18,12 @@ The protobuf source is published with this crate at
 Runtime codec operations still use the typed APIs and errors from
 `reallyme-codec`. This crate owns messages and wire codecs; executable dispatch
 belongs to `reallyme-codec::operation_contract` (enable the `operation-contract` feature),
-which accepts one
-`CodecOperationRequest` and returns one fully discriminated
-`CodecOperationResponse`.
+which accepts `CodecApiOperationRequest` and returns a fully discriminated
+`CodecApiOperationResponse`. The original `CodecOperationRequest`,
+`CodecOperationResult`, `CodecOperationResponse`, and `CodecError` retain their
+wire shapes. Their field numbers and payload types are shared with the
+expanded envelope, so existing requests and responses keep the same wire bytes.
+Both envelopes use the same runtime entry points and semantic implementations.
 
 ## License
 

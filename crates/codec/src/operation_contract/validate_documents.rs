@@ -38,28 +38,28 @@ fn validate_deterministic_value(
     depth: usize,
     limits: &mut DeterministicProtoLimits,
 ) -> Result<(), CodecWireError> {
-    reject_unknown_fields(&value.__buffa_unknown_fields)?;
+
     limits.add_node()?;
     match value.value.as_ref() {
-        Some(codec_deterministic_cbor_value::Value::NullValue(value)) => {
-            reject_unknown_fields(&value.__buffa_unknown_fields)
+        Some(codec_deterministic_cbor_value::Value::NullValue(_)) => {
+            Ok(())
         }
-        Some(codec_deterministic_cbor_value::Value::BoolValue(value)) => {
-            reject_unknown_fields(&value.__buffa_unknown_fields)
+        Some(codec_deterministic_cbor_value::Value::BoolValue(_)) => {
+            Ok(())
         }
         Some(codec_deterministic_cbor_value::Value::IntegerValue(value)) => {
             validate_deterministic_integer(value)
         }
         Some(codec_deterministic_cbor_value::Value::TextValue(value)) => {
-            reject_unknown_fields(&value.__buffa_unknown_fields)?;
+
             limits.add_text(value.value.len())
         }
         Some(codec_deterministic_cbor_value::Value::BytesValue(value)) => {
-            reject_unknown_fields(&value.__buffa_unknown_fields)?;
+
             limits.add_bytes(value.value.len())
         }
         Some(codec_deterministic_cbor_value::Value::ArrayValue(value)) => {
-            reject_unknown_fields(&value.__buffa_unknown_fields)?;
+
             ensure_proto_limit(value.values.len(), MAX_DETERMINISTIC_CBOR_CONTAINER_ENTRIES)?;
             let child_depth = deterministic_proto_child_depth(depth)?;
             for child in &value.values {
@@ -68,14 +68,14 @@ fn validate_deterministic_value(
             Ok(())
         }
         Some(codec_deterministic_cbor_value::Value::MapValue(value)) => {
-            reject_unknown_fields(&value.__buffa_unknown_fields)?;
+
             ensure_proto_limit(
                 value.entries.len(),
                 MAX_DETERMINISTIC_CBOR_CONTAINER_ENTRIES,
             )?;
             let child_depth = deterministic_proto_child_depth(depth)?;
             for entry in &value.entries {
-                reject_unknown_fields(&entry.__buffa_unknown_fields)?;
+
                 validate_deterministic_key(&entry.key, limits)?;
                 let Some(entry_value) = entry.value.as_option() else {
                     return Err(malformed_request_wire_error());
@@ -93,28 +93,28 @@ fn validate_dag_cbor_proto_value(
     depth: usize,
     limits: &mut DeterministicProtoLimits,
 ) -> Result<(), CodecWireError> {
-    reject_unknown_fields(&value.__buffa_unknown_fields)?;
+
     limits.add_node()?;
     match value.value.as_ref() {
-        Some(codec_deterministic_cbor_value::Value::NullValue(value)) => {
-            reject_unknown_fields(&value.__buffa_unknown_fields)
+        Some(codec_deterministic_cbor_value::Value::NullValue(_)) => {
+            Ok(())
         }
-        Some(codec_deterministic_cbor_value::Value::BoolValue(value)) => {
-            reject_unknown_fields(&value.__buffa_unknown_fields)
+        Some(codec_deterministic_cbor_value::Value::BoolValue(_)) => {
+            Ok(())
         }
         Some(codec_deterministic_cbor_value::Value::IntegerValue(value)) => {
             validate_dag_cbor_proto_integer(value)
         }
         Some(codec_deterministic_cbor_value::Value::TextValue(value)) => {
-            reject_unknown_fields(&value.__buffa_unknown_fields)?;
+
             limits.add_text(value.value.len())
         }
         Some(codec_deterministic_cbor_value::Value::BytesValue(value)) => {
-            reject_unknown_fields(&value.__buffa_unknown_fields)?;
+
             limits.add_bytes(value.value.len())
         }
         Some(codec_deterministic_cbor_value::Value::ArrayValue(value)) => {
-            reject_unknown_fields(&value.__buffa_unknown_fields)?;
+
             ensure_proto_limit(value.values.len(), MAX_DETERMINISTIC_CBOR_CONTAINER_ENTRIES)?;
             let child_depth = deterministic_proto_child_depth(depth)?;
             for child in &value.values {
@@ -123,14 +123,14 @@ fn validate_dag_cbor_proto_value(
             Ok(())
         }
         Some(codec_deterministic_cbor_value::Value::MapValue(value)) => {
-            reject_unknown_fields(&value.__buffa_unknown_fields)?;
+
             ensure_proto_limit(
                 value.entries.len(),
                 MAX_DETERMINISTIC_CBOR_CONTAINER_ENTRIES,
             )?;
             let child_depth = deterministic_proto_child_depth(depth)?;
             for entry in &value.entries {
-                reject_unknown_fields(&entry.__buffa_unknown_fields)?;
+
                 validate_dag_cbor_proto_key(&entry.key, limits)?;
                 let Some(entry_value) = entry.value.as_option() else {
                     return Err(malformed_request_wire_error());
@@ -146,10 +146,9 @@ fn validate_dag_cbor_proto_value(
 fn validate_dag_cbor_proto_integer(
     value: &CodecDeterministicCborInteger,
 ) -> Result<(), CodecWireError> {
-    reject_unknown_fields(&value.__buffa_unknown_fields)?;
+
     match value.value.as_ref() {
         Some(codec_deterministic_cbor_integer::Value::UnsignedValue(value)) => {
-            reject_unknown_fields(&value.__buffa_unknown_fields)?;
             if i64::try_from(value.value).is_ok() {
                 Ok(())
             } else {
@@ -157,7 +156,7 @@ fn validate_dag_cbor_proto_integer(
             }
         }
         Some(codec_deterministic_cbor_integer::Value::NegativeValue(value)) => {
-            reject_unknown_fields(&value.__buffa_unknown_fields)?;
+
             if value.value < 0 {
                 Ok(())
             } else {
@@ -175,15 +174,15 @@ fn validate_dag_cbor_proto_key<P: buffa::ProtoBox<CodecDeterministicCborMapKey>>
     let Some(value) = field.as_option() else {
         return Err(malformed_request_wire_error());
     };
-    reject_unknown_fields(&value.__buffa_unknown_fields)?;
+
     limits.add_node()?;
     match value.key.as_ref() {
         Some(codec_deterministic_cbor_map_key::Key::TextKey(value)) => {
-            reject_unknown_fields(&value.__buffa_unknown_fields)?;
+
             limits.add_text(value.value.len())
         }
-        Some(codec_deterministic_cbor_map_key::Key::IntegerKey(value)) => {
-            reject_unknown_fields(&value.__buffa_unknown_fields)?;
+        Some(codec_deterministic_cbor_map_key::Key::IntegerKey(_)) => {
+
             Err(malformed_request_wire_error())
         }
         None => Err(malformed_request_wire_error()),
@@ -193,13 +192,13 @@ fn validate_dag_cbor_proto_key<P: buffa::ProtoBox<CodecDeterministicCborMapKey>>
 fn validate_deterministic_integer(
     value: &CodecDeterministicCborInteger,
 ) -> Result<(), CodecWireError> {
-    reject_unknown_fields(&value.__buffa_unknown_fields)?;
+
     match value.value.as_ref() {
-        Some(codec_deterministic_cbor_integer::Value::UnsignedValue(value)) => {
-            reject_unknown_fields(&value.__buffa_unknown_fields)
+        Some(codec_deterministic_cbor_integer::Value::UnsignedValue(_)) => {
+            Ok(())
         }
         Some(codec_deterministic_cbor_integer::Value::NegativeValue(value)) => {
-            reject_unknown_fields(&value.__buffa_unknown_fields)?;
+
             if value.value < 0 {
                 Ok(())
             } else {
@@ -217,14 +216,14 @@ fn validate_deterministic_key<P: buffa::ProtoBox<CodecDeterministicCborMapKey>>(
     let Some(value) = field.as_option() else {
         return Err(malformed_request_wire_error());
     };
-    reject_unknown_fields(&value.__buffa_unknown_fields)?;
+
     limits.add_node()?;
     match value.key.as_ref() {
         Some(codec_deterministic_cbor_map_key::Key::IntegerKey(value)) => {
             validate_deterministic_integer(value)
         }
         Some(codec_deterministic_cbor_map_key::Key::TextKey(value)) => {
-            reject_unknown_fields(&value.__buffa_unknown_fields)?;
+
             limits.add_text(value.value.len())
         }
         None => Err(malformed_request_wire_error()),

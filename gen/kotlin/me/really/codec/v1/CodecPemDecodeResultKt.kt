@@ -56,6 +56,7 @@ public object CodecPemDecodeResultKt {
      * decode results are responsible for copying it into their language's
      * sensitive-buffer owner and wiping intermediate protobuf containers as soon
      * as practical.
+     * SENSITIVE: payload ownership requires redaction and zeroization.
      * ```
      *
      * `bytes der = 2 [json_name = "der"];`
@@ -73,6 +74,7 @@ public object CodecPemDecodeResultKt {
      * decode results are responsible for copying it into their language's
      * sensitive-buffer owner and wiping intermediate protobuf containers as soon
      * as practical.
+     * SENSITIVE: payload ownership requires redaction and zeroization.
      * ```
      *
      * `bytes der = 2 [json_name = "der"];`

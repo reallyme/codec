@@ -5,49 +5,52 @@
 import Foundation
 
 #if REALLYME_CODEC_LINKED_FFI
-// Import the artifact's declarations so Clang supplies the C calling
-// convention and checks every linked function against the shipped header.
-import ReallyMeCodecFFI
+    // Import the artifact's declarations so Clang supplies the C calling
+    // convention and checks every linked function against the shipped header.
+    import ReallyMeCodecFFI
 #endif
 
 private let expectedCodecAbiVersion: UInt32 = 6
 private let expectedCodecPackageMajor: UInt32 = 0
-private let expectedCodecPackageMinor: UInt32 = 3
-private let expectedCodecPackagePatch: UInt32 = 6
-private let maxProtoJsonRequestLength = 16_082_264
+private let expectedCodecPackageMinor: UInt32 = 4
+private let expectedCodecPackagePatch: UInt32 = 0
+private let maxProtoJsonRequestLength = 22_373_720
 
 private typealias CodecAbiVersionFunction = @convention(c) () -> UInt32
 private typealias CodecSizeLimitFunction = @convention(c) () -> UInt
 
-private typealias CodecProcessFunction = @convention(c) (
-    UInt32,
-    UnsafePointer<UInt8>?,
-    Int,
-    UnsafePointer<UInt8>?,
-    Int,
-    UnsafePointer<UInt8>?,
-    Int,
-    UnsafeMutablePointer<UInt8>?,
-    Int,
-    UnsafeMutablePointer<Int>?
-) -> Int32
+private typealias CodecProcessFunction =
+    @convention(c) (
+        UInt32,
+        UnsafePointer<UInt8>?,
+        Int,
+        UnsafePointer<UInt8>?,
+        Int,
+        UnsafePointer<UInt8>?,
+        Int,
+        UnsafeMutablePointer<UInt8>?,
+        Int,
+        UnsafeMutablePointer<Int>?
+    ) -> Int32
 
-private typealias CodecProcessProtoFunction = @convention(c) (
-    UnsafePointer<UInt8>?,
-    Int,
-    UnsafeMutablePointer<UInt8>?,
-    Int,
-    UnsafeMutablePointer<Int>?
-) -> Int32
+private typealias CodecProcessProtoFunction =
+    @convention(c) (
+        UnsafePointer<UInt8>?,
+        Int,
+        UnsafeMutablePointer<UInt8>?,
+        Int,
+        UnsafeMutablePointer<Int>?
+    ) -> Int32
 
-private typealias CodecBoolFunction = @convention(c) (
-    UInt32,
-    UnsafePointer<UInt8>?,
-    Int,
-    UnsafePointer<UInt8>?,
-    Int,
-    UnsafeMutablePointer<Int32>?
-) -> Int32
+private typealias CodecBoolFunction =
+    @convention(c) (
+        UInt32,
+        UnsafePointer<UInt8>?,
+        Int,
+        UnsafePointer<UInt8>?,
+        Int,
+        UnsafeMutablePointer<Int32>?
+    ) -> Int32
 
 struct ReallyMeCodecRustCAbiProvider: Sendable {
     // Keep the dlopen handle alive for as long as the dlsym function pointers
@@ -62,28 +65,28 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
     private let maxOperationResponseLength: Int
 
     #if REALLYME_CODEC_LINKED_FFI
-    init() throws {
-        try Self.requireCompatibleAbiVersion(rm_codec_abi_version())
-        try Self.requireCompatiblePackageVersion(
-            major: rm_codec_package_version_major(),
-            minor: rm_codec_package_version_minor(),
-            patch: rm_codec_package_version_patch()
-        )
-        maxFfiInputLength = try Self.requireValidFfiLimit(rm_codec_max_ffi_input_bytes())
-        maxFfiOutputLength = try Self.requireValidFfiLimit(rm_codec_max_ffi_output_bytes())
-        maxOperationResponseLength = try Self.requireValidOperationResponseLimit(
-            rm_codec_max_operation_response_bytes(),
-            maxFfiOutputLength: maxFfiOutputLength
-        )
-        library = nil
-        processFunction = rm_codec_process
-        processOperationFunction = rm_codec_process_operation
-        processOperationJsonFunction = rm_codec_process_operation_json
-        boolFunction = rm_codec_process_bool
-    }
+        init() throws(ReallyMeCodecError) {
+            try Self.requireCompatibleAbiVersion(rm_codec_abi_version())
+            try Self.requireCompatiblePackageVersion(
+                major: rm_codec_package_version_major(),
+                minor: rm_codec_package_version_minor(),
+                patch: rm_codec_package_version_patch()
+            )
+            maxFfiInputLength = try Self.requireValidFfiLimit(rm_codec_max_ffi_input_bytes())
+            maxFfiOutputLength = try Self.requireValidFfiLimit(rm_codec_max_ffi_output_bytes())
+            maxOperationResponseLength = try Self.requireValidOperationResponseLimit(
+                rm_codec_max_operation_response_bytes(),
+                maxFfiOutputLength: maxFfiOutputLength
+            )
+            library = nil
+            processFunction = rm_codec_process
+            processOperationFunction = rm_codec_process_operation
+            processOperationJsonFunction = rm_codec_process_operation_json
+            boolFunction = rm_codec_process_bool
+        }
     #endif
 
-    init(library: ReallyMeCodecRustCAbiLibrary) throws {
+    init(library: ReallyMeCodecRustCAbiLibrary) throws(ReallyMeCodecError) {
         self.library = library
         let abiVersionFunction = try library.loadFunction(
             "rm_codec_abi_version",
@@ -137,23 +140,25 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
         boolFunction = try library.loadFunction("rm_codec_process_bool", as: CodecBoolFunction.self)
     }
 
-    static func requireCompatibleAbiVersion(_ actualVersion: UInt32) throws {
+    static func requireCompatibleAbiVersion(_ actualVersion: UInt32) throws(ReallyMeCodecError) {
         guard actualVersion == expectedCodecAbiVersion else {
             throw ReallyMeCodecError.providerFailure
         }
     }
 
-    static func requireCompatiblePackageVersion(major: UInt32, minor: UInt32, patch: UInt32) throws {
+    static func requireCompatiblePackageVersion(major: UInt32, minor: UInt32, patch: UInt32) throws(ReallyMeCodecError)
+    {
         guard major == expectedCodecPackageMajor,
-              minor == expectedCodecPackageMinor,
-              patch == expectedCodecPackagePatch else {
+            minor == expectedCodecPackageMinor,
+            patch == expectedCodecPackagePatch
+        else {
             throw ReallyMeCodecError.providerFailure
         }
     }
 
     // Clang imports size_t as Int; the dynamically loaded C function exposes
     // its unsigned machine word. Validate both before any allocation.
-    static func requireValidFfiLimit<Limit: BinaryInteger>(_ limit: Limit) throws -> Int {
+    static func requireValidFfiLimit<Limit: BinaryInteger>(_ limit: Limit) throws(ReallyMeCodecError) -> Int {
         guard let converted = Int(exactly: limit), converted > 0 else {
             throw ReallyMeCodecError.providerFailure
         }
@@ -163,16 +168,19 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
     static func requireValidOperationResponseLimit<Limit: BinaryInteger>(
         _ limit: Limit,
         maxFfiOutputLength: Int
-    ) throws -> Int {
+    ) throws(ReallyMeCodecError) -> Int {
         guard let converted = Int(exactly: limit),
-              converted > 0,
-              converted <= maxFfiOutputLength else {
+            converted > 0,
+            converted <= maxFfiOutputLength
+        else {
             throw ReallyMeCodecError.providerFailure
         }
         return converted
     }
 
-    func process(operation: UInt32, first: [UInt8], second: [UInt8] = [], third: [UInt8] = []) throws -> [UInt8] {
+    func process(operation: UInt32, first: [UInt8], second: [UInt8] = [], third: [UInt8] = [])
+        throws(ReallyMeCodecError) -> [UInt8]
+    {
         try processWithFunction(
             processFunction,
             operation: operation,
@@ -186,7 +194,7 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
         maxFfiInputLength
     }
 
-    func processOperation(request: [UInt8]) throws -> [UInt8] {
+    func processOperation(request: [UInt8]) throws(ReallyMeCodecError) -> [UInt8] {
         try processOperationResponse(
             request: request,
             maxRequestLength: maxOperationResponseLength,
@@ -194,7 +202,7 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
         )
     }
 
-    func processOperationJson(request: [UInt8]) throws -> [UInt8] {
+    func processOperationJson(request: [UInt8]) throws(ReallyMeCodecError) -> [UInt8] {
         try processOperationResponse(
             request: request,
             maxRequestLength: maxProtoJsonRequestLength,
@@ -210,27 +218,33 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
         switch codecError.error {
         case .baseEncoding(let error):
             guard error.unknownFields.data.isEmpty,
-                  Self.isKnownReason(error.reason, range: 100...199) else { return .providerFailure }
+                Self.isKnownReason(error.reason, range: 100...199)
+            else { return .providerFailure }
             expectedOrigin = .caller
         case .pem(let error):
             guard error.unknownFields.data.isEmpty,
-                  Self.isKnownReason(error.reason, range: 200...299) else { return .providerFailure }
+                Self.isKnownReason(error.reason, range: 200...299)
+            else { return .providerFailure }
             expectedOrigin = .caller
         case .multiformat(let error):
             guard error.unknownFields.data.isEmpty,
-                  Self.isKnownReason(error.reason, range: 300...399) else { return .providerFailure }
+                Self.isKnownReason(error.reason, range: 300...399)
+            else { return .providerFailure }
             expectedOrigin = .caller
         case .canonicalization(let error):
             guard error.unknownFields.data.isEmpty,
-                  Self.isKnownReason(error.reason, range: 400...499) else { return .providerFailure }
+                Self.isKnownReason(error.reason, range: 400...499)
+            else { return .providerFailure }
             expectedOrigin = error.reason == .canonicalInternal ? .provider : .caller
         case .backend(let error):
             guard error.unknownFields.data.isEmpty,
-                  Self.isKnownReason(error.reason, range: 500...599) else { return .providerFailure }
+                Self.isKnownReason(error.reason, range: 500...599)
+            else { return .providerFailure }
             expectedOrigin = .provider
         case .boundary(let error):
             guard error.unknownFields.data.isEmpty,
-                  Self.isKnownReason(error.reason, range: 600...699) else { return .providerFailure }
+                Self.isKnownReason(error.reason, range: 600...699)
+            else { return .providerFailure }
             expectedOrigin = .caller
         case nil:
             return .providerFailure
@@ -242,8 +256,8 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
         switch codecError.error {
         case .baseEncoding(let error) where error.reason == .baseNonCanonicalHex:
             return .nonCanonical
-        case .multiformat(let error) where error.reason == .multiformatUnknownMulticodec ||
-            error.reason == .multiformatInvalidMulticodecPrefix:
+        case .multiformat(let error)
+        where error.reason == .multiformatUnknownMulticodec || error.reason == .multiformatInvalidMulticodecPrefix:
             return .unsupportedCodec
         case .canonicalization(let error) where error.reason == .canonicalUnsupportedIpldValue:
             return .unsupportedIpldValue
@@ -259,11 +273,11 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
     ) -> Bool {
         switch reason {
         case .canonicalNonCanonicalCbor,
-             .canonicalNonCanonicalJson,
-             .canonicalNonMinimalCborInteger,
-             .canonicalDuplicateCborMapKey,
-             .canonicalCborMapKeysOutOfOrder,
-             .canonicalCborTrailingBytes:
+            .canonicalNonCanonicalJson,
+            .canonicalNonMinimalCborInteger,
+            .canonicalDuplicateCborMapKey,
+            .canonicalCborMapKeysOutOfOrder,
+            .canonicalCborTrailingBytes:
             return true
         default:
             return false
@@ -286,7 +300,7 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
         first: [UInt8],
         second: [UInt8],
         third: [UInt8]
-    ) throws -> [UInt8] {
+    ) throws(ReallyMeCodecError) -> [UInt8] {
         try processWithStatus(
             function,
             operation: operation,
@@ -302,7 +316,7 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
         first: [UInt8],
         second: [UInt8],
         third: [UInt8]
-    ) throws -> (status: Int32, bytes: [UInt8]) {
+    ) throws(ReallyMeCodecError) -> (status: Int32, bytes: [UInt8]) {
         try validateAggregateInputLengths([first.count, second.count, third.count])
         var producedLength = 0
         let firstStatus = first.withUnsafeBufferPointer { firstBuffer in
@@ -323,13 +337,13 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
                 }
             }
         }
-        if firstStatus != ReallyMeCodecRustCAbiStatus.ok &&
-            firstStatus != ReallyMeCodecRustCAbiStatus.bufferTooSmall {
+        if firstStatus != ReallyMeCodecRustCAbiStatus.ok && firstStatus != ReallyMeCodecRustCAbiStatus.bufferTooSmall {
             try ReallyMeCodecRustCAbiStatus.throwIfError(firstStatus)
         }
         let validEmptyProbe = firstStatus == ReallyMeCodecRustCAbiStatus.ok && producedLength == 0
-        let validNonEmptyProbe = firstStatus == ReallyMeCodecRustCAbiStatus.bufferTooSmall &&
-            producedLength > 0 && producedLength <= maxFfiOutputLength
+        let validNonEmptyProbe =
+            firstStatus == ReallyMeCodecRustCAbiStatus.bufferTooSmall && producedLength > 0
+            && producedLength <= maxFfiOutputLength
         guard validEmptyProbe || validNonEmptyProbe else {
             throw ReallyMeCodecError.providerFailure
         }
@@ -376,7 +390,7 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
         request: [UInt8],
         maxRequestLength: Int,
         function: CodecProcessProtoFunction
-    ) throws -> [UInt8] {
+    ) throws(ReallyMeCodecError) -> [UInt8] {
         if request.count > maxRequestLength {
             var boundary = ReallyMeProtoCodecBoundaryError()
             boundary.reason = .boundaryResourceLimitExceeded
@@ -385,7 +399,11 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
             error.origin = .caller
             var response = ReallyMeProtoCodecOperationResponse()
             response.error = error
-            return Array(try response.serializedData())
+            do {
+                return Array(try response.serializedData())
+            } catch {
+                throw .providerFailure
+            }
         }
         var producedLength = 0
         let firstStatus = request.withUnsafeBufferPointer { requestBuffer in
@@ -431,7 +449,7 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
         return output
     }
 
-    func processBool(operation: UInt32, first: [UInt8], second: [UInt8] = []) throws -> Bool {
+    func processBool(operation: UInt32, first: [UInt8], second: [UInt8] = []) throws(ReallyMeCodecError) -> Bool {
         try validateAggregateInputLengths([first.count, second.count])
         var result: Int32 = 0
         let status = first.withUnsafeBufferPointer { firstBuffer in
@@ -457,7 +475,7 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
         }
     }
 
-    private func validateAggregateInputLengths(_ lengths: [Int]) throws {
+    private func validateAggregateInputLengths(_ lengths: [Int]) throws(ReallyMeCodecError) {
         var aggregate = 0
         for length in lengths {
             let (next, overflow) = aggregate.addingReportingOverflow(length)

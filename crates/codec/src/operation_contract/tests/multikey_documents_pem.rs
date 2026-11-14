@@ -188,11 +188,11 @@ fn dag_cbor_encode_request_returns_primitive_canonical_bytes() {
         operation: Some(
             codec_proto::generated::proto::reallyme::codec::v1::CodecDagCborEncodeRequest {
                 value: buffa::MessageField::some(dag_cbor_proto_fixture()),
-                __buffa_unknown_fields: Default::default(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
 
     let result = result_payload(&process_operation_response(&request.encode_to_vec()));
@@ -217,12 +217,12 @@ fn dag_cbor_decode_request_returns_typed_generated_value() {
     let request = CodecOperationRequest {
         operation: Some(
             codec_proto::generated::proto::reallyme::codec::v1::CodecDagCborDecodeRequest {
-                encoded: encoded.to_vec(),
-                __buffa_unknown_fields: Default::default(),
+                encoded: encoded.to_vec().into(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
 
     let result = result_payload(&process_operation_response(&request.encode_to_vec()));
@@ -231,11 +231,11 @@ fn dag_cbor_decode_request_returns_typed_generated_value() {
         operation: Some(
             codec_proto::generated::proto::reallyme::codec::v1::CodecDagCborEncodeRequest {
                 value: core::mem::take(&mut decoded.value),
-                __buffa_unknown_fields: Default::default(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
     let reencoded = result_payload(&process_operation_response(
         &reencoded_request.encode_to_vec(),
@@ -250,11 +250,11 @@ fn dag_cbor_encode_rejects_integer_map_keys() {
         operation: Some(
             codec_proto::generated::proto::reallyme::codec::v1::CodecDagCborEncodeRequest {
                 value: buffa::MessageField::some(deterministic_cbor_map_fixture()),
-                __buffa_unknown_fields: Default::default(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
 
     let error = codec_error_payload(&process_operation_response(&request.encode_to_vec()));
@@ -276,21 +276,21 @@ fn dag_cbor_encode_rejects_unsigned_values_outside_i64() {
                             value: Some(
                                 CodecDeterministicCborUnsignedInteger {
                                     value: i64::MAX.unsigned_abs() + 1,
-                                    __buffa_unknown_fields: Default::default(),
+
                                 }
                                 .into(),
                             ),
-                            __buffa_unknown_fields: Default::default(),
+
                         }
                         .into(),
                     ),
-                    __buffa_unknown_fields: Default::default(),
+
                 }),
-                __buffa_unknown_fields: Default::default(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
 
     let error = codec_error_payload(&process_operation_response(&request.encode_to_vec()));
@@ -318,10 +318,10 @@ fn pem_decode_dispatch_matches_primitive_decoder() {
     let request = pem_decode_request(
         pem.as_bytes(),
         Some(CodecPemDecodeOptions {
-            allowed_labels: vec![EnumValue::from(CodecPemLabel::CODEC_PEM_LABEL_PUBLIC_KEY)],
+            allowed_labels: vec![EnumValue::from(CodecPemLabel::CODEC_PEM_LABEL_PUBLIC_KEY)].into(),
             max_input_len: 0,
             max_der_len: 0,
-            __buffa_unknown_fields: Default::default(),
+
         }),
     );
 
@@ -394,7 +394,7 @@ fn pem_decode_rejects_excess_allowed_labels_in_binary_and_json() {
             allowed_labels: vec![
                 EnumValue::from(CodecPemLabel::CODEC_PEM_LABEL_PUBLIC_KEY);
                 4
-            ],
+            ].into(),
             ..Default::default()
         }),
     );
@@ -418,10 +418,10 @@ fn pem_decode_dispatch_preserves_unsupported_label_error() {
     let request = pem_decode_request(
         pem.as_bytes(),
         Some(CodecPemDecodeOptions {
-            allowed_labels: vec![EnumValue::from(CodecPemLabel::CODEC_PEM_LABEL_PRIVATE_KEY)],
+            allowed_labels: vec![EnumValue::from(CodecPemLabel::CODEC_PEM_LABEL_PRIVATE_KEY)].into(),
             max_input_len: 0,
             max_der_len: 0,
-            __buffa_unknown_fields: Default::default(),
+
         }),
     );
     let envelope = process_binary_and_proto_json(&request);
@@ -436,55 +436,18 @@ fn pem_decode_dispatch_preserves_unsupported_label_error() {
 
 #[test]
 fn remaining_structured_requests_reject_binary_unknown_fields() {
-    let mut multikey = CodecMultikeyParseRequest {
-        multikey: "not-a-key".to_owned(),
-        __buffa_unknown_fields: Default::default(),
-    };
-    multikey.__buffa_unknown_fields.push(UnknownField {
-        number: 99,
-        data: UnknownFieldData::Varint(7),
-    });
-
-    let mut dag_cbor = CodecDagCborVerifyCidRequest {
-        cid: String::new(),
-        payload: vec![0xa0],
-        __buffa_unknown_fields: Default::default(),
-    };
-    dag_cbor.__buffa_unknown_fields.push(UnknownField {
-        number: 99,
-        data: UnknownFieldData::Varint(7),
-    });
-
-    let mut options = CodecPemDecodeOptions {
-        allowed_labels: Vec::new(),
-        max_input_len: 0,
-        max_der_len: 0,
-        __buffa_unknown_fields: Default::default(),
-    };
-    options.__buffa_unknown_fields.push(UnknownField {
-        number: 99,
-        data: UnknownFieldData::Varint(7),
-    });
-
+    let multikey = CodecMultikeyParseRequest { multikey: "not-a-key".into() };
+    let dag_cbor = CodecDagCborVerifyCidRequest { cid: String::new().into(), payload: vec![0xa0].into() };
+    let options = with_unknown_wire_field(&CodecPemDecodeOptions::default());
     let requests = [
-        CodecOperationRequest {
-            operation: Some(multikey.into()),
-            __buffa_unknown_fields: Default::default(),
-        },
-        CodecOperationRequest {
-            operation: Some(dag_cbor.into()),
-            __buffa_unknown_fields: Default::default(),
-        },
-        pem_decode_request(b"", Some(options)),
+        length_delimited_wire(2000, &with_unknown_wire_field(&multikey)),
+        length_delimited_wire(3000, &with_unknown_wire_field(&dag_cbor)),
+        length_delimited_wire(4000, &length_delimited_wire(2, &options)),
     ];
-
     for request in requests {
-        let error = codec_error_payload(&process_operation_response(&request.encode_to_vec()));
+        let error = codec_error_payload(&process_operation_response(&request));
         assert_eq!(error.branch(), CodecWireErrorBranch::Boundary);
-        assert_eq!(
-            error.reason(),
-            CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF
-        );
+        assert_eq!(error.reason(), CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF);
     }
 }
 
@@ -533,17 +496,17 @@ fn duplicate_binary_secret_fields_are_rejected_before_protobuf_merge() {
 fn binary_pem_label_preflight_stops_repeated_enum_allocation() {
     let request = CodecOperationRequest {
         operation: Some(CodecPemDecodeRequest {
-            pem: b"-----BEGIN PUBLIC KEY-----\nAQ==\n-----END PUBLIC KEY-----\n".to_vec(),
+            pem: b"-----BEGIN PUBLIC KEY-----\nAQ==\n-----END PUBLIC KEY-----\n".to_vec().into(),
             options: buffa::MessageField::some(CodecPemDecodeOptions {
                 allowed_labels: vec![
                     CodecPemLabel::CODEC_PEM_LABEL_PUBLIC_KEY.into();
                     4
-                ],
+                ].into(),
                 ..Default::default()
             }),
-            __buffa_unknown_fields: Default::default(),
+
         }.into()),
-        __buffa_unknown_fields: Default::default(),
+
     };
     let bytes = encode_protobuf(&request).unwrap();
     let error = preflight_binary_request(bytes.as_slice()).unwrap_err();
@@ -558,15 +521,15 @@ fn pem_encode_output_cap_rejects_expansion_before_building_armor() {
     let request = CodecOperationRequest {
         operation: Some(CodecPemEncodeRequest {
             label: CodecPemLabel::CODEC_PEM_LABEL_PUBLIC_KEY.into(),
-            der: vec![0x01; 8 * 1024 * 1024],
+            der: vec![0x01; 8 * 1024 * 1024].into(),
             options: buffa::MessageField::some(CodecPemEncodeOptions {
                 max_der_len: 8 * 1024 * 1024,
                 line_width: 1,
                 ..Default::default()
             }),
-            __buffa_unknown_fields: Default::default(),
+
         }.into()),
-        __buffa_unknown_fields: Default::default(),
+
     };
     let bytes = encode_protobuf(&request).unwrap();
     let error = codec_error_payload(&process_operation_response(bytes.as_slice()));
@@ -585,14 +548,14 @@ fn pem_encode_rejects_unknown_line_ending_in_binary_and_json() {
         let request = CodecOperationRequest {
             operation: Some(CodecPemEncodeRequest {
                 label: CodecPemLabel::CODEC_PEM_LABEL_PUBLIC_KEY.into(),
-                der: vec![0x01],
+                der: vec![0x01].into(),
                 options: buffa::MessageField::some(CodecPemEncodeOptions {
                     line_ending: EnumValue::from(unknown),
                     ..Default::default()
                 }),
-                __buffa_unknown_fields: Default::default(),
+
             }.into()),
-            __buffa_unknown_fields: Default::default(),
+
         };
         let error = codec_error_payload(&process_binary_and_proto_json(&request));
         assert_eq!(error.branch(), CodecWireErrorBranch::Boundary);
@@ -608,19 +571,19 @@ fn pem_requests_reject_unknown_labels_as_malformed_and_unspecified_as_unsupporte
         operation: Some(
             CodecPemEncodeRequest {
                 label,
-                der: vec![0x01],
+                der: vec![0x01].into(),
                 options: buffa::MessageField::none(),
-                __buffa_unknown_fields: Default::default(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
     let decode_request = |label: EnumValue<CodecPemLabel>| {
         pem_decode_request(
             b"-----BEGIN PUBLIC KEY-----\nAQ==\n-----END PUBLIC KEY-----\n",
             Some(CodecPemDecodeOptions {
-                allowed_labels: vec![label],
+                allowed_labels: vec![label].into(),
                 ..Default::default()
             }),
         )
@@ -667,11 +630,11 @@ fn pem_encode_preserves_absent_unspecified_and_known_line_endings() {
         let request = CodecOperationRequest {
             operation: Some(CodecPemEncodeRequest {
                 label: CodecPemLabel::CODEC_PEM_LABEL_PUBLIC_KEY.into(),
-                der: vec![0x01],
+                der: vec![0x01].into(),
                 options: options.into(),
-                __buffa_unknown_fields: Default::default(),
+
             }.into()),
-            __buffa_unknown_fields: Default::default(),
+
         };
         let response = process_binary_and_proto_json(&request);
         let result = result_payload(&response);

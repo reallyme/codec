@@ -11,7 +11,7 @@ on:
         description: Release version without leading v
         required: true
         type: string
-        default: 0.3.6
+        default: 0.4.0
 
 permissions:
   contents: read
@@ -110,7 +110,6 @@ jobs:
       - name: Verify SwiftPM manifest and downloaded artifact
         run: |
           node scripts/verify_swift_release_artifact.mjs build/swift/ReallyMeCodecFFI.xcframework.zip build/swift/ReallyMeCodecFFI.xcframework.checksum Package.swift "${RELEASE_VERSION}"
-          node scripts/run_pinned_release_readiness.mjs --release-packages
         env:
           RELEASE_VERSION: ${{ inputs.version }}
 

@@ -7,23 +7,23 @@ fn deterministic_value_proto(
 ) -> Result<CodecDeterministicCborValue, CodecWireError> {
     let value = match value {
         DeterministicCborValue::Null => CodecDeterministicCborNull {
-            __buffa_unknown_fields: Default::default(),
+
         }
         .into(),
         DeterministicCborValue::Bool(value) => CodecDeterministicCborBool {
             value: *value,
-            __buffa_unknown_fields: Default::default(),
+
         }
         .into(),
         DeterministicCborValue::Integer(value) => deterministic_integer_proto(value)?.into(),
         DeterministicCborValue::Text(value) => CodecDeterministicCborText {
-            value: try_copy_deterministic_text(value)?,
-            __buffa_unknown_fields: Default::default(),
+            value: try_copy_deterministic_text(value)?.into(),
+
         }
         .into(),
         DeterministicCborValue::Bytes(value) => CodecDeterministicCborBytes {
-            value: try_copy_deterministic_bytes(value)?,
-            __buffa_unknown_fields: Default::default(),
+            value: try_copy_deterministic_bytes(value)?.into(),
+
         }
         .into(),
         DeterministicCborValue::Array(values) => {
@@ -32,8 +32,8 @@ fn deterministic_value_proto(
                 proto_values.push(deterministic_value_proto(value)?);
             }
             CodecDeterministicCborArray {
-                values: proto_values,
-                __buffa_unknown_fields: Default::default(),
+                values: proto_values.into(),
+
             }
             .into()
         }
@@ -43,12 +43,12 @@ fn deterministic_value_proto(
                 proto_entries.push(CodecDeterministicCborMapEntry {
                     key: buffa::MessageField::some(deterministic_key_proto(entry.key())?),
                     value: buffa::MessageField::some(deterministic_value_proto(entry.value())?),
-                    __buffa_unknown_fields: Default::default(),
+
                 });
             }
             CodecDeterministicCborMap {
-                entries: proto_entries,
-                __buffa_unknown_fields: Default::default(),
+                entries: proto_entries.into(),
+
             }
             .into()
         }
@@ -57,7 +57,7 @@ fn deterministic_value_proto(
 
     Ok(CodecDeterministicCborValue {
         value: Some(value),
-        __buffa_unknown_fields: Default::default(),
+
     })
 }
 
@@ -67,19 +67,19 @@ fn deterministic_integer_proto(
     let value = match value {
         DeterministicCborInteger::Unsigned(value) => CodecDeterministicCborUnsignedInteger {
             value: *value,
-            __buffa_unknown_fields: Default::default(),
+
         }
         .into(),
         DeterministicCborInteger::Negative(value) => CodecDeterministicCborNegativeInteger {
             value: value.value(),
-            __buffa_unknown_fields: Default::default(),
+
         }
         .into(),
         _ => return Err(internal_wire_error()),
     };
     Ok(CodecDeterministicCborInteger {
         value: Some(value),
-        __buffa_unknown_fields: Default::default(),
+
     })
 }
 
@@ -89,38 +89,38 @@ fn deterministic_key_proto(
     let key = match value {
         DeterministicCborMapKey::Integer(value) => deterministic_integer_proto(value)?.into(),
         DeterministicCborMapKey::Text(value) => CodecDeterministicCborText {
-            value: try_copy_deterministic_text(value)?,
-            __buffa_unknown_fields: Default::default(),
+            value: try_copy_deterministic_text(value)?.into(),
+
         }
         .into(),
         _ => return Err(internal_wire_error()),
     };
     Ok(CodecDeterministicCborMapKey {
         key: Some(key),
-        __buffa_unknown_fields: Default::default(),
+
     })
 }
 
 fn dag_cbor_value_proto(value: &CborValue) -> Result<CodecDeterministicCborValue, CodecWireError> {
     let value = match value {
         CborValue::Null => CodecDeterministicCborNull {
-            __buffa_unknown_fields: Default::default(),
+
         }
         .into(),
         CborValue::Bool(value) => CodecDeterministicCborBool {
             value: *value,
-            __buffa_unknown_fields: Default::default(),
+
         }
         .into(),
         CborValue::Int(value) => dag_cbor_integer_proto(*value).into(),
         CborValue::String(value) => CodecDeterministicCborText {
-            value: try_copy_deterministic_text(value)?,
-            __buffa_unknown_fields: Default::default(),
+            value: try_copy_deterministic_text(value)?.into(),
+
         }
         .into(),
         CborValue::Bytes(value) => CodecDeterministicCborBytes {
-            value: try_copy_deterministic_bytes(value)?,
-            __buffa_unknown_fields: Default::default(),
+            value: try_copy_deterministic_bytes(value)?.into(),
+
         }
         .into(),
         CborValue::Array(values) => {
@@ -129,8 +129,8 @@ fn dag_cbor_value_proto(value: &CborValue) -> Result<CodecDeterministicCborValue
                 proto_values.push(dag_cbor_value_proto(value)?);
             }
             CodecDeterministicCborArray {
-                values: proto_values,
-                __buffa_unknown_fields: Default::default(),
+                values: proto_values.into(),
+
             }
             .into()
         }
@@ -140,12 +140,12 @@ fn dag_cbor_value_proto(value: &CborValue) -> Result<CodecDeterministicCborValue
                 proto_entries.push(CodecDeterministicCborMapEntry {
                     key: buffa::MessageField::some(dag_cbor_key_proto(key)?),
                     value: buffa::MessageField::some(dag_cbor_value_proto(value)?),
-                    __buffa_unknown_fields: Default::default(),
+
                 });
             }
             CodecDeterministicCborMap {
-                entries: proto_entries,
-                __buffa_unknown_fields: Default::default(),
+                entries: proto_entries.into(),
+
             }
             .into()
         }
@@ -154,7 +154,7 @@ fn dag_cbor_value_proto(value: &CborValue) -> Result<CodecDeterministicCborValue
 
     Ok(CodecDeterministicCborValue {
         value: Some(value),
-        __buffa_unknown_fields: Default::default(),
+
     })
 }
 
@@ -162,19 +162,19 @@ fn dag_cbor_integer_proto(value: i64) -> CodecDeterministicCborInteger {
     let value = if value >= 0 {
         CodecDeterministicCborUnsignedInteger {
             value: value.unsigned_abs(),
-            __buffa_unknown_fields: Default::default(),
+
         }
         .into()
     } else {
         CodecDeterministicCborNegativeInteger {
             value,
-            __buffa_unknown_fields: Default::default(),
+
         }
         .into()
     };
     CodecDeterministicCborInteger {
         value: Some(value),
-        __buffa_unknown_fields: Default::default(),
+
     }
 }
 
@@ -182,11 +182,11 @@ fn dag_cbor_key_proto(value: &str) -> Result<CodecDeterministicCborMapKey, Codec
     Ok(CodecDeterministicCborMapKey {
         key: Some(
             CodecDeterministicCborText {
-                value: try_copy_deterministic_text(value)?,
-                __buffa_unknown_fields: Default::default(),
+                value: try_copy_deterministic_text(value)?.into(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     })
 }

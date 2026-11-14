@@ -349,6 +349,7 @@ pub fn validate_prefix(
     profile: Profile,
     limits: Limits,
 ) -> Result<(Item<'_>, &[u8]), CborError> {
+    profile.ensure_supported()?;
     check_input(input, limits)?;
     let frame = scan(
         input,

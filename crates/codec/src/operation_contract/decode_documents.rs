@@ -8,7 +8,7 @@ fn process_deterministic_cbor_decode(
     let value = decode_deterministic_cbor_value(encoded).map_err(deterministic_cbor_wire_error)?;
     Ok(CodecDeterministicCborDecodeResult {
         value: buffa::MessageField::some(deterministic_value_proto(&value)?),
-        __buffa_unknown_fields: Default::default(),
+
     })
 }
 

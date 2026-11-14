@@ -13,8 +13,8 @@ fn process_dag_cbor_encode<P: buffa::ProtoBox<CodecDeterministicCborValue>>(
     let value = Zeroizing::new(dag_cbor_value_from_field(value)?);
     let encoded = encode_dag_cbor_value(&value).map_err(dag_cbor_cbor_wire_error)?;
     Ok(CodecDagCborEncodeResult {
-        encoded: try_copy_deterministic_bytes(encoded.as_slice())?,
-        __buffa_unknown_fields: Default::default(),
+        encoded: try_copy_deterministic_bytes(encoded.as_slice())?.into(),
+
     })
 }
 
@@ -22,7 +22,7 @@ fn process_dag_cbor_decode(encoded: &[u8]) -> Result<CodecDagCborDecodeResult, C
     let value = decode_dag_cbor_value(encoded).map_err(dag_cbor_cbor_wire_error)?;
     Ok(CodecDagCborDecodeResult {
         value: buffa::MessageField::some(dag_cbor_value_proto(&value)?),
-        __buffa_unknown_fields: Default::default(),
+
     })
 }
 
@@ -111,7 +111,9 @@ fn process_pem_encode(
             codec_pem::PemError::EmptyDer => PemOperationError::EmptyDer,
             _ => PemOperationError::InvalidPolicy,
         }))?;
-    let max_pem_bytes = MAX_CODEC_PROTO_MESSAGE_BYTES
+    // The wider TLV transport ceiling does not increase this operation's
+    // existing limit on serialized PEM output.
+    let max_pem_bytes = codec_proto::MAX_CODEC_PROTO_STRUCTURED_MESSAGE_BYTES
         .checked_sub(128)
         .ok_or_else(internal_wire_error)?;
     if output_length > max_pem_bytes {
@@ -127,8 +129,8 @@ fn process_pem_encode(
 
 fn pem_encode_result_proto(encoded: EncodedPem) -> CodecPemEncodeResult {
     CodecPemEncodeResult {
-        pem: encoded.into_bytes(),
-        __buffa_unknown_fields: Default::default(),
+        pem: encoded.into_bytes().into(),
+
     }
 }
 
@@ -143,7 +145,7 @@ fn process_deterministic_cbor_encode<P: buffa::ProtoBox<CodecDeterministicCborVa
     let value = deterministic_value_from_field(value)?;
     let encoded = encode_deterministic_cbor_value(&value).map_err(deterministic_cbor_wire_error)?;
     Ok(CodecDeterministicCborEncodeResult {
-        encoded: try_copy_deterministic_bytes(encoded.as_slice())?,
-        __buffa_unknown_fields: Default::default(),
+        encoded: try_copy_deterministic_bytes(encoded.as_slice())?.into(),
+
     })
 }

@@ -257,6 +257,11 @@ public  final class CodecMulticodecSpec extends
   public static final int FIXED_LENGTH_FIELD_NUMBER = 6;
   private int fixedLength_;
   /**
+   * <pre>
+   * Legacy length rule: nonzero/false is fixed, zero/true is variable, and
+   * zero/false is not applicable. Nonzero/true is invalid provider metadata.
+   * </pre>
+   *
    * <code>uint32 fixed_length = 6 [json_name = "fixedLength"];</code>
    * @return The fixedLength.
    */
@@ -265,6 +270,11 @@ public  final class CodecMulticodecSpec extends
     return fixedLength_;
   }
   /**
+   * <pre>
+   * Legacy length rule: nonzero/false is fixed, zero/true is variable, and
+   * zero/false is not applicable. Nonzero/true is invalid provider metadata.
+   * </pre>
+   *
    * <code>uint32 fixed_length = 6 [json_name = "fixedLength"];</code>
    * @param value The fixedLength to set.
    */
@@ -273,6 +283,11 @@ public  final class CodecMulticodecSpec extends
     fixedLength_ = value;
   }
   /**
+   * <pre>
+   * Legacy length rule: nonzero/false is fixed, zero/true is variable, and
+   * zero/false is not applicable. Nonzero/true is invalid provider metadata.
+   * </pre>
+   *
    * <code>uint32 fixed_length = 6 [json_name = "fixedLength"];</code>
    */
   private void clearFixedLength() {
@@ -690,6 +705,11 @@ public  final class CodecMulticodecSpec extends
     }
 
     /**
+     * <pre>
+     * Legacy length rule: nonzero/false is fixed, zero/true is variable, and
+     * zero/false is not applicable. Nonzero/true is invalid provider metadata.
+     * </pre>
+     *
      * <code>uint32 fixed_length = 6 [json_name = "fixedLength"];</code>
      * @return The fixedLength.
      */
@@ -698,6 +718,11 @@ public  final class CodecMulticodecSpec extends
       return instance.getFixedLength();
     }
     /**
+     * <pre>
+     * Legacy length rule: nonzero/false is fixed, zero/true is variable, and
+     * zero/false is not applicable. Nonzero/true is invalid provider metadata.
+     * </pre>
+     *
      * <code>uint32 fixed_length = 6 [json_name = "fixedLength"];</code>
      * @param value The fixedLength to set.
      * @return This builder for chaining.
@@ -708,6 +733,11 @@ public  final class CodecMulticodecSpec extends
       return this;
     }
     /**
+     * <pre>
+     * Legacy length rule: nonzero/false is fixed, zero/true is variable, and
+     * zero/false is not applicable. Nonzero/true is invalid provider metadata.
+     * </pre>
+     *
      * <code>uint32 fixed_length = 6 [json_name = "fixedLength"];</code>
      * @return This builder for chaining.
      */

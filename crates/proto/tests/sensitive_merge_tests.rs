@@ -10,6 +10,12 @@
 use reallyme_codec_proto::generated::proto::reallyme::codec::v1::CodecPemEncodeRequest;
 use reallyme_codec_proto::{decode_protobuf, CodecWireResult};
 
+#[path = "support/allocator.rs"]
+mod allocator;
+
+#[global_allocator]
+static ALLOCATOR: allocator::Probe = allocator::Probe;
+
 const FIRST_DER_LENGTH: usize = 64;
 const FIRST_DER_BYTE: u8 = 0xa5;
 const LAST_DER_BYTE: u8 = 0x42;
@@ -21,17 +27,12 @@ fn duplicate_der_field_wipes_previous_capacity_before_replacement() -> CodecWire
     wire.extend(core::iter::repeat_n(FIRST_DER_BYTE, FIRST_DER_LENGTH));
     wire.extend([DER_FIELD_TAG, 1, LAST_DER_BYTE]);
 
-    let mut decoded = decode_protobuf::<CodecPemEncodeRequest>(&wire)?;
+    allocator::arm(FIRST_DER_LENGTH, 1, FIRST_DER_LENGTH);
+    let decoded = decode_protobuf::<CodecPemEncodeRequest>(&wire)?;
     assert_eq!(decoded.der, [LAST_DER_BYTE]);
-    let spare = decoded.der.spare_capacity_mut();
-    assert!(spare.len() >= FIRST_DER_LENGTH - 1);
-    for slot in spare.iter() {
-        // SAFETY: The first wire merge initialized this allocation. The
-        // generated pre-merge wipe writes every capacity byte before the
-        // second, shorter value is copied into it. Reading the spare bytes is
-        // confined to this regression test so it can detect stale DER.
-        let byte = unsafe { slot.assume_init_ref() };
-        assert_eq!(*byte, 0);
-    }
+    // Native replacement retires the old owner instead of reusing its Vec.
+    // Inspect its entire initialized allocation before free, not only the
+    // surviving owner's spare capacity.
+    allocator::assert_erased(Some(1));
     Ok(())
 }

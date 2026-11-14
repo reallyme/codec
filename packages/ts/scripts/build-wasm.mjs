@@ -207,8 +207,44 @@ for (const [generated, verified] of glueReplacements) {
 writeFileSync(gluePath, verifiedGlue);
 
 const declarationsPath = resolve(outputDirectory, "reallyme_codec_wasm.d.ts");
-const declarations = readFileSync(declarationsPath, "utf8");
+let declarations = readFileSync(declarationsPath, "utf8");
+// Initialization verifies bytes before compiling. Keep the generated public
+// types and documentation consistent with that stricter runtime contract.
+const declarationReplacements = [
+  [
+    "export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;",
+    "export type InitInput = RequestInfo | URL | Response | BufferSource;",
+  ],
+  [
+    "export type SyncInitInput = BufferSource | WebAssembly.Module;",
+    "export type SyncInitInput = BufferSource;",
+  ],
+  [
+    " * Instantiates the given `module`, which can either be bytes or\n * a precompiled `WebAssembly.Module`.",
+    " * Verifies the supplied module bytes against this package's SHA-256 digest\n * before compiling and instantiating them.",
+  ],
+  [
+    " * If `module_or_path` is {RequestInfo} or {URL}, makes a request and\n * for everything else, calls `WebAssembly.instantiate` directly.",
+    " * Fetches URLs and requests, reads responses, and verifies the resulting\n * bytes against this package's SHA-256 digest before instantiation.",
+  ],
+];
+for (const [generated, verified] of declarationReplacements) {
+  if (declarations.split(generated).length !== 2) {
+    fail("The generated WASM initializer declaration layout changed.");
+  }
+  declarations = declarations.replace(generated, () => verified);
+}
 writeFileSync(declarationsPath, `${declarations}\n/** Replace a trapped instance using its compiled module. */\nexport function reinstantiate(): void;\n`);
+
+// Keep namespace identity inside a private generated bridge. Authored SDK
+// code imports its single predicate and never accepts a structural substitute.
+writeFileSync(resolve(outputDirectory, "bundledModule.js"), `import * as bundled from "./reallyme_codec_wasm.js";
+export function matchesBundledWasmModule(candidate) {
+    return candidate === bundled;
+}
+`);
+writeFileSync(resolve(outputDirectory, "bundledModule.d.ts"),
+  "export function matchesBundledWasmModule(candidate: unknown): boolean;\n");
 
 for (const generatedFile of [
   ".gitignore",

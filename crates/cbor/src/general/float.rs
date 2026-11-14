@@ -8,17 +8,8 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 use super::error::{error, CborError, ErrorReason};
 use super::profile::FloatPolicy;
 
-/// IEEE 754 representation width.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-#[non_exhaustive]
-pub enum FloatWidth {
-    /// Binary16.
-    Binary16,
-    /// Binary32.
-    Binary32,
-    /// Binary64.
-    Binary64,
-}
+/// Schema-generated IEEE representation width.
+pub use codec_proto::generated::proto::reallyme::codec::v1::CodecGeneralCborFloatWidth as FloatWidth;
 
 /// Owned floating-point bits, zeroized on drop without content-printing traits.
 ///
@@ -81,10 +72,10 @@ impl Float {
     }
 
     fn layout(&self) -> (u32, u64, u32) {
-        match self.width() {
-            FloatWidth::Binary16 => (10, 0x1f, 15),
-            FloatWidth::Binary32 => (23, 0xff, 31),
-            FloatWidth::Binary64 => (52, 0x7ff, 63),
+        match self.bits {
+            FloatBits::Binary16(_) => (10, 0x1f, 15),
+            FloatBits::Binary32(_) => (23, 0xff, 31),
+            FloatBits::Binary64(_) => (52, 0x7ff, 63),
         }
     }
 
@@ -166,6 +157,7 @@ impl Float {
                 FloatWidth::Binary16 => (10, 0x1f_u64, 15),
                 FloatWidth::Binary32 => (23, 0xff, 31),
                 FloatWidth::Binary64 => (52, 0x7ff, 63),
+                _ => return Err(error(ErrorReason::UnsupportedPolicy)),
             };
             let normalized = self.fraction() << (64 - source_bits);
             let fraction = normalized >> (64 - target_bits);
@@ -181,6 +173,7 @@ impl Float {
             FloatWidth::Binary16 => Ok(u64::from(f16::from_f64_const(value).to_bits())),
             FloatWidth::Binary32 => Ok(u64::from((value as f32).to_bits())),
             FloatWidth::Binary64 => Ok(value.to_bits()),
+            _ => Err(error(ErrorReason::UnsupportedPolicy)),
         }
     }
 

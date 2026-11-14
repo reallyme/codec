@@ -14,6 +14,7 @@ public interface CodecPemDecodeRequestOrBuilder extends
    * <pre>
    * PEM may contain private-key material. Bytes avoid long-lived immutable
    * managed strings and let generated hardening wipe the owned request field.
+   * SENSITIVE: payload ownership requires redaction and zeroization.
    * </pre>
    *
    * <code>bytes pem = 1 [json_name = "pem"];</code>

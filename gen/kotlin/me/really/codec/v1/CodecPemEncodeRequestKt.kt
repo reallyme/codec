@@ -58,6 +58,7 @@ public object CodecPemEncodeRequestKt {
      * DER may contain private-key material. Generated owned-message drop wipes
      * the retained field; transport decoders may create temporary copies that
      * cannot be reliably wiped. Use binary requests for secret-bearing DER.
+     * SENSITIVE: payload ownership requires redaction and zeroization.
      * ```
      *
      * `bytes der = 2 [json_name = "der"];`
@@ -74,6 +75,7 @@ public object CodecPemEncodeRequestKt {
      * DER may contain private-key material. Generated owned-message drop wipes
      * the retained field; transport decoders may create temporary copies that
      * cannot be reliably wiped. Use binary requests for secret-bearing DER.
+     * SENSITIVE: payload ownership requires redaction and zeroization.
      * ```
      *
      * `bytes der = 2 [json_name = "der"];`
