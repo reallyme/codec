@@ -23,6 +23,23 @@ pub(crate) fn assert_mixed_length_wire(bytes: &[u8]) {
     ));
 }
 
+// The first byte of the unsigned key sorts before the text header, but
+// the unsigned key is one byte longer.
+pub(crate) const TEXT_KEY_ENCODING: &[u8] = b"\x61z";
+pub(crate) const UNSIGNED_KEY_ENCODING: &[u8] = b"\x19\x01\x00";
+pub(crate) const UNSIGNED_KEY: u64 = 256;
+pub(crate) const MIXED_KEY_CANONICAL: [u8; 10] =
+    [0xa1, 0x60, 0xa2, 0x61, b'z', 0xf4, 0x19, 0x01, 0x00, 0xf5];
+pub(crate) const MIXED_KEY_BYTEWISE: [u8; 10] =
+    [0xa1, 0x60, 0xa2, 0x19, 0x01, 0x00, 0xf5, 0x61, b'z', 0xf4];
+
+pub(crate) fn assert_mixed_key_wire(bytes: &[u8]) {
+    assert!(matches!(
+        bytes,
+        [0xa1, 0x60, 0xa2, 0x61, b'z', 0xf4, 0x19, 0x01, 0x00, 0xf5]
+    ));
+}
+
 impl TwoEntryMap {
     pub(crate) const WIRE_LENGTH: usize = 9;
 

@@ -7,12 +7,118 @@ use super::{
     decode_simple, read_head, read_value_head, reserve_map, DecodeLimits, DeterministicCborError,
 };
 use crate::check_map_key_order::{MapKeyOrder, MapKeyOrderError};
-use crate::nested_map_proof_tests::{TwoEntryMap, MIXED_LENGTH_CANONICAL, MIXED_LENGTH_REVERSED};
-use crate::{DeterministicCborMapEntry, DeterministicCborMapKey, DeterministicCborValue};
+use crate::nested_map_proof_tests::{
+    TwoEntryMap, MIXED_KEY_BYTEWISE, MIXED_KEY_CANONICAL, MIXED_LENGTH_CANONICAL,
+    MIXED_LENGTH_REVERSED, TEXT_KEY_ENCODING, UNSIGNED_KEY, UNSIGNED_KEY_ENCODING,
+};
+use crate::{
+    DeterministicCborInteger, DeterministicCborMapEntry, DeterministicCborMapKey,
+    DeterministicCborValue,
+};
 use core::cmp::Ordering;
 
 const MAX_HEADER_BYTES: usize = 9;
 const MAX_KEY_BYTES: usize = 8;
+
+#[kani::proof]
+#[kani::unwind(4)]
+fn mixed_key_wire_admission_rejects_bytewise_order() {
+    let unsigned_first: bool = kani::any();
+    let (wire, first_end, second_start, first_key, second_key, expected) = if unsigned_first {
+        (
+            &MIXED_KEY_BYTEWISE,
+            6,
+            7,
+            UNSIGNED_KEY_ENCODING,
+            TEXT_KEY_ENCODING,
+            Err(DeterministicCborError::MapKeysOutOfOrder),
+        )
+    } else {
+        (
+            &MIXED_KEY_CANONICAL,
+            5,
+            6,
+            TEXT_KEY_ENCODING,
+            UNSIGNED_KEY_ENCODING,
+            Ok(()),
+        )
+    };
+    assert!(wire[3..first_end] == *first_key);
+    assert!(wire[second_start..9] == *second_key);
+    // The unsigned key starts with the smaller byte. A bytewise comparator
+    // would give the opposite admission decision on both wires.
+    assert!(TEXT_KEY_ENCODING.len() < UNSIGNED_KEY_ENCODING.len());
+    assert!(UNSIGNED_KEY_ENCODING[0] < TEXT_KEY_ENCODING[0]);
+    let mut order = MapKeyOrder::default();
+    assert!(admit_map_key(&mut order, wire, 3, first_end).is_ok());
+    let result = admit_map_key(&mut order, wire, second_start, 9);
+    assert_eq!(result, expected);
+    kani::cover!(unsigned_first && result.is_err(), "bytewise order rejected");
+    kani::cover!(
+        !unsigned_first && result.is_ok(),
+        "length-first order admitted"
+    );
+}
+
+#[kani::proof]
+#[kani::unwind(4)]
+fn mixed_key_canonical_text_span_is_exact() {
+    verify_mixed_length_entry::<3, 5, 6>(
+        &MIXED_KEY_CANONICAL,
+        ExpectedKey::Text(b"z"),
+        false,
+        0,
+        Ok(()),
+    );
+    kani::cover!(true, "canonical first key span checked");
+}
+
+#[kani::proof]
+#[kani::unwind(4)]
+fn mixed_key_canonical_unsigned_span_is_exact() {
+    verify_mixed_length_entry::<6, 9, 10>(
+        &MIXED_KEY_CANONICAL,
+        ExpectedKey::Unsigned(UNSIGNED_KEY),
+        true,
+        1,
+        Ok(()),
+    );
+    kani::cover!(true, "canonical unsigned key span checked");
+}
+
+#[kani::proof]
+#[kani::unwind(4)]
+fn mixed_key_bytewise_unsigned_span_is_exact() {
+    verify_mixed_length_entry::<3, 6, 7>(
+        &MIXED_KEY_BYTEWISE,
+        ExpectedKey::Unsigned(UNSIGNED_KEY),
+        true,
+        0,
+        Ok(()),
+    );
+    kani::cover!(true, "bytewise first key span checked");
+}
+
+#[kani::proof]
+#[kani::unwind(4)]
+fn mixed_key_bytewise_text_span_is_exact() {
+    verify_mixed_length_entry::<7, 9, 10>(
+        &MIXED_KEY_BYTEWISE,
+        ExpectedKey::Text(b"z"),
+        false,
+        0,
+        Err(DeterministicCborError::MapKeysOutOfOrder),
+    );
+    kani::cover!(true, "bytewise text key rejected before reading its value");
+}
+
+#[kani::proof]
+#[kani::unwind(3)]
+fn mixed_key_prefix_starts_at_the_same_offset_in_both_orders() {
+    verify_nested_two_entry_prefix(&MIXED_KEY_CANONICAL);
+    verify_nested_two_entry_prefix(&MIXED_KEY_BYTEWISE);
+    kani::cover!(true, "both mixed-key prefixes reserve their entries");
+}
 
 #[kani::proof]
 #[kani::unwind(4)]
@@ -42,21 +148,39 @@ fn mixed_length_wire_admission_uses_length_before_lexical_order() {
 #[kani::proof]
 #[kani::unwind(4)]
 fn mixed_length_canonical_first_span_is_exact() {
-    verify_mixed_length_entry::<3, 5, 6>(&MIXED_LENGTH_CANONICAL, b"z", false, 0, Ok(()));
+    verify_mixed_length_entry::<3, 5, 6>(
+        &MIXED_LENGTH_CANONICAL,
+        ExpectedKey::Text(b"z"),
+        false,
+        0,
+        Ok(()),
+    );
     kani::cover!(true, "first canonical span checked");
 }
 
 #[kani::proof]
 #[kani::unwind(4)]
 fn mixed_length_canonical_second_span_is_exact() {
-    verify_mixed_length_entry::<6, 9, 10>(&MIXED_LENGTH_CANONICAL, b"aa", true, 1, Ok(()));
+    verify_mixed_length_entry::<6, 9, 10>(
+        &MIXED_LENGTH_CANONICAL,
+        ExpectedKey::Text(b"aa"),
+        true,
+        1,
+        Ok(()),
+    );
     kani::cover!(true, "second canonical span checked");
 }
 
 #[kani::proof]
 #[kani::unwind(4)]
 fn mixed_length_reversed_first_span_is_exact() {
-    verify_mixed_length_entry::<3, 6, 7>(&MIXED_LENGTH_REVERSED, b"aa", true, 0, Ok(()));
+    verify_mixed_length_entry::<3, 6, 7>(
+        &MIXED_LENGTH_REVERSED,
+        ExpectedKey::Text(b"aa"),
+        true,
+        0,
+        Ok(()),
+    );
     kani::cover!(true, "first reversed span checked");
 }
 
@@ -65,7 +189,7 @@ fn mixed_length_reversed_first_span_is_exact() {
 fn mixed_length_reversed_second_span_is_exact() {
     verify_mixed_length_entry::<7, 9, 10>(
         &MIXED_LENGTH_REVERSED,
-        b"z",
+        ExpectedKey::Text(b"z"),
         false,
         2,
         Err(DeterministicCborError::MapKeysOutOfOrder),
@@ -83,7 +207,8 @@ fn mixed_length_traversal_forwards_the_cursor_and_stops_on_rejection() {
         match calls {
             1 => {
                 assert!(start == 3);
-                // The entry checks establish the cursor after each value.
+                // Both two- and three-byte key pairs establish these same
+                // offsets. This traversal only receives entries and cursors.
                 Ok((long_first, if long_first { 7 } else { 6 }))
             }
             2 if long_first => {
@@ -110,9 +235,14 @@ fn mixed_length_traversal_forwards_the_cursor_and_stops_on_rejection() {
     }
 }
 
+enum ExpectedKey<'a> {
+    Text(&'a [u8]),
+    Unsigned(u64),
+}
+
 fn verify_mixed_length_entry<const START: usize, const END: usize, const NEXT: usize>(
     wire: &[u8; 10],
-    expected_key: &[u8],
+    expected_key: ExpectedKey<'_>,
     bit: bool,
     preceding_key_bytes: usize,
     admission: Result<(), DeterministicCborError>,
@@ -148,7 +278,11 @@ fn verify_mixed_length_entry<const START: usize, const END: usize, const NEXT: u
     let entry = core::mem::ManuallyDrop::new(entry);
     assert!(key_span == Some((START, END)));
     assert!(child_called == admission.is_ok());
-    assert!(limits.aggregate_text_bytes == preceding_key_bytes + expected_key.len());
+    let text_len = match expected_key {
+        ExpectedKey::Text(text) => text.len(),
+        ExpectedKey::Unsigned(_) => 0,
+    };
+    assert!(limits.aggregate_text_bytes.checked_sub(preceding_key_bytes) == Some(text_len));
     if let Err(expected) = admission {
         assert!(matches!(&*entry, Err(actual) if *actual == expected));
         assert!(limits.nodes == 6 && limits.pending_nodes == 1);
@@ -161,9 +295,16 @@ fn verify_mixed_length_entry<const START: usize, const END: usize, const NEXT: u
     assert!(*next == NEXT);
     assert!(limits.nodes == if second { 7 } else { 5 });
     assert!(limits.pending_nodes == if second { 0 } else { 2 });
-    assert!(
-        matches!(entry.key(), DeterministicCborMapKey::Text(key) if key.as_bytes() == expected_key)
-    );
+    let matches_expected_key = match expected_key {
+        ExpectedKey::Text(expected) => {
+            matches!(entry.key(), DeterministicCborMapKey::Text(key) if key.as_bytes() == expected)
+        }
+        ExpectedKey::Unsigned(expected) => matches!(
+            entry.key(),
+            DeterministicCborMapKey::Integer(DeterministicCborInteger::Unsigned(key)) if *key == expected
+        ),
+    };
+    assert!(matches_expected_key);
     assert!(matches!(entry.value(), DeterministicCborValue::Bool(value) if *value == bit));
 }
 

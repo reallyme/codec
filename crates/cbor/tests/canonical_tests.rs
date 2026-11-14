@@ -11,13 +11,62 @@
 )]
 use codec_cbor::{
     decode_dag_cbor, decode_deterministic_cbor, encode_dag_cbor, encode_deterministic_cbor,
-    CborError, CborValue, DeterministicCborError, DeterministicCborMapEntry,
-    DeterministicCborMapKey, DeterministicCborValue, MAX_DAG_CBOR_INPUT_LEN, MAX_NESTING_DEPTH,
+    CborError, CborValue, DeterministicCborError, DeterministicCborInteger,
+    DeterministicCborMapEntry, DeterministicCborMapKey, DeterministicCborValue,
+    MAX_DAG_CBOR_INPUT_LEN, MAX_NESTING_DEPTH,
 };
 use std::cmp::Ordering;
 
 fn enc(value: &CborValue) -> Vec<u8> {
     encode_dag_cbor(value).unwrap()
+}
+
+#[test]
+fn nested_unsigned_and_text_keys_reject_bytewise_order() {
+    let canonical = [0xa1, 0x60, 0xa2, 0x61, b'z', 0xf4, 0x19, 0x01, 0x00, 0xf5];
+    let bytewise = [0xa1, 0x60, 0xa2, 0x19, 0x01, 0x00, 0xf5, 0x61, b'z', 0xf4];
+    let decoded = decode_deterministic_cbor(&canonical).unwrap();
+    assert_eq!(
+        encode_deterministic_cbor(&decoded).unwrap().as_slice(),
+        canonical
+    );
+    assert_eq!(
+        decode_deterministic_cbor(&bytewise).unwrap_err(),
+        DeterministicCborError::MapKeysOutOfOrder
+    );
+
+    let mut invalid_value = bytewise;
+    // A tag is unsupported as a value in this profile. The decoder must
+    // reject the key order before inspecting the value after the second key.
+    invalid_value[9] = 0xc0;
+    assert_eq!(
+        decode_deterministic_cbor(&invalid_value).unwrap_err(),
+        DeterministicCborError::MapKeysOutOfOrder
+    );
+
+    for unsigned_first in [false, true] {
+        let text = DeterministicCborMapEntry::new(
+            DeterministicCborMapKey::text("z".into()),
+            DeterministicCborValue::Bool(false),
+        );
+        let unsigned = DeterministicCborMapEntry::new(
+            DeterministicCborMapKey::Integer(DeterministicCborInteger::unsigned(256)),
+            DeterministicCborValue::Bool(true),
+        );
+        let inner = DeterministicCborValue::Map(if unsigned_first {
+            vec![unsigned, text]
+        } else {
+            vec![text, unsigned]
+        });
+        let outer = DeterministicCborValue::Map(vec![DeterministicCborMapEntry::new(
+            DeterministicCborMapKey::text(String::new()),
+            inner,
+        )]);
+        assert_eq!(
+            encode_deterministic_cbor(&outer).unwrap().as_slice(),
+            canonical
+        );
+    }
 }
 
 #[test]
