@@ -27,6 +27,9 @@ mod encode_deterministic_cbor;
 mod error;
 mod value;
 
+#[cfg(kani)]
+mod nested_map_proof_tests;
+
 /// Borrowed general CBOR with independently selected framing and validity policies.
 pub mod general;
 

@@ -3,11 +3,13 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use super::{
-    bounded_capacity, decode_map, decode_simple, read_head, read_value_head, DecodeLimits,
-    DeterministicCborError,
+    admit_map_key, bounded_capacity, decode_key, decode_map, decode_simple, read_head,
+    read_value_head, DecodeLimits, DeterministicCborError,
 };
 use crate::check_map_key_order::{MapKeyOrder, MapKeyOrderError};
+use crate::nested_map_proof_tests::TwoEntryMap;
 use crate::{DeterministicCborMapKey, DeterministicCborValue};
+use core::cmp::Ordering;
 
 const MAX_HEADER_BYTES: usize = 9;
 const MAX_KEY_BYTES: usize = 8;
@@ -18,21 +20,29 @@ fn two_map_layers_retain_the_leaf_and_consume_the_wire() {
     let bit: bool = kani::any();
     let wire = [0xa1, 0x60, 0xa1, 0x60, 0xf4 | u8::from(bit)];
     let mut limits = DecodeLimits::default();
-    let decoded = decode_single_map(&wire, 0, 0, &mut limits, |wire, offset, depth, limits| {
-        assert!(offset == 2 && depth == 1);
-        decode_single_map(
-            wire,
-            offset,
-            depth,
-            limits,
-            |wire, offset, depth, limits| {
-                assert!(offset == 4 && depth == 2);
-                let (major, arg, end) = read_value_head(wire, offset, limits)?;
-                assert!(major == 7);
-                Ok((decode_simple(arg)?.into_value(), end))
-            },
-        )
-    });
+    let decoded = decode_proof_map(
+        &wire,
+        0,
+        0,
+        1,
+        &mut limits,
+        |wire, offset, depth, limits| {
+            assert!(offset == 2 && depth == 1);
+            decode_proof_map(
+                wire,
+                offset,
+                depth,
+                1,
+                limits,
+                |wire, offset, depth, limits| {
+                    assert!(offset == 4 && depth == 2);
+                    let (major, arg, end) = read_value_head(wire, offset, limits)?;
+                    assert!(major == 7);
+                    Ok((decode_simple(arg)?.into_value(), end))
+                },
+            )
+        },
+    );
     // Retain the returned tree so the harness ends at the parser's result.
     // The runtime zeroization tests exercise the owner's subsequent drop.
     let decoded = core::mem::ManuallyDrop::new(decoded);
@@ -53,10 +63,53 @@ fn two_map_layers_retain_the_leaf_and_consume_the_wire() {
     kani::cover!(!bit, "false leaf retained through both map layers");
 }
 
-fn decode_single_map(
+#[kani::proof]
+#[kani::unwind(4)]
+fn nested_two_entry_key_spans_admit_only_increasing_keys() {
+    let example = TwoEntryMap::symbolic();
+    let wire = example.wire();
+    let mut order = MapKeyOrder::default();
+    assert!(admit_map_key(&mut order, &wire, 3, 5).is_ok());
+    let result = admit_map_key(&mut order, &wire, 6, 8);
+    match example.first.cmp(&example.second) {
+        Ordering::Less => {
+            assert_eq!(result, Ok(()));
+            kani::cover!(
+                example.first == 0 && example.second == 0x7f,
+                "increasing keys"
+            );
+        }
+        Ordering::Equal => {
+            assert_eq!(result, Err(DeterministicCborError::DuplicateMapKey));
+            kani::cover!(result.is_err(), "duplicate keys");
+        }
+        Ordering::Greater => {
+            assert_eq!(result, Err(DeterministicCborError::MapKeysOutOfOrder));
+            kani::cover!(result.is_err(), "descending keys");
+        }
+    }
+}
+
+#[kani::proof]
+#[kani::unwind(3)]
+fn one_byte_text_key_decodes_to_the_same_ascii_byte() {
+    let example = TwoEntryMap::symbolic();
+    let wire = [0x61, example.first, 0xf4];
+    let mut limits = DecodeLimits::default();
+    let decoded = decode_key(&wire, 0, &mut limits);
+    assert!(
+        matches!(&decoded, Ok((DeterministicCborMapKey::Text(key), 2))
+        if matches!(key.as_bytes(), [byte] if *byte == example.first))
+    );
+    assert!(limits.nodes == 1 && limits.aggregate_text_bytes == 1);
+    kani::cover!(example.first == 0x7f, "highest single ASCII byte");
+}
+
+fn decode_proof_map(
     wire: &[u8],
     offset: usize,
     depth: usize,
+    expected_entries: u64,
     limits: &mut DecodeLimits,
     decode_child: impl FnMut(
         &[u8],
@@ -66,7 +119,7 @@ fn decode_single_map(
     ) -> Result<(DeterministicCborValue, usize), DeterministicCborError>,
 ) -> Result<(DeterministicCborValue, usize), DeterministicCborError> {
     let (major, argument, start) = read_value_head(wire, offset, limits)?;
-    assert!(major == 5 && argument == 1);
+    assert!(major == 5 && argument == expected_entries);
     decode_map(wire, start, depth, argument, limits, decode_child)
 }
 

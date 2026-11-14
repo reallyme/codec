@@ -202,20 +202,28 @@ fn decode_map(
     let mut key_order = MapKeyOrder::default();
 
     for _ in 0..entry_count {
-        let key_start = offset;
         let (key, key_end) = decode_key(bytes, offset, limits)?;
-        key_order
-            .admit(checked_slice(bytes, key_start, key_end)?)
-            .map_err(|error| match error {
-                MapKeyOrderError::Duplicate => DeterministicCborError::DuplicateMapKey,
-                MapKeyOrderError::Descending => DeterministicCborError::MapKeysOutOfOrder,
-            })?;
+        admit_map_key(&mut key_order, bytes, offset, key_end)?;
 
         let (value, next) = decode_child(bytes, key_end, child_depth, limits)?;
         entries.push(DeterministicCborMapEntry::new(key, value));
         offset = next;
     }
     Ok((DeterministicCborValue::Map(entries), offset))
+}
+
+fn admit_map_key<'a>(
+    order: &mut MapKeyOrder<'a>,
+    bytes: &'a [u8],
+    start: usize,
+    end: usize,
+) -> Result<(), DeterministicCborError> {
+    order
+        .admit(checked_slice(bytes, start, end)?)
+        .map_err(|error| match error {
+            MapKeyOrderError::Duplicate => DeterministicCborError::DuplicateMapKey,
+            MapKeyOrderError::Descending => DeterministicCborError::MapKeysOutOfOrder,
+        })
 }
 
 fn decode_key(

@@ -162,8 +162,7 @@ fn preflight_map(
     // large keys and force substantial temporary allocation before
     // the aggregate text/output limit rejects the map.
     let mut decorated = decorated_map_entries(entries)?;
-    decorated.sort_by(compare_decorated_keys);
-    reject_duplicate_decorated_keys(&decorated)?;
+    sort_map_entries(&mut decorated)?;
     Ok(stats)
 }
 
@@ -238,6 +237,11 @@ fn reject_duplicate_decorated_keys(
     Ok(())
 }
 
+fn sort_map_entries(decorated: &mut [DecoratedMapEntry<'_>]) -> Result<(), DeterministicCborError> {
+    decorated.sort_by(compare_decorated_keys);
+    reject_duplicate_decorated_keys(decorated)
+}
+
 fn encode_value(
     value: &DeterministicCborValue,
     output: &mut Vec<u8>,
@@ -266,7 +270,7 @@ fn encode_map(
     entries: &[DeterministicCborMapEntry],
     output: &mut Vec<u8>,
     depth: usize,
-    mut encode_child: impl FnMut(
+    encode_child: impl FnMut(
         &DeterministicCborValue,
         &mut Vec<u8>,
         usize,
@@ -275,9 +279,20 @@ fn encode_map(
     let child_depth = descend(depth)?;
     ensure_container_entries(entries.len())?;
     let mut decorated = decorated_map_entries(entries)?;
-    decorated.sort_by(compare_decorated_keys);
-    reject_duplicate_decorated_keys(&decorated)?;
+    sort_map_entries(&mut decorated)?;
+    write_map_entries(decorated, output, child_depth, encode_child)
+}
 
+fn write_map_entries(
+    decorated: Vec<DecoratedMapEntry<'_>>,
+    output: &mut Vec<u8>,
+    child_depth: usize,
+    mut encode_child: impl FnMut(
+        &DeterministicCborValue,
+        &mut Vec<u8>,
+        usize,
+    ) -> Result<(), DeterministicCborError>,
+) -> Result<(), DeterministicCborError> {
     write_header(MT_MAP, len_as_u64(decorated.len())?, output)?;
     for decorated_entry in decorated {
         // Write each key from the sorted entry, then visit that same entry's

@@ -80,7 +80,7 @@ fn every_pair_of_single_byte_inner_text_keys_has_expected_order_and_round_trip()
         for second in 0..=0x7f_u8 {
             // Distinct leaves make a change to the key/value association
             // visible even when the re-encoded key order is correct.
-            let wire = [0xa1, 0x60, 0xa2, 0x61, first, 0x00, 0x61, second, 0x20];
+            let wire = [0xa1, 0x60, 0xa2, 0x61, first, 0xf4, 0x61, second, 0xf5];
             let dag = decode_dag_cbor(&wire);
             let deterministic = decode_deterministic_cbor(&wire);
             match first.cmp(&second) {
