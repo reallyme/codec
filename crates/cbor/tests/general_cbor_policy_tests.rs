@@ -7,7 +7,7 @@
 
 use codec_cbor::general::{
     encode, frame_exact, validate_exact, validate_prefix, CborError, ErrorReason, Float,
-    LengthPolicy, Limits, MapKeyEquality, MapOrdering, NanPolicy, Profile, ValueRef,
+    LengthPolicy, Limits, MapEntry, MapKeyEquality, MapOrdering, NanPolicy, Profile, ValueRef,
 };
 
 fn cose() -> Profile {
@@ -20,6 +20,95 @@ fn cose() -> Profile {
 
 fn assert_reason<T>(result: Result<T, CborError>, reason: ErrorReason) {
     assert_eq!(result.err().map(CborError::reason), Some(reason));
+}
+
+#[test]
+fn binary16_signed_zero_keys_follow_selected_equality() {
+    let limits = Limits::default();
+    let preferred = Profile::preferred();
+    let encoded_scalars = cose();
+    for first in [0x0000_u16, 0x8000] {
+        for second in [0x0000_u16, 0x8000] {
+            let wire = signed_zero_map(first, second);
+            let first_key = Float::binary16(first);
+            let second_key = Float::binary16(second);
+            let entries = [
+                MapEntry::new(ValueRef::Float(&first_key), ValueRef::Unsigned(1)),
+                MapEntry::new(ValueRef::Float(&second_key), ValueRef::Unsigned(2)),
+            ];
+            let map = ValueRef::Map(&entries);
+            assert_reason(
+                validate_exact(&wire, preferred, limits),
+                ErrorReason::DuplicateMapKey,
+            );
+            assert_reason(
+                encode(&map, preferred, limits),
+                ErrorReason::DuplicateMapKey,
+            );
+
+            let validated = validate_exact(&wire, encoded_scalars, limits);
+            let encoded = encode(&map, encoded_scalars, limits);
+            if first == second {
+                assert_reason(validated, ErrorReason::DuplicateMapKey);
+                assert_reason(encoded, ErrorReason::DuplicateMapKey);
+            } else {
+                let item = validated.unwrap();
+                assert_eq!(item.frame().received_bytes(), wire);
+                assert!(core::ptr::eq(
+                    item.frame().received_bytes(),
+                    wire.as_slice()
+                ));
+                let children = item
+                    .children()
+                    .unwrap()
+                    .collect::<Result<Vec<_>, _>>()
+                    .unwrap();
+                assert_eq!(children.len(), 4);
+                assert_eq!(children[0].frame().received_bytes(), &wire[1..4]);
+                assert_eq!(children[1].frame().integer().unwrap().argument(), 1);
+                assert_eq!(children[2].frame().received_bytes(), &wire[5..8]);
+                assert_eq!(children[3].frame().integer().unwrap().argument(), 2);
+                assert_eq!(encoded.unwrap().as_bytes(), wire);
+            }
+        }
+    }
+}
+
+#[test]
+fn encoded_scalar_duplicate_precedes_a_truncated_second_value() {
+    for first in [0x0000_u16, 0x8000] {
+        for second in [0x0000_u16, 0x8000] {
+            let mut wire = signed_zero_map(first, second);
+            // An extended simple-value head requires an argument byte.
+            wire[8] = 0xf8;
+            assert_reason(
+                validate_exact(&wire, Profile::preferred(), Limits::default()),
+                ErrorReason::Truncated,
+            );
+            let expected = if first == second {
+                ErrorReason::DuplicateMapKey
+            } else {
+                ErrorReason::Truncated
+            };
+            assert_reason(validate_exact(&wire, cose(), Limits::default()), expected);
+        }
+    }
+}
+
+fn signed_zero_map(first: u16, second: u16) -> [u8; 9] {
+    let [first_high, first_low] = first.to_be_bytes();
+    let [second_high, second_low] = second.to_be_bytes();
+    [
+        0xa2,
+        0xf9,
+        first_high,
+        first_low,
+        1,
+        0xf9,
+        second_high,
+        second_low,
+        2,
+    ]
 }
 
 #[test]
