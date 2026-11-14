@@ -12,12 +12,19 @@ impl TryFrom<&proto::CodecGeneralCborOptions> for Profile {
     type Error = CborError;
     fn try_from(value: &proto::CodecGeneralCborOptions) -> Result<Self, Self::Error> {
         let invalid = || error(ErrorReason::UnsupportedPolicy);
-        Self::new(
+        let mut profile = Self::new(
             value.serialization.as_known().ok_or_else(invalid)?,
             value.lengths.as_known().ok_or_else(invalid)?,
             value.floats.as_known().ok_or_else(invalid)?,
             value.ordering.as_known().ok_or_else(invalid)?,
-        )
+        )?;
+        if let Some(equality) = value.map_key_equality {
+            profile = profile.with_map_key_equality(equality.as_known().ok_or_else(invalid)?)?;
+        }
+        if let Some(policy) = value.nan_policy {
+            profile = profile.with_nan_policy(policy.as_known().ok_or_else(invalid)?)?;
+        }
+        Ok(profile)
     }
 }
 

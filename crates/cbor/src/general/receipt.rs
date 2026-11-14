@@ -353,7 +353,7 @@ pub fn validate_prefix(
     check_input(input, limits)?;
     let frame = scan(
         input,
-        &mut Budget::new(limits),
+        &mut Budget::for_profile(limits, profile),
         0,
         Some(profile),
         true,

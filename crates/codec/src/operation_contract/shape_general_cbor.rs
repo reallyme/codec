@@ -79,6 +79,8 @@ pub(super) fn options(
         byte_string_bytes: Some(size(limits.byte_string_bytes())?),
         text_bytes: Some(size(limits.text_bytes())?),
         work: Some(size(limits.work())?),
+        map_key_equality: profile.map_key_equality().map(Into::into),
+        nan_policy: profile.nan_policy().map(Into::into),
     })
 }
 

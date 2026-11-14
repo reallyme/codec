@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  BUFFA_VERSION: 0.1.1
+  BUFFA_VERSION: 0.1.2
   BUF_VERSION: 1.75.0
 
 jobs:
@@ -38,7 +38,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: reallyme/release-readiness
-          ref: 18a6d91d99837e80f92e41fe04effb0b043d754e
+          ref: 01fe1556413f86e6f8fcf3c4d09a6778fa0805da
           path: .release-readiness
           persist-credentials: false
 
@@ -74,7 +74,6 @@ jobs:
         run: |
           cargo install reallyme-protoc-gen-buffa --version "=$BUFFA_VERSION" --locked
           cargo install reallyme-protoc-gen-buffa-packaging --version "=$BUFFA_VERSION" --locked
-          node scripts/generate_codec_proto.mjs --check-tools
 
       - name: Fetch main and published tags for breaking-change comparison
         run: git fetch origin main:refs/remotes/origin/main --tags

@@ -633,6 +633,24 @@ enum CodecGeneralCborMapOrdering {
   CODEC_GENERAL_CBOR_MAP_ORDERING_BYTEWISE = 3;
 }
 
+enum CodecGeneralCborMapKeyEquality {
+  CODEC_GENERAL_CBOR_MAP_KEY_EQUALITY_UNSPECIFIED = 0;
+  // Compare scalar encodings byte for byte, retaining signed zeros and NaN
+  // sign bits. Arrays, maps, and tags compare recursively. Array order and
+  // tag numbers are significant; map entry order is immaterial.
+  // Comparison is bounded by independent scan-node and comparison-byte
+  // budgets of 1,048,576 each in addition to the caller's work limit.
+  CODEC_GENERAL_CBOR_MAP_KEY_EQUALITY_ENCODED_SCALARS = 1;
+}
+
+enum CodecGeneralCborNanPolicy {
+  CODEC_GENERAL_CBOR_NAN_POLICY_UNSPECIFIED = 0;
+  // Reject every binary32 or binary64 NaN, including payloads representable
+  // in binary16. All binary16 NaN representations are eligible when allowed
+  // by the selected float policy.
+  CODEC_GENERAL_CBOR_NAN_POLICY_BINARY16_ONLY = 1;
+}
+
 enum CodecGeneralCborFloatWidth {
   CODEC_GENERAL_CBOR_FLOAT_WIDTH_UNSPECIFIED = 0;
   CODEC_GENERAL_CBOR_FLOAT_WIDTH_BINARY16 = 1;
@@ -694,6 +712,10 @@ message CodecGeneralCborOptions {
   optional uint64 byte_string_bytes = 10;
   optional uint64 text_bytes = 11;
   optional uint64 work = 12;
+  // Omit for RFC 8949 basic-model key equality. Explicit UNSPECIFIED is unsupported.
+  optional CodecGeneralCborMapKeyEquality map_key_equality = 13;
+  // Omit for the existing NaN width behavior. Explicit UNSPECIFIED is unsupported.
+  optional CodecGeneralCborNanPolicy nan_policy = 14;
 }
 
 // A checked half-open span in the request source; bytes are never reconstructed.

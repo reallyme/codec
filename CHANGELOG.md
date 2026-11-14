@@ -1,6 +1,13 @@
 # Changelog
 
-## 0.4.0 (unreleased)
+## 0.4.1 (unreleased)
+
+- Add independent general-CBOR options for encoded-scalar key equality and
+  binary16-only NaNs.
+- Upgrade the ReallyMe Buffa runtime and generators to 0.1.2, Release Readiness
+  to 0.8.0, and SwiftProtobuf to 1.41.0. Refresh compatible Rust dependency locks.
+
+## 0.4.0
 
 - Use ReallyMe Buffa 0.1.1 generated types. Sensitive fields clear on drop;
   use `.into()` for owned byte/string fields and borrowing or `mem::take`

@@ -467,6 +467,156 @@ public  final class CodecGeneralCborOptions extends
     work_ = 0L;
   }
 
+  public static final int MAP_KEY_EQUALITY_FIELD_NUMBER = 13;
+  private int mapKeyEquality_;
+  /**
+   * <pre>
+   * Omit for RFC 8949 basic-model key equality. Explicit UNSPECIFIED is unsupported.
+   * </pre>
+   *
+   * <code>optional .reallyme.codec.v1.CodecGeneralCborMapKeyEquality map_key_equality = 13 [json_name = "mapKeyEquality"];</code>
+   * @return Whether the mapKeyEquality field is set.
+   */
+  @java.lang.Override
+  public boolean hasMapKeyEquality() {
+    return ((bitField0_ & 0x00000100) != 0);
+  }
+  /**
+   * <pre>
+   * Omit for RFC 8949 basic-model key equality. Explicit UNSPECIFIED is unsupported.
+   * </pre>
+   *
+   * <code>optional .reallyme.codec.v1.CodecGeneralCborMapKeyEquality map_key_equality = 13 [json_name = "mapKeyEquality"];</code>
+   * @return The enum numeric value on the wire for mapKeyEquality.
+   */
+  @java.lang.Override
+  public int getMapKeyEqualityValue() {
+    return mapKeyEquality_;
+  }
+  /**
+   * <pre>
+   * Omit for RFC 8949 basic-model key equality. Explicit UNSPECIFIED is unsupported.
+   * </pre>
+   *
+   * <code>optional .reallyme.codec.v1.CodecGeneralCborMapKeyEquality map_key_equality = 13 [json_name = "mapKeyEquality"];</code>
+   * @return The mapKeyEquality.
+   */
+  @java.lang.Override
+  public me.really.codec.v1.CodecGeneralCborMapKeyEquality getMapKeyEquality() {
+    me.really.codec.v1.CodecGeneralCborMapKeyEquality result = me.really.codec.v1.CodecGeneralCborMapKeyEquality.forNumber(mapKeyEquality_);
+    return result == null ? me.really.codec.v1.CodecGeneralCborMapKeyEquality.UNRECOGNIZED : result;
+  }
+  /**
+   * <pre>
+   * Omit for RFC 8949 basic-model key equality. Explicit UNSPECIFIED is unsupported.
+   * </pre>
+   *
+   * <code>optional .reallyme.codec.v1.CodecGeneralCborMapKeyEquality map_key_equality = 13 [json_name = "mapKeyEquality"];</code>
+   * @param value The enum numeric value on the wire for mapKeyEquality to set.
+   */
+  private void setMapKeyEqualityValue(int value) {
+    bitField0_ |= 0x00000100;  mapKeyEquality_ = value;
+  }
+  /**
+   * <pre>
+   * Omit for RFC 8949 basic-model key equality. Explicit UNSPECIFIED is unsupported.
+   * </pre>
+   *
+   * <code>optional .reallyme.codec.v1.CodecGeneralCborMapKeyEquality map_key_equality = 13 [json_name = "mapKeyEquality"];</code>
+   * @param value The mapKeyEquality to set.
+   * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+   */
+  private void setMapKeyEquality(me.really.codec.v1.CodecGeneralCborMapKeyEquality value) {
+    mapKeyEquality_ = value.getNumber();
+    bitField0_ |= 0x00000100;
+  }
+  /**
+   * <pre>
+   * Omit for RFC 8949 basic-model key equality. Explicit UNSPECIFIED is unsupported.
+   * </pre>
+   *
+   * <code>optional .reallyme.codec.v1.CodecGeneralCborMapKeyEquality map_key_equality = 13 [json_name = "mapKeyEquality"];</code>
+   */
+  private void clearMapKeyEquality() {
+    bitField0_ = (bitField0_ & ~0x00000100);
+    mapKeyEquality_ = 0;
+  }
+
+  public static final int NAN_POLICY_FIELD_NUMBER = 14;
+  private int nanPolicy_;
+  /**
+   * <pre>
+   * Omit for the existing NaN width behavior. Explicit UNSPECIFIED is unsupported.
+   * </pre>
+   *
+   * <code>optional .reallyme.codec.v1.CodecGeneralCborNanPolicy nan_policy = 14 [json_name = "nanPolicy"];</code>
+   * @return Whether the nanPolicy field is set.
+   */
+  @java.lang.Override
+  public boolean hasNanPolicy() {
+    return ((bitField0_ & 0x00000200) != 0);
+  }
+  /**
+   * <pre>
+   * Omit for the existing NaN width behavior. Explicit UNSPECIFIED is unsupported.
+   * </pre>
+   *
+   * <code>optional .reallyme.codec.v1.CodecGeneralCborNanPolicy nan_policy = 14 [json_name = "nanPolicy"];</code>
+   * @return The enum numeric value on the wire for nanPolicy.
+   */
+  @java.lang.Override
+  public int getNanPolicyValue() {
+    return nanPolicy_;
+  }
+  /**
+   * <pre>
+   * Omit for the existing NaN width behavior. Explicit UNSPECIFIED is unsupported.
+   * </pre>
+   *
+   * <code>optional .reallyme.codec.v1.CodecGeneralCborNanPolicy nan_policy = 14 [json_name = "nanPolicy"];</code>
+   * @return The nanPolicy.
+   */
+  @java.lang.Override
+  public me.really.codec.v1.CodecGeneralCborNanPolicy getNanPolicy() {
+    me.really.codec.v1.CodecGeneralCborNanPolicy result = me.really.codec.v1.CodecGeneralCborNanPolicy.forNumber(nanPolicy_);
+    return result == null ? me.really.codec.v1.CodecGeneralCborNanPolicy.UNRECOGNIZED : result;
+  }
+  /**
+   * <pre>
+   * Omit for the existing NaN width behavior. Explicit UNSPECIFIED is unsupported.
+   * </pre>
+   *
+   * <code>optional .reallyme.codec.v1.CodecGeneralCborNanPolicy nan_policy = 14 [json_name = "nanPolicy"];</code>
+   * @param value The enum numeric value on the wire for nanPolicy to set.
+   */
+  private void setNanPolicyValue(int value) {
+    bitField0_ |= 0x00000200;  nanPolicy_ = value;
+  }
+  /**
+   * <pre>
+   * Omit for the existing NaN width behavior. Explicit UNSPECIFIED is unsupported.
+   * </pre>
+   *
+   * <code>optional .reallyme.codec.v1.CodecGeneralCborNanPolicy nan_policy = 14 [json_name = "nanPolicy"];</code>
+   * @param value The nanPolicy to set.
+   * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+   */
+  private void setNanPolicy(me.really.codec.v1.CodecGeneralCborNanPolicy value) {
+    nanPolicy_ = value.getNumber();
+    bitField0_ |= 0x00000200;
+  }
+  /**
+   * <pre>
+   * Omit for the existing NaN width behavior. Explicit UNSPECIFIED is unsupported.
+   * </pre>
+   *
+   * <code>optional .reallyme.codec.v1.CodecGeneralCborNanPolicy nan_policy = 14 [json_name = "nanPolicy"];</code>
+   */
+  private void clearNanPolicy() {
+    bitField0_ = (bitField0_ & ~0x00000200);
+    nanPolicy_ = 0;
+  }
+
   public static me.really.codec.v1.CodecGeneralCborOptions parseFrom(
       java.nio.ByteBuffer data)
       throws com.google.protobuf.InvalidProtocolBufferException {
@@ -1046,6 +1196,164 @@ public  final class CodecGeneralCborOptions extends
       return this;
     }
 
+    /**
+     * <pre>
+     * Omit for RFC 8949 basic-model key equality. Explicit UNSPECIFIED is unsupported.
+     * </pre>
+     *
+     * <code>optional .reallyme.codec.v1.CodecGeneralCborMapKeyEquality map_key_equality = 13 [json_name = "mapKeyEquality"];</code>
+     * @return Whether the mapKeyEquality field is set.
+     */
+    @java.lang.Override
+    public boolean hasMapKeyEquality() {
+      return instance.hasMapKeyEquality();
+    }
+    /**
+     * <pre>
+     * Omit for RFC 8949 basic-model key equality. Explicit UNSPECIFIED is unsupported.
+     * </pre>
+     *
+     * <code>optional .reallyme.codec.v1.CodecGeneralCborMapKeyEquality map_key_equality = 13 [json_name = "mapKeyEquality"];</code>
+     * @return The enum numeric value on the wire for mapKeyEquality.
+     */
+    @java.lang.Override
+    public int getMapKeyEqualityValue() {
+      return instance.getMapKeyEqualityValue();
+    }
+    /**
+     * <pre>
+     * Omit for RFC 8949 basic-model key equality. Explicit UNSPECIFIED is unsupported.
+     * </pre>
+     *
+     * <code>optional .reallyme.codec.v1.CodecGeneralCborMapKeyEquality map_key_equality = 13 [json_name = "mapKeyEquality"];</code>
+     * @param value The mapKeyEquality to set.
+     * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+     * @return This builder for chaining.
+     */
+    public Builder setMapKeyEqualityValue(int value) {
+      copyOnWrite();
+      instance.setMapKeyEqualityValue(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Omit for RFC 8949 basic-model key equality. Explicit UNSPECIFIED is unsupported.
+     * </pre>
+     *
+     * <code>optional .reallyme.codec.v1.CodecGeneralCborMapKeyEquality map_key_equality = 13 [json_name = "mapKeyEquality"];</code>
+     * @return The mapKeyEquality.
+     */
+    @java.lang.Override
+    public me.really.codec.v1.CodecGeneralCborMapKeyEquality getMapKeyEquality() {
+      return instance.getMapKeyEquality();
+    }
+    /**
+     * <pre>
+     * Omit for RFC 8949 basic-model key equality. Explicit UNSPECIFIED is unsupported.
+     * </pre>
+     *
+     * <code>optional .reallyme.codec.v1.CodecGeneralCborMapKeyEquality map_key_equality = 13 [json_name = "mapKeyEquality"];</code>
+     * @param value The enum numeric value on the wire for mapKeyEquality to set.
+     * @return This builder for chaining.
+     */
+    public Builder setMapKeyEquality(me.really.codec.v1.CodecGeneralCborMapKeyEquality value) {
+      copyOnWrite();
+      instance.setMapKeyEquality(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Omit for RFC 8949 basic-model key equality. Explicit UNSPECIFIED is unsupported.
+     * </pre>
+     *
+     * <code>optional .reallyme.codec.v1.CodecGeneralCborMapKeyEquality map_key_equality = 13 [json_name = "mapKeyEquality"];</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearMapKeyEquality() {
+      copyOnWrite();
+      instance.clearMapKeyEquality();
+      return this;
+    }
+
+    /**
+     * <pre>
+     * Omit for the existing NaN width behavior. Explicit UNSPECIFIED is unsupported.
+     * </pre>
+     *
+     * <code>optional .reallyme.codec.v1.CodecGeneralCborNanPolicy nan_policy = 14 [json_name = "nanPolicy"];</code>
+     * @return Whether the nanPolicy field is set.
+     */
+    @java.lang.Override
+    public boolean hasNanPolicy() {
+      return instance.hasNanPolicy();
+    }
+    /**
+     * <pre>
+     * Omit for the existing NaN width behavior. Explicit UNSPECIFIED is unsupported.
+     * </pre>
+     *
+     * <code>optional .reallyme.codec.v1.CodecGeneralCborNanPolicy nan_policy = 14 [json_name = "nanPolicy"];</code>
+     * @return The enum numeric value on the wire for nanPolicy.
+     */
+    @java.lang.Override
+    public int getNanPolicyValue() {
+      return instance.getNanPolicyValue();
+    }
+    /**
+     * <pre>
+     * Omit for the existing NaN width behavior. Explicit UNSPECIFIED is unsupported.
+     * </pre>
+     *
+     * <code>optional .reallyme.codec.v1.CodecGeneralCborNanPolicy nan_policy = 14 [json_name = "nanPolicy"];</code>
+     * @param value The nanPolicy to set.
+     * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+     * @return This builder for chaining.
+     */
+    public Builder setNanPolicyValue(int value) {
+      copyOnWrite();
+      instance.setNanPolicyValue(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Omit for the existing NaN width behavior. Explicit UNSPECIFIED is unsupported.
+     * </pre>
+     *
+     * <code>optional .reallyme.codec.v1.CodecGeneralCborNanPolicy nan_policy = 14 [json_name = "nanPolicy"];</code>
+     * @return The nanPolicy.
+     */
+    @java.lang.Override
+    public me.really.codec.v1.CodecGeneralCborNanPolicy getNanPolicy() {
+      return instance.getNanPolicy();
+    }
+    /**
+     * <pre>
+     * Omit for the existing NaN width behavior. Explicit UNSPECIFIED is unsupported.
+     * </pre>
+     *
+     * <code>optional .reallyme.codec.v1.CodecGeneralCborNanPolicy nan_policy = 14 [json_name = "nanPolicy"];</code>
+     * @param value The enum numeric value on the wire for nanPolicy to set.
+     * @return This builder for chaining.
+     */
+    public Builder setNanPolicy(me.really.codec.v1.CodecGeneralCborNanPolicy value) {
+      copyOnWrite();
+      instance.setNanPolicy(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Omit for the existing NaN width behavior. Explicit UNSPECIFIED is unsupported.
+     * </pre>
+     *
+     * <code>optional .reallyme.codec.v1.CodecGeneralCborNanPolicy nan_policy = 14 [json_name = "nanPolicy"];</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearNanPolicy() {
+      copyOnWrite();
+      instance.clearNanPolicy();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:reallyme.codec.v1.CodecGeneralCborOptions)
   }
   @java.lang.Override
@@ -1075,11 +1383,14 @@ public  final class CodecGeneralCborOptions extends
             "byteStringBytes_",
             "textBytes_",
             "work_",
+            "mapKeyEquality_",
+            "nanPolicy_",
           };
           java.lang.String info =
-              "\u0000\f\u0000\u0001\u0001\f\f\u0000\u0000\u0000\u0001\f\u0002\f\u0003\f\u0004\f" +
-              "\u0005\u1003\u0000\u0006\u1003\u0001\u0007\u1003\u0002\b\u1003\u0003\t\u1003\u0004" +
-              "\n\u1003\u0005\u000b\u1003\u0006\f\u1003\u0007";
+              "\u0000\u000e\u0000\u0001\u0001\u000e\u000e\u0000\u0000\u0000\u0001\f\u0002\f\u0003" +
+              "\f\u0004\f\u0005\u1003\u0000\u0006\u1003\u0001\u0007\u1003\u0002\b\u1003\u0003\t" +
+              "\u1003\u0004\n\u1003\u0005\u000b\u1003\u0006\f\u1003\u0007\r\u100c\b\u000e\u100c" +
+              "\t";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

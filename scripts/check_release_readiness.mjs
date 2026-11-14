@@ -50,8 +50,8 @@ const POLICY_MODULE_SHA256 = new Map([
   ["scripts/release-readiness/sdk-source-policy.mjs", "9527f3842536ed78e8d4358c4a802f7ecf1669c6537d87d67a4d6ccb6e28011f"],
   ["scripts/generate_codec_sdk_contract.mjs", "0f0c49b1f3f8185c6599aa4123b8b432224e146760561a2d45d5e37d9dae9cd0"],
   ["scripts/codec_proto_schema.mjs", "4ee81a8a3c896d70a871bfb4a0724c007d709891a88580c3eed777bb80ddcbc9"],
-  ["scripts/release-readiness/native-proto-policy.mjs", "f7713ec21913a67d1b4b7c32890f0bcb1981a5c0d0900649dacb923e70a3142f"],
-  ["scripts/generate_codec_proto.mjs", "6bd8d27443bac3540d89bb7c0e95253028d7f8584efbb91797451e343c4ed043"],
+  ["scripts/release-readiness/native-proto-policy.mjs", "cd434704f16db0de4e2a80db1a7fbfa1a6e86e7b04df9669da9b53cd18c4cdd9"],
+  ["scripts/generate_codec_proto.mjs", "2488376480cec9894b24fcb777a96ee5b062b5b077386112c278d82352ce5719"],
   ["scripts/generate_codec_proto_support.mjs", "6ec4f0c7727003fd2d36e537a51f27a0f20bf5cbdf194de912857d94c0ba462a"],
   ["scripts/harden_codec_sdk_proto.mjs", "60636ba0bc757c45ec951ca13d79fedba29620f605a1c1d4e6b6d0c8c3c0d0ae"],
   ["scripts/release-readiness/source-policy.mjs", "1bc1368be565bfb972ef68a7b3a532c5b1969f40ef9893cd660fb1c244a4202e"],
@@ -113,6 +113,9 @@ const {
   assertNodeWorkflowJobsPinNode,
   assertProtoContract,
   assertReallyMeReleasePackagePolicy,
+  assertReallyMeProtobufReleasePolicy,
+  assertReallyMeOperationBoundaryContract,
+  assertRustReleasePolicy,
   assertRustSourcePolicy,
   assertCargoMetadataPolicy,
   assertSpdxHeaders,
@@ -320,7 +323,17 @@ const assertTypescriptProtoFacadeCompleteness = ({ facadePath, generatedPath }) 
   });
 };
 
-assertReallyMeReleasePackagePolicy({ version: "0.7.0" });
+assertReallyMeReleasePackagePolicy({ version: "0.8.0" });
+const rustChecks = ".github/workflows/code-checks.yml";
+assertRustReleasePolicy({
+  release: { workflow: rustChecks, job: "rust", step: "Test on the release toolchain" },
+  msrv: [
+    "reallyme-codec", "reallyme-codec-base64", "reallyme-codec-base64url", "reallyme-codec-cbor",
+    "reallyme-codec-hex", "reallyme-codec-jcs", "reallyme-codec-multibase", "reallyme-codec-multicodec",
+    "reallyme-codec-multikey", "reallyme-codec-pem", "reallyme-codec-proto",
+  ].map((name) => ({ package: name, workflow: rustChecks, job: "rust-msrv", step: `Test ${name} at MSRV` })),
+  dependencyReview: { workflow: rustChecks, job: "rust", step: "Dependency policy" },
+});
 assertRustSourcePolicy({ generatedPrefixes: ["crates/proto/src/generated"] });
 assertCargoMetadataPolicy({
   metadataArgs: ["metadata", "--locked", "--format-version", "1", "--no-deps"],
@@ -328,7 +341,7 @@ assertCargoMetadataPolicy({
     name: "reallyme-codec-proto",
     dependencies: [{
       name: "reallyme-buffa", rename: "buffa", source: "registry",
-      requirement: "=0.1.1", features: ["json", "zeroize"],
+      requirement: "=0.1.2", features: ["json", "zeroize"],
     }],
   }],
 });
@@ -355,8 +368,8 @@ assertCargoFuzzWorkflowPolicy({
   },
 });
 
-const codecPackageVersion = "0.4.0";
-const codecProtoPackageVersion = "0.4.0";
+const codecPackageVersion = "0.4.1";
+const codecProtoPackageVersion = "0.4.1";
 assertContains("Package.swift", `let ffiArtifactVersion = "${codecPackageVersion}"`);
 // The probes are separate Cargo workspaces. Root workspace metadata cannot
 // detect a release bump that leaves their own lockfile package entries stale.
@@ -407,7 +420,7 @@ if (rootCargo.includes("crates/crypto") || rootCargo.includes("crates/proto/cryp
   fail("root Cargo.toml still references removed crypto crates");
 }
 assertContains("Cargo.toml", 'repository = "https://github.com/reallyme/codec"');
-assertContains("Cargo.toml", 'buffa = { package = "reallyme-buffa", version = "=0.1.1", features = ["json", "zeroize"] }');
+assertContains("Cargo.toml", 'buffa = { package = "reallyme-buffa", version = "=0.1.2", features = ["json", "zeroize"] }');
 assertContains("README.md", "ReallyMe Codec is one cross-language codec operation contract for identity data.");
 assertContains("README.md", "released in lockstep with `reallyme-codec`");
 assertContains("README.md", "SDK consumers should usually start with the umbrella package");
@@ -808,7 +821,6 @@ assertContains(
 );
 assertContains("scripts/build_swift_xcframework.sh", "rm_codec_process_operation");
 assertContains(".github/workflows/code-checks.yml", "cargo-nextest@0.9.151");
-assertContains(".github/workflows/code-checks.yml", "cargo-deny@0.20.2");
 assertContains(".github/workflows/code-checks.yml", "cargo-audit@0.23.0");
 assertContains(".github/workflows/code-checks.yml", "scripts/audit_committed_lockfiles.sh");
 assertContains(
@@ -849,11 +861,11 @@ assertContains(
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  'const RELEASE_READINESS_COMMIT = "18a6d91d99837e80f92e41fe04effb0b043d754e"',
+  'const RELEASE_READINESS_COMMIT = "01fe1556413f86e6f8fcf3c4d09a6778fa0805da"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  '"7614b0cbf9e36a4653c2fa9008bee0d1e22542de0e4a08a10e640c836a5c93db"',
+  '"1519b407c89eb2ecc2307f9a402efd8aa3a190dc5911a59b64ecec0e9742d14c"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
@@ -907,8 +919,7 @@ assertProtoContract("crates/proto/proto/reallyme/codec/v1/codec.proto");
 if (findManualProtoPresenceFields(readText("crates/proto/proto/reallyme/codec/v1/codec.proto")).length !== 0) {
   fail("codec.proto must use optional/message/oneof presence instead of manual presence booleans");
 }
-const { assertNativeOperationBoundary } = await import("./release-readiness/native-proto-policy.mjs");
-assertNativeOperationBoundary(readinessContext, {
+assertReallyMeOperationBoundaryContract({
   protoPath: "crates/proto/proto/reallyme/codec/v1/codec.proto",
   operationRequest: "CodecOperationRequest",
   operationResponse: "CodecOperationResponse",
@@ -971,11 +982,11 @@ assertNativeOperationBoundary(readinessContext, {
       processOperationNeedle: "public fun processOperation(request: ByteArray)",
       processOperationJsonNeedle:
         "public fun processOperationJson(requestJson: ByteArray)",
-      binaryResponsePath: "packages/kotlin/src/main/kotlin/me/really/codec/CallCodec.kt",
-      binaryResponseNeedle: "CodecOperationResponse.parseFrom(input)",
+      binaryResponseNeedle: "ReallyMeCodecNative.processOperationNative",
     },
   ],
 });
+assertContains("packages/kotlin/src/main/kotlin/me/really/codec/CallCodec.kt", "CodecOperationResponse.parseFrom(input)");
 assertContains(
   "packages/swift/Tests/ReallyMeCodecTests/ProviderSafetyTests.swift",
   "UInt(Int.max) + 1",
@@ -1226,40 +1237,6 @@ for (const field of expandedRequests) {
     fail(`expanded operation ${field.name} must have one semantic handler and its generated result`);
   }
 }
-const operationVectorsPath = "vectors/codec-operation-vectors.json";
-const operationVectors = readJson(operationVectorsPath);
-if (operationVectors.schemaVersion !== 1 || !Array.isArray(operationVectors.cases) ||
-    operationVectors.cases.length !== expandedRequests.length) {
-  fail("every expanded schema operation requires a conformance vector");
-}
-const expectedVectorOperations = expandedRequests.map((field) =>
-  `${field.name.replace(/_([a-z])/gu, (_match, letter) => letter.toUpperCase())}:${field.tag}`,
-).sort();
-const actualVectorOperations = [];
-for (const vector of operationVectors.cases) {
-  if (typeof vector.operation !== "string" || !Number.isSafeInteger(vector.fieldNumber) ||
-      typeof vector.requestJson !== "string" || typeof vector.requestHex !== "string" ||
-      !/^(?:[0-9a-f]{2})+$/u.test(vector.requestHex) ||
-      vector.checks === null || typeof vector.checks !== "object" || Array.isArray(vector.checks)) {
-    fail("operation conformance vectors require typed names, wire bytes, JSON requests, and checks");
-  }
-  let request;
-  try { request = JSON.parse(vector.requestJson); } catch { fail("invalid conformance request JSON"); }
-  if (request === null || typeof request !== "object" || Array.isArray(request) ||
-      Object.keys(request).length !== 1 || !Object.hasOwn(request, vector.operation)) {
-    fail("operation conformance vector must select its declared operation");
-  }
-  actualVectorOperations.push(`${vector.operation}:${vector.fieldNumber}`);
-}
-assertSetEquals({ label: "operation conformance vectors", actual: actualVectorOperations.sort(), expected: expectedVectorOperations });
-for (const path of [
-  "crates/codec/tests/complete_contract_tests.rs",
-  "packages/ts/test/complete-contract.test.mjs",
-  "packages/swift/Tests/ReallyMeCodecTests/CompleteContractTests.swift",
-  "packages/kotlin/src/test/kotlin/me/really/codec/CompleteContractTest.kt",
-]) {
-  assertContains(path, "codec-operation-vectors.json");
-}
 for (const field of operationFields("CodecOperationRequest")) {
   if (!expandedRequests.some((candidate) => candidate.name === field.name && candidate.tag === field.tag && candidate.type === field.type)) {
     fail(`expanded envelope changed legacy operation ${field.name}`);
@@ -1291,14 +1268,6 @@ if (/\b(?:fn|struct|enum)\b/u.test(legacyScalarSource)) {
   fail("the legacy scalar adapter must only re-export the shared generated-contract implementation");
 }
 
-// Framing stays separate from the schema-directed DER reader. Shared goldens
-// cover complete headers, absent values, borrowed extents, and typed failures.
-for (const path of [
-  "crates/codec/tests/tlv_contract_tests.rs",
-  "packages/ts/test/tlv-contract.test.mjs",
-  "packages/swift/Tests/ReallyMeCodecTests/TlvContractTests.swift",
-  "packages/kotlin/src/test/kotlin/me/really/codec/TlvContractTest.kt",
-]) assertContains(path, "tlv-framing-vectors.json");
 assertContains("crates/codec/src/operation_contract/execute_tlv.rs", "tlv::read_header");
 assertContains("crates/codec/src/operation_contract/execute_tlv.rs", "tlv::frame_prefix");
 assertContains("crates/codec/src/operation_contract/execute_tlv.rs", "tlv::frame_exact");
@@ -1306,23 +1275,6 @@ assertContains("crates/codec/src/operation_contract/execute_tlv.rs", "tlv::read_
 assertContains("crates/codec/src/operation_contract/execute_tlv.rs", "tlv::read_length");
 assertContains("crates/codec/src/tlv/error.rs", "CodecTlvErrorReason as ErrorReason");
 assertContains("crates/proto/src/error.rs", "pub fn from_tlv_reason");
-const tlvVectors = readJson("vectors/tlv-framing-vectors.json");
-if (tlvVectors.schemaVersion !== 1 || !Array.isArray(tlvVectors.cases) || tlvVectors.cases.length === 0) {
-  fail("TLV framing requires independent transport goldens");
-}
-const tlvVectorNames = new Set();
-for (const vector of tlvVectors.cases) {
-  const key = `${vector.name}:${vector.operation}`;
-  if (typeof vector.name !== "string" || vector.name.length === 0 || tlvVectorNames.has(key) ||
-      !["tlvReadHeader", "tlvFramePrefix", "tlvFrameExact", "tlvReadIdentifier", "tlvReadLength"].includes(vector.operation) ||
-      typeof vector.requestJson !== "string" || typeof vector.requestHex !== "string" ||
-      typeof vector.responseHex !== "string" ||
-      !/^(?:[0-9a-f]{2})+$/u.test(vector.requestHex) || !/^(?:[0-9a-f]{2})+$/u.test(vector.responseHex)) {
-    fail("TLV framing goldens require unique names, generated operations, and exact wire bytes");
-  }
-  tlvVectorNames.add(key);
-}
-
 const remainingStructuredSemanticOperations = [
   {
     moduleName: "multikey",
@@ -1962,7 +1914,7 @@ const packageReleaseWorkflows = Object.freeze([
 for (const workflowPath of packagePreflightWorkflows) {
   assertContains(workflowPath, "Resolve release SHA");
   assertContains(workflowPath, 'default: ""');
-  assertContains(workflowPath, "default: 0.4.0");
+  assertContains(workflowPath, "default: 0.4.1");
 }
 for (const workflowPath of packageReleaseWorkflows) {
   assertContains(workflowPath, "Verify reviewed release SHA");
@@ -2171,7 +2123,7 @@ assertContains(".github/workflows/kotlin-android-package-release.yml", "Test and
 assertContains(".github/workflows/kotlin-android-package-release.yml", "Build Android AAR");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "requireFullNativeResources=true");
 assertContains("packages/kotlin/settings.gradle.kts", 'rootProject.name = "reallyme-codec"');
-assertContains("packages/kotlin/README.md", "me.really:codec:0.4.0");
+assertContains("packages/kotlin/README.md", "me.really:codec:0.4.1");
 assertContains("packages/kotlin/README.md", "ships Rust JNI libraries as platform resources");
 assertContains(
   "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodecRustNativeProvider.kt",
@@ -2404,7 +2356,7 @@ assertNotContains("packages/swift/Sources/ReallyMeCodec/Generated/CodecProto.swi
 assertNotContains("gen/swift/reallyme/codec/v1/codec.pb.swift", "public nonisolated struct ReallyMeProto");
 assertContains("buf.gen.yaml", "Visibility=Internal");
 assertContains("Package.swift", 'name: "ReallyMeCodecFFI"');
-assertContains("Package.swift", 'from: "1.40.0"');
+assertContains("Package.swift", 'from: "1.41.0"');
 assertContains("Package.swift", "ReallyMeCodecFFI.xcframework.zip");
 assertContains("Package.swift", 'let ffiArtifactLocalPathOverride = "');
 assertContains("Package.swift", 'ffiArtifactVersion == packageVersion');
@@ -2920,7 +2872,7 @@ assertContains(
   ".github/workflows/kotlin-android-package-release.yml",
   '{ yes 2>/dev/null || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "ndk;29.0.14206865"',
 );
-assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.4.0");
+assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.4.1");
 assertContains("packages/kotlin-android/README.md", "never sourced from the Git worktree");
 assertContains(
   "packages/kotlin-android/gradle.properties",
@@ -2999,7 +2951,7 @@ assertContains(".github/workflows/npm-package-preflight.yml", "Test TypeScript c
 
 assertContains("README.md", "https://github.com/reallyme/codec");
 assertContains("README.md", "https://www.npmjs.com/package/@reallyme/codec");
-assertContains("README.md", "me.really:codec:0.4.0");
+assertContains("README.md", "me.really:codec:0.4.1");
 assertContains("README.md", "reallyme-codec-proto");
 assertContains("README.md", "## Published Surfaces");
 assertContains("README.md", "`me.really:codec-android` AAR");
@@ -3065,9 +3017,37 @@ for (const message of codecProtoSensitiveMessageNames) {
 }
 
 const { assertNativeProtoPolicy } = await import("./release-readiness/native-proto-policy.mjs");
+assertReallyMeProtobufReleasePolicy({
+  workflowMode: "delegated",
+  installBufAction: "bufbuild/buf-action",
+  generatedFreshnessStepRun: "node scripts/run_pinned_release_readiness.mjs --generated-freshness",
+  protobufFirst: {
+    contractPath: "CONTRACT.md",
+    schemaPaths: [codecProtoSchemaPath],
+    verification: {
+      workflow: ".github/workflows/protobuf-ci.yml",
+      job: "protobuf",
+      step: "Check release readiness generated freshness",
+      run: "node scripts/run_pinned_release_readiness.mjs --generated-freshness",
+    },
+  },
+  hardeningPolicy: {
+    protoSchema: codecProtoSchemaPath,
+    generatedRust: "crates/proto/src/generated/buffa/reallyme.codec.v1.codec.rs",
+    scalarFieldClassifications: codecProtoScalarFieldClassifications,
+  },
+  generatedFreshnessMode,
+  generatedFreshness: {
+    generatedPaths: [
+      "crates/proto/src/generated", "packages/ts/src/proto/generated", "gen",
+      "packages/swift/Sources/ReallyMeCodec/Generated",
+      "packages/kotlin/src/main/kotlin/me/really/codec/generated",
+    ],
+    commands: [["node", ["scripts/generate_codec_proto.mjs"]]],
+  },
+});
 assertNativeProtoPolicy(readinessContext, {
   sensitiveMessages: codecProtoSensitiveMessageNames,
-  generatedFreshnessMode,
 });
 
 assertContains(

@@ -5,7 +5,7 @@
 //! Borrowed general CBOR framing, basic validity, and protected encoding.
 //!
 //! Framing preserves received bytes and has a distinct receipt type from profile
-//! validation. Profiles check UTF-8, basic-model key uniqueness, selected float
+//! validation. Profiles check UTF-8, map-key uniqueness, selected float
 //! policy, and optional preferred encoding or key ordering. Tag interpretation
 //! is explicit; embedded tag-24 bytes are never reconstructed for authentication.
 //!
@@ -62,6 +62,7 @@
 //! ```
 
 mod compare;
+mod compare_encoded_keys;
 mod contract;
 mod cursor;
 mod encode;
@@ -81,7 +82,9 @@ pub use encode::{encode, EncodedCbor, MapEntry, ValueRef};
 pub use error::{CborError, ErrorReason};
 pub use float::{Float, FloatWidth};
 pub use limits::{Limits, MAX_BYTES, MAX_DEPTH, MAX_ENTRIES, MAX_NODES, MAX_WORK};
-pub use profile::{FloatPolicy, LengthPolicy, MapOrdering, Profile, Serialization};
+pub use profile::{
+    FloatPolicy, LengthPolicy, MapKeyEquality, MapOrdering, NanPolicy, Profile, Serialization,
+};
 pub use read_header::{read_header_prefix, ArgumentWidth, Header, MajorType};
 pub use receipt::{
     frame_exact, frame_prefix, validate_exact, validate_prefix, Frame, Integer, Item, ItemChildren,

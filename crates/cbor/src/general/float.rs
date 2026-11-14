@@ -123,6 +123,13 @@ impl Float {
         }
     }
 
+    pub(super) fn check_binary16_nan(&self) -> Result<(), CborError> {
+        if self.width() != FloatWidth::Binary16 && self.is_nan() {
+            return Err(error(ErrorReason::NonPreferredFloat));
+        }
+        Ok(())
+    }
+
     pub(super) fn shortest(&self) -> FloatWidth {
         if self.is_nan() {
             let (fraction_bits, _, _) = self.layout();

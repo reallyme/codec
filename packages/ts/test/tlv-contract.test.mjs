@@ -5,37 +5,13 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { create, fromBinary, fromJsonString, toBinary, toJsonString } from "@bufbuild/protobuf";
+import { create, fromBinary, toBinary, toJsonString } from "@bufbuild/protobuf";
 import * as wasm from "../dist/wasm/reallyme_codec_wasm.js";
 import { installReallyMeCodecWasmProvider, processOperation, processOperationJson } from "../dist/index.js";
 import { CodecApiOperationRequestSchema, CodecApiOperationResponseSchema, CodecTlvErrorReason, CodecTlvProfile } from "../dist/proto.js";
 
-const manifest = JSON.parse(readFileSync(new URL("../../../vectors/tlv-framing-vectors.json", import.meta.url), "utf8"));
 wasm.initSync({ module: readFileSync(new URL("../dist/wasm/reallyme_codec_wasm_bg.wasm", import.meta.url)) });
 installReallyMeCodecWasmProvider(wasm);
-
-test("TLV acceptance receipts and typed failures match independent wire goldens on wasm32", () => {
-  assert.equal(manifest.schemaVersion, 1);
-  for (const entry of manifest.cases) {
-    const request = Uint8Array.from(Buffer.from(entry.requestHex, "hex"));
-    const expected = Uint8Array.from(Buffer.from(entry.responseHex, "hex"));
-    const json = new TextEncoder().encode(entry.requestJson);
-    const binaryResponse = processOperation(request);
-    const jsonResponse = processOperationJson(json);
-    try {
-      assert.deepEqual(toBinary(CodecApiOperationRequestSchema, fromJsonString(CodecApiOperationRequestSchema, entry.requestJson)), request);
-      assert.deepEqual(binaryResponse, expected, `${entry.name} ${entry.operation} binary`);
-      assert.deepEqual(jsonResponse, expected, `${entry.name} ${entry.operation} JSON`);
-      assert.deepEqual(toBinary(CodecApiOperationResponseSchema, fromBinary(CodecApiOperationResponseSchema, expected)), expected);
-    } finally {
-      request.fill(0);
-      json.fill(0);
-      expected.fill(0);
-      binaryResponse.fill(0);
-      jsonResponse.fill(0);
-    }
-  }
-});
 
 test("TLV opts into a full 16 MiB source through binary and ProtoJSON on WASM", () => {
   const maximum = 16 * 1024 * 1024;

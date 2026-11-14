@@ -168,6 +168,7 @@ impl Encoder {
             )?;
             return self.append(frame.received_bytes());
         }
+        self.budget.check_item_depth(depth)?;
         self.budget.node()?;
         match value {
             ValueRef::Unsigned(value) => self.argument(MajorType::Unsigned, *value),
@@ -238,6 +239,7 @@ impl Encoder {
             }
             return self.append(&value.value);
         }
+        self.budget.check_item_depth(depth)?;
         self.budget.node()?;
         match value {
             Value::ArrayValue(array) => {
@@ -327,6 +329,9 @@ impl Encoder {
 
     fn float_value(&mut self, value: &Float) -> Result<(), CborError> {
         value.check(self.profile.floats)?;
+        if self.profile.requires_binary16_nan() {
+            value.check_binary16_nan()?;
+        }
         let width = if self.profile.serialization == Serialization::Preferred {
             value.shortest()
         } else {
@@ -376,7 +381,7 @@ fn encode_with(
         bytes: Zeroizing::new(Vec::new()),
         length: 0,
         measure: true,
-        budget: Budget::new(limits),
+        budget: Budget::for_profile(limits, profile),
         profile,
     };
     visit(&mut measure)?;
@@ -384,7 +389,7 @@ fn encode_with(
     bytes
         .try_reserve_exact(measure.length)
         .map_err(|_| error(ErrorReason::AllocationFailure))?;
-    let mut budget = Budget::new(limits);
+    let mut budget = Budget::for_profile(limits, profile);
     budget.work = measure.budget.work;
     let mut encoder = Encoder {
         bytes,
@@ -396,7 +401,7 @@ fn encode_with(
     visit(&mut encoder)?;
     // All passes share work credits. Structural totals are checked separately
     // per pass so the published node/content limits describe the actual output.
-    let mut validation = Budget::new(limits);
+    let mut validation = Budget::for_profile(limits, profile);
     validation.work = encoder.budget.work;
     {
         let validated = scan(

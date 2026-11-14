@@ -741,6 +741,84 @@ nonisolated enum ReallyMeProtoCodecGeneralCborMapOrdering: SwiftProtobuf.Enum, S
 
 }
 
+nonisolated enum ReallyMeProtoCodecGeneralCborMapKeyEquality: SwiftProtobuf.Enum, Swift.CaseIterable {
+  typealias RawValue = Int
+  case unspecified // = 0
+
+  /// Compare scalar encodings byte for byte, retaining signed zeros and NaN
+  /// sign bits. Arrays, maps, and tags compare recursively. Array order and
+  /// tag numbers are significant; map entry order is immaterial.
+  /// Comparison is bounded by independent scan-node and comparison-byte
+  /// budgets of 1,048,576 each in addition to the caller's work limit.
+  case encodedScalars // = 1
+  case UNRECOGNIZED(Int)
+
+  init() {
+    self = .unspecified
+  }
+
+  init?(rawValue: Int) {
+    switch rawValue {
+    case 0: self = .unspecified
+    case 1: self = .encodedScalars
+    default: self = .UNRECOGNIZED(rawValue)
+    }
+  }
+
+  var rawValue: Int {
+    switch self {
+    case .unspecified: return 0
+    case .encodedScalars: return 1
+    case .UNRECOGNIZED(let i): return i
+    }
+  }
+
+  // The compiler won't synthesize support with the UNRECOGNIZED case.
+  static let allCases: [ReallyMeProtoCodecGeneralCborMapKeyEquality] = [
+    .unspecified,
+    .encodedScalars,
+  ]
+
+}
+
+nonisolated enum ReallyMeProtoCodecGeneralCborNanPolicy: SwiftProtobuf.Enum, Swift.CaseIterable {
+  typealias RawValue = Int
+  case unspecified // = 0
+
+  /// Reject every binary32 or binary64 NaN, including payloads representable
+  /// in binary16. All binary16 NaN representations are eligible when allowed
+  /// by the selected float policy.
+  case binary16Only // = 1
+  case UNRECOGNIZED(Int)
+
+  init() {
+    self = .unspecified
+  }
+
+  init?(rawValue: Int) {
+    switch rawValue {
+    case 0: self = .unspecified
+    case 1: self = .binary16Only
+    default: self = .UNRECOGNIZED(rawValue)
+    }
+  }
+
+  var rawValue: Int {
+    switch self {
+    case .unspecified: return 0
+    case .binary16Only: return 1
+    case .UNRECOGNIZED(let i): return i
+    }
+  }
+
+  // The compiler won't synthesize support with the UNRECOGNIZED case.
+  static let allCases: [ReallyMeProtoCodecGeneralCborNanPolicy] = [
+    .unspecified,
+    .binary16Only,
+  ]
+
+}
+
 nonisolated enum ReallyMeProtoCodecGeneralCborFloatWidth: SwiftProtobuf.Enum, Swift.CaseIterable {
   typealias RawValue = Int
   case unspecified // = 0
@@ -3954,6 +4032,26 @@ nonisolated struct ReallyMeProtoCodecGeneralCborOptions: Sendable {
   /// Clears the value of `work`. Subsequent reads from it will return its default value.
   mutating func clearWork() {self._work = nil}
 
+  /// Omit for RFC 8949 basic-model key equality. Explicit UNSPECIFIED is unsupported.
+  var mapKeyEquality: ReallyMeProtoCodecGeneralCborMapKeyEquality {
+    get {_mapKeyEquality ?? .unspecified}
+    set {_mapKeyEquality = newValue}
+  }
+  /// Returns true if `mapKeyEquality` has been explicitly set.
+  var hasMapKeyEquality: Bool {self._mapKeyEquality != nil}
+  /// Clears the value of `mapKeyEquality`. Subsequent reads from it will return its default value.
+  mutating func clearMapKeyEquality() {self._mapKeyEquality = nil}
+
+  /// Omit for the existing NaN width behavior. Explicit UNSPECIFIED is unsupported.
+  var nanPolicy: ReallyMeProtoCodecGeneralCborNanPolicy {
+    get {_nanPolicy ?? .unspecified}
+    set {_nanPolicy = newValue}
+  }
+  /// Returns true if `nanPolicy` has been explicitly set.
+  var hasNanPolicy: Bool {self._nanPolicy != nil}
+  /// Clears the value of `nanPolicy`. Subsequent reads from it will return its default value.
+  mutating func clearNanPolicy() {self._nanPolicy = nil}
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
@@ -3966,6 +4064,8 @@ nonisolated struct ReallyMeProtoCodecGeneralCborOptions: Sendable {
   fileprivate var _byteStringBytes: UInt64? = nil
   fileprivate var _textBytes: UInt64? = nil
   fileprivate var _work: UInt64? = nil
+  fileprivate var _mapKeyEquality: ReallyMeProtoCodecGeneralCborMapKeyEquality? = nil
+  fileprivate var _nanPolicy: ReallyMeProtoCodecGeneralCborNanPolicy? = nil
 }
 
 /// A checked half-open span in the request source; bytes are never reconstructed.
@@ -4359,7 +4459,7 @@ nonisolated struct ReallyMeProtoCodecGeneralCborSourceRequest: Sendable, CustomR
   fileprivate var _options: ReallyMeProtoCodecGeneralCborOptions? = nil
 }
 
-nonisolated struct ReallyMeProtoCodecGeneralCborInspectRequest: Sendable, CustomReflectable {
+nonisolated struct ReallyMeProtoCodecGeneralCborInspectRequest: @unchecked Sendable, CustomReflectable {
   // Mirror for ReallyMeProtoCodecGeneralCborInspectRequest must not expose sensitive fields.
   var customMirror: Mirror { Mirror(self, children: []) }
 
@@ -4382,26 +4482,35 @@ nonisolated struct ReallyMeProtoCodecGeneralCborInspectRequest: Sendable, Custom
   // methods supported on all messages.
 
   /// SENSITIVE: payload ownership requires redaction and zeroization.
-  var encoded: Data = Data()
+  var encoded: Data {
+    get {_storage._encoded}
+    set {_uniqueStorage()._encoded = newValue}
+  }
 
   var options: ReallyMeProtoCodecGeneralCborOptions {
-    get {_options ?? ReallyMeProtoCodecGeneralCborOptions()}
-    set {_options = newValue}
+    get {_storage._options ?? ReallyMeProtoCodecGeneralCborOptions()}
+    set {_uniqueStorage()._options = newValue}
   }
   /// Returns true if `options` has been explicitly set.
-  var hasOptions: Bool {self._options != nil}
+  var hasOptions: Bool {_storage._options != nil}
   /// Clears the value of `options`. Subsequent reads from it will return its default value.
-  mutating func clearOptions() {self._options = nil}
+  mutating func clearOptions() {_uniqueStorage()._options = nil}
 
-  var inspection: ReallyMeProtoCodecGeneralCborInspection = .unspecified
+  var inspection: ReallyMeProtoCodecGeneralCborInspection {
+    get {_storage._inspection}
+    set {_uniqueStorage()._inspection = newValue}
+  }
 
-  var validate: Bool = false
+  var validate: Bool {
+    get {_storage._validate}
+    set {_uniqueStorage()._validate = newValue}
+  }
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
 
-  fileprivate var _options: ReallyMeProtoCodecGeneralCborOptions? = nil
+  fileprivate var _storage = _StorageClass.defaultInstance
 }
 
 /// Outer options bound framing; embedded options validate the exact tag-24 payload.
@@ -7478,6 +7587,14 @@ nonisolated extension ReallyMeProtoCodecGeneralCborMapOrdering: SwiftProtobuf._P
   static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0CODEC_GENERAL_CBOR_MAP_ORDERING_UNSPECIFIED\0\u{1}CODEC_GENERAL_CBOR_MAP_ORDERING_RECEIVED\0\u{1}CODEC_GENERAL_CBOR_MAP_ORDERING_LENGTH_FIRST\0\u{1}CODEC_GENERAL_CBOR_MAP_ORDERING_BYTEWISE\0")
 }
 
+nonisolated extension ReallyMeProtoCodecGeneralCborMapKeyEquality: SwiftProtobuf._ProtoNameProviding {
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0CODEC_GENERAL_CBOR_MAP_KEY_EQUALITY_UNSPECIFIED\0\u{1}CODEC_GENERAL_CBOR_MAP_KEY_EQUALITY_ENCODED_SCALARS\0")
+}
+
+nonisolated extension ReallyMeProtoCodecGeneralCborNanPolicy: SwiftProtobuf._ProtoNameProviding {
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0CODEC_GENERAL_CBOR_NAN_POLICY_UNSPECIFIED\0\u{1}CODEC_GENERAL_CBOR_NAN_POLICY_BINARY16_ONLY\0")
+}
+
 nonisolated extension ReallyMeProtoCodecGeneralCborFloatWidth: SwiftProtobuf._ProtoNameProviding {
   static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0CODEC_GENERAL_CBOR_FLOAT_WIDTH_UNSPECIFIED\0\u{1}CODEC_GENERAL_CBOR_FLOAT_WIDTH_BINARY16\0\u{1}CODEC_GENERAL_CBOR_FLOAT_WIDTH_BINARY32\0\u{1}CODEC_GENERAL_CBOR_FLOAT_WIDTH_BINARY64\0")
 }
@@ -10132,7 +10249,7 @@ nonisolated extension ReallyMeProtoCodecValidateKeyBindingRequest: SwiftProtobuf
 
 nonisolated extension ReallyMeProtoCodecGeneralCborOptions: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".CodecGeneralCborOptions"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}serialization\0\u{1}lengths\0\u{1}floats\0\u{1}ordering\0\u{3}input_bytes\0\u{3}output_bytes\0\u{1}depth\0\u{1}nodes\0\u{1}entries\0\u{3}byte_string_bytes\0\u{3}text_bytes\0\u{1}work\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}serialization\0\u{1}lengths\0\u{1}floats\0\u{1}ordering\0\u{3}input_bytes\0\u{3}output_bytes\0\u{1}depth\0\u{1}nodes\0\u{1}entries\0\u{3}byte_string_bytes\0\u{3}text_bytes\0\u{1}work\0\u{3}map_key_equality\0\u{3}nan_policy\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -10152,6 +10269,8 @@ nonisolated extension ReallyMeProtoCodecGeneralCborOptions: SwiftProtobuf.Messag
       case 10: try { try decoder.decodeSingularUInt64Field(value: &self._byteStringBytes) }()
       case 11: try { try decoder.decodeSingularUInt64Field(value: &self._textBytes) }()
       case 12: try { try decoder.decodeSingularUInt64Field(value: &self._work) }()
+      case 13: try { try decoder.decodeSingularEnumField(value: &self._mapKeyEquality) }()
+      case 14: try { try decoder.decodeSingularEnumField(value: &self._nanPolicy) }()
       default: break
       }
     }
@@ -10198,6 +10317,12 @@ nonisolated extension ReallyMeProtoCodecGeneralCborOptions: SwiftProtobuf.Messag
     try { if let v = self._work {
       try visitor.visitSingularUInt64Field(value: v, fieldNumber: 12)
     } }()
+    try { if let v = self._mapKeyEquality {
+      try visitor.visitSingularEnumField(value: v, fieldNumber: 13)
+    } }()
+    try { if let v = self._nanPolicy {
+      try visitor.visitSingularEnumField(value: v, fieldNumber: 14)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -10214,6 +10339,8 @@ nonisolated extension ReallyMeProtoCodecGeneralCborOptions: SwiftProtobuf.Messag
     if lhs._byteStringBytes != rhs._byteStringBytes {return false}
     if lhs._textBytes != rhs._textBytes {return false}
     if lhs._work != rhs._work {return false}
+    if lhs._mapKeyEquality != rhs._mapKeyEquality {return false}
+    if lhs._nanPolicy != rhs._nanPolicy {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -10645,46 +10772,88 @@ nonisolated extension ReallyMeProtoCodecGeneralCborInspectRequest: SwiftProtobuf
   static let protoMessageName: String = _protobuf_package + ".CodecGeneralCborInspectRequest"
   static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}encoded\0\u{1}options\0\u{1}inspection\0\u{1}validate\0")
 
+  fileprivate class _StorageClass {
+    var _encoded: Data = Data()
+    var _options: ReallyMeProtoCodecGeneralCborOptions? = nil
+    var _inspection: ReallyMeProtoCodecGeneralCborInspection = .unspecified
+    var _validate: Bool = false
+
+      // This property is used as the initial default value for new instances of the type.
+      // The type itself is protecting the reference to its storage via CoW semantics.
+      // This will force a copy to be made of this reference when the first mutation occurs;
+      // hence, it is safe to mark this as `nonisolated(unsafe)`.
+      static nonisolated(unsafe) let defaultInstance = _StorageClass()
+
+    private init() {}
+
+    init(copying source: _StorageClass) {
+      _encoded = source._encoded
+      _options = source._options
+      _inspection = source._inspection
+      _validate = source._validate
+    }
+  }
+
+  fileprivate mutating func _uniqueStorage() -> _StorageClass {
+    if !isKnownUniquelyReferenced(&_storage) {
+      _storage = _StorageClass(copying: _storage)
+    }
+    return _storage
+  }
+
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularBytesField(value: &self.encoded) }()
-      case 2: try { try decoder.decodeSingularMessageField(value: &self._options) }()
-      case 3: try { try decoder.decodeSingularEnumField(value: &self.inspection) }()
-      case 4: try { try decoder.decodeSingularBoolField(value: &self.validate) }()
-      default: break
+    _ = _uniqueStorage()
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      while let fieldNumber = try decoder.nextFieldNumber() {
+        // The use of inline closures is to circumvent an issue where the compiler
+        // allocates stack space for every case branch when no optimizations are
+        // enabled. https://github.com/apple/swift-protobuf/issues/1034
+        switch fieldNumber {
+        case 1: try { try decoder.decodeSingularBytesField(value: &_storage._encoded) }()
+        case 2: try { try decoder.decodeSingularMessageField(value: &_storage._options) }()
+        case 3: try { try decoder.decodeSingularEnumField(value: &_storage._inspection) }()
+        case 4: try { try decoder.decodeSingularBoolField(value: &_storage._validate) }()
+        default: break
+        }
       }
     }
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    // The use of inline closures is to circumvent an issue where the compiler
-    // allocates stack space for every if/case branch local when no optimizations
-    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
-    // https://github.com/apple/swift-protobuf/issues/1182
-    if !self.encoded.isEmpty {
-      try visitor.visitSingularBytesField(value: self.encoded, fieldNumber: 1)
-    }
-    try { if let v = self._options {
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
-    } }()
-    if self.inspection != .unspecified {
-      try visitor.visitSingularEnumField(value: self.inspection, fieldNumber: 3)
-    }
-    if self.validate != false {
-      try visitor.visitSingularBoolField(value: self.validate, fieldNumber: 4)
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every if/case branch local when no optimizations
+      // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+      // https://github.com/apple/swift-protobuf/issues/1182
+      if !_storage._encoded.isEmpty {
+        try visitor.visitSingularBytesField(value: _storage._encoded, fieldNumber: 1)
+      }
+      try { if let v = _storage._options {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+      } }()
+      if _storage._inspection != .unspecified {
+        try visitor.visitSingularEnumField(value: _storage._inspection, fieldNumber: 3)
+      }
+      if _storage._validate != false {
+        try visitor.visitSingularBoolField(value: _storage._validate, fieldNumber: 4)
+      }
     }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   static func ==(lhs: ReallyMeProtoCodecGeneralCborInspectRequest, rhs: ReallyMeProtoCodecGeneralCborInspectRequest) -> Bool {
-    if lhs.encoded != rhs.encoded {return false}
-    if lhs._options != rhs._options {return false}
-    if lhs.inspection != rhs.inspection {return false}
-    if lhs.validate != rhs.validate {return false}
+    if lhs._storage !== rhs._storage {
+      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
+        let _storage = _args.0
+        let rhs_storage = _args.1
+        if _storage._encoded != rhs_storage._encoded {return false}
+        if _storage._options != rhs_storage._options {return false}
+        if _storage._inspection != rhs_storage._inspection {return false}
+        if _storage._validate != rhs_storage._validate {return false}
+        return true
+      }
+      if !storagesAreEqual {return false}
+    }
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

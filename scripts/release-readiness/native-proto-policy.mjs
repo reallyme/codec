@@ -2,81 +2,21 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-// Release Readiness 0.7.0's aggregate protobuf policy requires upstream tool
-// names and Rust source patches. Reuse its granular checks while covering this
-// specific native-generation gap, pending support in the shared framework.
-export function assertNativeOperationBoundary(context, policy) {
-  const { assertContains, assertNotContains, assertProtoContract, extractProtoBlocks,
-    stripProtoLineComments, readText, fail } = context;
-  const { protoPath, operationRequest, operationResponse, protoReadme, protoCargo,
-    wirePath, codecPath, binaryResponseNeedle, sdkAdapters } = policy;
-  assertProtoContract(protoPath);
-  const source = stripProtoLineComments(readText(protoPath));
-  if (extractProtoBlocks(source, "service").length !== 0) fail("codec contract must remain message-only");
-  const messages = new Map(extractProtoBlocks(source, "message").map((block) => [block.name, block.body]));
-  for (const [message, oneof] of [[operationRequest, "operation"], [operationResponse, "outcome"], ["CodecOperationResult", "result"]]) {
-    if (!new RegExp(`\\boneof\\s+${oneof}\\s*\\{`, "u").test(messages.get(message) ?? "")) {
-      fail("codec operation contract requires its generated discriminated envelopes");
-    }
-  }
-  const response = messages.get(operationResponse) ?? "";
-  for (const [type, field, number] of [["CodecOperationResult", "result", 1], ["CodecError", "error", 2]]) {
-    if (!new RegExp(`^\\s*${type}\\s+${field}\\s*=\\s*${number}\\s*;`, "mu").test(response)) {
-      fail("codec operation response must retain its typed result/error fields");
-    }
-  }
-  assertContains(protoReadme, "JSON is a generated ProtoJSON request convenience. Results remain one fully");
-  for (const needle of ["local: protoc-gen-reallyme-buffa", "views=true", "json=true"]) assertContains("buf.gen.yaml", needle);
-  for (const needle of ['"buffa/json"', "zeroize"]) assertContains(protoCargo, needle);
-  for (const needle of [operationRequest, operationResponse, "Zeroizing<Vec<u8>>",
-    "pub fn process_operation_response(", "pub fn process_operation_response_json("]) assertContains(wirePath, needle);
-  for (const needle of ["DecodeOptions::new()", binaryResponseNeedle]) assertContains(codecPath, needle);
-  for (const needle of ["pub fn process_json(", "pub fn process_proto_with_operation",
-    "pub fn process_proto_operation", "CodecProtoResultEnvelope"]) assertNotContains(wirePath, needle);
-  for (const adapter of sdkAdapters) {
-    for (const needle of [adapter.processOperationNeedle, adapter.processOperationJsonNeedle,
-      ...(adapter.requiredNeedles ?? [])]) {
-      assertContains(adapter.path, needle);
-    }
-    assertContains(adapter.binaryResponsePath ?? adapter.path, adapter.binaryResponseNeedle ?? operationResponse);
-    for (const needle of adapter.forbiddenNeedles ?? []) assertNotContains(adapter.path, needle);
-  }
-}
-
-export function assertNativeProtoPolicy(context, { sensitiveMessages, generatedFreshnessMode }) {
-  const {
-    assertContains, assertNotContains, assertWorkflowRunStep,
-    assertWorkflowUsesStepPinnedTo, assertGeneratedArtifactsFresh,
-    readText, run, fail,
-  } = context;
+// The shared policy covers native guarded scalar owners. Codec also checks
+// transitive sensitive views, non-text owners, and platform safeguards.
+export function assertNativeProtoPolicy(context, { sensitiveMessages }) {
+  const { assertContains, assertNotContains, readText, run, fail } = context;
   const schema = "crates/proto/proto/reallyme/codec/v1/codec.proto";
   const rust = "crates/proto/src/generated/buffa/reallyme.codec.v1.codec.rs";
   const view = "crates/proto/src/generated/buffa/reallyme.codec.v1.codec.__view.rs";
   const exports = "crates/proto/src/generated/contract_exports.rs";
-  const workflow = ".github/workflows/protobuf-ci.yml";
-
-  assertContains("Cargo.toml", 'buffa = { package = "reallyme-buffa", version = "=0.1.1", features = ["json", "zeroize"] }');
-  assertContains("crates/proto/Cargo.toml", '"buffa/zeroize"');
-  assertContains(workflow, "BUFFA_VERSION: 0.1.1");
-  assertContains(workflow, "BUF_VERSION: 1.75.0");
-  assertContains(workflow, "key: buffa-${{ env.BUFFA_VERSION }}");
-  assertWorkflowUsesStepPinnedTo(workflow, "Install buf", "bufbuild/buf-action");
-  assertWorkflowRunStep(workflow, "Install pinned Buffa generators", `cargo install reallyme-protoc-gen-buffa --version "=$BUFFA_VERSION" --locked
-cargo install reallyme-protoc-gen-buffa-packaging --version "=$BUFFA_VERSION" --locked
-node scripts/generate_codec_proto.mjs --check-tools`);
-  assertWorkflowRunStep(workflow, "Check release readiness generated freshness",
-    "node scripts/run_pinned_release_readiness.mjs --generated-freshness");
 
   for (const option of [
-    "local: protoc-gen-reallyme-buffa", "local: protoc-gen-reallyme-buffa-packaging",
-    "strategy: all", "views=true", "json=true", "zeroize=true",
-    "unknown_fields=false", "deny_unknown_json_fields=true", "allow_unmatched_message_rules=false",
+    "views=true", "allow_unmatched_message_rules=false",
     "bytes_type_custom_in=.reallyme.codec.v1=crate::guarded::SecretBytes",
     "string_type_custom_in=.reallyme.codec.v1=crate::guarded::SecretString",
-    "json_policy_type=crate::guarded::SecretBytes", "json_policy_type=crate::guarded::SecretString",
   ]) assertContains("buf.gen.yaml", option);
   for (const path of [rust, view]) {
-    if (!readText(path).startsWith("// @generated by reallyme-buffa-codegen 0.1.1.")) fail("Rust output must come from the native pinned generator");
     assertNotContains(path, "__buffa_unknown_fields");
     assertNotContains(path, "__reallyme_");
   }
@@ -123,14 +63,4 @@ node scripts/generate_codec_proto.mjs --check-tools`);
   // The classifier is closed-world and these artifacts never modify raw Rust.
   run(process.execPath, ["scripts/generate_codec_proto_support.mjs", "--check"]);
   run(process.execPath, ["scripts/generate_codec_sdk_contract.mjs", "--check"]);
-  if (generatedFreshnessMode) {
-    assertGeneratedArtifactsFresh({
-      generatedPaths: [
-        "crates/proto/src/generated", "packages/ts/src/proto/generated", "gen",
-        "packages/swift/Sources/ReallyMeCodec/Generated",
-        "packages/kotlin/src/main/kotlin/me/really/codec/generated",
-      ],
-      commands: [["node", ["scripts/generate_codec_proto.mjs"]]],
-    });
-  }
 }

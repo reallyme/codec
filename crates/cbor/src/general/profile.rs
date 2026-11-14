@@ -7,13 +7,14 @@ use super::error::{error, CborError, ErrorReason};
 /// Schema-generated policies used by the native compatibility facade.
 pub use codec_proto::generated::proto::reallyme::codec::v1::{
     CodecGeneralCborFloatPolicy as FloatPolicy, CodecGeneralCborLengthPolicy as LengthPolicy,
-    CodecGeneralCborMapOrdering as MapOrdering, CodecGeneralCborSerialization as Serialization,
+    CodecGeneralCborMapKeyEquality as MapKeyEquality, CodecGeneralCborMapOrdering as MapOrdering,
+    CodecGeneralCborNanPolicy as NanPolicy, CodecGeneralCborSerialization as Serialization,
 };
 
 /// Basic validity and selected serialization guarantees.
 ///
-/// Validation checks UTF-8 and rejects equivalent map keys using RFC 8949's
-/// basic generic data model. Registered tag semantics remain opaque; tag 24
+/// Validation checks UTF-8 and rejects equivalent map keys using the selected
+/// data model. Registered tag semantics remain opaque; tag 24
 /// has a separate explicit embedded-item validation operation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Profile {
@@ -21,6 +22,8 @@ pub struct Profile {
     pub(super) lengths: LengthPolicy,
     pub(super) floats: FloatPolicy,
     pub(super) ordering: MapOrdering,
+    map_key_equality: Option<MapKeyEquality>,
+    nan_policy: Option<NanPolicy>,
 }
 
 impl Profile {
@@ -56,6 +59,8 @@ impl Profile {
             lengths,
             floats,
             ordering,
+            map_key_equality: None,
+            nan_policy: None,
         })
     }
 
@@ -67,6 +72,8 @@ impl Profile {
             lengths: LengthPolicy::AllowIndefinite,
             floats: FloatPolicy::All,
             ordering: MapOrdering::Received,
+            map_key_equality: None,
+            nan_policy: None,
         }
     }
 
@@ -78,6 +85,8 @@ impl Profile {
             lengths: LengthPolicy::DefiniteOnly,
             floats: FloatPolicy::All,
             ordering: MapOrdering::Received,
+            map_key_equality: None,
+            nan_policy: None,
         }
     }
 
@@ -93,6 +102,48 @@ impl Profile {
     pub const fn with_map_ordering(mut self, ordering: MapOrdering) -> Self {
         self.ordering = ordering;
         self
+    }
+
+    /// Select scalar wire equality and structural compound key equality.
+    pub fn with_map_key_equality(mut self, equality: MapKeyEquality) -> Result<Self, CborError> {
+        match equality {
+            MapKeyEquality::EncodedScalars => {
+                self.map_key_equality = Some(equality);
+                Ok(self)
+            }
+            _ => Err(error(ErrorReason::UnsupportedPolicy)),
+        }
+    }
+
+    /// Select a NaN width restriction independently of general float acceptance.
+    pub fn with_nan_policy(mut self, policy: NanPolicy) -> Result<Self, CborError> {
+        match policy {
+            NanPolicy::Binary16Only => {
+                self.nan_policy = Some(policy);
+                Ok(self)
+            }
+            _ => Err(error(ErrorReason::UnsupportedPolicy)),
+        }
+    }
+
+    /// Inspect the optional map key equality rule.
+    #[must_use]
+    pub const fn map_key_equality(self) -> Option<MapKeyEquality> {
+        self.map_key_equality
+    }
+
+    /// Inspect the optional NaN width restriction.
+    #[must_use]
+    pub const fn nan_policy(self) -> Option<NanPolicy> {
+        self.nan_policy
+    }
+
+    pub(super) const fn has_encoded_scalar_keys(self) -> bool {
+        self.map_key_equality.is_some()
+    }
+
+    pub(super) const fn requires_binary16_nan(self) -> bool {
+        self.nan_policy.is_some()
     }
 
     /// Inspect the received length policy.

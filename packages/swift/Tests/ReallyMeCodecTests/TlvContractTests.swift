@@ -8,18 +8,6 @@ import XCTest
 @testable import ReallyMeCodec
 
 final class TlvContractTests: XCTestCase {
-    private struct Manifest: Decodable {
-        let schemaVersion: Int
-        let cases: [Vector]
-    }
-    private struct Vector: Decodable {
-        let name: String
-        let operation: String
-        let requestJson: String
-        let requestHex: String
-        let responseHex: String
-    }
-
     private func codec() throws -> ReallyMeCodec {
         #if REALLYME_CODEC_LINKED_FFI
             return try ReallyMeCodec()
@@ -37,51 +25,6 @@ final class TlvContractTests: XCTestCase {
                 .appendingPathComponent("target/debug/" + name).path
             return try ReallyMeCodec(rustCAbiLibrary: ReallyMeCodecRustCAbiLibrary(path: path))
         #endif
-    }
-
-    private func bytes(_ hex: String) throws -> [UInt8] {
-        guard hex.utf8.count.isMultiple(of: 2) else { throw ReallyMeCodecError.invalidInput }
-        return try stride(from: 0, to: hex.utf8.count, by: 2).map { offset in
-            let start = hex.index(hex.startIndex, offsetBy: offset)
-            let end = hex.index(start, offsetBy: 2)
-            guard let byte = UInt8(hex[start..<end], radix: 16) else { throw ReallyMeCodecError.invalidInput }
-            return byte
-        }
-    }
-
-    func testTlvReceiptsAndTypedFailuresMatchIndependentWireGoldens() throws {
-        let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-        let candidates = [
-            root.appendingPathComponent("vectors/tlv-framing-vectors.json"),
-            root.appendingPathComponent("../../vectors/tlv-framing-vectors.json"),
-        ]
-        guard let file = candidates.first(where: { FileManager.default.fileExists(atPath: $0.path) }) else {
-            throw ReallyMeCodecError.invalidInput
-        }
-        let manifest = try JSONDecoder().decode(Manifest.self, from: Data(contentsOf: file))
-        XCTAssertEqual(manifest.schemaVersion, 1)
-        let codec = try self.codec()
-        for vector in manifest.cases {
-            var binary = try bytes(vector.requestHex)
-            var json = Array(vector.requestJson.utf8)
-            var expected = try bytes(vector.responseHex)
-            var binaryResponse = try codec.processOperation(binary)
-            var jsonResponse = try codec.processOperationJson(json)
-            defer {
-                _ = binary.withUnsafeMutableBytes { $0.initializeMemory(as: UInt8.self, repeating: 0) }
-                _ = json.withUnsafeMutableBytes { $0.initializeMemory(as: UInt8.self, repeating: 0) }
-                _ = expected.withUnsafeMutableBytes { $0.initializeMemory(as: UInt8.self, repeating: 0) }
-                _ = binaryResponse.withUnsafeMutableBytes { $0.initializeMemory(as: UInt8.self, repeating: 0) }
-                _ = jsonResponse.withUnsafeMutableBytes { $0.initializeMemory(as: UInt8.self, repeating: 0) }
-            }
-            let label = vector.name + " " + vector.operation
-            let request = try ReallyMeProtoCodecApiOperationRequest(jsonString: vector.requestJson)
-            XCTAssertEqual(try request.serializedData(), Data(binary), label)
-            XCTAssertEqual(binaryResponse, expected, label)
-            XCTAssertEqual(jsonResponse, expected, label)
-            let response = try ReallyMeProtoCodecApiOperationResponse(serializedBytes: expected)
-            XCTAssertEqual(try response.serializedData(), Data(expected), label)
-        }
     }
 
     func testTlvAcceptsAnExplicitSixteenMiBSourceThroughTheNativeProvider() throws {

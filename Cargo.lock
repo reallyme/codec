@@ -38,12 +38,6 @@ checksum = "240e56f4d3c453c36faacb695c535a4d5f8c7d23dac175014f32eb0a71012a03"
 
 [[package]]
 name = "base64"
-version = "0.22.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
-
-[[package]]
-name = "base64"
 version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5"
@@ -107,9 +101,9 @@ dependencies = [
 
 [[package]]
 name = "bumpalo"
-version = "3.20.3"
+version = "3.20.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72f5acc6cb2ba439de613abc23857ec3d78374d8ed5ac84e9d11336e87da8649"
+checksum = "87a0cf66fd1eb2fb7b822cb78370d82303750809bc6ba855f3f58e517d3238db"
 
 [[package]]
 name = "bytes"
@@ -119,9 +113,9 @@ checksum = "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04"
 
 [[package]]
 name = "cc"
-version = "1.11.1"
+version = "1.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ff2a8126fff0f8c839080d619675a585e61720bb12d2baceae45769fd66f155"
+checksum = "33ef9e3e8154a45c7a95cff4c1299702106ad94062d7bb85fdc5d3a5afd91d45"
 dependencies = [
  "find-msvc-tools",
  "shlex",
@@ -620,11 +614,11 @@ dependencies = [
 
 [[package]]
 name = "reallyme-buffa"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31bd0cb979778af72031e54eb095b4cf2f0ebd656a2384555314ecfa959c4c8d"
+checksum = "1fc2662256cc4682ea0add47beb0df80bfe69d2ab0fc2fb5525771d712e285eb"
 dependencies = [
- "base64 0.22.1",
+ "base64",
  "bytes",
  "foldhash",
  "hashbrown 0.15.5",
@@ -639,7 +633,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "der",
  "proptest",
@@ -661,7 +655,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-adapter"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "reallyme-codec",
  "reallyme-codec-multibase",
@@ -669,18 +663,18 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-base64"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
- "base64 0.23.1",
+ "base64",
  "thiserror",
  "zeroize",
 ]
 
 [[package]]
 name = "reallyme-codec-base64url"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
- "base64 0.23.1",
+ "base64",
  "serde",
  "serde_json",
  "thiserror",
@@ -689,7 +683,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-cbor"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "cid",
  "half",
@@ -706,7 +700,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-ffi"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "jni",
  "reallyme-buffa",
@@ -718,7 +712,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-hex"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "thiserror",
  "zeroize",
@@ -726,7 +720,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-jcs"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "itoa",
  "ryu-js",
@@ -739,9 +733,9 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-multibase"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
- "base64 0.23.1",
+ "base64",
  "bs58",
  "reallyme-codec-base64url",
  "thiserror",
@@ -750,14 +744,14 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-multicodec"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "thiserror",
 ]
 
 [[package]]
 name = "reallyme-codec-multikey"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "reallyme-codec-base64url",
  "reallyme-codec-multibase",
@@ -768,18 +762,18 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-pem"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
- "base64 0.23.1",
+ "base64",
  "thiserror",
  "zeroize",
 ]
 
 [[package]]
 name = "reallyme-codec-proto"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
- "base64 0.23.1",
+ "base64",
  "reallyme-buffa",
  "serde",
  "serde_json",
@@ -790,7 +784,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-wasm"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "js-sys",
  "reallyme-codec",

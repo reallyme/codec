@@ -141,4 +141,60 @@ public interface CodecGeneralCborOptionsOrBuilder extends
    * @return The work.
    */
   long getWork();
+
+  /**
+   * <pre>
+   * Omit for RFC 8949 basic-model key equality. Explicit UNSPECIFIED is unsupported.
+   * </pre>
+   *
+   * <code>optional .reallyme.codec.v1.CodecGeneralCborMapKeyEquality map_key_equality = 13 [json_name = "mapKeyEquality"];</code>
+   * @return Whether the mapKeyEquality field is set.
+   */
+  boolean hasMapKeyEquality();
+  /**
+   * <pre>
+   * Omit for RFC 8949 basic-model key equality. Explicit UNSPECIFIED is unsupported.
+   * </pre>
+   *
+   * <code>optional .reallyme.codec.v1.CodecGeneralCborMapKeyEquality map_key_equality = 13 [json_name = "mapKeyEquality"];</code>
+   * @return The enum numeric value on the wire for mapKeyEquality.
+   */
+  int getMapKeyEqualityValue();
+  /**
+   * <pre>
+   * Omit for RFC 8949 basic-model key equality. Explicit UNSPECIFIED is unsupported.
+   * </pre>
+   *
+   * <code>optional .reallyme.codec.v1.CodecGeneralCborMapKeyEquality map_key_equality = 13 [json_name = "mapKeyEquality"];</code>
+   * @return The mapKeyEquality.
+   */
+  me.really.codec.v1.CodecGeneralCborMapKeyEquality getMapKeyEquality();
+
+  /**
+   * <pre>
+   * Omit for the existing NaN width behavior. Explicit UNSPECIFIED is unsupported.
+   * </pre>
+   *
+   * <code>optional .reallyme.codec.v1.CodecGeneralCborNanPolicy nan_policy = 14 [json_name = "nanPolicy"];</code>
+   * @return Whether the nanPolicy field is set.
+   */
+  boolean hasNanPolicy();
+  /**
+   * <pre>
+   * Omit for the existing NaN width behavior. Explicit UNSPECIFIED is unsupported.
+   * </pre>
+   *
+   * <code>optional .reallyme.codec.v1.CodecGeneralCborNanPolicy nan_policy = 14 [json_name = "nanPolicy"];</code>
+   * @return The enum numeric value on the wire for nanPolicy.
+   */
+  int getNanPolicyValue();
+  /**
+   * <pre>
+   * Omit for the existing NaN width behavior. Explicit UNSPECIFIED is unsupported.
+   * </pre>
+   *
+   * <code>optional .reallyme.codec.v1.CodecGeneralCborNanPolicy nan_policy = 14 [json_name = "nanPolicy"];</code>
+   * @return The nanPolicy.
+   */
+  me.really.codec.v1.CodecGeneralCborNanPolicy getNanPolicy();
 }

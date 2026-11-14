@@ -13,7 +13,7 @@ import Foundation
 private let expectedCodecAbiVersion: UInt32 = 6
 private let expectedCodecPackageMajor: UInt32 = 0
 private let expectedCodecPackageMinor: UInt32 = 4
-private let expectedCodecPackagePatch: UInt32 = 0
+private let expectedCodecPackagePatch: UInt32 = 1
 private let maxProtoJsonRequestLength = 22_373_720
 
 private typealias CodecAbiVersionFunction = @convention(c) () -> UInt32

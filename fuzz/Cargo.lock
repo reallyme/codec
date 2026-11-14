@@ -38,12 +38,6 @@ checksum = "240e56f4d3c453c36faacb695c535a4d5f8c7d23dac175014f32eb0a71012a03"
 
 [[package]]
 name = "base64"
-version = "0.22.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
-
-[[package]]
-name = "base64"
 version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5"
@@ -107,9 +101,9 @@ checksum = "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04"
 
 [[package]]
 name = "cc"
-version = "1.11.1"
+version = "1.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ff2a8126fff0f8c839080d619675a585e61720bb12d2baceae45769fd66f155"
+checksum = "33ef9e3e8154a45c7a95cff4c1299702106ad94062d7bb85fdc5d3a5afd91d45"
 dependencies = [
  "find-msvc-tools",
  "jobserver",
@@ -474,11 +468,11 @@ checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
 
 [[package]]
 name = "reallyme-buffa"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31bd0cb979778af72031e54eb095b4cf2f0ebd656a2384555314ecfa959c4c8d"
+checksum = "1fc2662256cc4682ea0add47beb0df80bfe69d2ab0fc2fb5525771d712e285eb"
 dependencies = [
- "base64 0.22.1",
+ "base64",
  "bytes",
  "foldhash",
  "hashbrown 0.15.5",
@@ -493,7 +487,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "der",
  "reallyme-buffa",
@@ -513,25 +507,25 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-base64"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
- "base64 0.23.1",
+ "base64",
  "thiserror",
  "zeroize",
 ]
 
 [[package]]
 name = "reallyme-codec-base64url"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
- "base64 0.23.1",
+ "base64",
  "thiserror",
  "zeroize",
 ]
 
 [[package]]
 name = "reallyme-codec-cbor"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "cid",
  "half",
@@ -546,7 +540,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-hex"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "thiserror",
  "zeroize",
@@ -554,7 +548,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-jcs"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "itoa",
  "ryu-js",
@@ -566,9 +560,9 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-multibase"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
- "base64 0.23.1",
+ "base64",
  "bs58",
  "reallyme-codec-base64url",
  "thiserror",
@@ -577,14 +571,14 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-multicodec"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "thiserror",
 ]
 
 [[package]]
 name = "reallyme-codec-multikey"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "reallyme-codec-multibase",
  "reallyme-codec-multicodec",
@@ -594,18 +588,18 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-pem"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
- "base64 0.23.1",
+ "base64",
  "thiserror",
  "zeroize",
 ]
 
 [[package]]
 name = "reallyme-codec-proto"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
- "base64 0.23.1",
+ "base64",
  "reallyme-buffa",
  "serde",
  "serde_json",

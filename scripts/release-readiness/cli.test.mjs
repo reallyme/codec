@@ -93,7 +93,7 @@ test("tracked-mode file listing rejects missing directories", () => {
       encoding: "utf8",
       env: { ...process.env,
         RELEASE_READINESS_CORE_URL: new URL("core.mjs", `file://${resolve(process.env.REALLYME_RELEASE_READINESS_ROOT ?? resolve(repositoryRoot, ".release-readiness"))}/`).href,
-        RELEASE_READINESS_ENFORCED_VERSION: "0.7.0",
+        RELEASE_READINESS_ENFORCED_VERSION: "0.8.0",
       },
       stdio: "pipe",
     },

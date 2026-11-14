@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use super::compare::ordered;
+use super::compare_encoded_keys::check_previous_keys;
 use super::error::{error, CborError, ErrorReason};
 use super::limits::Budget;
 use super::profile::{LengthPolicy, MapOrdering, Profile, Serialization};
@@ -24,10 +25,26 @@ fn argument(header: &Header<'_>) -> Result<usize, CborError> {
         .map_err(|_| error(ErrorReason::ArithmeticOverflow))
 }
 
+fn string_end(header: &Header<'_>, start: usize, encoded_keys: bool) -> Result<usize, CborError> {
+    let length = header.argument().ok_or(error(ErrorReason::WrongType))?;
+    let start = u64::try_from(start).map_err(|_| error(ErrorReason::ArithmeticOverflow))?;
+    // Check the CBOR extent in its own integer domain. A representable
+    // extent beyond the address space is truncated on every target.
+    let end = start.checked_add(length).ok_or(error(if encoded_keys {
+        ErrorReason::InputLimit
+    } else {
+        ErrorReason::Truncated
+    }))?;
+    usize::try_from(end).map_err(|_| error(ErrorReason::Truncated))
+}
+
 fn check_header(header: &Header<'_>, profile: Option<Profile>) -> Result<(), CborError> {
     if let Some(profile) = profile {
         if let Some(value) = header.float()? {
             value.check(profile.floats)?;
+            if profile.requires_binary16_nan() {
+                value.check_binary16_nan()?;
+            }
             if profile.serialization == Serialization::Preferred
                 && value.width() != value.shortest()
             {
@@ -54,13 +71,28 @@ pub(super) fn scan<'a>(
     lengths: LengthPolicy,
 ) -> Result<Frame<'a>, CborError> {
     super::profile::ensure_lengths_supported(lengths)?;
+    budget.encoded_key_scan_node(depth, account)?;
     budget.charge(1)?;
-    let header = read_header_prefix(input)?;
+    let encoded_keys = budget.has_encoded_scalar_keys();
+    if encoded_keys && account {
+        budget.node()?;
+    }
+    let header = read_header_prefix(input).map_err(|failure| {
+        if encoded_keys && failure.reason() == ErrorReason::InvalidIndefiniteArgument {
+            error(ErrorReason::IndefiniteNotAllowed)
+        } else {
+            failure
+        }
+    })?;
     budget.charge(header.received_bytes().len())?;
     if header.argument_width() == ArgumentWidth::Break {
-        return Err(error(ErrorReason::UnexpectedBreak));
+        return Err(error(if encoded_keys {
+            ErrorReason::IndefiniteNotAllowed
+        } else {
+            ErrorReason::UnexpectedBreak
+        }));
     }
-    if account {
+    if account && !encoded_keys {
         budget.node()?;
     }
     check_header(&header, profile)?;
@@ -74,15 +106,9 @@ pub(super) fn scan<'a>(
     match header.major_type() {
         MajorType::Unsigned | MajorType::Negative | MajorType::Simple => {}
         MajorType::Bytes | MajorType::Text if !indefinite => {
-            // A declared length beyond the remaining input, including one
-            // too large for usize, is truncation rather than overflow.
-            let length = usize::try_from(header.argument().ok_or(error(ErrorReason::WrongType))?)
-                .map_err(|_| error(ErrorReason::Truncated))?;
-            if length > tail(input, start)?.len() {
-                return Err(error(ErrorReason::Truncated));
-            }
-            end = add(start, length)?;
+            end = string_end(&header, start, encoded_keys)?;
             let bytes = input.get(start..end).ok_or(error(ErrorReason::Truncated))?;
+            let length = bytes.len();
             if account {
                 budget.contents(length, header.major_type() == MajorType::Text)?;
             }
@@ -148,7 +174,14 @@ pub(super) fn scan<'a>(
             let declared = if indefinite {
                 None
             } else {
-                Some(argument(&header)?)
+                let count = argument(&header).map_err(|failure| {
+                    if encoded_keys {
+                        error(ErrorReason::EntryLimit)
+                    } else {
+                        failure
+                    }
+                })?;
+                Some(count)
             };
             if let Some(count) = declared {
                 if count > budget.limits.entries {
@@ -161,10 +194,10 @@ pub(super) fn scan<'a>(
                 } else {
                     count
                 };
-                if account {
+                if account && !encoded_keys {
                     budget.declared_nodes(children)?;
                 }
-                if children > tail(input, start)?.len() {
+                if !encoded_keys && children > tail(input, start)?.len() {
                     return Err(error(ErrorReason::ContainerExceedsInput));
                 }
             }
@@ -184,7 +217,7 @@ pub(super) fn scan<'a>(
                     budget.charge(1)?;
                     break;
                 }
-                if remaining.is_empty() {
+                if remaining.is_empty() && (!encoded_keys || indefinite) {
                     return Err(error(ErrorReason::Truncated));
                 }
                 count = add(count, 1)?;
@@ -195,9 +228,17 @@ pub(super) fn scan<'a>(
                 let child = scan(remaining, budget, next_depth, profile, account, lengths)?;
                 end = add(end, child.received_bytes().len())?;
                 if map {
+                    if profile.is_some_and(Profile::has_encoded_scalar_keys) {
+                        let previous_entries = input
+                            .get(start..key_start)
+                            .ok_or(error(ErrorReason::Truncated))?;
+                        check_previous_keys(previous_entries, &child, budget)?;
+                    }
                     if let Some(profile) = profile {
                         // Offsets only: the bound comes from the entry limit.
-                        key_starts.push(key_start)?;
+                        if !encoded_keys {
+                            key_starts.push(key_start)?;
+                        }
                         // Uniqueness and ordering are separate guarantees. A
                         // duplicate remains a duplicate under an ordered profile,
                         // so an order violation is reported only after the

@@ -322,6 +322,92 @@ public object CodecGeneralCborOptionsKt {
     public fun hasWork(): kotlin.Boolean {
       return _builder.hasWork()
     }
+
+    /**
+     * ```
+     * Omit for RFC 8949 basic-model key equality. Explicit UNSPECIFIED is unsupported.
+     * ```
+     *
+     * `optional .reallyme.codec.v1.CodecGeneralCborMapKeyEquality map_key_equality = 13 [json_name = "mapKeyEquality"];`
+     */
+    public var mapKeyEquality: me.really.codec.v1.CodecGeneralCborMapKeyEquality
+      @kotlin.jvm.JvmName("getMapKeyEquality")
+        get() = _builder.mapKeyEquality
+      @kotlin.jvm.JvmName("setMapKeyEquality")
+        set(value) {
+        _builder.mapKeyEquality = value
+      }
+    public var mapKeyEqualityValue: kotlin.Int
+      @kotlin.jvm.JvmName("getMapKeyEqualityValue")
+        get() = _builder.mapKeyEqualityValue
+      @kotlin.jvm.JvmName("setMapKeyEqualityValue")
+        set(value) {
+        _builder.mapKeyEqualityValue = value
+      }
+    /**
+     * ```
+     * Omit for RFC 8949 basic-model key equality. Explicit UNSPECIFIED is unsupported.
+     * ```
+     *
+     * `optional .reallyme.codec.v1.CodecGeneralCborMapKeyEquality map_key_equality = 13 [json_name = "mapKeyEquality"];`
+     */
+    public fun clearMapKeyEquality() {
+      _builder.clearMapKeyEquality()
+    }
+    /**
+     * ```
+     * Omit for RFC 8949 basic-model key equality. Explicit UNSPECIFIED is unsupported.
+     * ```
+     *
+     * `optional .reallyme.codec.v1.CodecGeneralCborMapKeyEquality map_key_equality = 13 [json_name = "mapKeyEquality"];`
+     * @return Whether the mapKeyEquality field is set.
+     */
+    public fun hasMapKeyEquality(): kotlin.Boolean {
+      return _builder.hasMapKeyEquality()
+    }
+
+    /**
+     * ```
+     * Omit for the existing NaN width behavior. Explicit UNSPECIFIED is unsupported.
+     * ```
+     *
+     * `optional .reallyme.codec.v1.CodecGeneralCborNanPolicy nan_policy = 14 [json_name = "nanPolicy"];`
+     */
+    public var nanPolicy: me.really.codec.v1.CodecGeneralCborNanPolicy
+      @kotlin.jvm.JvmName("getNanPolicy")
+        get() = _builder.nanPolicy
+      @kotlin.jvm.JvmName("setNanPolicy")
+        set(value) {
+        _builder.nanPolicy = value
+      }
+    public var nanPolicyValue: kotlin.Int
+      @kotlin.jvm.JvmName("getNanPolicyValue")
+        get() = _builder.nanPolicyValue
+      @kotlin.jvm.JvmName("setNanPolicyValue")
+        set(value) {
+        _builder.nanPolicyValue = value
+      }
+    /**
+     * ```
+     * Omit for the existing NaN width behavior. Explicit UNSPECIFIED is unsupported.
+     * ```
+     *
+     * `optional .reallyme.codec.v1.CodecGeneralCborNanPolicy nan_policy = 14 [json_name = "nanPolicy"];`
+     */
+    public fun clearNanPolicy() {
+      _builder.clearNanPolicy()
+    }
+    /**
+     * ```
+     * Omit for the existing NaN width behavior. Explicit UNSPECIFIED is unsupported.
+     * ```
+     *
+     * `optional .reallyme.codec.v1.CodecGeneralCborNanPolicy nan_policy = 14 [json_name = "nanPolicy"];`
+     * @return Whether the nanPolicy field is set.
+     */
+    public fun hasNanPolicy(): kotlin.Boolean {
+      return _builder.hasNanPolicy()
+    }
   }
 }
 public inline fun me.really.codec.v1.CodecGeneralCborOptions.copy(block: `me.really.codec.v1`.CodecGeneralCborOptionsKt.Dsl.() -> kotlin.Unit): me.really.codec.v1.CodecGeneralCborOptions =

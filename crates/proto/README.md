@@ -10,7 +10,7 @@ discriminated binary `CodecOperationResponse` for existing operations, or the ex
 
 ```toml
 [dependencies]
-reallyme-codec-proto = { version = "0.4.0", features = ["generated"] }
+reallyme-codec-proto = { version = "0.4.1", features = ["generated"] }
 ```
 
 The protobuf source is published with this crate at

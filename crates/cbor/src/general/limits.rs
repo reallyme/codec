@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use super::error::{error, CborError, ErrorReason};
+use super::profile::Profile;
 
 /// Hard cap for one received input or protected output: one MiB.
 pub const MAX_BYTES: usize = 1_048_576;
@@ -15,6 +16,9 @@ pub const MAX_ENTRIES: usize = 4_096;
 /// Hard cap for validation work credits.
 pub const MAX_WORK: usize = 67_108_864;
 const DEFAULT_WORK: usize = 16_777_216;
+
+const ENCODED_KEY_MAX_SCAN_NODES: usize = 1_048_576;
+const ENCODED_KEY_MAX_COMPARISON_BYTES: usize = 1_048_576;
 
 /// Caller-lowerable limits; private fields prevent bypassing hard ceilings.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -128,6 +132,12 @@ pub(super) struct Budget {
     nodes: usize,
     bytes: usize,
     text: usize,
+    encoded_keys: Option<EncodedKeyWork>,
+}
+
+struct EncodedKeyWork {
+    scan_nodes_left: usize,
+    comparison_bytes_left: usize,
 }
 
 impl Budget {
@@ -138,7 +148,68 @@ impl Budget {
             nodes: 0,
             bytes: 0,
             text: 0,
+            encoded_keys: None,
         }
+    }
+
+    pub(super) fn for_profile(limits: Limits, profile: Profile) -> Self {
+        let mut budget = Self::new(limits);
+        if profile.has_encoded_scalar_keys() {
+            budget.encoded_keys = Some(EncodedKeyWork {
+                scan_nodes_left: ENCODED_KEY_MAX_SCAN_NODES,
+                comparison_bytes_left: ENCODED_KEY_MAX_COMPARISON_BYTES,
+            });
+        }
+        budget
+    }
+
+    pub(super) const fn has_encoded_scalar_keys(&self) -> bool {
+        self.encoded_keys.is_some()
+    }
+
+    pub(super) fn encoded_key_scan_node(
+        &mut self,
+        depth: usize,
+        account: bool,
+    ) -> Result<(), CborError> {
+        if let Some(encoded_keys) = &mut self.encoded_keys {
+            if !account {
+                encoded_keys.scan_nodes_left = encoded_keys
+                    .scan_nodes_left
+                    .checked_sub(1)
+                    .ok_or(error(ErrorReason::WorkLimit))?;
+            }
+        }
+        self.check_item_depth(depth)
+    }
+
+    pub(super) fn check_item_depth(&self, depth: usize) -> Result<(), CborError> {
+        // The encoded-key preflight limits visited nodes. An empty container
+        // at the last allowed depth has no deeper node to visit.
+        if self.has_encoded_scalar_keys() && depth > self.limits.depth {
+            return Err(error(ErrorReason::DepthLimit));
+        }
+        Ok(())
+    }
+
+    pub(super) fn encoded_key_compare_bytes(
+        &mut self,
+        left: usize,
+        right: usize,
+    ) -> Result<(), CborError> {
+        let cost = left
+            .checked_add(right)
+            .ok_or(error(ErrorReason::ArithmeticOverflow))?;
+        self.charge(cost)?;
+        let encoded_keys = self
+            .encoded_keys
+            .as_mut()
+            .ok_or(error(ErrorReason::UnsupportedPolicy))?;
+        encoded_keys.comparison_bytes_left = encoded_keys
+            .comparison_bytes_left
+            .checked_sub(cost)
+            .ok_or(error(ErrorReason::WorkLimit))?;
+        Ok(())
     }
 
     pub(super) fn charge(&mut self, amount: usize) -> Result<(), CborError> {
@@ -204,7 +275,7 @@ impl Budget {
         let next = depth
             .checked_add(1)
             .ok_or(error(ErrorReason::ArithmeticOverflow))?;
-        if next > self.limits.depth {
+        if !self.has_encoded_scalar_keys() && next > self.limits.depth {
             return Err(error(ErrorReason::DepthLimit));
         }
         Ok(next)

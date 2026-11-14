@@ -8,7 +8,7 @@ Use the public APIs below for encoding and parsing. Cryptographic signing and ve
 
 ```toml
 [dependencies]
-reallyme-codec = "0.4.0"
+reallyme-codec = "0.4.1"
 ```
 
 The default feature set enables the base-encoding, CBOR/JCS, multiformat, and PEM
@@ -17,7 +17,7 @@ families they use:
 
 ```toml
 [dependencies]
-reallyme-codec = { version = "0.4.0", default-features = false, features = ["base64url", "multikey"] }
+reallyme-codec = { version = "0.4.1", default-features = false, features = ["base64url", "multikey"] }
 ```
 
 ## Quick Start
