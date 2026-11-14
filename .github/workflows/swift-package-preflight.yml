@@ -121,7 +121,12 @@ jobs:
 
       - name: Test Swift package with linked binary target
         timeout-minutes: 20
-        run: swift test --arch arm64 --verbose
+        run: |
+          # Stage the host dylib at the loader tests' default fixture path.
+          # Linked-provider tests require the library override to be unset.
+          mkdir -p target/debug
+          cp target/aarch64-apple-darwin/release/libreallyme_codec_ffi.dylib target/debug/
+          swift test --arch arm64 --verbose
 
       # Upload only after linked-provider tests pass. Publication promotes these
       # exact tested bytes rather than compiling another archive.
