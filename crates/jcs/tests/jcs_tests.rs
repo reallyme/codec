@@ -202,6 +202,30 @@ fn integer_valued_binary64_numbers_outside_interoperable_range_are_rejected() {
 }
 
 #[test]
+fn both_jcs_entry_points_admit_binary64_integer_endpoints_and_subnormals() {
+    for (text, value, canonical) in [
+        (
+            "9007199254740991.0",
+            9_007_199_254_740_991.0,
+            "9007199254740991",
+        ),
+        (
+            "-9007199254740991.0",
+            -9_007_199_254_740_991.0,
+            "-9007199254740991",
+        ),
+        ("5e-324", f64::from_bits(1), "5e-324"),
+        ("-0.0", -0.0, "0"),
+    ] {
+        assert_eq!(canonicalize_json_text(text).as_deref(), Ok(canonical));
+        assert_eq!(
+            canonicalize_trusted_json_value(&serde_json::json!(value)).as_deref(),
+            Ok(canonical)
+        );
+    }
+}
+
+#[test]
 fn raw_json_rejects_duplicate_object_members() {
     assert_eq!(
         canonicalize_json_text(r#"{"a":1,"a":2}"#),

@@ -129,6 +129,59 @@ fn detect_cid_mismatch() {
 }
 
 #[test]
+fn verification_binds_the_version_codec_algorithm_length_and_full_digest() {
+    const DAG_PB: u64 = 0x70;
+    const DAG_CBOR: u64 = 0x71;
+    const SHA2_256: u64 = 0x12;
+    const SHA2_512: u64 = 0x13;
+    const NULL_BLOCK_CID: &str = "bafyreifqwkmiw256ojf2zws6tzjeonw6bpd5vza4i22ccpcq4hjv2ts7cm";
+
+    // The null block is a complete canonical DAG-CBOR value. Keep its digest
+    // fixed while varying the CID metadata to isolate the rejection reason.
+    let block = [0xf6];
+    let digest = sha2_256_content_hash(&block);
+    let hash = multihash::Multihash::wrap(SHA2_256, &digest).unwrap();
+    // Independent vector from the four CID header bytes and SHA-256 of f6.
+    assert_eq!(compute_cid_dag_cbor(&block), NULL_BLOCK_CID);
+    let verified = verify_dag_cbor_cid(NULL_BLOCK_CID, &block).unwrap();
+    assert_eq!(verified.status(), CidVerificationStatus::Match);
+    assert_eq!(verified.expected_cid(), NULL_BLOCK_CID);
+    assert_eq!(verified.actual_cid(), NULL_BLOCK_CID);
+
+    let mut different_digest = digest;
+    different_digest[31] ^= 1;
+    let mut longer_digest = [0; 33];
+    longer_digest[..32].copy_from_slice(&digest);
+    let mismatches = [
+        Cid::new_v0(hash).unwrap(),
+        Cid::new_v1(DAG_PB, hash),
+        Cid::new_v1(
+            DAG_CBOR,
+            multihash::Multihash::wrap(SHA2_512, &digest).unwrap(),
+        ),
+        Cid::new_v1(
+            DAG_CBOR,
+            multihash::Multihash::wrap(SHA2_256, &digest[..31]).unwrap(),
+        ),
+        Cid::new_v1(
+            DAG_CBOR,
+            multihash::Multihash::wrap(SHA2_256, &longer_digest).unwrap(),
+        ),
+        Cid::new_v1(
+            DAG_CBOR,
+            multihash::Multihash::wrap(SHA2_256, &different_digest).unwrap(),
+        ),
+    ];
+    for cid in mismatches {
+        let supplied = cid.to_string();
+        let verified = verify_dag_cbor_cid(&supplied, &block).unwrap();
+        assert_eq!(verified.status(), CidVerificationStatus::Mismatch);
+        assert_eq!(verified.expected_cid(), NULL_BLOCK_CID);
+        assert_eq!(verified.actual_cid(), supplied);
+    }
+}
+
+#[test]
 fn cid_syntax_validation() {
     let v = enc(&CborValue::Int(123));
     let cid = compute_cid_dag_cbor(&v);

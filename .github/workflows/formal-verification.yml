@@ -19,8 +19,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - area: deterministic-cbor
+          - area: cbor-cid
             package: reallyme-codec-cbor
+            features: ''
+          - area: jcs
+            package: reallyme-codec-jcs
             features: ''
           - area: tlv
             package: reallyme-codec

@@ -120,10 +120,7 @@ fn write_canonical_number(value: &serde_json::Number, output: &mut String) -> Re
     }
 
     let float = value.as_f64().ok_or(JcsError::SerializationError)?;
-    if !float.is_finite() {
-        return Err(JcsError::NonFiniteNumber);
-    }
-    validate_interoperable_float_integer(float)?;
+    validate_float(float)?;
 
     // RFC 8785 §3.2.2.3 mandates the ECMAScript `Number.prototype.toString`
     // algorithm (exponent thresholds, exponent signs, shortest round-trip
@@ -152,10 +149,7 @@ fn write_sensitive_number(value: &SensitiveNumber, output: &mut String) -> Resul
             output.push_str(buffer.format(*signed));
         }
         SensitiveNumber::Float(float) => {
-            if !float.is_finite() {
-                return Err(JcsError::NonFiniteNumber);
-            }
-            validate_interoperable_float_integer(*float)?;
+            validate_float(*float)?;
             let mut buffer = ryu_js::Buffer::new();
             output.push_str(buffer.format_finite(*float));
         }
@@ -375,10 +369,7 @@ fn canonical_number_len(value: &serde_json::Number) -> Result<usize, JcsError> {
     }
 
     let float = value.as_f64().ok_or(JcsError::SerializationError)?;
-    if !float.is_finite() {
-        return Err(JcsError::NonFiniteNumber);
-    }
-    validate_interoperable_float_integer(float)?;
+    validate_float(float)?;
 
     let mut buffer = ryu_js::Buffer::new();
     Ok(buffer.format_finite(float).len())
@@ -401,14 +392,18 @@ fn canonical_sensitive_number_len(value: &SensitiveNumber) -> Result<usize, JcsE
             Ok(buffer.format(*signed).len())
         }
         SensitiveNumber::Float(float) => {
-            if !float.is_finite() {
-                return Err(JcsError::NonFiniteNumber);
-            }
-            validate_interoperable_float_integer(*float)?;
+            validate_float(*float)?;
             let mut buffer = ryu_js::Buffer::new();
             Ok(buffer.format_finite(*float).len())
         }
     }
+}
+
+fn validate_float(value: f64) -> Result<(), JcsError> {
+    if !value.is_finite() {
+        return Err(JcsError::NonFiniteNumber);
+    }
+    validate_interoperable_float_integer(value)
 }
 
 fn validate_interoperable_float_integer(value: f64) -> Result<(), JcsError> {
@@ -469,3 +464,7 @@ fn write_escaped_string(value: &str, output: &mut String) {
     }
     output.push('"');
 }
+
+#[cfg(kani)]
+#[path = "canonicalize_proof_tests.rs"]
+mod proofs;

@@ -88,9 +88,11 @@ pub fn dag_cbor_multihash(bytes: &[u8]) -> DagCborMultihash {
 /// Hashes the supplied bytes as-is, without parsing CBOR or applying the
 /// encoder/decoder size limit. Encode a value first to obtain a canonical block.
 pub fn compute_cid_dag_cbor(bytes: &[u8]) -> String {
-    let hash = dag_cbor_multihash(bytes);
-    let cid = Cid::new_v1(DAG_CBOR_CODEC, hash.0);
-    cid.to_string()
+    dag_cbor_cid(dag_cbor_multihash(bytes)).to_string()
+}
+
+fn dag_cbor_cid(hash: DagCborMultihash) -> Cid {
+    Cid::new_v1(DAG_CBOR_CODEC, hash.0)
 }
 
 /// Outcome of comparing a canonical DAG-CBOR block with a CID string.
@@ -148,8 +150,7 @@ pub fn verify_dag_cbor_cid(
     bytes: &[u8],
 ) -> Result<DagCborCidVerification, CborError> {
     let _validated = Zeroizing::new(decode_dag_cbor(bytes)?);
-    let expected_hash = dag_cbor_multihash(bytes);
-    let expected_cid = Cid::new_v1(DAG_CBOR_CODEC, expected_hash.0);
+    let expected_cid = dag_cbor_cid(dag_cbor_multihash(bytes));
     let expected = expected_cid.to_string();
     let Some((actual_cid, _base)) = parse_cid_string(cid_str) else {
         return Ok(DagCborCidVerification {
@@ -159,18 +160,28 @@ pub fn verify_dag_cbor_cid(
         });
     };
     let actual = actual_cid.to_string();
-    let status = if cid_str != actual {
-        CidVerificationStatus::NonCanonical
-    } else if expected_cid == actual_cid {
-        CidVerificationStatus::Match
-    } else {
-        CidVerificationStatus::Mismatch
-    };
     Ok(DagCborCidVerification {
-        status,
+        status: classify_parsed_cid(cid_str, &actual, &expected_cid, &actual_cid),
         expected_cid: expected,
         actual_cid: actual,
     })
+}
+
+fn classify_parsed_cid(
+    supplied: &str,
+    canonical: &str,
+    expected: &Cid,
+    actual: &Cid,
+) -> CidVerificationStatus {
+    // Textual canonicality is checked first so alternate representations
+    // produce the same diagnostic whether or not the digest matches.
+    if supplied != canonical {
+        CidVerificationStatus::NonCanonical
+    } else if expected == actual {
+        CidVerificationStatus::Match
+    } else {
+        CidVerificationStatus::Mismatch
+    }
 }
 
 /// Returns whether `s` parses as a valid CID string.
@@ -211,3 +222,7 @@ fn parse_cid_string(s: &str) -> Option<(Cid, Option<Base>)> {
     }
     Some((cid, base))
 }
+
+#[cfg(kani)]
+#[path = "cid_proof_tests.rs"]
+mod proofs;
