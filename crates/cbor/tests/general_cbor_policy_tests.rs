@@ -24,61 +24,96 @@ fn assert_reason<T>(result: Result<T, CborError>, reason: ErrorReason) {
 
 #[test]
 fn binary16_signed_zero_keys_follow_selected_equality() {
-    let limits = Limits::default();
     let preferred = Profile::preferred();
     let encoded_scalars = cose();
     for first in [0x0000_u16, 0x8000] {
         for second in [0x0000_u16, 0x8000] {
-            let wire = signed_zero_map(first, second);
-            let first_key = Float::binary16(first);
-            let second_key = Float::binary16(second);
-            let entries = [
-                MapEntry::new(ValueRef::Float(&first_key), ValueRef::Unsigned(1)),
-                MapEntry::new(ValueRef::Float(&second_key), ValueRef::Unsigned(2)),
-            ];
-            let map = ValueRef::Map(&entries);
-            assert_reason(
-                validate_exact(&wire, preferred, limits),
-                ErrorReason::DuplicateMapKey,
-            );
-            assert_reason(
-                encode(&map, preferred, limits),
-                ErrorReason::DuplicateMapKey,
-            );
-
-            let validated = validate_exact(&wire, encoded_scalars, limits);
-            let encoded = encode(&map, encoded_scalars, limits);
-            if first == second {
-                assert_reason(validated, ErrorReason::DuplicateMapKey);
-                assert_reason(encoded, ErrorReason::DuplicateMapKey);
-            } else {
-                let item = validated.unwrap();
-                assert_eq!(item.frame().received_bytes(), wire);
-                assert!(core::ptr::eq(
-                    item.frame().received_bytes(),
-                    wire.as_slice()
-                ));
-                let children = item
-                    .children()
-                    .unwrap()
-                    .collect::<Result<Vec<_>, _>>()
-                    .unwrap();
-                assert_eq!(children.len(), 4);
-                assert_eq!(children[0].frame().received_bytes(), &wire[1..4]);
-                assert_eq!(children[1].frame().integer().unwrap().argument(), 1);
-                assert_eq!(children[2].frame().received_bytes(), &wire[5..8]);
-                assert_eq!(children[3].frame().integer().unwrap().argument(), 2);
-                assert_eq!(encoded.unwrap().as_bytes(), wire);
-            }
+            assert_binary16_map_policy(first, second, preferred, true);
+            assert_binary16_map_policy(first, second, encoded_scalars, first == second);
         }
     }
+}
+
+#[test]
+fn binary16_nan_keys_follow_selected_equality() {
+    const NAN_BITS: [u16; 3] = [0x7e01, 0xfe01, 0x7e02];
+    // The first two encodings share a significand despite opposite signs.
+    const BASIC_DUPLICATES: [[bool; 3]; 3] = [
+        [true, true, false],
+        [true, true, false],
+        [false, false, true],
+    ];
+    let preferred = Profile::preferred();
+    let encoded_scalars = cose();
+    for (first_index, first) in NAN_BITS.into_iter().enumerate() {
+        for (second_index, second) in NAN_BITS.into_iter().enumerate() {
+            assert_binary16_map_policy(
+                first,
+                second,
+                preferred,
+                BASIC_DUPLICATES[first_index][second_index],
+            );
+            assert_binary16_map_policy(first, second, encoded_scalars, first_index == second_index);
+        }
+    }
+}
+
+fn assert_binary16_map_policy(first: u16, second: u16, profile: Profile, duplicate: bool) {
+    let limits = Limits::default();
+    let wire = binary16_map(first, second);
+    let first_key = Float::binary16(first);
+    let second_key = Float::binary16(second);
+    let entries = [
+        MapEntry::new(ValueRef::Float(&first_key), ValueRef::Unsigned(1)),
+        MapEntry::new(ValueRef::Float(&second_key), ValueRef::Unsigned(2)),
+    ];
+    let validated = validate_exact(&wire, profile, limits);
+    let encoded = encode(&ValueRef::Map(&entries), profile, limits);
+    if duplicate {
+        assert_reason(validated, ErrorReason::DuplicateMapKey);
+        assert_reason(encoded, ErrorReason::DuplicateMapKey);
+        return;
+    }
+
+    let item = validated.unwrap();
+    assert_eq!(item.frame().received_bytes(), wire);
+    assert!(core::ptr::eq(
+        item.frame().received_bytes(),
+        wire.as_slice()
+    ));
+    let children = item
+        .children()
+        .unwrap()
+        .collect::<Result<Vec<_>, _>>()
+        .unwrap();
+    assert_eq!(children.len(), 4);
+    assert_eq!(children[0].frame().received_bytes(), &wire[1..4]);
+    assert_eq!(children[2].frame().received_bytes(), &wire[5..8]);
+
+    // Rebuild the entries from the validated children to observe any change
+    // to a NaN's decoded bits or its association with the corresponding value.
+    let first_key = children[0].frame().float().unwrap();
+    let second_key = children[2].frame().float().unwrap();
+    let first_value = children[1].frame().integer().unwrap().argument();
+    let second_value = children[3].frame().integer().unwrap().argument();
+    assert_eq!((first_value, second_value), (1, 2));
+    let decoded_entries = [
+        MapEntry::new(ValueRef::Float(&first_key), ValueRef::Unsigned(first_value)),
+        MapEntry::new(
+            ValueRef::Float(&second_key),
+            ValueRef::Unsigned(second_value),
+        ),
+    ];
+    let reencoded = encode(&ValueRef::Map(&decoded_entries), profile, limits).unwrap();
+    assert_eq!(reencoded.as_bytes(), wire);
+    assert_eq!(encoded.unwrap().as_bytes(), wire);
 }
 
 #[test]
 fn encoded_scalar_duplicate_precedes_a_truncated_second_value() {
     for first in [0x0000_u16, 0x8000] {
         for second in [0x0000_u16, 0x8000] {
-            let mut wire = signed_zero_map(first, second);
+            let mut wire = binary16_map(first, second);
             // An extended simple-value head requires an argument byte.
             wire[8] = 0xf8;
             assert_reason(
@@ -95,7 +130,7 @@ fn encoded_scalar_duplicate_precedes_a_truncated_second_value() {
     }
 }
 
-fn signed_zero_map(first: u16, second: u16) -> [u8; 9] {
+fn binary16_map(first: u16, second: u16) -> [u8; 9] {
     let [first_high, first_low] = first.to_be_bytes();
     let [second_high, second_low] = second.to_be_bytes();
     [
