@@ -199,6 +199,67 @@ fn dag_cbor_text_key_23_to_24_byte_boundary_uses_shortest_headers() {
 }
 
 #[test]
+fn dag_cbor_text_key_boundary_counts_utf8_bytes() {
+    let short = "z".repeat(23);
+    let long = "a".repeat(22) + "é";
+    assert_eq!(short.chars().count(), 23);
+    assert_eq!(long.chars().count(), 23);
+    assert_eq!(short.len(), 23);
+    assert_eq!(long.len(), 24);
+
+    let mut short_entry = vec![0x77];
+    short_entry.extend_from_slice(&[b'z'; 23]);
+    short_entry.push(0xf4);
+    let mut long_entry = vec![0x78, 0x18];
+    long_entry.extend_from_slice(&[b'a'; 22]);
+    long_entry.extend_from_slice(&[0xc3, 0xa9, 0xf5]);
+    let mut canonical = vec![0xa1, 0x60, 0xa2];
+    canonical.extend_from_slice(&short_entry);
+    canonical.extend_from_slice(&long_entry);
+    let mut reversed = vec![0xa1, 0x60, 0xa2];
+    reversed.extend_from_slice(&long_entry);
+    reversed.extend_from_slice(&short_entry);
+
+    assert_eq!(canonical.len(), 55);
+    assert_eq!(enc(&decode_dag_cbor(&canonical).unwrap()), canonical);
+    assert_eq!(
+        decode_dag_cbor(&reversed),
+        Err(CborError::MapKeysOutOfOrder)
+    );
+    assert_eq!(
+        decode_dag_cbor(&reversed[..54]),
+        Err(CborError::MapKeysOutOfOrder)
+    );
+    for (wire, continuation) in [(&canonical, 53), (&reversed, 28)] {
+        assert_eq!(
+            decode_dag_cbor(&wire[..continuation]),
+            Err(CborError::TruncatedBytes)
+        );
+
+        let mut invalid = wire.clone();
+        invalid[continuation] = b'(';
+        assert_eq!(decode_dag_cbor(&invalid), Err(CborError::InvalidUtf8));
+        // The declared 24 bytes are present even when the final byte is a
+        // lead byte with no continuation inside the text body.
+        invalid[continuation - 1] = b'a';
+        invalid[continuation] = 0xc3;
+        assert_eq!(decode_dag_cbor(&invalid), Err(CborError::InvalidUtf8));
+    }
+
+    for longer_first in [false, true] {
+        let short = (short.clone(), CborValue::Bool(false));
+        let long = (long.clone(), CborValue::Bool(true));
+        let entries = if longer_first {
+            vec![long, short]
+        } else {
+            vec![short, long]
+        };
+        let outer = CborValue::Map(vec![(String::new(), CborValue::Map(entries))]);
+        assert_eq!(enc(&outer), canonical);
+    }
+}
+
+#[test]
 fn nested_dag_cbor_text_keys_round_trip_in_length_first_order() {
     let canonical = [0xa1, 0x60, 0xa2, 0x61, b'z', 0xf4, 0x62, b'a', b'a', 0xf5];
     let reversed = [0xa1, 0x60, 0xa2, 0x62, b'a', b'a', 0xf5, 0x61, b'z', 0xf4];

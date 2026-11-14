@@ -8,7 +8,7 @@ use super::{
 };
 use crate::encode_dag_cbor::{write_header, MT_STRING};
 use crate::nested_map_proof_tests::text_key_boundary::{
-    assert_canonical_wire, CANONICAL_WIRE, LONG_TEXT, SHORT_TEXT, WIRE_LEN,
+    assert_canonical_wire, Fixture, ASCII, SHORT_TEXT, UTF8, WIRE_LEN,
 };
 
 #[kani::proof]
@@ -30,8 +30,18 @@ fn writer_uses_one_head_byte_at_23_and_two_at_24() {
 #[kani::proof]
 #[kani::unwind(4)]
 fn sorting_preserves_both_pairs_across_the_header_width_change() {
+    verify_sort(ASCII);
+}
+
+#[kani::proof]
+#[kani::unwind(4)]
+fn utf8_sort_orders_by_byte_length() {
+    verify_sort(UTF8);
+}
+
+fn verify_sort(fixture: Fixture) {
     let longer_first: bool = kani::any();
-    let [short, long] = entries();
+    let [short, long] = entries(fixture);
     let entries = ManuallyDrop::new(if longer_first {
         [long, short]
     } else {
@@ -60,7 +70,17 @@ fn sorting_preserves_both_pairs_across_the_header_width_change() {
 #[kani::proof]
 #[kani::unwind(5)]
 fn counting_sink_accounts_for_the_extra_header_byte() {
-    let value = ManuallyDrop::new(CborValue::Map(Vec::from(entries())));
+    verify_counting_sink(ASCII);
+}
+
+#[kani::proof]
+#[kani::unwind(5)]
+fn utf8_counting_sink_reserves_the_complete_wire() {
+    verify_counting_sink(UTF8);
+}
+
+fn verify_counting_sink(fixture: Fixture) {
+    let value = ManuallyDrop::new(CborValue::Map(Vec::from(entries(fixture))));
     let mut length = 2;
     let mut nodes = 2;
     // Both input orders yield the same sorted pairs for this pass.
@@ -72,7 +92,17 @@ fn counting_sink_accounts_for_the_extra_header_byte() {
 #[kani::proof]
 #[kani::unwind(5)]
 fn inner_byte_sink_reproduces_the_full_wire() {
-    let entries = ManuallyDrop::new(entries());
+    verify_byte_sink(ASCII);
+}
+
+#[kani::proof]
+#[kani::unwind(5)]
+fn utf8_inner_byte_sink_reproduces_every_byte() {
+    verify_byte_sink(UTF8);
+}
+
+fn verify_byte_sink(fixture: Fixture) {
+    let entries = ManuallyDrop::new(entries(fixture));
     let sorted = [
         (&entries[0].0, &entries[0].1),
         (&entries[1].0, &entries[1].1),
@@ -82,7 +112,7 @@ fn inner_byte_sink_reproduces_the_full_wire() {
     let mut nodes = 5;
     assert!(write_map_entries(&sorted, &mut *output, 2, &mut nodes, encode_leaf).is_ok());
     assert!(nodes == 7 && output.capacity() == WIRE_LEN);
-    assert_canonical_wire(&output);
+    assert_canonical_wire(&output, fixture);
     kani::cover!(
         output.len() == WIRE_LEN,
         "byte sink writes the nested map without growth"
@@ -92,9 +122,19 @@ fn inner_byte_sink_reproduces_the_full_wire() {
 #[kani::proof]
 #[kani::unwind(5)]
 fn outer_map_preserves_the_boundary_child_suffix() {
+    verify_outer_map(ASCII);
+}
+
+#[kani::proof]
+#[kani::unwind(5)]
+fn utf8_outer_map_preserves_the_boundary_child_suffix() {
+    verify_outer_map(UTF8);
+}
+
+fn verify_outer_map(fixture: Fixture) {
     let value = ManuallyDrop::new(CborValue::Map(vec![(
         String::new(),
-        CborValue::Map(Vec::from(entries())),
+        CborValue::Map(Vec::from(entries(fixture))),
     )]));
     let CborValue::Map(entries) = &*value else {
         kani::assert(false, "the proof input has an outer map");
@@ -130,20 +170,20 @@ fn outer_map_preserves_the_boundary_child_suffix() {
             assert!(depth == 1 && *nodes == 2 && matches!(bytes.as_slice(), [0xa1, 0x60]));
             assert!(bytes.capacity() == WIRE_LEN);
             // The inner byte check proves this suffix given the prefix and capacity.
-            EncodingSink::append(bytes, &CANONICAL_WIRE[2..])?;
+            EncodingSink::append(bytes, &fixture.canonical[2..])?;
             *nodes = 7;
             Ok(())
         }
     )
     .is_ok());
     assert!(nodes == 7);
-    assert_canonical_wire(&output);
+    assert_canonical_wire(&output, fixture);
     kani::cover!(output.len() == WIRE_LEN, "outer map preserves every byte");
 }
 
-fn entries() -> [(String, CborValue); 2] {
+fn entries(fixture: Fixture) -> [(String, CborValue); 2] {
     [
         (String::from(SHORT_TEXT), CborValue::Bool(false)),
-        (String::from(LONG_TEXT), CborValue::Bool(true)),
+        (String::from(fixture.long_text), CborValue::Bool(true)),
     ]
 }
