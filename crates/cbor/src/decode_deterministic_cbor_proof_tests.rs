@@ -7,7 +7,7 @@ use super::{
     decode_simple, read_head, read_value_head, reserve_map, DecodeLimits, DeterministicCborError,
 };
 use crate::check_map_key_order::{MapKeyOrder, MapKeyOrderError};
-use crate::nested_map_proof_tests::TwoEntryMap;
+use crate::nested_map_proof_tests::{TwoEntryMap, MIXED_LENGTH_CANONICAL, MIXED_LENGTH_REVERSED};
 use crate::{DeterministicCborMapEntry, DeterministicCborMapKey, DeterministicCborValue};
 use core::cmp::Ordering;
 
@@ -15,34 +15,201 @@ const MAX_HEADER_BYTES: usize = 9;
 const MAX_KEY_BYTES: usize = 8;
 
 #[kani::proof]
+#[kani::unwind(4)]
+fn mixed_length_wire_admission_uses_length_before_lexical_order() {
+    let long_first: bool = kani::any();
+    let (wire, first_end, second_start, expected) = if long_first {
+        (
+            &MIXED_LENGTH_REVERSED,
+            6,
+            7,
+            Err(DeterministicCborError::MapKeysOutOfOrder),
+        )
+    } else {
+        (&MIXED_LENGTH_CANONICAL, 5, 6, Ok(()))
+    };
+    let mut order = MapKeyOrder::default();
+    assert!(admit_map_key(&mut order, wire, 3, first_end).is_ok());
+    let result = admit_map_key(&mut order, wire, second_start, 9);
+    assert_eq!(result, expected);
+    kani::cover!(
+        long_first && result.is_err(),
+        "longer text key first rejected"
+    );
+    kani::cover!(!long_first && result.is_ok(), "length-first order admitted");
+}
+
+#[kani::proof]
+#[kani::unwind(4)]
+fn mixed_length_canonical_first_span_is_exact() {
+    verify_mixed_length_entry::<3, 5, 6>(&MIXED_LENGTH_CANONICAL, b"z", false, 0, Ok(()));
+    kani::cover!(true, "first canonical span checked");
+}
+
+#[kani::proof]
+#[kani::unwind(4)]
+fn mixed_length_canonical_second_span_is_exact() {
+    verify_mixed_length_entry::<6, 9, 10>(&MIXED_LENGTH_CANONICAL, b"aa", true, 1, Ok(()));
+    kani::cover!(true, "second canonical span checked");
+}
+
+#[kani::proof]
+#[kani::unwind(4)]
+fn mixed_length_reversed_first_span_is_exact() {
+    verify_mixed_length_entry::<3, 6, 7>(&MIXED_LENGTH_REVERSED, b"aa", true, 0, Ok(()));
+    kani::cover!(true, "first reversed span checked");
+}
+
+#[kani::proof]
+#[kani::unwind(4)]
+fn mixed_length_reversed_second_span_is_exact() {
+    verify_mixed_length_entry::<7, 9, 10>(
+        &MIXED_LENGTH_REVERSED,
+        b"z",
+        false,
+        2,
+        Err(DeterministicCborError::MapKeysOutOfOrder),
+    );
+    kani::cover!(true, "second reversed span checked");
+}
+
+#[kani::proof]
+#[kani::unwind(4)]
+fn mixed_length_traversal_forwards_the_cursor_and_stops_on_rejection() {
+    let long_first: bool = kani::any();
+    let mut calls = 0;
+    let result = collect_map_entries(2, 3, |start| {
+        calls += 1;
+        match calls {
+            1 => {
+                assert!(start == 3);
+                // The entry checks establish the cursor after each value.
+                Ok((long_first, if long_first { 7 } else { 6 }))
+            }
+            2 if long_first => {
+                assert!(start == 7);
+                Err(DeterministicCborError::MapKeysOutOfOrder)
+            }
+            2 => {
+                assert!(start == 6);
+                Ok((true, 10))
+            }
+            _ => {
+                kani::assert(false, "a two-entry map visits at most two keys");
+                Err(DeterministicCborError::UnexpectedEnd)
+            }
+        }
+    });
+    assert!(calls == 2);
+    if long_first {
+        assert_eq!(result, Err(DeterministicCborError::MapKeysOutOfOrder));
+        kani::cover!(result.is_err(), "traversal returns the second key error");
+    } else {
+        assert!(matches!(result, Ok((ref entries, 10)) if entries.as_slice() == [false, true]));
+        kani::cover!(result.is_ok(), "canonical traversal consumes ten bytes");
+    }
+}
+
+fn verify_mixed_length_entry<const START: usize, const END: usize, const NEXT: usize>(
+    wire: &[u8; 10],
+    expected_key: &[u8],
+    bit: bool,
+    preceding_key_bytes: usize,
+    admission: Result<(), DeterministicCborError>,
+) {
+    let second = START != 3;
+    let mut limits = DecodeLimits {
+        nodes: if second { 5 } else { 3 },
+        pending_nodes: if second { 2 } else { 4 },
+        aggregate_text_bytes: preceding_key_bytes,
+        ..DecodeLimits::default()
+    };
+    let mut key_span = None;
+    let mut child_called = false;
+    let entry = decode_map_entry(
+        wire,
+        START,
+        2,
+        &mut limits,
+        |source, start, depth, budget| {
+            child_called = true;
+            assert!(core::ptr::eq(source, wire.as_slice()));
+            assert!(start == END && depth == 2);
+            let (major, argument, next) = read_value_head(source, start, budget)?;
+            assert!(major == 7 && next == NEXT);
+            Ok((decode_simple(argument)?.into_value(), next))
+        },
+        |span| {
+            // Observe the span prior to the independent admission decision.
+            key_span = Some((span.start, span.end));
+            admission
+        },
+    );
+    let entry = core::mem::ManuallyDrop::new(entry);
+    assert!(key_span == Some((START, END)));
+    assert!(child_called == admission.is_ok());
+    assert!(limits.aggregate_text_bytes == preceding_key_bytes + expected_key.len());
+    if let Err(expected) = admission {
+        assert!(matches!(&*entry, Err(actual) if *actual == expected));
+        assert!(limits.nodes == 6 && limits.pending_nodes == 1);
+        return;
+    }
+    let Ok((entry, next)) = &*entry else {
+        kani::assert(false, "entry supplies its key span and value");
+        return;
+    };
+    assert!(*next == NEXT);
+    assert!(limits.nodes == if second { 7 } else { 5 });
+    assert!(limits.pending_nodes == if second { 0 } else { 2 });
+    assert!(
+        matches!(entry.key(), DeterministicCborMapKey::Text(key) if key.as_bytes() == expected_key)
+    );
+    assert!(matches!(entry.value(), DeterministicCborValue::Bool(value) if *value == bit));
+}
+
+#[kani::proof]
 #[kani::unwind(3)]
 fn nested_prefix_reserves_two_entries_at_the_first_key() {
     let example = TwoEntryMap::symbolic();
     let wire = example.wire();
+    verify_nested_two_entry_prefix(&wire);
+    kani::cover!(
+        example.first == 0 && example.second == 0x7f,
+        "inner traversal can start"
+    );
+}
+
+#[kani::proof]
+#[kani::unwind(3)]
+fn mixed_length_prefix_starts_at_the_same_offset_in_both_orders() {
+    // The nested prefix is identical. Check that the additional payload byte
+    // does not change the reservation or the initial cursor in either order.
+    verify_nested_two_entry_prefix(&MIXED_LENGTH_CANONICAL);
+    verify_nested_two_entry_prefix(&MIXED_LENGTH_REVERSED);
+    kani::cover!(true, "both mixed-length prefixes reserve their entries");
+}
+
+fn verify_nested_two_entry_prefix(wire: &[u8]) {
     let mut limits = DecodeLimits::default();
-    let Ok((5, count, 1)) = read_value_head(&wire, 0, &mut limits) else {
+    let Ok((5, count, 1)) = read_value_head(wire, 0, &mut limits) else {
         kani::assert(false, "outer map header");
         return;
     };
     assert!(reserve_map(wire.len(), 1, 0, count, &mut limits) == Ok((1, 1)));
-    let Ok((DeterministicCborMapKey::Text(ref key), 2)) = decode_key(&wire, 1, &mut limits) else {
+    let Ok((DeterministicCborMapKey::Text(ref key), 2)) = decode_key(wire, 1, &mut limits) else {
         kani::assert(false, "outer empty text key consumes one byte");
         return;
     };
     assert!(key.is_empty());
     let mut outer_order = MapKeyOrder::default();
-    assert!(admit_map_key(&mut outer_order, &wire, 1, 2).is_ok());
-    let Ok((5, count, 3)) = read_value_head(&wire, 2, &mut limits) else {
+    assert!(admit_map_key(&mut outer_order, wire, 1, 2).is_ok());
+    let Ok((5, count, 3)) = read_value_head(wire, 2, &mut limits) else {
         kani::assert(false, "inner map header");
         return;
     };
     assert!(reserve_map(wire.len(), 3, 1, count, &mut limits) == Ok((2, 2)));
     assert!(limits.nodes == 3 && limits.pending_nodes == 4);
     assert!(limits.aggregate_text_bytes == 0 && limits.aggregate_byte_string_bytes == 0);
-    kani::cover!(
-        example.first == 0 && example.second == 0x7f,
-        "inner traversal can start"
-    );
 }
 
 #[kani::proof]

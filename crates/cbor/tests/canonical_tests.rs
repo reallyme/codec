@@ -11,12 +11,47 @@
 )]
 use codec_cbor::{
     decode_dag_cbor, decode_deterministic_cbor, encode_dag_cbor, encode_deterministic_cbor,
-    CborError, CborValue, DeterministicCborError, MAX_DAG_CBOR_INPUT_LEN, MAX_NESTING_DEPTH,
+    CborError, CborValue, DeterministicCborError, DeterministicCborMapEntry,
+    DeterministicCborMapKey, DeterministicCborValue, MAX_DAG_CBOR_INPUT_LEN, MAX_NESTING_DEPTH,
 };
 use std::cmp::Ordering;
 
 fn enc(value: &CborValue) -> Vec<u8> {
     encode_dag_cbor(value).unwrap()
+}
+
+#[test]
+fn nested_mixed_length_text_keys_use_length_first_order() {
+    let canonical = [0xa1, 0x60, 0xa2, 0x61, b'z', 0xf4, 0x62, b'a', b'a', 0xf5];
+    let reversed = [0xa1, 0x60, 0xa2, 0x62, b'a', b'a', 0xf5, 0x61, b'z', 0xf4];
+    let decoded = decode_deterministic_cbor(&canonical).unwrap();
+    assert_eq!(
+        encode_deterministic_cbor(&decoded).unwrap().as_slice(),
+        canonical
+    );
+    assert_eq!(
+        decode_deterministic_cbor(&reversed).unwrap_err(),
+        DeterministicCborError::MapKeysOutOfOrder
+    );
+
+    let inner = DeterministicCborValue::Map(vec![
+        DeterministicCborMapEntry::new(
+            DeterministicCborMapKey::text("aa".into()),
+            DeterministicCborValue::Bool(true),
+        ),
+        DeterministicCborMapEntry::new(
+            DeterministicCborMapKey::text("z".into()),
+            DeterministicCborValue::Bool(false),
+        ),
+    ]);
+    let outer = DeterministicCborValue::Map(vec![DeterministicCborMapEntry::new(
+        DeterministicCborMapKey::text(String::new()),
+        inner,
+    )]);
+    assert_eq!(
+        encode_deterministic_cbor(&outer).unwrap().as_slice(),
+        canonical
+    );
 }
 
 #[test]
