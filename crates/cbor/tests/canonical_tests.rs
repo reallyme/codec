@@ -70,6 +70,48 @@ fn nested_unsigned_and_text_keys_reject_bytewise_order() {
 }
 
 #[test]
+fn nested_dag_cbor_text_keys_round_trip_in_length_first_order() {
+    let canonical = [0xa1, 0x60, 0xa2, 0x61, b'z', 0xf4, 0x62, b'a', b'a', 0xf5];
+    let reversed = [0xa1, 0x60, 0xa2, 0x62, b'a', b'a', 0xf5, 0x61, b'z', 0xf4];
+    assert_eq!(enc(&decode_dag_cbor(&canonical).unwrap()), canonical);
+    assert_eq!(
+        decode_dag_cbor(&reversed),
+        Err(CborError::MapKeysOutOfOrder)
+    );
+
+    // A tag after the second key would return a different error if read.
+    let mut invalid_value = reversed;
+    invalid_value[9] = 0xc0;
+    assert_eq!(
+        decode_dag_cbor(&invalid_value),
+        Err(CborError::MapKeysOutOfOrder)
+    );
+
+    for long_first in [false, true] {
+        let short = (String::from("z"), CborValue::Bool(false));
+        let long = (String::from("aa"), CborValue::Bool(true));
+        let entries = if long_first {
+            vec![long, short]
+        } else {
+            vec![short, long]
+        };
+        let nested = CborValue::Map(vec![(String::new(), CborValue::Map(entries))]);
+        assert_eq!(enc(&nested), canonical);
+    }
+}
+
+#[test]
+fn nested_dag_cbor_rejects_unsigned_256_in_either_key_position() {
+    let integer_first = [0xa1, 0x60, 0xa2, 0x19, 0x01, 0x00, 0xf5, 0x61, b'z', 0xf4];
+    let integer_second = [0xa1, 0x60, 0xa2, 0x61, b'z', 0xf4, 0x19, 0x01, 0x00, 0xf5];
+    for (mut wire, integer_value_offset) in [(integer_first, 6), (integer_second, 9)] {
+        assert_eq!(decode_dag_cbor(&wire), Err(CborError::MapKeyMustBeString));
+        wire[integer_value_offset] = 0xc0;
+        assert_eq!(decode_dag_cbor(&wire), Err(CborError::MapKeyMustBeString));
+    }
+}
+
+#[test]
 fn nested_mixed_length_text_keys_use_length_first_order() {
     let canonical = [0xa1, 0x60, 0xa2, 0x61, b'z', 0xf4, 0x62, b'a', b'a', 0xf5];
     let reversed = [0xa1, 0x60, 0xa2, 0x62, b'a', b'a', 0xf5, 0x61, b'z', 0xf4];

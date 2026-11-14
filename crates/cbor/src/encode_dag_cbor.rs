@@ -43,14 +43,20 @@ fn encode_value(
     depth: usize,
     nodes: &mut usize,
 ) -> Result<(), CborError> {
-    *nodes = nodes.checked_add(1).ok_or(CborError::NodeLimitExceeded)?;
-    if *nodes > MAX_DAG_CBOR_NODES {
-        return Err(CborError::NodeLimitExceeded);
-    }
+    encode_value_with(v, out, depth, nodes, encode_value)
+}
+
+fn encode_value_with<S: EncodingSink>(
+    v: &CborValue,
+    out: &mut S,
+    depth: usize,
+    nodes: &mut usize,
+    mut encode_child: impl FnMut(&CborValue, &mut S, usize, &mut usize) -> Result<(), CborError>,
+) -> Result<(), CborError> {
+    count_node(nodes)?;
     match v {
         CborValue::Null => push_byte(out, 0xf6)?,
-        CborValue::Bool(false) => push_byte(out, 0xf4)?,
-        CborValue::Bool(true) => push_byte(out, 0xf5)?,
+        CborValue::Bool(bit) => encode_bool(*bit, out)?,
 
         CborValue::Int(n) => {
             if *n >= 0 {
@@ -79,7 +85,7 @@ fn encode_value(
             ensure_minimum_encoded_len(arr.len(), 1)?;
             write_header(MT_ARRAY, len_as_u64(arr.len())?, out)?;
             for v in arr {
-                encode_value(v, out, child_depth, nodes)?;
+                encode_child(v, out, child_depth, nodes)?;
             }
         }
 
@@ -95,35 +101,62 @@ fn encode_value(
                 return Err(CborError::NodeLimitExceeded);
             }
             ensure_minimum_encoded_len(entries.len(), 2)?;
-            // Length-first deterministic ordering sorts text keys by the
-            // length of their encoded bytes first, then by bytewise lexical
-            // order. did:me vectors rely on this exact order for stable CIDs.
-            let mut sorted: Vec<(&String, &CborValue)> =
-                entries.iter().map(|(key, value)| (key, value)).collect();
-            sorted.sort_by(|(ka, _), (kb, _)| {
-                ka.len()
-                    .cmp(&kb.len())
-                    .then_with(|| ka.as_bytes().cmp(kb.as_bytes()))
-            });
-
-            if sorted
-                .windows(2)
-                .any(|pair| pair[0].0.as_bytes() == pair[1].0.as_bytes())
-            {
-                return Err(CborError::DuplicateMapKey);
-            }
-
-            write_header(MT_MAP, len_as_u64(sorted.len())?, out)?;
-
-            for (k, v) in sorted {
-                let kb = k.as_bytes();
-                write_header(MT_STRING, len_as_u64(kb.len())?, out)?;
-                extend_bytes(out, kb)?;
-                encode_value(v, out, child_depth, nodes)?;
-            }
+            let sorted = sort_map_entries(entries)?;
+            write_map_entries(&sorted, out, child_depth, nodes, encode_child)?;
         }
     }
     Ok(())
+}
+
+fn sort_map_entries(
+    entries: &[(String, CborValue)],
+) -> Result<Vec<(&String, &CborValue)>, CborError> {
+    // Payload length has the same ordering as encoded length for text keys.
+    // Sort borrowed pairs so values follow their keys without copying either.
+    // Stable canonical bytes keep the existing did:me content IDs valid.
+    let mut sorted: Vec<(&String, &CborValue)> =
+        entries.iter().map(|(key, value)| (key, value)).collect();
+    sorted.sort_by(|(left, _), (right, _)| {
+        left.len()
+            .cmp(&right.len())
+            .then_with(|| left.as_bytes().cmp(right.as_bytes()))
+    });
+    if sorted
+        .windows(2)
+        .any(|pair| pair[0].0.as_bytes() == pair[1].0.as_bytes())
+    {
+        return Err(CborError::DuplicateMapKey);
+    }
+    Ok(sorted)
+}
+
+fn write_map_entries<S: EncodingSink>(
+    sorted: &[(&String, &CborValue)],
+    out: &mut S,
+    child_depth: usize,
+    nodes: &mut usize,
+    mut encode_child: impl FnMut(&CborValue, &mut S, usize, &mut usize) -> Result<(), CborError>,
+) -> Result<(), CborError> {
+    write_header(MT_MAP, len_as_u64(sorted.len())?, out)?;
+    for &(key, value) in sorted {
+        let bytes = key.as_bytes();
+        write_header(MT_STRING, len_as_u64(bytes.len())?, out)?;
+        extend_bytes(out, bytes)?;
+        encode_child(value, out, child_depth, nodes)?;
+    }
+    Ok(())
+}
+
+fn count_node(nodes: &mut usize) -> Result<(), CborError> {
+    *nodes = nodes.checked_add(1).ok_or(CborError::NodeLimitExceeded)?;
+    if *nodes > MAX_DAG_CBOR_NODES {
+        return Err(CborError::NodeLimitExceeded);
+    }
+    Ok(())
+}
+
+fn encode_bool(bit: bool, out: &mut impl EncodingSink) -> Result<(), CborError> {
+    push_byte(out, if bit { 0xf5 } else { 0xf4 })
 }
 
 /// Widens a container length to the `u64` argument width CBOR headers use.
@@ -219,3 +252,7 @@ fn ensure_minimum_encoded_len(count: usize, min_element_len: usize) -> Result<()
     }
     Ok(())
 }
+
+#[cfg(kani)]
+#[path = "encode_dag_cbor_proof_tests.rs"]
+mod proofs;

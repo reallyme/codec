@@ -91,43 +91,26 @@ pub fn decode_dag_cbor(bytes: &[u8]) -> Result<CborValue, CborError> {
 /// pathologically nested input cannot overflow the stack.
 fn decode_value(
     bytes: &[u8],
-    mut offset: usize,
+    offset: usize,
     depth: usize,
     budget: &mut DecodeBudget,
 ) -> Result<(CborValue, usize), CborError> {
-    if offset >= bytes.len() {
-        return Err(CborError::UnexpectedEnd);
-    }
-    budget.enter()?;
+    decode_value_with(bytes, offset, depth, budget, decode_value)
+}
 
-    let first = bytes[offset];
-    offset = offset.checked_add(1).ok_or(CborError::OffsetOverflow)?;
-
-    let major = first >> 5;
-    let ai = first & 0x1f;
-
-    // Floating-point payload bits are caller data, not simple-value codes.
-    // Reject the type before reading them so typed errors cannot retain a
-    // private number or arbitrary eight-byte payload in their metadata.
-    if major == 7 && (25..=27).contains(&ai) {
-        return Err(CborError::DisallowedSimpleValue {
-            value: u64::from(ai),
-        });
-    }
-    // DAG-CBOR admits only false, true, and null, which always use the
-    // one-byte form. Every two-byte simple value is disallowed; RFC 8949
-    // section 3.3 additionally makes values below 32 malformed, so this is
-    // checked before the shared integer-minimality rule could misreport it.
-    if major == 7 && ai == 24 {
-        let value = bytes.get(offset).ok_or(CborError::TruncatedArgument)?;
-        return Err(CborError::DisallowedSimpleValue {
-            value: u64::from(*value),
-        });
-    }
-
-    let (arg, new_offset) = read_argument(bytes, offset, ai)?;
-    offset = new_offset;
-
+fn decode_value_with(
+    bytes: &[u8],
+    offset: usize,
+    depth: usize,
+    budget: &mut DecodeBudget,
+    mut decode_child: impl FnMut(
+        &[u8],
+        usize,
+        usize,
+        &mut DecodeBudget,
+    ) -> Result<(CborValue, usize), CborError>,
+) -> Result<(CborValue, usize), CborError> {
+    let (major, arg, offset) = read_value_head(bytes, offset, budget)?;
     match major {
         MT_UINT => Ok((
             CborValue::Int(i64::try_from(arg).map_err(|_| CborError::IntegerOutOfRange)?),
@@ -173,73 +156,202 @@ fn decode_value(
             let mut items = Zeroizing::new(Vec::with_capacity(item_count));
             let mut off = offset;
             for _ in 0..item_count {
-                let (v, next) = decode_value(bytes, off, child_depth, budget)?;
+                let (v, next) = decode_child(bytes, off, child_depth, budget)?;
                 items.push(v);
                 off = next;
             }
             Ok((CborValue::Array(core::mem::take(&mut *items)), off))
         }
 
-        MT_MAP => {
-            let child_depth = descend(depth)?;
-            let entry_count = usize::try_from(arg).map_err(|_| CborError::LengthTooLarge)?;
-            // Each entry is a key plus a value, so it needs at least two
-            // bytes; bound the reservation against that before allocating.
-            let entry_min = MIN_ELEMENT_ENCODED_LEN
-                .checked_mul(2)
-                .ok_or(CborError::OffsetOverflow)?;
-            bounded_capacity_with_min(entry_count, bytes.len(), offset, entry_min)?;
-            if entry_count > MAX_DAG_CBOR_CONTAINER_ENTRIES {
-                return Err(CborError::ContainerEntriesExceeded);
-            }
-            let child_count = entry_count
-                .checked_mul(2)
-                .ok_or(CborError::NodeLimitExceeded)?;
-            budget.reserve_children(child_count)?;
-            let mut entries = Zeroizing::new(Vec::with_capacity(entry_count));
-            let mut off = offset;
-            let mut key_order = MapKeyOrder::default();
+        MT_MAP => decode_map(bytes, offset, depth, arg, budget, decode_child),
 
-            for _ in 0..entry_count {
-                let key_start = off;
-                let (key_val, key_off) = decode_value(bytes, off, child_depth, budget)?;
-                off = key_off;
-
-                let mut key_val = Zeroizing::new(key_val);
-                let mut key = Zeroizing::new(match &mut *key_val {
-                    CborValue::String(s) => core::mem::take(s),
-                    _ => return Err(CborError::MapKeyMustBeString),
-                });
-
-                // For canonical text keys, encoded length increases with
-                // payload length, and equal lengths have identical headers.
-                // Compare borrowed encodings to avoid copying key material.
-                let encoded_key = bytes
-                    .get(key_start..key_off)
-                    .ok_or(CborError::OffsetOverflow)?;
-                key_order.admit(encoded_key).map_err(|error| match error {
-                    MapKeyOrderError::Duplicate => CborError::DuplicateMapKey,
-                    MapKeyOrderError::Descending => CborError::MapKeysOutOfOrder,
-                })?;
-
-                let (val, val_off) = decode_value(bytes, off, child_depth, budget)?;
-                off = val_off;
-
-                entries.push((core::mem::take(&mut *key), val));
-            }
-
-            Ok((CborValue::Map(core::mem::take(&mut *entries)), off))
-        }
-
-        7 => match arg {
-            20 => Ok((CborValue::Bool(false), offset)),
-            21 => Ok((CborValue::Bool(true), offset)),
-            22 => Ok((CborValue::Null, offset)),
-            _ => Err(CborError::DisallowedSimpleValue { value: arg }),
-        },
+        7 => Ok((decode_simple(arg)?, offset)),
 
         _ => Err(CborError::DisallowedMajorType { major }),
     }
+}
+
+fn decode_simple(argument: u64) -> Result<CborValue, CborError> {
+    match argument {
+        20 => Ok(CborValue::Bool(false)),
+        21 => Ok(CborValue::Bool(true)),
+        22 => Ok(CborValue::Null),
+        _ => Err(CborError::DisallowedSimpleValue { value: argument }),
+    }
+}
+
+fn read_value_head(
+    bytes: &[u8],
+    mut offset: usize,
+    budget: &mut DecodeBudget,
+) -> Result<(u8, u64, usize), CborError> {
+    if offset >= bytes.len() {
+        return Err(CborError::UnexpectedEnd);
+    }
+    budget.enter()?;
+
+    let first = bytes[offset];
+    offset = offset.checked_add(1).ok_or(CborError::OffsetOverflow)?;
+
+    let major = first >> 5;
+    let ai = first & 0x1f;
+
+    // Floating-point payload bits are caller data, not simple-value codes.
+    // Reject the type before reading them so typed errors cannot retain a
+    // private number or arbitrary eight-byte payload in their metadata.
+    if major == 7 && (25..=27).contains(&ai) {
+        return Err(CborError::DisallowedSimpleValue {
+            value: u64::from(ai),
+        });
+    }
+    // DAG-CBOR admits only false, true, and null, which always use the
+    // one-byte form. Every two-byte simple value is disallowed; RFC 8949
+    // section 3.3 additionally makes values below 32 malformed, so this is
+    // checked before the shared integer-minimality rule could misreport it.
+    if major == 7 && ai == 24 {
+        let value = bytes.get(offset).ok_or(CborError::TruncatedArgument)?;
+        return Err(CborError::DisallowedSimpleValue {
+            value: u64::from(*value),
+        });
+    }
+
+    let (argument, end) = read_argument(bytes, offset, ai)?;
+    Ok((major, argument, end))
+}
+
+fn decode_map(
+    bytes: &[u8],
+    offset: usize,
+    depth: usize,
+    argument: u64,
+    budget: &mut DecodeBudget,
+    decode_child: impl FnMut(
+        &[u8],
+        usize,
+        usize,
+        &mut DecodeBudget,
+    ) -> Result<(CborValue, usize), CborError>,
+) -> Result<(CborValue, usize), CborError> {
+    let (entry_count, child_depth) = reserve_map(bytes.len(), offset, depth, argument, budget)?;
+    let mut entries = Zeroizing::new(Vec::with_capacity(entry_count));
+    let end = decode_map_entries(
+        bytes,
+        offset,
+        child_depth,
+        entry_count,
+        budget,
+        &mut entries,
+        decode_child,
+    )?;
+    Ok((CborValue::Map(core::mem::take(&mut *entries)), end))
+}
+
+fn reserve_map(
+    total_len: usize,
+    offset: usize,
+    depth: usize,
+    argument: u64,
+    budget: &mut DecodeBudget,
+) -> Result<(usize, usize), CborError> {
+    let child_depth = descend(depth)?;
+    let entry_count = usize::try_from(argument).map_err(|_| CborError::LengthTooLarge)?;
+    // Each entry needs at least two bytes, one each for the key and value.
+    let entry_min = MIN_ELEMENT_ENCODED_LEN
+        .checked_mul(2)
+        .ok_or(CborError::OffsetOverflow)?;
+    bounded_capacity_with_min(entry_count, total_len, offset, entry_min)?;
+    if entry_count > MAX_DAG_CBOR_CONTAINER_ENTRIES {
+        return Err(CborError::ContainerEntriesExceeded);
+    }
+    let child_count = entry_count
+        .checked_mul(2)
+        .ok_or(CborError::NodeLimitExceeded)?;
+    budget.reserve_children(child_count)?;
+    Ok((entry_count, child_depth))
+}
+
+fn decode_map_entries(
+    bytes: &[u8],
+    offset: usize,
+    child_depth: usize,
+    entry_count: usize,
+    budget: &mut DecodeBudget,
+    entries: &mut Zeroizing<Vec<(String, CborValue)>>,
+    mut decode_child: impl FnMut(
+        &[u8],
+        usize,
+        usize,
+        &mut DecodeBudget,
+    ) -> Result<(CborValue, usize), CborError>,
+) -> Result<usize, CborError> {
+    let mut order = MapKeyOrder::default();
+    collect_map_entries(entry_count, offset, entries, |start| {
+        decode_map_entry(
+            bytes,
+            start,
+            child_depth,
+            budget,
+            &mut decode_child,
+            |span| admit_map_key(&mut order, bytes, span),
+        )
+    })
+}
+
+fn collect_map_entries<T>(
+    entry_count: usize,
+    mut offset: usize,
+    entries: &mut Vec<T>,
+    mut decode_entry: impl FnMut(usize) -> Result<(T, usize), CborError>,
+) -> Result<usize, CborError> {
+    for _ in 0..entry_count {
+        let (entry, next) = decode_entry(offset)?;
+        entries.push(entry);
+        offset = next;
+    }
+    Ok(offset)
+}
+
+fn decode_map_entry(
+    bytes: &[u8],
+    start: usize,
+    depth: usize,
+    budget: &mut DecodeBudget,
+    mut decode_child: impl FnMut(
+        &[u8],
+        usize,
+        usize,
+        &mut DecodeBudget,
+    ) -> Result<(CborValue, usize), CborError>,
+    admit_key: impl FnOnce(core::ops::Range<usize>) -> Result<(), CborError>,
+) -> Result<((String, CborValue), usize), CborError> {
+    let (decoded_key, end) = decode_child(bytes, start, depth, budget)?;
+    let mut decoded_key = Zeroizing::new(decoded_key);
+    let mut key = Zeroizing::new(core::mem::take(require_text_key(&mut decoded_key)?));
+
+    admit_key(start..end)?;
+    let (value, next) = decode_child(bytes, end, depth, budget)?;
+    Ok(((core::mem::take(&mut *key), value), next))
+}
+
+fn require_text_key(value: &mut CborValue) -> Result<&mut String, CborError> {
+    match value {
+        CborValue::String(text) => Ok(text),
+        _ => Err(CborError::MapKeyMustBeString),
+    }
+}
+
+fn admit_map_key<'a>(
+    order: &mut MapKeyOrder<'a>,
+    bytes: &'a [u8],
+    span: core::ops::Range<usize>,
+) -> Result<(), CborError> {
+    // Canonical text keys have encoded lengths that increase with payload
+    // length. Borrow the full wire span to compare without copying key bytes.
+    let encoded = bytes.get(span).ok_or(CborError::OffsetOverflow)?;
+    order.admit(encoded).map_err(|error| match error {
+        MapKeyOrderError::Duplicate => CborError::DuplicateMapKey,
+        MapKeyOrderError::Descending => CborError::MapKeysOutOfOrder,
+    })
 }
 
 fn read_argument(bytes: &[u8], offset: usize, ai: u8) -> Result<(u64, usize), CborError> {
