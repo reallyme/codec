@@ -6,7 +6,6 @@ use super::{
     admit_map_key, collect_map_entries, decode_map_entry, decode_simple, extract_string, open_map,
     read_value_head, CborError, CborValue, DecodeBudget, ManuallyDrop, MapKeyOrder, MT_STRING,
 };
-use core::cell::Cell;
 
 use crate::nested_map_proof_tests::three_entry::{
     assert_canonical_wire, cover_permutations, wire, Key, CANONICAL_KEYS, FIRST_KEY_OFFSET,
@@ -73,10 +72,10 @@ fn entry_hands_off_exact_span_for_aa() {
 
 fn verify_entry(key: Key) {
     let (start, end, len) = symbolic_key_offsets(key);
-    let mut wire = [0; MAX_WIRE_LEN];
-    wire[start..end].copy_from_slice(key.key_bytes());
-    wire[end] = key.value_byte();
-    let source = &wire[..len];
+    // Entry dispatch forwards the slice unchanged. Leaf and admission checks
+    // establish the byte-dependent outcomes separately.
+    let storage = [0; MAX_WIRE_LEN];
+    let source = &storage[..len];
     let decision: u8 = kani::any();
     kani::assume(decision < 3);
     let expected_error = match decision {
@@ -84,7 +83,7 @@ fn verify_entry(key: Key) {
         1 => Some(CborError::DuplicateMapKey),
         _ => Some(CborError::MapKeysOutOfOrder),
     };
-    let span = Cell::new(None);
+    let mut span = None;
     let mut calls = 0;
     let mut budget = symbolic_entry_budget();
     let (seen, pending) = (budget.seen, budget.pending);
@@ -95,20 +94,19 @@ fn verify_entry(key: Key) {
         &mut budget,
         |bytes, offset, depth, budget| {
             assert!(core::ptr::eq(bytes, source) && depth == 2);
+            assert!(budget.seen == seen && budget.pending == pending);
             calls += 1;
             if calls == 1 {
                 assert!(offset == start);
                 // The corresponding key-parser check establishes this text and end offset.
-                budget.enter()?;
                 Ok((CborValue::String(String::from(key.text())), end))
             } else {
-                assert!(calls == 2 && offset == end && span.get() == Some((start, end)));
-                budget.enter()?;
-                Ok((decode_simple(u64::from(key.value_byte() & 0x1f))?, end + 1))
+                assert!(calls == 2 && offset == end);
+                Ok((key.value(), end + 1))
             }
         },
         |range| {
-            span.set(Some((range.start, range.end)));
+            span = Some((range.start, range.end));
             match decision {
                 0 => Ok(()),
                 1 => Err(CborError::DuplicateMapKey),
@@ -116,14 +114,15 @@ fn verify_entry(key: Key) {
             }
         },
     ));
-    assert!(span.get() == Some((start, end)));
+    assert!(span == Some((start, end)));
+    assert!(budget.seen == seen && budget.pending == pending);
     if let Some(expected) = expected_error {
         assert!(matches!(&*result, Err(error) if *error == expected));
-        assert!(calls == 1 && budget.seen == seen + 1 && budget.pending == pending - 1);
+        assert!(calls == 1);
     } else {
         assert!(matches!(&*result, Ok(((actual, value), next))
             if actual.as_bytes() == key.text().as_bytes() && value_is_for_key(value, key) && *next == end + 1));
-        assert!(calls == 2 && budget.seen == seen + 2 && budget.pending == pending - 2);
+        assert!(calls == 2);
     }
     kani::cover!(
         decision == 0 && calls == 2,
@@ -157,6 +156,26 @@ fn symbolic_entry_budget() -> DecodeBudget {
         seen: 3 + nodes,
         pending: 6 - nodes,
     }
+}
+
+#[kani::proof]
+#[kani::unwind(3)]
+fn fixture_values_decode_and_advance_one_byte() {
+    let key = Key::symbolic();
+    let wire = [key.value_byte()];
+    let mut budget = symbolic_entry_budget();
+    assert!(budget.enter().is_ok());
+    let (seen, pending) = (budget.seen, budget.pending);
+    let Ok((7, argument, 1)) = read_value_head(&wire, 0, &mut budget) else {
+        kani::assert(false, "fixture value has a one-byte simple-value head");
+        return;
+    };
+    let value = ManuallyDrop::new(decode_simple(argument));
+    assert!(matches!(&*value, Ok(value) if value_is_for_key(value, key)));
+    assert!(budget.seen == seen + 1 && budget.pending == pending - 1);
+    kani::cover!(key == Key::A, "false decoded");
+    kani::cover!(key == Key::Z, "true decoded");
+    kani::cover!(key == Key::Aa, "null decoded");
 }
 
 fn value_is_for_key(value: &CborValue, key: Key) -> bool {
