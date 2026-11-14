@@ -79,3 +79,6 @@ pub(crate) mod three_entry;
 
 #[path = "text_key_boundary_proof_tests.rs"]
 pub(crate) mod text_key_boundary;
+
+#[path = "unicode_map_key_proof_tests.rs"]
+pub(crate) mod unicode_keys;

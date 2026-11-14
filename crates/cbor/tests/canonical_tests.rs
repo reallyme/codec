@@ -260,6 +260,64 @@ fn dag_cbor_text_key_boundary_counts_utf8_bytes() {
 }
 
 #[test]
+fn dag_cbor_preserves_both_unicode_key_spellings() {
+    let canonical = [
+        0xa1, 0x60, 0xa2, 0x62, 0xc3, 0xa9, 0xf4, 0x63, 0x65, 0xcc, 0x81, 0xf5,
+    ];
+    let reversed = [
+        0xa1, 0x60, 0xa2, 0x63, 0x65, 0xcc, 0x81, 0xf5, 0x62, 0xc3, 0xa9, 0xf4,
+    ];
+    let decoded = decode_dag_cbor(&canonical).unwrap();
+    let expected = CborValue::Map(vec![(
+        String::new(),
+        CborValue::Map(vec![
+            (String::from("\u{00e9}"), CborValue::Bool(false)),
+            (String::from("e\u{0301}"), CborValue::Bool(true)),
+        ]),
+    )]);
+    assert_eq!(decoded, expected);
+    assert_eq!(enc(&decoded), canonical);
+    assert_eq!(
+        decode_dag_cbor(&reversed),
+        Err(CborError::MapKeysOutOfOrder)
+    );
+
+    let reversed_entries = CborValue::Map(vec![(
+        String::new(),
+        CborValue::Map(vec![
+            (String::from("e\u{0301}"), CborValue::Bool(true)),
+            (String::from("\u{00e9}"), CborValue::Bool(false)),
+        ]),
+    )]);
+    assert_eq!(enc(&reversed_entries), canonical);
+}
+
+#[test]
+fn dag_cbor_rejects_repeating_either_unicode_key_spelling() {
+    let keys: [(&str, &[u8]); 2] = [
+        ("\u{00e9}", &[0x62, 0xc3, 0xa9]),
+        ("e\u{0301}", &[0x63, 0x65, 0xcc, 0x81]),
+    ];
+    for (text, encoded) in keys {
+        let mut duplicate = vec![0xa1, 0x60, 0xa2];
+        duplicate.extend_from_slice(encoded);
+        duplicate.push(0xf4);
+        duplicate.extend_from_slice(encoded);
+        // The asserted error also takes precedence over a missing second value.
+        assert_eq!(decode_dag_cbor(&duplicate), Err(CborError::DuplicateMapKey));
+        duplicate.push(0xf5);
+        assert_eq!(decode_dag_cbor(&duplicate), Err(CborError::DuplicateMapKey));
+
+        let inner = CborValue::Map(vec![
+            (String::from(text), CborValue::Bool(false)),
+            (String::from(text), CborValue::Bool(true)),
+        ]);
+        let outer = CborValue::Map(vec![(String::new(), inner)]);
+        assert_eq!(encode_dag_cbor(&outer), Err(CborError::DuplicateMapKey));
+    }
+}
+
+#[test]
 fn nested_dag_cbor_text_keys_round_trip_in_length_first_order() {
     let canonical = [0xa1, 0x60, 0xa2, 0x61, b'z', 0xf4, 0x62, b'a', b'a', 0xf5];
     let reversed = [0xa1, 0x60, 0xa2, 0x62, b'a', b'a', 0xf5, 0x61, b'z', 0xf4];

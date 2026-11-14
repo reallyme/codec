@@ -470,3 +470,6 @@ mod three_entry;
 
 #[path = "decode_dag_cbor_text_key_boundary_proof_tests.rs"]
 mod text_key_boundary;
+
+#[path = "decode_dag_cbor_unicode_key_proof_tests.rs"]
+mod unicode_keys;
