@@ -13,9 +13,136 @@ use codec_cbor::{
     decode_dag_cbor, decode_deterministic_cbor, encode_dag_cbor, encode_deterministic_cbor,
     CborError, CborValue, DeterministicCborError, MAX_DAG_CBOR_INPUT_LEN, MAX_NESTING_DEPTH,
 };
+use std::cmp::Ordering;
 
 fn enc(value: &CborValue) -> Vec<u8> {
     encode_dag_cbor(value).unwrap()
+}
+
+#[test]
+fn every_inner_key_and_leaf_byte_has_expected_admission_and_round_trip() {
+    // {"": {<one-byte text key>: <one-byte item>}}
+    for key in u8::MIN..=u8::MAX {
+        for leaf in u8::MIN..=u8::MAX {
+            let wire = [0xa1, 0x60, 0xa1, 0x61, key, leaf];
+            let dag = decode_dag_cbor(&wire);
+            let deterministic = decode_deterministic_cbor(&wire);
+
+            if !key.is_ascii() {
+                assert_eq!(dag.err(), Some(CborError::InvalidUtf8), "{wire:02x?}");
+                assert_eq!(
+                    deterministic.err(),
+                    Some(DeterministicCborError::InvalidUtf8),
+                    "{wire:02x?}"
+                );
+                continue;
+            }
+
+            // Only inline integers, empty strings and containers, and the
+            // three supported simple values fit in the final byte.
+            let canonical_leaf =
+                matches!(leaf, 0x00..=0x17 | 0x20..=0x37 | 0x40 | 0x60 | 0x80 | 0xa0 | 0xf4..=0xf6);
+            assert_eq!(dag.is_ok(), canonical_leaf, "{wire:02x?}");
+            assert_eq!(deterministic.is_ok(), canonical_leaf, "{wire:02x?}");
+            if canonical_leaf {
+                assert_eq!(enc(&dag.unwrap()), wire, "{wire:02x?}");
+                assert_eq!(
+                    encode_deterministic_cbor(&deterministic.unwrap())
+                        .unwrap()
+                        .as_slice(),
+                    wire,
+                    "{wire:02x?}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn every_pair_of_single_byte_inner_text_keys_has_expected_order_and_round_trip() {
+    for first in 0..=0x7f_u8 {
+        for second in 0..=0x7f_u8 {
+            // Distinct leaves make a change to the key/value association
+            // visible even when the re-encoded key order is correct.
+            let wire = [0xa1, 0x60, 0xa2, 0x61, first, 0x00, 0x61, second, 0x20];
+            let dag = decode_dag_cbor(&wire);
+            let deterministic = decode_deterministic_cbor(&wire);
+            match first.cmp(&second) {
+                Ordering::Less => {
+                    assert_eq!(enc(&dag.unwrap()), wire, "{wire:02x?}");
+                    assert_eq!(
+                        encode_deterministic_cbor(&deterministic.unwrap())
+                            .unwrap()
+                            .as_slice(),
+                        wire,
+                        "{wire:02x?}"
+                    );
+                }
+                Ordering::Equal => {
+                    assert_eq!(dag.err(), Some(CborError::DuplicateMapKey), "{wire:02x?}");
+                    assert_eq!(
+                        deterministic.err(),
+                        Some(DeterministicCborError::DuplicateMapKey),
+                        "{wire:02x?}"
+                    );
+                }
+                Ordering::Greater => {
+                    assert_eq!(dag.err(), Some(CborError::MapKeysOutOfOrder), "{wire:02x?}");
+                    assert_eq!(
+                        deterministic.err(),
+                        Some(DeterministicCborError::MapKeysOutOfOrder),
+                        "{wire:02x?}"
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn every_extended_one_byte_integer_leaf_requires_minimal_complete_input() {
+    for head in [0x18, 0x38] {
+        for argument in u8::MIN..=u8::MAX {
+            // The final byte is outside the declared outer map when the
+            // integer is complete. Check both views of the same buffer.
+            let wire = [0xa1, 0x60, 0xa1, 0x60, head, argument, 0x00];
+            let complete = &wire[..6];
+            let dag = decode_dag_cbor(complete);
+            let deterministic = decode_deterministic_cbor(complete);
+            if argument < 24 {
+                assert_eq!(
+                    dag.err(),
+                    Some(CborError::NonCanonicalInteger),
+                    "{wire:02x?}"
+                );
+                assert_eq!(
+                    deterministic.err(),
+                    Some(DeterministicCborError::NonCanonicalInteger),
+                    "{wire:02x?}"
+                );
+                continue;
+            }
+
+            assert_eq!(enc(&dag.unwrap()), complete, "{wire:02x?}");
+            assert_eq!(
+                encode_deterministic_cbor(&deterministic.unwrap())
+                    .unwrap()
+                    .as_slice(),
+                complete,
+                "{wire:02x?}"
+            );
+            assert_eq!(
+                decode_dag_cbor(&wire).err(),
+                Some(CborError::TrailingBytes),
+                "{wire:02x?}"
+            );
+            assert_eq!(
+                decode_deterministic_cbor(&wire).err(),
+                Some(DeterministicCborError::TrailingBytes),
+                "{wire:02x?}"
+            );
+        }
+    }
 }
 
 #[test]
