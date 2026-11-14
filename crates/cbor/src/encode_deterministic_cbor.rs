@@ -199,20 +199,36 @@ struct DecoratedMapEntry<'a> {
 fn decorated_map_entries(
     entries: &[DeterministicCborMapEntry],
 ) -> Result<Vec<DecoratedMapEntry<'_>>, DeterministicCborError> {
+    collect_map_entries(entries, |key| encode_map_key(key, encode_key))
+}
+
+fn collect_map_entries<'a>(
+    entries: &'a [DeterministicCborMapEntry],
+    mut prepare_key: impl FnMut(
+        &DeterministicCborMapKey,
+    ) -> Result<Zeroizing<Vec<u8>>, DeterministicCborError>,
+) -> Result<Vec<DecoratedMapEntry<'a>>, DeterministicCborError> {
     let mut decorated = try_vec_with_capacity(entries.len())?;
     for entry in entries {
-        // Pre-size every sensitive temporary from the same semantic preflight
-        // used by the encoder. A growing Vec can leave superseded key bytes in
-        // freed allocator blocks that the final Zeroizing owner cannot wipe.
-        let key_stats = preflight_key(entry.key())?;
-        let mut encoded_key = Zeroizing::new(try_vec_with_capacity(key_stats.encoded_len)?);
-        encode_key(entry.key(), &mut encoded_key)?;
-        if encoded_key.len() != key_stats.encoded_len {
-            return Err(DeterministicCborError::PreflightLengthMismatch);
-        }
+        let encoded_key = prepare_key(entry.key())?;
         decorated.push(DecoratedMapEntry { encoded_key, entry });
     }
     Ok(decorated)
+}
+
+fn encode_map_key(
+    key: &DeterministicCborMapKey,
+    write_key: impl FnOnce(&DeterministicCborMapKey, &mut Vec<u8>) -> Result<(), DeterministicCborError>,
+) -> Result<Zeroizing<Vec<u8>>, DeterministicCborError> {
+    // Pre-size the key buffer so a reallocation cannot leave earlier key
+    // bytes in a freed block that the final owner cannot wipe.
+    let key_stats = preflight_key(key)?;
+    let mut encoded_key = Zeroizing::new(try_vec_with_capacity(key_stats.encoded_len)?);
+    write_key(key, &mut encoded_key)?;
+    if encoded_key.len() != key_stats.encoded_len {
+        return Err(DeterministicCborError::PreflightLengthMismatch);
+    }
+    Ok(encoded_key)
 }
 
 fn compare_decorated_keys(left: &DecoratedMapEntry<'_>, right: &DecoratedMapEntry<'_>) -> Ordering {

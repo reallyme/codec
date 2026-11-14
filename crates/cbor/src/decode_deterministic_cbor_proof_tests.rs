@@ -3,16 +3,161 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use super::{
-    admit_map_key, bounded_capacity, decode_key, decode_map, decode_simple, read_head,
-    read_value_head, DecodeLimits, DeterministicCborError,
+    admit_map_key, bounded_capacity, collect_map_entries, decode_key, decode_map, decode_map_entry,
+    decode_simple, read_head, read_value_head, reserve_map, DecodeLimits, DeterministicCborError,
 };
 use crate::check_map_key_order::{MapKeyOrder, MapKeyOrderError};
 use crate::nested_map_proof_tests::TwoEntryMap;
-use crate::{DeterministicCborMapKey, DeterministicCborValue};
+use crate::{DeterministicCborMapEntry, DeterministicCborMapKey, DeterministicCborValue};
 use core::cmp::Ordering;
 
 const MAX_HEADER_BYTES: usize = 9;
 const MAX_KEY_BYTES: usize = 8;
+
+#[kani::proof]
+#[kani::unwind(3)]
+fn nested_prefix_reserves_two_entries_at_the_first_key() {
+    let example = TwoEntryMap::symbolic();
+    let wire = example.wire();
+    let mut limits = DecodeLimits::default();
+    let Ok((5, count, 1)) = read_value_head(&wire, 0, &mut limits) else {
+        kani::assert(false, "outer map header");
+        return;
+    };
+    assert!(reserve_map(wire.len(), 1, 0, count, &mut limits) == Ok((1, 1)));
+    let Ok((DeterministicCborMapKey::Text(ref key), 2)) = decode_key(&wire, 1, &mut limits) else {
+        kani::assert(false, "outer empty text key consumes one byte");
+        return;
+    };
+    assert!(key.is_empty());
+    let mut outer_order = MapKeyOrder::default();
+    assert!(admit_map_key(&mut outer_order, &wire, 1, 2).is_ok());
+    let Ok((5, count, 3)) = read_value_head(&wire, 2, &mut limits) else {
+        kani::assert(false, "inner map header");
+        return;
+    };
+    assert!(reserve_map(wire.len(), 3, 1, count, &mut limits) == Ok((2, 2)));
+    assert!(limits.nodes == 3 && limits.pending_nodes == 4);
+    assert!(limits.aggregate_text_bytes == 0 && limits.aggregate_byte_string_bytes == 0);
+    kani::cover!(
+        example.first == 0 && example.second == 0x7f,
+        "inner traversal can start"
+    );
+}
+
+#[kani::proof]
+#[kani::unwind(4)]
+fn inner_traversal_passes_each_returned_offset_to_the_next_entry() {
+    let example = TwoEntryMap::symbolic();
+    let mut calls = 0;
+    let result = collect_map_entries(2, 3, |start| {
+        // These are the offsets established by the individual entry checks.
+        let (key, bit, next) = if calls == 0 {
+            assert!(start == 3);
+            (example.first, false, 6)
+        } else {
+            assert!(calls == 1 && start == 6);
+            (example.second, true, 9)
+        };
+        calls += 1;
+        Ok(((key, bit), next))
+    });
+    let Ok((entries, 9)) = result else {
+        kani::assert(false, "traversal consumes the complete inner map");
+        return;
+    };
+    assert!(calls == 2);
+    assert!(
+        matches!(entries.as_slice(), [(first, false), (second, true)]
+        if *first == example.first && *second == example.second)
+    );
+    kani::cover!(
+        example.first == 0 && example.second == 0x7f,
+        "both key positions retained"
+    );
+}
+
+#[kani::proof]
+#[kani::unwind(4)]
+fn first_inner_entry_supplies_exact_key_span() {
+    verify_inner_entry::<3, 5, 6>(false);
+}
+
+#[kani::proof]
+#[kani::unwind(4)]
+fn second_inner_entry_supplies_exact_key_span() {
+    verify_inner_entry::<6, 8, 9>(true);
+}
+
+fn verify_inner_entry<const START: usize, const END: usize, const NEXT: usize>(bit: bool) {
+    let example = TwoEntryMap::symbolic();
+    let wire = example.wire();
+    let mut limits = DecodeLimits {
+        nodes: if bit { 5 } else { 3 },
+        pending_nodes: if bit { 2 } else { 4 },
+        aggregate_text_bytes: usize::from(bit),
+        ..DecodeLimits::default()
+    };
+    let mut observed = None;
+    let rejected: bool = kani::any();
+    let mut child_called = false;
+    let result = decode_map_entry(
+        &wire,
+        START,
+        2,
+        &mut limits,
+        |source, offset, depth, limits| {
+            child_called = true;
+            assert!(core::ptr::eq(source, wire.as_slice()));
+            assert!(offset == END && depth == 2);
+            let (major, argument, next) = read_value_head(source, offset, limits)?;
+            assert!(major == 7 && next == NEXT);
+            Ok((decode_simple(argument)?.into_value(), next))
+        },
+        |span| {
+            observed = Some((span.start, span.end));
+            if rejected {
+                Err(DeterministicCborError::DuplicateMapKey)
+            } else {
+                Ok(())
+            }
+        },
+    );
+    let result = core::mem::ManuallyDrop::new(result);
+    assert!(observed == Some((START, END)));
+    assert!(child_called != rejected);
+    if rejected {
+        assert!(matches!(
+            &*result,
+            Err(DeterministicCborError::DuplicateMapKey)
+        ));
+        kani::cover!(
+            rejected,
+            "key admission error stops before decoding the child"
+        );
+        return;
+    }
+    let Ok((entry, next)) = &*result else {
+        kani::assert(false, "entry parses");
+        return;
+    };
+    assert!(*next == NEXT);
+    let expected = if bit { example.second } else { example.first };
+    assert_text_entry(entry, expected, bit);
+    assert!(limits.nodes == if bit { 7 } else { 5 });
+    assert!(limits.pending_nodes == if bit { 0 } else { 2 });
+    assert!(limits.aggregate_text_bytes == if bit { 2 } else { 1 });
+    kani::cover!(
+        expected == 0x7f,
+        "highest single ASCII byte reaches admission"
+    );
+}
+
+fn assert_text_entry(entry: &DeterministicCborMapEntry, expected: u8, bit: bool) {
+    assert!(matches!(entry.key(), DeterministicCborMapKey::Text(key)
+        if matches!(key.as_bytes(), [byte] if *byte == expected)));
+    assert!(matches!(entry.value(), DeterministicCborValue::Bool(actual) if *actual == bit));
+}
 
 #[kani::proof]
 #[kani::unwind(3)]

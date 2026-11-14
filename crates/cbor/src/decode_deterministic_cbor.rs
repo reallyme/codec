@@ -180,7 +180,7 @@ fn decode_simple(argument: u64) -> Result<SimpleValue, DeterministicCborError> {
 
 fn decode_map(
     bytes: &[u8],
-    mut offset: usize,
+    offset: usize,
     depth: usize,
     argument: u64,
     limits: &mut DecodeLimits,
@@ -193,23 +193,67 @@ fn decode_map(
 ) -> Result<(DeterministicCborValue, usize), DeterministicCborError> {
     // Child decoding starts only after its key is admitted. Recursive calls
     // share the same budget, including the reservations of open maps.
+    let (entry_count, child_depth) = reserve_map(bytes.len(), offset, depth, argument, limits)?;
+    let mut key_order = MapKeyOrder::default();
+    let (entries, end) = collect_map_entries(entry_count, offset, |start| {
+        decode_map_entry(
+            bytes,
+            start,
+            child_depth,
+            limits,
+            &mut decode_child,
+            |span| admit_map_key(&mut key_order, bytes, span.start, span.end),
+        )
+    })?;
+    Ok((DeterministicCborValue::Map(entries), end))
+}
+
+fn reserve_map(
+    total_len: usize,
+    offset: usize,
+    depth: usize,
+    argument: u64,
+    limits: &mut DecodeLimits,
+) -> Result<(usize, usize), DeterministicCborError> {
     let child_depth = descend(depth)?;
     let entry_count = container_count(argument)?;
     let min_entry_len = checked_mul(MIN_ELEMENT_ENCODED_LEN, 2)?;
-    bounded_capacity(entry_count, bytes.len(), offset, min_entry_len)?;
+    bounded_capacity(entry_count, total_len, offset, min_entry_len)?;
     limits.reserve_children(checked_mul(entry_count, 2)?)?;
+    Ok((entry_count, child_depth))
+}
+
+fn collect_map_entries<T>(
+    entry_count: usize,
+    mut offset: usize,
+    mut decode_entry: impl FnMut(usize) -> Result<(T, usize), DeterministicCborError>,
+) -> Result<(Vec<T>, usize), DeterministicCborError> {
     let mut entries = try_vec_with_capacity(entry_count)?;
-    let mut key_order = MapKeyOrder::default();
-
     for _ in 0..entry_count {
-        let (key, key_end) = decode_key(bytes, offset, limits)?;
-        admit_map_key(&mut key_order, bytes, offset, key_end)?;
-
-        let (value, next) = decode_child(bytes, key_end, child_depth, limits)?;
-        entries.push(DeterministicCborMapEntry::new(key, value));
+        let (entry, next) = decode_entry(offset)?;
+        entries.push(entry);
         offset = next;
     }
-    Ok((DeterministicCborValue::Map(entries), offset))
+    Ok((entries, offset))
+}
+
+fn decode_map_entry(
+    bytes: &[u8],
+    start: usize,
+    depth: usize,
+    limits: &mut DecodeLimits,
+    decode_child: impl FnOnce(
+        &[u8],
+        usize,
+        usize,
+        &mut DecodeLimits,
+    ) -> Result<(DeterministicCborValue, usize), DeterministicCborError>,
+    admit_key: impl FnOnce(core::ops::Range<usize>) -> Result<(), DeterministicCborError>,
+) -> Result<(DeterministicCborMapEntry, usize), DeterministicCborError> {
+    let (key, end) = decode_key(bytes, start, limits)?;
+    admit_key(start..end)?;
+    let (value, next) = decode_child(bytes, end, depth, limits)?;
+    Ok((DeterministicCborMapEntry::new(key, value), next))
 }
 
 fn admit_map_key<'a>(

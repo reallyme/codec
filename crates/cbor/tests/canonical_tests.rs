@@ -116,6 +116,20 @@ fn every_pair_of_single_byte_inner_text_keys_has_expected_order_and_round_trip()
 }
 
 #[test]
+fn nested_key_order_errors_precede_invalid_second_child() {
+    // The last byte would produce an unsupported major type if the decoder
+    // visited the second value before checking the key's wire span.
+    for (first, second, expected) in [
+        (b'a', b'b', DeterministicCborError::UnsupportedMajorType),
+        (b'a', b'a', DeterministicCborError::DuplicateMapKey),
+        (b'b', b'a', DeterministicCborError::MapKeysOutOfOrder),
+    ] {
+        let wire = [0xa1, 0x60, 0xa2, 0x61, first, 0xf4, 0x61, second, 0xc0];
+        assert_eq!(decode_deterministic_cbor(&wire).unwrap_err(), expected);
+    }
+}
+
+#[test]
 fn every_extended_one_byte_integer_leaf_requires_minimal_complete_input() {
     for head in [0x18, 0x38] {
         for argument in u8::MIN..=u8::MAX {

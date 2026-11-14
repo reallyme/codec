@@ -3,13 +3,90 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use super::{
-    encode_bool, encode_map, preflight_map, preflight_simple, sort_map_entries,
-    try_vec_with_capacity, write_map_entries, DecoratedMapEntry, Preflight,
+    collect_map_entries, encode_bool, encode_map, encode_map_key, preflight_map, preflight_simple,
+    sort_map_entries, try_vec_with_capacity, write_map_entries, DecoratedMapEntry, Preflight,
 };
 use crate::nested_map_proof_tests::TwoEntryMap;
 use crate::{DeterministicCborMapEntry, DeterministicCborMapKey, DeterministicCborValue};
 use core::mem::ManuallyDrop;
 use zeroize::Zeroizing;
+
+#[kani::proof]
+#[kani::unwind(4)]
+fn preparation_encodes_the_exact_key_bytes() {
+    let example = TwoEntryMap::symbolic();
+    let key = ManuallyDrop::new(DeterministicCborMapKey::text(String::from(char::from(
+        example.first,
+    ))));
+    let result = ManuallyDrop::new(encode_map_key(&key, |actual, output| {
+        // The existing key-encoding check establishes the bytes written.
+        assert!(core::ptr::eq(actual, &*key));
+        assert!(output.is_empty() && output.capacity() == 2);
+        output.extend_from_slice(&[0x61, example.first]);
+        Ok(())
+    }));
+    let Ok(bytes) = &*result else {
+        kani::assert(false, "single map key prepares successfully");
+        return;
+    };
+    assert!(matches!(bytes.as_slice(), [0x61, key] if *key == example.first));
+    kani::cover!(example.first == 0, "lowest ASCII key prepares");
+    kani::cover!(example.first == 0x7f, "highest ASCII key prepares");
+}
+
+#[kani::proof]
+#[kani::unwind(4)]
+fn preparation_collects_both_entries_in_source_order() {
+    let example = TwoEntryMap::symbolic();
+    let entries = ManuallyDrop::new(two_entry_values(&example));
+    let mut calls = 0;
+    let result = collect_map_entries(&*entries, |key| {
+        // The key-preparation proof establishes the returned bytes. The loop
+        // must pair those bytes with the entry whose key was passed in.
+        assert!(calls < entries.len() && core::ptr::eq(key, entries[calls].key()));
+        let byte = if calls == 0 {
+            example.first
+        } else {
+            example.second
+        };
+        calls += 1;
+        Ok(Zeroizing::new(vec![0x61, byte]))
+    });
+    let result = ManuallyDrop::new(result);
+    let Ok(decorated) = &*result else {
+        kani::assert(false, "both prepared entries are collected");
+        return;
+    };
+    assert!(calls == 2);
+    assert_prepared_pair(decorated, &entries, &example);
+    kani::cover!(
+        example.first == example.second,
+        "duplicate keys reach sorting"
+    );
+    kani::cover!(
+        example.first < example.second,
+        "increasing keys reach sorting"
+    );
+    kani::cover!(
+        example.first > example.second,
+        "descending keys reach sorting"
+    );
+}
+
+fn assert_prepared_pair(
+    decorated: &[DecoratedMapEntry<'_>],
+    entries: &[DeterministicCborMapEntry; 2],
+    example: &TwoEntryMap,
+) {
+    let [first, second] = decorated else {
+        kani::assert(false, "preparation retains both entries");
+        return;
+    };
+    assert!(core::ptr::eq(first.entry, &entries[0]));
+    assert!(core::ptr::eq(second.entry, &entries[1]));
+    assert!(matches!(first.encoded_key.as_slice(), [0x61, key] if *key == example.first));
+    assert!(matches!(second.encoded_key.as_slice(), [0x61, key] if *key == example.second));
+}
 
 #[kani::proof]
 #[kani::unwind(4)]
