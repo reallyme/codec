@@ -76,3 +76,6 @@ impl TwoEntryMap {
 
 #[path = "three_entry_map_proof_tests.rs"]
 pub(crate) mod three_entry;
+
+#[path = "text_key_boundary_proof_tests.rs"]
+pub(crate) mod text_key_boundary;

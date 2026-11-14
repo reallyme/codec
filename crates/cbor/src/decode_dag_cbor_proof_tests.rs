@@ -467,3 +467,6 @@ fn dag_boolean_leaves_advance_one_byte() {
 
 #[path = "decode_three_entry_dag_cbor_proof_tests.rs"]
 mod three_entry;
+
+#[path = "decode_dag_cbor_text_key_boundary_proof_tests.rs"]
+mod text_key_boundary;

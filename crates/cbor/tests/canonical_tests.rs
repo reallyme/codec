@@ -139,6 +139,66 @@ fn three_entry_dag_cbor_stops_at_the_first_key_order_violation() {
 }
 
 #[test]
+fn dag_cbor_text_key_23_to_24_byte_boundary_uses_shortest_headers() {
+    let short = "z".repeat(23);
+    let long = "a".repeat(24);
+    let mut short_entry = vec![0x77];
+    short_entry.extend_from_slice(short.as_bytes());
+    short_entry.push(0xf4);
+    let mut long_entry = vec![0x78, 0x18];
+    long_entry.extend_from_slice(long.as_bytes());
+    long_entry.push(0xf5);
+
+    let mut canonical = vec![0xa1, 0x60, 0xa2];
+    canonical.extend_from_slice(&short_entry);
+    canonical.extend_from_slice(&long_entry);
+    let mut reversed = vec![0xa1, 0x60, 0xa2];
+    reversed.extend_from_slice(&long_entry);
+    reversed.extend_from_slice(&short_entry);
+    assert_eq!(canonical.len(), 55);
+    assert_eq!(enc(&decode_dag_cbor(&canonical).unwrap()), canonical);
+    assert_eq!(
+        decode_dag_cbor(&reversed),
+        Err(CborError::MapKeysOutOfOrder)
+    );
+
+    // The second key has been read, but its unsupported value must remain unread.
+    let mut tagged = reversed.clone();
+    tagged[54] = 0xc0;
+    assert_eq!(decode_dag_cbor(&tagged), Err(CborError::MapKeysOutOfOrder));
+
+    // The first wider representation of each length must fail wherever it
+    // appears, including before the reversed wire reaches its order error.
+    let overlong_short: &[u8] = &[0x78, 0x17];
+    let overlong_long: &[u8] = &[0x79, 0x00, 0x18];
+    for (wire, head, overlong) in [
+        (&canonical, 3..4, overlong_short),
+        (&canonical, 28..30, overlong_long),
+        (&reversed, 3..5, overlong_long),
+        (&reversed, 30..31, overlong_short),
+    ] {
+        let mut invalid = wire.clone();
+        drop(invalid.splice(head, overlong.iter().copied()));
+        assert_eq!(
+            decode_dag_cbor(&invalid),
+            Err(CborError::NonCanonicalInteger)
+        );
+    }
+
+    for longer_first in [false, true] {
+        let short = (short.clone(), CborValue::Bool(false));
+        let long = (long.clone(), CborValue::Bool(true));
+        let entries = if longer_first {
+            vec![long, short]
+        } else {
+            vec![short, long]
+        };
+        let outer = CborValue::Map(vec![(String::new(), CborValue::Map(entries))]);
+        assert_eq!(enc(&outer), canonical);
+    }
+}
+
+#[test]
 fn nested_dag_cbor_text_keys_round_trip_in_length_first_order() {
     let canonical = [0xa1, 0x60, 0xa2, 0x61, b'z', 0xf4, 0x62, b'a', b'a', 0xf5];
     let reversed = [0xa1, 0x60, 0xa2, 0x62, b'a', b'a', 0xf5, 0x61, b'z', 0xf4];

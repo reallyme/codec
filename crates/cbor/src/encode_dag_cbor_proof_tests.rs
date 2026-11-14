@@ -162,3 +162,6 @@ fn encode_leaf(
 
 #[path = "encode_three_entry_dag_cbor_proof_tests.rs"]
 mod three_entry;
+
+#[path = "encode_dag_cbor_text_key_boundary_proof_tests.rs"]
+mod text_key_boundary;
