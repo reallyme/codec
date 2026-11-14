@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use crate::check_map_key_order::{MapKeyOrder, MapKeyOrderError};
 use crate::{
     deterministic::{try_string_copy, try_vec_with_capacity},
     DeterministicCborError, DeterministicCborInteger, DeterministicCborMapEntry,
@@ -11,7 +12,6 @@ use crate::{
     MAX_DETERMINISTIC_CBOR_INPUT_LEN, MAX_DETERMINISTIC_CBOR_NESTING_DEPTH,
     MAX_DETERMINISTIC_CBOR_NODES,
 };
-use std::cmp::Ordering;
 use std::str;
 
 const MT_UINT: u8 = 0;
@@ -148,17 +148,17 @@ fn decode_value(
             bounded_capacity(entry_count, bytes.len(), offset, min_entry_len)?;
             limits.reserve_children(checked_mul(entry_count, 2)?)?;
             let mut entries = try_vec_with_capacity(entry_count)?;
-            let mut previous_key_range: Option<(usize, usize)> = None;
+            let mut key_order = MapKeyOrder::default();
 
             for _ in 0..entry_count {
                 let key_start = offset;
                 let (key, key_end) = decode_key(bytes, offset, limits)?;
-                if let Some((previous_start, previous_end)) = previous_key_range {
-                    let previous_key = checked_slice(bytes, previous_start, previous_end)?;
-                    let current_key = checked_slice(bytes, key_start, key_end)?;
-                    require_increasing_map_key(previous_key, current_key)?;
-                }
-                previous_key_range = Some((key_start, key_end));
+                key_order
+                    .admit(checked_slice(bytes, key_start, key_end)?)
+                    .map_err(|error| match error {
+                        MapKeyOrderError::Duplicate => DeterministicCborError::DuplicateMapKey,
+                        MapKeyOrderError::Descending => DeterministicCborError::MapKeysOutOfOrder,
+                    })?;
                 offset = key_end;
 
                 let (value, next) = decode_value(bytes, offset, child_depth, limits)?;
@@ -348,23 +348,6 @@ fn bounded_capacity(
         return Err(DeterministicCborError::ContainerLengthExceedsInput);
     }
     Ok(())
-}
-
-fn require_increasing_map_key(
-    previous: &[u8],
-    current: &[u8],
-) -> Result<(), DeterministicCborError> {
-    // Length-first ordering makes equal canonical encodings adjacent. The
-    // decoder can reject duplicates while reading without storing a key set.
-    let order = match previous.len().cmp(&current.len()) {
-        Ordering::Equal => previous.cmp(current),
-        ordering => ordering,
-    };
-    match order {
-        Ordering::Less => Ok(()),
-        Ordering::Equal => Err(DeterministicCborError::DuplicateMapKey),
-        Ordering::Greater => Err(DeterministicCborError::MapKeysOutOfOrder),
-    }
 }
 
 fn descend(depth: usize) -> Result<usize, DeterministicCborError> {

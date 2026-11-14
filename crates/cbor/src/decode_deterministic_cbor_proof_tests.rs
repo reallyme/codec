@@ -2,7 +2,8 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use super::{bounded_capacity, read_head, require_increasing_map_key, DeterministicCborError};
+use super::{bounded_capacity, read_head, DeterministicCborError};
+use crate::check_map_key_order::{MapKeyOrder, MapKeyOrderError};
 
 const MAX_HEADER_BYTES: usize = 9;
 const MAX_KEY_BYTES: usize = 8;
@@ -24,11 +25,13 @@ fn map_key_admission_matches_length_first_order() {
     let expected = if (previous_len, previous_rank) < (current_len, current_rank) {
         Ok(())
     } else if (previous_len, previous_rank) == (current_len, current_rank) {
-        Err(DeterministicCborError::DuplicateMapKey)
+        Err(MapKeyOrderError::Duplicate)
     } else {
-        Err(DeterministicCborError::MapKeysOutOfOrder)
+        Err(MapKeyOrderError::Descending)
     };
-    let actual = require_increasing_map_key(&previous[..previous_len], &current[..current_len]);
+    let mut order = MapKeyOrder::default();
+    assert_eq!(order.admit(&previous[..previous_len]), Ok(()));
+    let actual = order.admit(&current[..current_len]);
     kani::cover!(
         previous_len < current_len && previous[0] > current[0] && actual.is_ok(),
         "length takes precedence over the first byte"
@@ -37,12 +40,9 @@ fn map_key_admission_matches_length_first_order() {
         previous_len == current_len && actual.is_ok(),
         "equal-length keys in byte order"
     );
+    kani::cover!(actual == Err(MapKeyOrderError::Duplicate), "duplicate key");
     kani::cover!(
-        actual == Err(DeterministicCborError::DuplicateMapKey),
-        "duplicate key"
-    );
-    kani::cover!(
-        actual == Err(DeterministicCborError::MapKeysOutOfOrder),
+        actual == Err(MapKeyOrderError::Descending),
         "descending key order"
     );
     assert_eq!(actual, expected);

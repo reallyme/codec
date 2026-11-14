@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use crate::check_map_key_order::{MapKeyOrder, MapKeyOrderError};
 use crate::{
     CborError, CborValue, MAX_DAG_CBOR_CONTAINER_ENTRIES, MAX_DAG_CBOR_INPUT_LEN,
     MAX_DAG_CBOR_NODES, MAX_NESTING_DEPTH,
 };
-use std::cmp::Ordering;
 use std::str;
 use zeroize::Zeroizing;
 
@@ -198,9 +198,10 @@ fn decode_value(
             budget.reserve_children(child_count)?;
             let mut entries = Zeroizing::new(Vec::with_capacity(entry_count));
             let mut off = offset;
-            let mut last_key_bytes: Option<Zeroizing<Vec<u8>>> = None;
+            let mut key_order = MapKeyOrder::default();
 
             for _ in 0..entry_count {
+                let key_start = off;
                 let (key_val, key_off) = decode_value(bytes, off, child_depth, budget)?;
                 off = key_off;
 
@@ -210,15 +211,16 @@ fn decode_value(
                     _ => return Err(CborError::MapKeyMustBeString),
                 });
 
-                let key_bytes = Zeroizing::new(key.as_bytes().to_vec());
-                if let Some(prev) = &last_key_bytes {
-                    match compare_bytes(prev, &key_bytes) {
-                        Ordering::Less => {}
-                        Ordering::Equal => return Err(CborError::DuplicateMapKey),
-                        Ordering::Greater => return Err(CborError::MapKeysOutOfOrder),
-                    }
-                }
-                last_key_bytes = Some(key_bytes);
+                // For canonical text keys, encoded length increases with
+                // payload length, and equal lengths have identical headers.
+                // Compare borrowed encodings to avoid copying key material.
+                let encoded_key = bytes
+                    .get(key_start..key_off)
+                    .ok_or(CborError::OffsetOverflow)?;
+                key_order.admit(encoded_key).map_err(|error| match error {
+                    MapKeyOrderError::Duplicate => CborError::DuplicateMapKey,
+                    MapKeyOrderError::Descending => CborError::MapKeysOutOfOrder,
+                })?;
 
                 let (val, val_off) = decode_value(bytes, off, child_depth, budget)?;
                 off = val_off;
@@ -373,13 +375,6 @@ fn bounded_capacity_with_min(
         return Err(CborError::ContainerLengthExceedsInput);
     }
     Ok(count)
-}
-
-fn compare_bytes(a: &[u8], b: &[u8]) -> Ordering {
-    match a.len().cmp(&b.len()) {
-        Ordering::Equal => a.cmp(b),
-        ordering => ordering,
-    }
 }
 
 #[cfg(kani)]

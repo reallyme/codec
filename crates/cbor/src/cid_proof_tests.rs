@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use super::{
-    classify_parsed_cid, dag_cbor_cid, CidVerificationStatus, ContentHash, DagCborMultihash,
+    classify_parsed_cid, dag_cbor_cid, parse_cid_wire, take_varint, CidVerificationStatus,
+    ContentHash, DagCborMultihash,
 };
 use cid::{Cid, Version};
 use multihash::Multihash;
@@ -14,6 +15,179 @@ const DAG_CBOR: u64 = 0x71;
 const SHA2_256: u64 = 0x12;
 const SHA2_256_DIGEST_BYTES: usize = 32;
 const MAX_DIGEST_BYTES: usize = 64;
+const CID_V1_VERSION: u8 = 1;
+const DAG_PB: u64 = 0x70;
+
+#[kani::proof]
+#[kani::unwind(12)]
+fn cid_varints_match_unsigned_base128_u64() {
+    let bytes: [u8; 11] = kani::any();
+    let available: usize = kani::any();
+    kani::assume(available <= bytes.len());
+    let source = &bytes[..available];
+
+    // Locate the terminator independently and evaluate the positional
+    // representation in u128 so an out-of-range value cannot wrap.
+    let expected = source.iter().position(|byte| byte < &128).and_then(|last| {
+        if last >= 10 || (last > 0 && source[last] == 0) {
+            return None;
+        }
+        let value = source[..=last]
+            .iter()
+            .rev()
+            .fold(0_u128, |acc, byte| acc * 128 + u128::from(byte % 128));
+        Some((u64::try_from(value).ok()?, &source[last + 1..]))
+    });
+    let actual = take_varint(source);
+    assert_eq!(actual, expected);
+    kani::cover!(
+        matches!(actual, Some((u64::MAX, _))),
+        "ten-octet uint64 maximum"
+    );
+    kani::cover!(
+        available == 10 && bytes[..9] == [0x80; 9] && bytes[9] == 2 && actual.is_none(),
+        "tenth-octet overflow"
+    );
+    kani::cover!(
+        available == 2 && bytes[..2] == [0x80, 0] && actual.is_none(),
+        "redundant high zero group"
+    );
+    kani::cover!(
+        available > 1 && matches!(actual, Some((0, rest)) if rest.len() == available - 1),
+        "exact prefix consumption"
+    );
+}
+
+#[kani::proof]
+#[kani::unwind(66)]
+fn cid_v1_wire_requires_an_exact_supported_digest_length() {
+    let digest: [u8; MAX_DIGEST_BYTES + 1] = kani::any();
+    let declared: u8 = kani::any();
+    let supplied: usize = kani::any();
+    kani::assume(declared < 128);
+    kani::assume(supplied <= digest.len());
+
+    let mut wire = [0; 4 + MAX_DIGEST_BYTES + 1];
+    // The version, codec, hash algorithm and small digest lengths each use
+    // exactly one octet in this family of inputs.
+    wire[..4].copy_from_slice(&[CID_V1_VERSION, 0x71, 0x12, declared]);
+    wire[4..].copy_from_slice(&digest);
+    let parsed = parse_cid_wire(&wire[..4 + supplied], true);
+    let expected = supplied == usize::from(declared) && supplied <= MAX_DIGEST_BYTES;
+    assert_eq!(parsed.is_some(), expected);
+    if let Some(cid) = parsed {
+        assert_eq!(cid.version(), Version::V1);
+        assert_eq!(cid.codec(), DAG_CBOR);
+        assert_eq!(cid.hash().code(), SHA2_256);
+        assert_eq!(cid.hash().size(), declared);
+        assert_eq!(cid.hash().digest(), &digest[..supplied]);
+    }
+    kani::cover!(
+        declared == 0 && parsed.is_some(),
+        "empty digest admitted structurally"
+    );
+    kani::cover!(
+        declared == 64 && parsed.is_some(),
+        "maximum digest admitted"
+    );
+    kani::cover!(
+        declared == 65 && supplied == 65 && parsed.is_none(),
+        "digest exceeds capacity"
+    );
+    kani::cover!(
+        declared == 32 && supplied == 31 && parsed.is_none(),
+        "truncated digest"
+    );
+    kani::cover!(
+        declared == 32 && supplied == 33 && parsed.is_none(),
+        "trailing byte"
+    );
+}
+
+#[kani::proof]
+#[kani::unwind(34)]
+fn cid_v0_wire_requires_the_bare_fixed_shape() {
+    let digest: [u8; SHA2_256_DIGEST_BYTES + 1] = kani::any();
+    let first: u8 = kani::any();
+    let second: u8 = kani::any();
+    let supplied: usize = kani::any();
+    let has_multibase_prefix: bool = kani::any();
+    kani::assume(first < 128 && first != CID_V1_VERSION && second < 128);
+    kani::assume(supplied <= digest.len());
+
+    let mut wire = [0; 2 + SHA2_256_DIGEST_BYTES + 1];
+    wire[..2].copy_from_slice(&[first, second]);
+    wire[2..].copy_from_slice(&digest);
+    let parsed = parse_cid_wire(&wire[..2 + supplied], has_multibase_prefix);
+    let expected =
+        first == 0x12 && second == 32 && supplied == SHA2_256_DIGEST_BYTES && !has_multibase_prefix;
+    assert_eq!(parsed.is_some(), expected);
+    if let Some(cid) = parsed {
+        assert_eq!(cid.version(), Version::V0);
+        assert_eq!(cid.codec(), DAG_PB);
+        assert_eq!(cid.hash().code(), SHA2_256);
+        assert_eq!(cid.hash().digest(), &digest[..supplied]);
+    }
+    kani::cover!(parsed.is_some(), "bare CIDv0");
+    kani::cover!(
+        first == 0x12 && second == 32 && supplied == 32 && has_multibase_prefix && parsed.is_none(),
+        "wrapped CIDv0"
+    );
+    kani::cover!(
+        first == 0x12
+            && second == 32
+            && supplied == 33
+            && !has_multibase_prefix
+            && parsed.is_none(),
+        "CIDv0 with trailing data"
+    );
+    kani::cover!(
+        first == 0 && second == 32 && supplied == 32 && parsed.is_none(),
+        "explicit version zero"
+    );
+}
+
+#[kani::proof]
+#[kani::unwind(14)]
+fn cid_v1_wire_requires_minimal_varints_in_each_field() {
+    // Each original field fits in one octet. Adding zero high groups never
+    // changes its value; it only makes the selected field non-minimal.
+    let field: usize = kani::any();
+    let extra_groups: usize = kani::any();
+    kani::assume(field < 4);
+    kani::assume(extra_groups <= 10);
+    let canonical: [u8; 5] = [CID_V1_VERSION, 0x71, 0x12, 1, kani::any()];
+    let mut wire = [0x80; 15];
+    wire[..field].copy_from_slice(&canonical[..field]);
+    if extra_groups != 0 {
+        wire[field] = canonical[field] | 0x80;
+        wire[field + extra_groups] = 0;
+    }
+    let end = canonical.len() + extra_groups;
+    wire[field + extra_groups + 1..end].copy_from_slice(&canonical[field + 1..]);
+    if extra_groups == 0 {
+        wire[field] = canonical[field];
+    }
+    let parsed = parse_cid_wire(&wire[..end], true);
+    assert_eq!(parsed.is_some(), extra_groups == 0);
+    kani::cover!(parsed.is_some(), "canonical CIDv1");
+    kani::cover!(
+        field == 0 && extra_groups == 1 && parsed.is_none(),
+        "overlong version"
+    );
+    kani::cover!(
+        field == 1 && extra_groups == 9 && parsed.is_none(),
+        "overlong codec at u64 varint width"
+    );
+    kani::cover!(
+        field == 2 && extra_groups == 1 && parsed.is_none(),
+        "overlong hash algorithm"
+    );
+    kani::cover!(
+        field == 3 && extra_groups == 10 && parsed.is_none(),
+        "overlong digest length past u64 varint width"
+    );
+}
 
 #[kani::proof]
 #[kani::unwind(65)]

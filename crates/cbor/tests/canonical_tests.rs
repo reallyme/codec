@@ -10,12 +10,55 @@
     clippy::unwrap_used
 )]
 use codec_cbor::{
-    decode_dag_cbor, encode_dag_cbor, CborError, CborValue, MAX_DAG_CBOR_INPUT_LEN,
-    MAX_NESTING_DEPTH,
+    decode_dag_cbor, decode_deterministic_cbor, encode_dag_cbor, encode_deterministic_cbor,
+    CborError, CborValue, DeterministicCborError, MAX_DAG_CBOR_INPUT_LEN, MAX_NESTING_DEPTH,
 };
 
 fn enc(value: &CborValue) -> Vec<u8> {
     encode_dag_cbor(value).unwrap()
+}
+
+#[test]
+fn all_permutations_of_a_nested_map_have_one_accepted_encoding() {
+    // The third key is lexically first but must sort last by encoded length.
+    let pairs: [&[u8]; 3] = [&[0x61, b'b', 1], &[0x61, b'c', 2], &[0x62, b'a', b'a', 3]];
+    let canonical = [
+        0xa1, 0x61, b'x', 0xa3, 0x61, b'b', 1, 0x61, b'c', 2, 0x62, b'a', b'a', 3,
+    ];
+    for order in [
+        [0, 1, 2],
+        [0, 2, 1],
+        [1, 0, 2],
+        [1, 2, 0],
+        [2, 0, 1],
+        [2, 1, 0],
+    ] {
+        let mut wire = vec![0xa1, 0x61, b'x', 0xa3];
+        for index in order {
+            wire.extend_from_slice(pairs[index]);
+        }
+        if order == [0, 1, 2] {
+            assert_eq!(
+                encode_dag_cbor(&decode_dag_cbor(&wire).unwrap()).unwrap(),
+                canonical
+            );
+            assert_eq!(
+                encode_deterministic_cbor(&decode_deterministic_cbor(&wire).unwrap())
+                    .unwrap()
+                    .as_slice(),
+                canonical
+            );
+        } else {
+            assert!(matches!(
+                decode_dag_cbor(&wire),
+                Err(CborError::MapKeysOutOfOrder)
+            ));
+            assert!(matches!(
+                decode_deterministic_cbor(&wire),
+                Err(DeterministicCborError::MapKeysOutOfOrder)
+            ));
+        }
+    }
 }
 
 #[test]

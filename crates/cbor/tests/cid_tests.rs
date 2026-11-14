@@ -319,3 +319,65 @@ fn cid_parsers_reject_nonminimal_varints_and_oversized_text() {
         Some(largest.to_string())
     );
 }
+
+#[test]
+fn cid_text_admission_checks_varint_overflow_and_digest_extent() {
+    const MAX_DIGEST_BYTES: usize = 64;
+    const MAX_U64_VARINT: [u8; 10] = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 1];
+
+    // A canonical CIDv1 can use the full uint64 range for codec and hash
+    // codes. Overflow in the tenth octet must not alias the same value.
+    let mut wire = vec![1];
+    wire.extend_from_slice(&MAX_U64_VARINT);
+    wire.extend_from_slice(&MAX_U64_VARINT);
+    let length_offset = wire.len();
+    wire.push(u8::try_from(MAX_DIGEST_BYTES).unwrap());
+    wire.extend_from_slice(&[0xa5; MAX_DIGEST_BYTES]);
+    let text = cid::multibase::encode(Base::Base32Lower, &wire);
+    assert_eq!(try_parse_cid(&text).unwrap().to_bytes(), wire);
+
+    let mut codec_overflow = wire.clone();
+    codec_overflow[10] = 3;
+    let mut hash_overflow = wire.clone();
+    hash_overflow[20] = 3;
+    let mut truncated = wire.clone();
+    truncated.pop().unwrap();
+    let mut trailing = wire.clone();
+    trailing.push(0);
+    let mut oversized = trailing.clone();
+    oversized[length_offset] = u8::try_from(MAX_DIGEST_BYTES + 1).unwrap();
+    for invalid in [
+        &codec_overflow,
+        &hash_overflow,
+        &truncated,
+        &trailing,
+        &oversized,
+    ] {
+        let text = cid::multibase::encode(Base::Base32Lower, invalid);
+        assert!(try_parse_cid(&text).is_none());
+        assert_eq!(
+            verify_dag_cbor_cid(&text, &[0xf6]).unwrap().status(),
+            CidVerificationStatus::InvalidCid
+        );
+    }
+}
+
+#[test]
+fn cid_wire_admission_preserves_upstream_canonical_encodings() {
+    let code_width_edges = [0, 0x7f, 0x80, 0x3fff, 0x4000, 1 << 35, 1 << 63, u64::MAX];
+    let digest = [0xa5; 64];
+    for codec in code_width_edges {
+        for algorithm in code_width_edges {
+            for length in [0, 1, 31, 32, 63, digest.len()] {
+                let cid = Cid::new_v1(
+                    codec,
+                    multihash::Multihash::wrap(algorithm, &digest[..length]).unwrap(),
+                );
+                assert_eq!(
+                    try_parse_cid(&cid.to_string()).unwrap().to_bytes(),
+                    cid.to_bytes()
+                );
+            }
+        }
+    }
+}
