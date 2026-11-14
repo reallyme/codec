@@ -44,6 +44,115 @@ const environment = (root) => ({
   TMPDIR: root,
 });
 
+for (const scenario of ["success", "package-unavailable", "mount-unavailable", "activity-failure"]) {
+  test(`Android runtime gate handles ${scenario}`, { skip: !posixHost }, (t) => {
+    const root = fixture(t);
+    const script = copy(root, "scripts/test_android_consumer_r8_runtime.sh");
+    const shellFixture = (path, body) => {
+      const destination = join(root, path);
+      mkdirSync(dirname(destination), { recursive: true });
+      writeFileSync(destination, `#!/usr/bin/env bash\nset -euo pipefail\n${body}\n`, { mode: 0o700 });
+    };
+    const env = {
+      ...environment(root),
+      ANDROID_HOME: join(root, "sdk"),
+      ANDROID_NDK_HOME: join(root, "ndk"),
+      ANDROID_AVD_HOME: join(root, "avd"),
+      ADB: join(root, "bin", "adb"),
+      EMULATOR: join(root, "bin", "emulator"),
+      SDKMANAGER: join(root, "bin", "sdkmanager"),
+      AVDMANAGER: join(root, "bin", "avdmanager"),
+      REALLYME_CODEC_ANDROID_AVD: "runtime-gate",
+      RUNTIME_FIXTURE_SCENARIO: scenario,
+      BASH_ENV: join(root, "clock.sh"),
+    };
+    // Advance the real polling loop's clock without waiting a minute on missing services.
+    writeFileSync(env.BASH_ENV, 'sleep() { SECONDS=$((SECONDS + 61)); }\n');
+    shellFixture("bin/sdkmanager", "exit 1");
+    shellFixture("bin/avdmanager", "exit 1");
+    shellFixture("bin/emulator", `
+      if [[ "$1" == "-list-avds" ]]; then
+        printf 'runtime-gate\\n'
+      else
+        printf 'fixture emulator output\\n'
+      fi
+    `);
+    for (const host of ["darwin-x86_64", "linux-x86_64"]) {
+      shellFixture(`ndk/toolchains/llvm/prebuilt/${host}/bin/llvm-readelf`, "printf 'LOAD 0x4000\\n'");
+    }
+    shellFixture("scripts/build_android_native_resources.sh", `
+      printf 'build\\n' >> "$TOOLING_FIXTURE/events"
+      for abi in arm64-v8a armeabi-v7a x86_64 x86; do
+        mkdir -p "$1/$abi"
+        touch "$1/$abi/libreallyme_codec_ffi.so"
+      done
+    `);
+    writeFileSync(join(root, "scripts", "write_native_manifest.mjs"), "");
+    shellFixture("packages/kotlin/gradlew", "exit 0");
+    shellFixture("bin/adb", `
+      case "$*" in
+        "get-state") printf 'device\\n' ;;
+        "shell getprop sys.boot_completed") printf '1\\n' ;;
+        "shell am get-started-user-state 0") printf 'RUNNING_UNLOCKED\\n' ;;
+        "shell service check package"|"shell service check mount")
+          service="$4"
+          if [[ "$RUNTIME_FIXTURE_SCENARIO" == "$service-unavailable" ]]; then
+            printf 'Service %s: not found\\r\\n' "$service"
+          else
+            printf 'Service %s: found\\r\\n' "$service"
+          fi
+          ;;
+        "shell sm list-volumes all") printf 'private mounted null\\n' ;;
+        "shell pm path android") printf 'package:/system/framework/framework-res.apk\\n' ;;
+        "shell getconf PAGE_SIZE") printf '16384\\n' ;;
+        "install --no-streaming -r "*)
+          printf 'install\\n' >> "$TOOLING_FIXTURE/events"
+          printf 'Success\\n'
+          ;;
+        "logcat -b main -c") printf 'clear-main\\n' >> "$TOOLING_FIXTURE/events" ;;
+        "shell am force-stop "*) ;;
+        "shell am start -W -n "*)
+          if [[ "$RUNTIME_FIXTURE_SCENARIO" == "activity-failure" ]]; then exit 1; fi
+          printf 'Status: ok\\n'
+          ;;
+        "logcat -d -v brief -s ReallyMeCodecR8Gate:I") printf 'ReallyMeCodecR8Gate PASS\\n' ;;
+        "logcat -d -t 300 -b system,events,crash -v threadtime")
+          printf 'collect-guest-logs\\n' >> "$TOOLING_FIXTURE/events"
+          if [[ "$RUNTIME_FIXTURE_SCENARIO" == "mount-unavailable" ]]; then exit 7; fi
+          printf 'fixture guest crash trace\\n'
+          ;;
+        "emu kill") printf 'shutdown\\n' >> "$TOOLING_FIXTURE/events" ;;
+        *) exit 1 ;;
+      esac
+    `);
+
+    const result = spawnSync("bash", [script], { cwd: root, env, encoding: "utf8", timeout: toolFixtureTimeoutMs });
+    assert.equal(result.error, undefined);
+    const events = readFileSync(join(root, "events"), "utf8").trim().split("\n");
+    if (scenario === "success") {
+      assert.equal(result.status, 0, result.stderr);
+      assert.match(result.stdout, /Android consumer R8 runtime gate passed/u);
+      assert.deepEqual(events, ["build", "install", "clear-main", "shutdown"]);
+    } else {
+      assert.equal(result.status, 1, result.stderr);
+      if (scenario === "activity-failure") {
+        assert.match(result.stderr, /Android consumer R8 activity launch failed/u);
+        assert.deepEqual(events, ["build", "install", "clear-main", "collect-guest-logs", "shutdown"]);
+      } else {
+        const service = scenario.split("-")[0];
+        assert.match(result.stderr, /Android readiness at timeout:/u);
+        assert.ok(result.stderr.includes(String.raw`${service}_service=Service\ ${service}:\ not\ found`));
+        assert.match(result.stderr, /Android package and storage services were not ready before timeout/u);
+        assert.deepEqual(events, ["collect-guest-logs", "shutdown"]);
+      }
+      assert.match(result.stderr, /fixture emulator output/u);
+      assert.match(result.stderr, scenario === "mount-unavailable"
+        ? /Android guest logcat could not be fully collected/u
+        : /fixture guest crash trace/u);
+    }
+  });
+}
+
 test("Swift binary manifest rejects ancestor path components", (t) => {
   const root = fixture(t);
   const script = copy(root, "scripts/prepare_swift_binary_manifest.mjs");

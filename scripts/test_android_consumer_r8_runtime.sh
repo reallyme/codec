@@ -5,7 +5,8 @@
 
 set -euo pipefail
 
-readonly REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly REPO_ROOT
 readonly ANDROID_HOME_VALUE="${ANDROID_HOME:-"$HOME/Library/Android/sdk"}"
 readonly ANDROID_NDK_HOME_VALUE="${ANDROID_NDK_HOME:-"$ANDROID_HOME_VALUE/ndk/29.0.14206865"}"
 readonly ADB="${ADB:-"$ANDROID_HOME_VALUE/platform-tools/adb"}"
@@ -19,6 +20,8 @@ readonly ANDROID_R8_SYSTEM_IMAGE="system-images;android-37.1;google_apis_ps16k;x
 readonly ANDROID_R8_DATA_PARTITION_MB="4096"
 readonly ANDROID_R8_PAGE_SIZE_BYTES="16384"
 readonly RUNTIME_SERVICES_READY_TIMEOUT_SECONDS="60"
+readonly GUEST_LOG_TIMEOUT_MS="10000"
+readonly GUEST_LOG_TAIL_LINES="300"
 readonly ADB_INSTALL_MAX_ATTEMPTS="3"
 readonly APP_ID="me.really.codec.consumer.r8"
 readonly ACTIVITY="me.really.codec.consumer.r8.ConsumerR8RuntimeActivity"
@@ -26,28 +29,55 @@ readonly LOG_TAG="ReallyMeCodecR8Gate"
 readonly JNILIBS_DIR="$REPO_ROOT/build/android-jniLibs"
 readonly NATIVE_ASSETS_DIR="$REPO_ROOT/build/android-native-assets"
 readonly APK_PATH="$REPO_ROOT/packages/kotlin-android/consumer-r8-runtime/build/outputs/apk/release/consumer-r8-runtime-release.apk"
-readonly LOG_DIR="$(mktemp -d "${TMPDIR:-/tmp}/reallyme-codec-r8.XXXXXXXX")"
+LOG_DIR="$(mktemp -d "${TMPDIR:-/tmp}/reallyme-codec-r8.XXXXXXXX")"
+readonly LOG_DIR
 readonly EMULATOR_LOG="$LOG_DIR/emulator.log"
 readonly AVDMANAGER_LOG="$LOG_DIR/avdmanager.log"
 
 emulator_pid=""
 export ANDROID_AVD_HOME="$ANDROID_AVD_HOME_VALUE"
 
-cleanup() {
-    if [[ -n "$emulator_pid" ]]; then
-        "$ADB" emu kill >/dev/null 2>&1 || true
-        wait "$emulator_pid" >/dev/null 2>&1 || true
-    fi
-    rm -f -- "$EMULATOR_LOG" "$AVDMANAGER_LOG"
-    rmdir -- "$LOG_DIR"
-}
-trap cleanup EXIT
-
+# shellcheck disable=SC2329 # Reached through the EXIT trap.
 dump_emulator_log() {
     if [[ -f "$EMULATOR_LOG" ]]; then
         tail -200 "$EMULATOR_LOG" >&2 || true
     fi
 }
+
+# shellcheck disable=SC2329 # Reached through the EXIT trap.
+dump_guest_logs() {
+    # Bound the ADB call because the guest may stop responding during a crash.
+    printf 'Android guest logcat (system, events, crash):\n' >&2
+    if ! node -e '
+      const { spawnSync } = require("node:child_process");
+      const [adb, timeout, lines] = process.argv.slice(1);
+      const result = spawnSync(adb, ["logcat", "-d", "-t", lines, "-b", "system,events,crash", "-v", "threadtime"], {
+        timeout: Number(timeout),
+        killSignal: "SIGKILL",
+        stdio: ["ignore", "inherit", "inherit"],
+      });
+      process.exitCode = result.status ?? 1;
+    ' "$ADB" "$GUEST_LOG_TIMEOUT_MS" "$GUEST_LOG_TAIL_LINES" >&2; then
+        printf 'Android guest logcat could not be fully collected\n' >&2
+    fi
+}
+
+# shellcheck disable=SC2329 # Invoked by the EXIT trap.
+cleanup() {
+    local exit_status="$1"
+    if [[ -n "$emulator_pid" ]]; then
+        if (( exit_status != 0 )); then
+            dump_guest_logs
+            dump_emulator_log
+        fi
+        "$ADB" emu kill >/dev/null 2>&1 || true
+        wait "$emulator_pid" >/dev/null 2>&1 || true
+    fi
+    if ! rm -f -- "$EMULATOR_LOG" "$AVDMANAGER_LOG" || ! rmdir -- "$LOG_DIR"; then
+        printf 'Android runtime gate could not remove temporary logs\n' >&2
+    fi
+}
+trap 'cleanup "$?"' EXIT
 
 fail() {
     printf '%s\n' "$1" >&2
@@ -65,23 +95,26 @@ wait_for_runtime_services() {
     while (( SECONDS <= runtime_services_deadline )); do
         boot_completed="$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
         user_state="$("$ADB" shell am get-started-user-state 0 2>/dev/null | tr -d '\r' || true)"
-        package_manager_state="$("$ADB" shell service check package 2>/dev/null || true)"
-        storage_manager_state="$("$ADB" shell service check mount 2>/dev/null || true)"
+        package_manager_state="$("$ADB" shell service check package 2>/dev/null | tr -d '\r' || true)"
+        storage_manager_state="$("$ADB" shell service check mount 2>/dev/null | tr -d '\r' || true)"
         volume_state="$("$ADB" shell sm list-volumes all 2>/dev/null || true)"
         android_package_path="$("$ADB" shell pm path android 2>/dev/null || true)"
         # Binder registration precedes full framework initialization. Waiting for
         # the unlocked user also covers the storage service's internal PM link.
+        # The service command also prints "not found" for an absent service.
         if [[ "$boot_completed" == "1" ]] &&
             [[ "$user_state" == "RUNNING_UNLOCKED" ]] &&
-            [[ "$package_manager_state" == *"found"* ]] &&
-            [[ "$storage_manager_state" == *"found"* ]] &&
+            [[ "$package_manager_state" == "Service package: found" ]] &&
+            [[ "$storage_manager_state" == "Service mount: found" ]] &&
             [[ "$volume_state" == *" mounted "* ]] &&
             [[ "$android_package_path" == package:* ]]; then
             return
         fi
         sleep 2
     done
-    dump_emulator_log
+    printf 'Android readiness at timeout: boot=%q user=%q package_service=%q mount_service=%q volumes=%q android_package=%q\n' \
+        "$boot_completed" "$user_state" "$package_manager_state" "$storage_manager_state" \
+        "$volume_state" "$android_package_path" >&2
     fail "Android package and storage services were not ready before timeout"
 }
 
@@ -114,7 +147,6 @@ install_apk() {
     done
 
     "$ADB" shell df -h /data >&2 || true
-    dump_emulator_log
     fail "Android consumer R8 APK installation failed"
 }
 
@@ -170,11 +202,9 @@ fi
 device_deadline=$((SECONDS + 120))
 until "$ADB" get-state >/dev/null 2>&1; do
     if [[ -n "$emulator_pid" ]] && ! kill -0 "$emulator_pid" >/dev/null 2>&1; then
-        dump_emulator_log
         fail "Android emulator exited before adb detected a device"
     fi
     if (( SECONDS > device_deadline )); then
-        dump_emulator_log
         fail "Android device was not detected before timeout"
     fi
     sleep 2
@@ -183,7 +213,6 @@ done
 boot_deadline=$((SECONDS + 240))
 while [[ "$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" != "1" ]]; do
     if (( SECONDS > boot_deadline )); then
-        dump_emulator_log
         fail "Android device did not finish booting"
     fi
     sleep 2
@@ -227,7 +256,8 @@ ANDROID_NDK_HOME="$ANDROID_NDK_HOME_VALUE" "$REPO_ROOT/packages/kotlin/gradlew" 
 
 install_apk
 
-"$ADB" logcat -c
+# Clear previous consumer results while preserving guest boot and crash logs.
+"$ADB" logcat -b main -c
 "$ADB" shell am force-stop "$APP_ID" >/dev/null 2>&1 || true
 start_output=""
 if ! start_output="$("$ADB" shell am start -W -n "$APP_ID/$ACTIVITY" 2>&1)"; then
