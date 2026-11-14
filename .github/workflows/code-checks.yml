@@ -100,6 +100,10 @@ jobs:
 
       - name: Cache Cargo
         uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          # Separate this cache from entries containing unmanaged Cargo tools.
+          key: rust-dependencies
+          cache-bin: false
 
       - name: Install nextest
         uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3, nextest
@@ -107,7 +111,7 @@ jobs:
           tool: cargo-nextest@0.9.151
 
       - name: Install cargo-deny
-        run: cargo +1.100.0 install cargo-deny --version '=0.20.2' --locked --force
+        run: cargo +1.100.0 install cargo-deny --version '=0.20.2' --locked
 
       - name: Install cargo-audit
         uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3, cargo-audit
