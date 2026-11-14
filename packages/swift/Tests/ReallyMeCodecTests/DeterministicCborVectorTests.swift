@@ -405,31 +405,32 @@ final class DeterministicCborVectorTests: XCTestCase {
 
     private static func configuredCodec() throws -> ReallyMeCodec {
         #if REALLYME_CODEC_LINKED_FFI
-        return try ReallyMeCodec()
+            return try ReallyMeCodec()
         #else
-        let environmentPath = ProcessInfo.processInfo.environment["REALLYME_CODEC_FFI_LIBRARY_PATH"]
-        let libraryPath: String
-        if let environmentPath, !environmentPath.isEmpty {
-            libraryPath = environmentPath
-        } else {
-            #if os(macOS)
-                let libraryName = "libreallyme_codec_ffi.dylib"
-            #elseif os(Linux)
-                let libraryName = "libreallyme_codec_ffi.so"
-            #else
-                let libraryName = "reallyme_codec_ffi.dll"
-            #endif
-            libraryPath = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-                .appendingPathComponent("target/debug")
-                .appendingPathComponent(libraryName)
-                .path
-        }
-        guard FileManager.default.fileExists(atPath: libraryPath) else {
-            throw ReallyMeCodecError.providerFailure
-        }
-        return try ReallyMeCodec(
-            rustCAbiLibrary: ReallyMeCodecRustCAbiLibrary(path: libraryPath)
-        )
+            let environmentPath = ProcessInfo.processInfo.environment["REALLYME_CODEC_FFI_LIBRARY_PATH"]
+            let libraryPath: String
+            if let environmentPath, !environmentPath.isEmpty {
+                libraryPath = environmentPath
+            } else {
+                #if os(macOS)
+                    let libraryName = "libreallyme_codec_ffi.dylib"
+                #elseif os(Linux)
+                    let libraryName = "libreallyme_codec_ffi.so"
+                #else
+                    let libraryName = "reallyme_codec_ffi.dll"
+                #endif
+                libraryPath =
+                    URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+                    .appendingPathComponent("target/debug")
+                    .appendingPathComponent(libraryName)
+                    .path
+            }
+            guard FileManager.default.fileExists(atPath: libraryPath) else {
+                throw ReallyMeCodecError.providerFailure
+            }
+            return try ReallyMeCodec(
+                rustCAbiLibrary: ReallyMeCodecRustCAbiLibrary(path: libraryPath)
+            )
         #endif
     }
 
@@ -459,9 +460,10 @@ final class DeterministicCborVectorTests: XCTestCase {
         case .unsigned(let text):
             return .unsigned(try XCTUnwrap(UInt64(text)))
         case .negative(let text):
-            return .negative(try ReallyMeDeterministicCborNegativeInteger(
-                try XCTUnwrap(Int64(text))
-            ))
+            return .negative(
+                try ReallyMeDeterministicCborNegativeInteger(
+                    try XCTUnwrap(Int64(text))
+                ))
         }
     }
 
@@ -492,9 +494,11 @@ final class DeterministicCborVectorTests: XCTestCase {
         case .unsigned(let text):
             return .integer(.unsigned(try XCTUnwrap(UInt64(text))))
         case .negative(let text):
-            return .integer(.negative(try ReallyMeDeterministicCborNegativeInteger(
-                try XCTUnwrap(Int64(text))
-            )))
+            return .integer(
+                .negative(
+                    try ReallyMeDeterministicCborNegativeInteger(
+                        try XCTUnwrap(Int64(text))
+                    )))
         case .bytes(let value):
             return .bytes(Array(try XCTUnwrap(Data(base64Encoded: value))))
         case .text(let value):

@@ -30,6 +30,10 @@ public object CodecDeterministicCborDecodeResultKt {
     internal fun _build(): me.really.codec.v1.CodecDeterministicCborDecodeResult = _builder.build()
 
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `.reallyme.codec.v1.CodecDeterministicCborValue value = 1 [json_name = "value"];`
      */
     public var value: me.really.codec.v1.CodecDeterministicCborValue
@@ -40,12 +44,20 @@ public object CodecDeterministicCborDecodeResultKt {
         _builder.value = value
       }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `.reallyme.codec.v1.CodecDeterministicCborValue value = 1 [json_name = "value"];`
      */
     public fun clearValue() {
       _builder.clearValue()
     }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `.reallyme.codec.v1.CodecDeterministicCborValue value = 1 [json_name = "value"];`
      * @return Whether the value field is set.
      */

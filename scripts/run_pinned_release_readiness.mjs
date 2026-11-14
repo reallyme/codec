@@ -4,33 +4,36 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 import { createHash, timingSafeEqual } from "node:crypto";
-import { closeSync, constants, fstatSync, openSync, readSync, writeFileSync } from "node:fs";
+import { closeSync, constants, fstatSync, openSync, readSync, realpathSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { resolve, sep } from "node:path";
 
-// This full commit, rather than a mutable branch or tag, identifies the public
-// upstream core. The local checker still carries repository policy, so this
-// runner checks both local digests before executing. Re-downloading immutable
-// bytes adds availability risk without strengthening that digest check, so
-// upstream provenance verification is an explicit maintenance operation.
-// The checker pins every local module it imports or spawns, so those bytes
-// are covered transitively by the checker pin. This is a change-detection
-// tripwire; review of the full change set remains necessary before treating
-// the complete policy implementation as trusted.
+// Verify the immutable official package before executing its runner. Local
+// checker/module digests remain review tripwires; the package runner supplies
+// the core and enforces proof that every applicable source policy was invoked.
 const RELEASE_READINESS_COMMIT = "18a6d91d99837e80f92e41fe04effb0b043d754e";
 const RELEASE_READINESS_CORE_SHA256 =
   "7614b0cbf9e36a4653c2fa9008bee0d1e22542de0e4a08a10e640c836a5c93db";
 const LOCAL_CHECKER_SHA256 =
-  "2f38bbc21cca023934ebc73d91498fca12dbcbcc19e73944adaad377a044cf56";
+  "e19face2ad1673b874c3f062347b5e908cf198a5ec28a5b4ada9682192a44fc3";
 const RELEASE_READINESS_CORE_URL =
   `https://raw.githubusercontent.com/reallyme/release-readiness/${RELEASE_READINESS_COMMIT}/core.mjs`;
-const VENDORED_CORE_PATH = "scripts/release-readiness/core.mjs";
+const RELEASE_READINESS_RUNNER_SHA256 =
+  "5924a25d95345d6556c56f5485dbef12f1ac9cfe896393f03555ac697d56f6b9";
+const RELEASE_READINESS_PACKAGE_SHA256 =
+  "df378780789df36616fc7628ae0b702c28d000877de2fcb1023a851c2a2e29c9";
 const LOCAL_CHECKER_PATH = "scripts/check_release_readiness.mjs";
 const MAX_CORE_BYTES = 262_144;
 const MAX_CHECKER_BYTES = 524_288;
 const FETCH_TIMEOUT_MILLISECONDS = 30_000;
 const repositoryUrl = new URL("../", import.meta.url);
 const repositoryRoot = fileURLToPath(repositoryUrl);
+const packageUrl = process.env.REALLYME_RELEASE_READINESS_ROOT === undefined
+  ? new URL("../.release-readiness/", import.meta.url)
+  : pathToFileURL(`${resolve(process.env.REALLYME_RELEASE_READINESS_ROOT)}${sep}`);
+const packageCoreUrl = new URL("core.mjs", packageUrl);
+const officialRunnerUrl = new URL("scripts/run-consumer-check.mjs", packageUrl);
 
 const fail = (message) => {
   console.error(`pinned release readiness failed: ${message}`);
@@ -122,12 +125,30 @@ let localCore;
 let localChecker;
 try {
   localChecker = readBoundedRegularFile(LOCAL_CHECKER_PATH, MAX_CHECKER_BYTES, "local checker");
-  localCore = readBoundedRegularFile(VENDORED_CORE_PATH, MAX_CORE_BYTES, "vendored core");
+  localCore = readBoundedRegularFile(packageCoreUrl, MAX_CORE_BYTES, "package core");
+  for (const [url, maximum, label, digest] of [
+    [officialRunnerUrl, MAX_CORE_BYTES, "package runner", RELEASE_READINESS_RUNNER_SHA256],
+    [new URL("package.json", packageUrl), MAX_CORE_BYTES, "package manifest", RELEASE_READINESS_PACKAGE_SHA256],
+  ]) {
+    if (!timingSafeEqual(sha256(readBoundedRegularFile(url, maximum, label)), Buffer.from(digest, "hex"))) {
+      fail(`${label} does not match the reviewed upstream pin`);
+    }
+  }
 } catch {
   fail("release readiness inputs are missing or inaccessible");
 }
 if (!timingSafeEqual(sha256(localCore), expectedDigest)) {
-  fail("vendored core does not match the reviewed upstream pin");
+  fail("package core does not match the reviewed upstream pin");
+}
+
+// The official runner supplies the canonical core URL. Never import a
+// different module just because its path was provided in the environment.
+const suppliedCoreUrl = process.env.RELEASE_READINESS_CORE_URL;
+if (suppliedCoreUrl !== undefined) {
+  const expectedCoreUrl = pathToFileURL(realpathSync(packageCoreUrl)).href;
+  if (suppliedCoreUrl !== expectedCoreUrl) {
+    fail("supplied core URL does not identify the authenticated package core");
+  }
 }
 
 if (refreshCheckerPin) {
@@ -216,7 +237,7 @@ const verifyUpstream = async () => {
     localCore.length !== upstreamCore.length ||
     !timingSafeEqual(localCore, upstreamCore)
   ) {
-    fail("vendored core bytes do not match the pinned upstream core");
+    fail("package core bytes do not match the pinned upstream core");
   }
 };
 
@@ -232,13 +253,13 @@ if (arguments_.has("--check-pins")) {
 const checkerArguments = [...arguments_].filter((argument) =>
   argument === "--generated-freshness" || argument === "--release-packages",
 );
-const checker = spawnSync(process.execPath, [LOCAL_CHECKER_PATH, ...checkerArguments], {
+const checker = spawnSync(process.execPath, [fileURLToPath(officialRunnerUrl), ...checkerArguments], {
   cwd: repositoryRoot,
   env: process.env,
   stdio: "inherit",
 });
 if (checker.error !== undefined) {
-  fail("local release readiness checker could not be started");
+  fail("official release readiness runner could not be started");
 }
 if (!Number.isInteger(checker.status)) {
   fail("local release readiness checker ended without a deterministic status");

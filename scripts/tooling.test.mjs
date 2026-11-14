@@ -287,10 +287,10 @@ test("Linux native glibc floor rejects a newer symbol requirement", { skip: !pos
 test("protobuf hardening supports checkout paths containing spaces and URL characters", (t) => {
   const root = fixture(t);
   for (const path of [
-    "scripts/redact_codec_proto_debug.mjs", "scripts/codec_proto_sensitivity.mjs",
-    "crates/proto/proto", "crates/proto/src/generated", "packages/ts/src/proto/generated", "packages/swift/Sources/ReallyMeCodec/GeneratedCodecProto.swift", "gen",
+    "scripts/harden_codec_sdk_proto.mjs", "scripts/codec_proto_sensitivity.mjs", "scripts/codec_proto_schema.mjs",
+    "crates/proto/proto", "crates/proto/src/generated", "packages/ts/src/proto/generated", "packages/swift/Sources/ReallyMeCodec/Generated/CodecProto.swift", "gen",
   ]) copy(root, path);
-  const result = spawnSync(process.execPath, [join(root, "scripts/redact_codec_proto_debug.mjs"), "--check-idempotent"], {
+  const result = spawnSync(process.execPath, [join(root, "scripts/harden_codec_sdk_proto.mjs"), "--check-idempotent"], {
     cwd: root, encoding: "utf8", timeout: toolFixtureTimeoutMs,
   });
   assert.equal(result.error, undefined);

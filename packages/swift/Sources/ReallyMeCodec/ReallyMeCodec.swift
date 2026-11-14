@@ -10,33 +10,40 @@ import SwiftProtobuf
 private let maxOperationRequestBytes = 10_485_760
 
 private enum CodecOperation {
-    static let base64Encode: UInt32 = 1
-    static let base64Decode: UInt32 = 2
-    static let base64urlEncode: UInt32 = 3
-    static let base64urlDecode: UInt32 = 4
-    static let lowerHexEncode: UInt32 = 5
-    static let lowerHexDecode: UInt32 = 6
-    static let base58btcEncode: UInt32 = 7
-    static let base58btcDecode: UInt32 = 8
-    static let multibaseBase58btcEncode: UInt32 = 9
-    static let multibaseBase64urlEncode: UInt32 = 10
-    static let multibaseDecode: UInt32 = 11
-    static let multicodecStripPrefix: UInt32 = 14
-    static let multikeyEncode: UInt32 = 16
-    static let requireSupportedMulticodec: UInt32 = 18
-    static let dagCborComputeCid: UInt32 = 21
-    static let dagCborSha256ContentHash: UInt32 = 23
-    static let dagCborMultihash: UInt32 = 24
-    static let tryParseCid: UInt32 = 25
-    static let dagCborCodecCode: UInt32 = 26
-    static let canonicalizeJson: UInt32 = 27
-    static let validateKeyBinding: UInt32 = 30
-    static let validateKeyBindingNoAlgorithm: UInt32 = 31
+    static let base64Encode: UInt32 = UInt32(ReallyMeProtoCodecLegacyScalarOperation.base64Encode.rawValue)
+    static let base64Decode: UInt32 = UInt32(ReallyMeProtoCodecLegacyScalarOperation.base64Decode.rawValue)
+    static let base64urlEncode: UInt32 = UInt32(ReallyMeProtoCodecLegacyScalarOperation.base64URLEncode.rawValue)
+    static let base64urlDecode: UInt32 = UInt32(ReallyMeProtoCodecLegacyScalarOperation.base64URLDecode.rawValue)
+    static let lowerHexEncode: UInt32 = UInt32(ReallyMeProtoCodecLegacyScalarOperation.lowerHexEncode.rawValue)
+    static let lowerHexDecode: UInt32 = UInt32(ReallyMeProtoCodecLegacyScalarOperation.lowerHexDecode.rawValue)
+    static let base58btcEncode: UInt32 = UInt32(ReallyMeProtoCodecLegacyScalarOperation.base58BtcEncode.rawValue)
+    static let base58btcDecode: UInt32 = UInt32(ReallyMeProtoCodecLegacyScalarOperation.base58BtcDecode.rawValue)
+    static let multibaseBase58btcEncode: UInt32 = UInt32(
+        ReallyMeProtoCodecLegacyScalarOperation.multibaseBase58BtcEncode.rawValue)
+    static let multibaseBase64urlEncode: UInt32 = UInt32(
+        ReallyMeProtoCodecLegacyScalarOperation.multibaseBase64URLEncode.rawValue)
+    static let multibaseDecode: UInt32 = UInt32(ReallyMeProtoCodecLegacyScalarOperation.multibaseDecode.rawValue)
+    static let multicodecStripPrefix: UInt32 = UInt32(
+        ReallyMeProtoCodecLegacyScalarOperation.multicodecStripPrefix.rawValue)
+    static let multikeyEncode: UInt32 = UInt32(ReallyMeProtoCodecLegacyScalarOperation.multikeyEncode.rawValue)
+    static let requireSupportedMulticodec: UInt32 = UInt32(
+        ReallyMeProtoCodecLegacyScalarOperation.requireSupportedMulticodec.rawValue)
+    static let dagCborComputeCid: UInt32 = UInt32(ReallyMeProtoCodecLegacyScalarOperation.dagCborComputeCid.rawValue)
+    static let dagCborSha256ContentHash: UInt32 = UInt32(
+        ReallyMeProtoCodecLegacyScalarOperation.dagCborSha256ContentHash.rawValue)
+    static let dagCborMultihash: UInt32 = UInt32(ReallyMeProtoCodecLegacyScalarOperation.dagCborMultihash.rawValue)
+    static let tryParseCid: UInt32 = UInt32(ReallyMeProtoCodecLegacyScalarOperation.tryParseCid.rawValue)
+    static let dagCborCodecCode: UInt32 = UInt32(ReallyMeProtoCodecLegacyScalarOperation.dagCborCodecCode.rawValue)
+    static let canonicalizeJson: UInt32 = UInt32(ReallyMeProtoCodecLegacyScalarOperation.canonicalizeJson.rawValue)
+    static let validateKeyBinding: UInt32 = UInt32(ReallyMeProtoCodecLegacyScalarOperation.validateKeyBinding.rawValue)
+    static let validateKeyBindingNoAlgorithm: UInt32 = UInt32(
+        ReallyMeProtoCodecLegacyScalarOperation.validateKeyBindingNoAlgorithm.rawValue)
 }
 
 private enum CodecBoolOperation {
-    static let bindingTypeMatchesCodec: UInt32 = 1
-    static let isValidCidString: UInt32 = 2
+    static let bindingTypeMatchesCodec: UInt32 = UInt32(
+        ReallyMeProtoCodecLegacyBoolOperation.bindingTypeMatchesCodec.rawValue)
+    static let isValidCidString: UInt32 = UInt32(ReallyMeProtoCodecLegacyBoolOperation.isValidCidString.rawValue)
 }
 
 /// Swift facade for ReallyMe codec operations backed by the Rust codec crates.
@@ -45,76 +52,76 @@ public struct ReallyMeCodec: Sendable {
 
     /// Creates a codec backed by the Rust FFI library linked through the
     /// SwiftPM binary target shipped with the public package.
-    public init() throws {
+    public init() throws(ReallyMeCodecError) {
         #if REALLYME_CODEC_LINKED_FFI
-        provider = try ReallyMeCodecRustCAbiProvider()
+            provider = try ReallyMeCodecRustCAbiProvider()
         #else
-        throw ReallyMeCodecError.providerUnavailable
+            throw ReallyMeCodecError.providerUnavailable
         #endif
     }
 
-    public init(rustCAbiLibrary: ReallyMeCodecRustCAbiLibrary) throws {
+    public init(rustCAbiLibrary: ReallyMeCodecRustCAbiLibrary) throws(ReallyMeCodecError) {
         provider = try ReallyMeCodecRustCAbiProvider(library: rustCAbiLibrary)
     }
 
-    public func base64Encode(_ bytes: [UInt8]) throws -> String {
+    public func base64Encode(_ bytes: [UInt8]) throws(ReallyMeCodecError) -> String {
         try text(provider.process(operation: CodecOperation.base64Encode, first: bytes))
     }
 
-    public func base64Decode(_ text: String) throws -> [UInt8] {
-        try withTextBytes(text, maxFfiInputLength: provider.ffiInputLimit) { encoded in
+    public func base64Decode(_ text: String) throws(ReallyMeCodecError) -> [UInt8] {
+        try withTextBytes(text, maxFfiInputLength: provider.ffiInputLimit) { (encoded) throws(ReallyMeCodecError) in
             try provider.process(operation: CodecOperation.base64Decode, first: encoded)
         }
     }
 
-    public func base64urlEncode(_ bytes: [UInt8]) throws -> String {
+    public func base64urlEncode(_ bytes: [UInt8]) throws(ReallyMeCodecError) -> String {
         try text(provider.process(operation: CodecOperation.base64urlEncode, first: bytes))
     }
 
-    public func base64urlDecode(_ text: String) throws -> [UInt8] {
-        try withTextBytes(text, maxFfiInputLength: provider.ffiInputLimit) { encoded in
+    public func base64urlDecode(_ text: String) throws(ReallyMeCodecError) -> [UInt8] {
+        try withTextBytes(text, maxFfiInputLength: provider.ffiInputLimit) { (encoded) throws(ReallyMeCodecError) in
             try provider.process(operation: CodecOperation.base64urlDecode, first: encoded)
         }
     }
 
-    public func bytesToLowerHex(_ bytes: [UInt8]) throws -> String {
+    public func bytesToLowerHex(_ bytes: [UInt8]) throws(ReallyMeCodecError) -> String {
         try text(provider.process(operation: CodecOperation.lowerHexEncode, first: bytes))
     }
 
-    public func lowerHexToBytes(_ text: String) throws -> [UInt8] {
-        try withTextBytes(text, maxFfiInputLength: provider.ffiInputLimit) { encoded in
+    public func lowerHexToBytes(_ text: String) throws(ReallyMeCodecError) -> [UInt8] {
+        try withTextBytes(text, maxFfiInputLength: provider.ffiInputLimit) { (encoded) throws(ReallyMeCodecError) in
             try provider.process(operation: CodecOperation.lowerHexDecode, first: encoded)
         }
     }
 
-    public func base58btcEncode(_ bytes: [UInt8]) throws -> String {
+    public func base58btcEncode(_ bytes: [UInt8]) throws(ReallyMeCodecError) -> String {
         try text(provider.process(operation: CodecOperation.base58btcEncode, first: bytes))
     }
 
-    public func base58btcDecode(_ text: String) throws -> [UInt8] {
-        try withTextBytes(text, maxFfiInputLength: provider.ffiInputLimit) { encoded in
+    public func base58btcDecode(_ text: String) throws(ReallyMeCodecError) -> [UInt8] {
+        try withTextBytes(text, maxFfiInputLength: provider.ffiInputLimit) { (encoded) throws(ReallyMeCodecError) in
             try provider.process(operation: CodecOperation.base58btcDecode, first: encoded)
         }
     }
 
-    public func multibaseBase58btcEncode(_ bytes: [UInt8]) throws -> String {
+    public func multibaseBase58btcEncode(_ bytes: [UInt8]) throws(ReallyMeCodecError) -> String {
         try text(provider.process(operation: CodecOperation.multibaseBase58btcEncode, first: bytes))
     }
 
-    public func multibaseBase64urlEncode(_ bytes: [UInt8]) throws -> String {
+    public func multibaseBase64urlEncode(_ bytes: [UInt8]) throws(ReallyMeCodecError) -> String {
         try text(provider.process(operation: CodecOperation.multibaseBase64urlEncode, first: bytes))
     }
 
-    public func multibaseDecode(_ text: String) throws -> [UInt8] {
-        try withTextBytes(text, maxFfiInputLength: provider.ffiInputLimit) { encoded in
+    public func multibaseDecode(_ text: String) throws(ReallyMeCodecError) -> [UInt8] {
+        try withTextBytes(text, maxFfiInputLength: provider.ffiInputLimit) { (encoded) throws(ReallyMeCodecError) in
             try provider.process(operation: CodecOperation.multibaseDecode, first: encoded)
         }
     }
 
-    public func multicodecPrefixForName(_ name: String) throws -> ReallyMeMulticodecMetadata {
+    public func multicodecPrefixForName(_ name: String) throws(ReallyMeCodecError) -> ReallyMeMulticodecMetadata {
         let operationResult = try withOwnedBytes(
             multicodecPrefixForNameOperationRequestBytes(name, maxFfiInputLength: maxOperationRequestBytes)
-        ) { request in
+        ) { (request) throws(ReallyMeCodecError) in
             try processGeneratedOperation(request: request)
         }
         guard case .multicodecPrefixForName(let result)? = operationResult.result else {
@@ -123,10 +130,10 @@ public struct ReallyMeCodec: Sendable {
         return try sdkMulticodecMetadata(from: result)
     }
 
-    public func multicodecLookupPrefix(_ bytes: [UInt8]) throws -> ReallyMeMulticodecLookupResult {
+    public func multicodecLookupPrefix(_ bytes: [UInt8]) throws(ReallyMeCodecError) -> ReallyMeMulticodecLookupResult {
         let operationResult = try withOwnedBytes(
             multicodecLookupPrefixOperationRequestBytes(bytes, maxFfiInputLength: maxOperationRequestBytes)
-        ) { request in
+        ) { (request) throws(ReallyMeCodecError) in
             try processGeneratedOperation(request: request)
         }
         guard case .multicodecLookupPrefix(let result)? = operationResult.result else {
@@ -135,14 +142,14 @@ public struct ReallyMeCodec: Sendable {
         return try sdkMulticodecLookupResult(from: result)
     }
 
-    public func multicodecStripPrefix(_ bytes: [UInt8]) throws -> [UInt8] {
+    public func multicodecStripPrefix(_ bytes: [UInt8]) throws(ReallyMeCodecError) -> [UInt8] {
         try provider.process(operation: CodecOperation.multicodecStripPrefix, first: bytes)
     }
 
-    public func multicodecTable() throws -> ReallyMeMulticodecTable {
+    public func multicodecTable() throws(ReallyMeCodecError) -> ReallyMeMulticodecTable {
         let operationResult = try withOwnedBytes(
             multicodecTableOperationRequestBytes(maxFfiInputLength: maxOperationRequestBytes)
-        ) { request in
+        ) { (request) throws(ReallyMeCodecError) in
             try processGeneratedOperation(request: request)
         }
         guard case .multicodecTable(let result)? = operationResult.result else {
@@ -151,16 +158,18 @@ public struct ReallyMeCodec: Sendable {
         return try sdkMulticodecTable(from: result)
     }
 
-    public func multikeyEncode(codecName: String, publicKey: [UInt8]) throws -> String {
-        try withTextBytes(codecName, maxFfiInputLength: provider.ffiInputLimit) { encodedCodecName in
-            try text(provider.process(operation: CodecOperation.multikeyEncode, first: encodedCodecName, second: publicKey))
+    public func multikeyEncode(codecName: String, publicKey: [UInt8]) throws(ReallyMeCodecError) -> String {
+        try withTextBytes(codecName, maxFfiInputLength: provider.ffiInputLimit) {
+            (encodedCodecName) throws(ReallyMeCodecError) in
+            try text(
+                provider.process(operation: CodecOperation.multikeyEncode, first: encodedCodecName, second: publicKey))
         }
     }
 
-    public func multikeyParse(_ multikey: String) throws -> ReallyMeParsedMultikey {
+    public func multikeyParse(_ multikey: String) throws(ReallyMeCodecError) -> ReallyMeParsedMultikey {
         var operationResult = try withOwnedBytes(
             multikeyParseOperationRequestBytes(multikey, maxFfiInputLength: maxOperationRequestBytes)
-        ) { request in
+        ) { (request) throws(ReallyMeCodecError) in
             try processGeneratedOperation(request: request)
         }
         guard case .multikeyParse(var result)? = operationResult.result else {
@@ -173,18 +182,18 @@ public struct ReallyMeCodec: Sendable {
         return try sdkParsedMultikey(from: result)
     }
 
-    public func requireSupportedMulticodec(_ name: String) throws {
-        try withTextBytes(name, maxFfiInputLength: provider.ffiInputLimit) { encoded in
+    public func requireSupportedMulticodec(_ name: String) throws(ReallyMeCodecError) {
+        try withTextBytes(name, maxFfiInputLength: provider.ffiInputLimit) { (encoded) throws(ReallyMeCodecError) in
             _ = try provider.process(operation: CodecOperation.requireSupportedMulticodec, first: encoded)
         }
     }
 
-    public func bindingTypeMatchesCodec(bindingType: String, codecName: String) throws -> Bool {
+    public func bindingTypeMatchesCodec(bindingType: String, codecName: String) throws(ReallyMeCodecError) -> Bool {
         try withTextBytes(
             bindingType,
             codecName,
             maxFfiInputLength: provider.ffiInputLimit
-        ) { encodedBindingType, encodedCodecName in
+        ) { (encodedBindingType, encodedCodecName) throws(ReallyMeCodecError) in
             try provider.processBool(
                 operation: CodecBoolOperation.bindingTypeMatchesCodec,
                 first: encodedBindingType,
@@ -193,7 +202,8 @@ public struct ReallyMeCodec: Sendable {
         }
     }
 
-    public func validateKeyBinding(bindingType: String, algorithm: String?, multikey: String) throws {
+    public func validateKeyBinding(bindingType: String, algorithm: String?, multikey: String) throws(ReallyMeCodecError)
+    {
         if algorithm == "" {
             throw ReallyMeCodecError.invalidInput
         }
@@ -202,10 +212,7 @@ public struct ReallyMeCodec: Sendable {
             algorithm ?? "",
             multikey,
             maxFfiInputLength: provider.ffiInputLimit
-        ) {
-            encodedBindingType,
-            encodedAlgorithm,
-            encodedMultikey in
+        ) { (encodedBindingType, encodedAlgorithm, encodedMultikey) throws(ReallyMeCodecError) in
             _ = try provider.process(
                 operation: algorithm == nil
                     ? CodecOperation.validateKeyBindingNoAlgorithm
@@ -217,21 +224,21 @@ public struct ReallyMeCodec: Sendable {
         }
     }
 
-    public func dagCborComputeCid(_ bytes: [UInt8]) throws -> String {
+    public func dagCborComputeCid(_ bytes: [UInt8]) throws(ReallyMeCodecError) -> String {
         try text(provider.process(operation: CodecOperation.dagCborComputeCid, first: bytes))
     }
 
     public func dagCborVerifyCid(
         cid: String,
         bytes payload: [UInt8]
-    ) throws -> ReallyMeDagCborCidVerification {
+    ) throws(ReallyMeCodecError) -> ReallyMeDagCborCidVerification {
         let operationResult = try withOwnedBytes(
             dagCborVerifyCidOperationRequestBytes(
                 cid: cid,
                 payload: payload,
                 maxFfiInputLength: maxOperationRequestBytes
             )
-        ) { request in
+        ) { (request) throws(ReallyMeCodecError) in
             try processGeneratedOperation(request: request)
         }
         guard case .dagCborVerifyCid(let result)? = operationResult.result else {
@@ -240,31 +247,32 @@ public struct ReallyMeCodec: Sendable {
         return try sdkDagCborCidVerification(from: result)
     }
 
-    public func dagCborSha256ContentHash(_ bytes: [UInt8]) throws -> [UInt8] {
+    public func dagCborSha256ContentHash(_ bytes: [UInt8]) throws(ReallyMeCodecError) -> [UInt8] {
         try provider.process(operation: CodecOperation.dagCborSha256ContentHash, first: bytes)
     }
 
-    public func dagCborMultihash(_ bytes: [UInt8]) throws -> [UInt8] {
+    public func dagCborMultihash(_ bytes: [UInt8]) throws(ReallyMeCodecError) -> [UInt8] {
         try provider.process(operation: CodecOperation.dagCborMultihash, first: bytes)
     }
 
-    public func isValidCidString(_ cid: String) throws -> Bool {
-        try withTextBytes(cid, maxFfiInputLength: provider.ffiInputLimit) { encoded in
+    public func isValidCidString(_ cid: String) throws(ReallyMeCodecError) -> Bool {
+        try withTextBytes(cid, maxFfiInputLength: provider.ffiInputLimit) { (encoded) throws(ReallyMeCodecError) in
             try provider.processBool(operation: CodecBoolOperation.isValidCidString, first: encoded)
         }
     }
 
-    public func tryParseCid(_ cid: String) throws -> String? {
+    public func tryParseCid(_ cid: String) throws(ReallyMeCodecError) -> String? {
         do {
-            return try withTextBytes(cid, maxFfiInputLength: provider.ffiInputLimit) { encoded in
+            return try withTextBytes(cid, maxFfiInputLength: provider.ffiInputLimit) {
+                (encoded) throws(ReallyMeCodecError) in
                 try text(provider.process(operation: CodecOperation.tryParseCid, first: encoded))
             }
-        } catch let error as ReallyMeCodecError where error == .invalidInput {
+        } catch .invalidInput {
             return nil
         }
     }
 
-    public func dagCborCodecCode() throws -> UInt32 {
+    public func dagCborCodecCode() throws(ReallyMeCodecError) -> UInt32 {
         let value = try text(provider.process(operation: CodecOperation.dagCborCodecCode, first: []))
         guard let code = UInt32(value) else {
             throw ReallyMeCodecError.providerFailure
@@ -272,8 +280,8 @@ public struct ReallyMeCodec: Sendable {
         return code
     }
 
-    public func canonicalizeJson(_ json: String) throws -> String {
-        try withTextBytes(json, maxFfiInputLength: provider.ffiInputLimit) { encoded in
+    public func canonicalizeJson(_ json: String) throws(ReallyMeCodecError) -> String {
+        try withTextBytes(json, maxFfiInputLength: provider.ffiInputLimit) { (encoded) throws(ReallyMeCodecError) in
             try text(provider.process(operation: CodecOperation.canonicalizeJson, first: encoded))
         }
     }
@@ -285,7 +293,7 @@ public struct ReallyMeCodec: Sendable {
     /// path. Exact operation-result selection remains the caller's
     /// responsibility so a provider cannot substitute a different valid
     /// generated variant.
-    func processGeneratedOperation(request: [UInt8]) throws -> ReallyMeProtoCodecOperationResult {
+    func processGeneratedOperation(request: [UInt8]) throws(ReallyMeCodecError) -> ReallyMeProtoCodecOperationResult {
         var responseBytes = try provider.processOperation(request: request)
         defer {
             ReallyMeCodecMemory.clearOwned(&responseBytes)
@@ -323,7 +331,7 @@ public struct ReallyMeCodec: Sendable {
 
     /// Executes one binary generated `CodecOperationRequest` and returns a
     /// binary, fully discriminated `CodecOperationResponse`.
-    public func processOperation(_ request: [UInt8]) throws -> [UInt8] {
+    public func processOperation(_ request: [UInt8]) throws(ReallyMeCodecError) -> [UInt8] {
         try provider.processOperation(request: request)
     }
 
@@ -331,7 +339,7 @@ public struct ReallyMeCodec: Sendable {
     ///
     /// JSON is request-only; the returned bytes are the same binary result
     /// response returned by `processOperation(_:)`.
-    public func processOperationJson(_ requestJson: [UInt8]) throws -> [UInt8] {
+    public func processOperationJson(_ requestJson: [UInt8]) throws(ReallyMeCodecError) -> [UInt8] {
         try provider.processOperationJson(request: requestJson)
     }
 
@@ -339,14 +347,14 @@ public struct ReallyMeCodec: Sendable {
     public func decodePem(
         _ pem: [UInt8],
         options: ReallyMePemDecodeOptions = ReallyMePemDecodeOptions()
-    ) throws -> ReallyMePemDocument {
+    ) throws(ReallyMeCodecError) -> ReallyMePemDocument {
         var operationResult = try withOwnedBytes(
             pemDecodeOperationRequestBytes(
                 pem: pem,
                 options: options,
                 maxFfiInputLength: maxOperationRequestBytes
             )
-        ) { request in
+        ) { (request) throws(ReallyMeCodecError) in
             try processGeneratedOperation(request: request)
         }
         guard case .pemDecode(var result)? = operationResult.result else {
@@ -364,7 +372,7 @@ public struct ReallyMeCodec: Sendable {
         label: ReallyMePemLabel,
         der: [UInt8],
         options: ReallyMePemEncodeOptions = ReallyMePemEncodeOptions()
-    ) throws -> [UInt8] {
+    ) throws(ReallyMeCodecError) -> [UInt8] {
         var operationResult = try withOwnedBytes(
             pemEncodeOperationRequestBytes(
                 label: label,
@@ -372,7 +380,7 @@ public struct ReallyMeCodec: Sendable {
                 options: options,
                 maxFfiInputLength: maxOperationRequestBytes
             )
-        ) { request in
+        ) { (request) throws(ReallyMeCodecError) in
             try processGeneratedOperation(request: request)
         }
         guard case .pemEncode(var result)? = operationResult.result else {
@@ -385,220 +393,4 @@ public struct ReallyMeCodec: Sendable {
         try requireNoStructuredProviderUnknownFields(result.unknownFields)
         return Array(result.pem)
     }
-}
-
-private func bytes(_ text: String, maxFfiInputLength: Int) throws -> [UInt8] {
-    try requireBoundaryAggregate([text.utf8.count], maxFfiInputLength: maxFfiInputLength)
-    return Array(text.utf8)
-}
-
-/// Limits the lifetime of a mutable UTF-8 copy created from an immutable
-/// Swift string. The caller still owns the original string, but the codec must
-/// wipe every additional buffer it creates on both success and failure paths.
-private func withTextBytes<T>(
-    _ text: String,
-    maxFfiInputLength: Int,
-    _ body: ([UInt8]) throws -> T
-) throws -> T {
-    var encoded = try bytes(text, maxFfiInputLength: maxFfiInputLength)
-    defer {
-        ReallyMeCodecMemory.clearOwned(&encoded)
-    }
-    return try body(encoded)
-}
-
-private func withTextBytes<T>(
-    _ first: String,
-    _ second: String,
-    maxFfiInputLength: Int,
-    _ body: ([UInt8], [UInt8]) throws -> T
-) throws -> T {
-    try withTextBytes(first, maxFfiInputLength: maxFfiInputLength) { firstBytes in
-        try withTextBytes(second, maxFfiInputLength: maxFfiInputLength) { secondBytes in
-            try body(firstBytes, secondBytes)
-        }
-    }
-}
-
-private func withTextBytes<T>(
-    _ first: String,
-    _ second: String,
-    _ third: String,
-    maxFfiInputLength: Int,
-    _ body: ([UInt8], [UInt8], [UInt8]) throws -> T
-) throws -> T {
-    try withTextBytes(first, second, maxFfiInputLength: maxFfiInputLength) { firstBytes, secondBytes in
-        try withTextBytes(third, maxFfiInputLength: maxFfiInputLength) { thirdBytes in
-            try body(firstBytes, secondBytes, thirdBytes)
-        }
-    }
-}
-
-/// Limits the lifetime of an SDK-created serialized request. The consuming
-/// parameter transfers the fresh array owner into this scope, and the closure
-/// receives only a borrow that ends before the non-elidable wipe runs.
-func withOwnedBytes<T>(
-    _ bytes: consuming [UInt8],
-    _ body: ([UInt8]) throws -> T
-) rethrows -> T {
-    var ownedBytes = consume bytes
-    defer {
-        ReallyMeCodecMemory.clearOwned(&ownedBytes)
-    }
-    return try body(ownedBytes)
-}
-
-private func text(_ bytes: consuming [UInt8]) throws -> String {
-    var ownedBytes = consume bytes
-    defer {
-        ReallyMeCodecMemory.clearOwned(&ownedBytes)
-    }
-    guard let value = String(bytes: ownedBytes, encoding: .utf8) else {
-        throw ReallyMeCodecError.providerFailure
-    }
-    return value
-}
-
-private func operationRequest(
-    _ operation: ReallyMeProtoCodecOperationRequest.OneOf_Operation,
-    maxFfiInputLength: Int
-) throws -> [UInt8] {
-    var request = ReallyMeProtoCodecOperationRequest()
-    request.operation = operation
-    var serialized: Data
-    do {
-        serialized = try request.serializedData()
-    } catch {
-        throw ReallyMeCodecError.providerFailure
-    }
-    defer {
-        ReallyMeCodecMemory.clearOwned(&serialized)
-    }
-    guard serialized.count <= maxFfiInputLength else {
-        throw ReallyMeCodecError.invalidInput
-    }
-    return Array(serialized)
-}
-
-private func multicodecPrefixForNameOperationRequestBytes(
-    _ name: String,
-    maxFfiInputLength: Int
-) throws -> [UInt8] {
-    try requireBoundaryAggregate([name.utf8.count], maxFfiInputLength: maxFfiInputLength)
-    var request = ReallyMeProtoCodecMulticodecPrefixForNameRequest()
-    request.name = name
-    return try operationRequest(.multicodecPrefixForName(request), maxFfiInputLength: maxFfiInputLength)
-}
-
-private func multicodecLookupPrefixOperationRequestBytes(
-    _ bytes: [UInt8],
-    maxFfiInputLength: Int
-) throws -> [UInt8] {
-    try requireBoundaryAggregate([bytes.count], maxFfiInputLength: maxFfiInputLength)
-    var request = ReallyMeProtoCodecMulticodecLookupPrefixRequest()
-    request.value = Data(bytes)
-    defer {
-        ReallyMeCodecMemory.clearOwned(&request.value)
-    }
-    return try operationRequest(.multicodecLookupPrefix(request), maxFfiInputLength: maxFfiInputLength)
-}
-
-private func multicodecTableOperationRequestBytes(maxFfiInputLength: Int) throws -> [UInt8] {
-    try operationRequest(
-        .multicodecTable(ReallyMeProtoCodecMulticodecTableRequest()),
-        maxFfiInputLength: maxFfiInputLength
-    )
-}
-
-private func multikeyParseOperationRequestBytes(
-    _ multikey: String,
-    maxFfiInputLength: Int
-) throws -> [UInt8] {
-    try requireBoundaryAggregate([multikey.utf8.count], maxFfiInputLength: maxFfiInputLength)
-    var request = ReallyMeProtoCodecMultikeyParseRequest()
-    request.multikey = multikey
-    return try operationRequest(.multikeyParse(request), maxFfiInputLength: maxFfiInputLength)
-}
-
-private func dagCborVerifyCidOperationRequestBytes(
-    cid: String,
-    payload: [UInt8],
-    maxFfiInputLength: Int
-) throws -> [UInt8] {
-    try requireBoundaryAggregate([cid.utf8.count, payload.count], maxFfiInputLength: maxFfiInputLength)
-    var request = ReallyMeProtoCodecDagCborVerifyCidRequest()
-    request.cid = cid
-    request.payload = Data(payload)
-    defer {
-        ReallyMeCodecMemory.clearOwned(&request.payload)
-    }
-    return try operationRequest(.dagCborVerifyCid(request), maxFfiInputLength: maxFfiInputLength)
-}
-
-private func pemDecodeOperationRequestBytes(
-    pem: [UInt8],
-    options: ReallyMePemDecodeOptions,
-    maxFfiInputLength: Int
-) throws -> [UInt8] {
-    try requireBoundaryAggregate([pem.count], maxFfiInputLength: maxFfiInputLength)
-    var request = ReallyMeProtoCodecPemDecodeRequest()
-    request.pem = Data(pem)
-    defer {
-        ReallyMeCodecMemory.clearOwned(&request.pem)
-    }
-    var protoOptions = ReallyMeProtoCodecPemDecodeOptions()
-    protoOptions.allowedLabels = options.allowedLabels.map { protoPemLabel(from: $0) }
-    protoOptions.maxInputLen = options.maxInputLen ?? 0
-    protoOptions.maxDerLen = options.maxDerLen ?? 0
-    request.options = protoOptions
-    return try operationRequest(.pemDecode(request), maxFfiInputLength: maxFfiInputLength)
-}
-
-private func pemEncodeOperationRequestBytes(
-    label: ReallyMePemLabel,
-    der: [UInt8],
-    options: ReallyMePemEncodeOptions,
-    maxFfiInputLength: Int
-) throws -> [UInt8] {
-    if let lineWidth = options.lineWidth, lineWidth > 76 {
-        throw ReallyMeCodecError.invalidInput
-    }
-    try requireBoundaryAggregate([der.count], maxFfiInputLength: maxFfiInputLength)
-    var request = ReallyMeProtoCodecPemEncodeRequest()
-    request.label = protoPemLabel(from: label)
-    request.der = Data(der)
-    defer {
-        ReallyMeCodecMemory.clearOwned(&request.der)
-    }
-    var protoOptions = ReallyMeProtoCodecPemEncodeOptions()
-    protoOptions.maxDerLen = options.maxDerLen ?? 0
-    protoOptions.lineWidth = options.lineWidth ?? 0
-    switch options.lineEnding {
-    case .lf:
-        protoOptions.lineEnding = .lf
-    case .crlf:
-        protoOptions.lineEnding = .crlf
-    case nil:
-        protoOptions.lineEnding = .unspecified
-    }
-    request.options = protoOptions
-    return try operationRequest(.pemEncode(request), maxFfiInputLength: maxFfiInputLength)
-}
-
-func requireBoundaryAggregate(_ lengths: [Int], maxFfiInputLength: Int) throws {
-    guard isBoundaryAggregateValid(lengths, maxFfiInputLength: maxFfiInputLength) else {
-        throw ReallyMeCodecError.invalidInput
-    }
-}
-
-private func isBoundaryAggregateValid(_ lengths: [Int], maxFfiInputLength: Int) -> Bool {
-    var aggregate = 0
-    for length in lengths {
-        let (next, overflow) = aggregate.addingReportingOverflow(length)
-        guard !overflow, next <= maxFfiInputLength else {
-            return false
-        }
-        aggregate = next
-    }
-    return true
 }

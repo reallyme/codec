@@ -18,12 +18,19 @@ SDK facades for Swift, Kotlin, and TypeScript.
   `packages/kotlin-android` are thin TypeScript, Swift, Java/Kotlin, and
   Android facades over the Rust implementation.
 
-The protobuf schema is canonical for cross-language request, response, and
-error shapes. Rust primitive modules remain canonical for behavior, but SDK
-structured result types and error codes must be generated from, or mechanically
-backed by, the protobuf schema rather than maintained as independent parallel
-models. Scalar adapter calls remain available for base encodings, predicates,
-and JCS; structured operations use the generated request/response boundary.
+The protobuf schema defines every public operation, request, result, option,
+policy, and error. Pinned ReallyMe Buffa 0.1.1 generators produce the Rust contract;
+the pinned generators in `buf.gen.yaml` produce the other lanes. Implementations
+remain behind those generated definitions. New operations enter through the
+schema before any native or SDK API is added.
+
+Borrowed Rust readers, caller-supplied schema callbacks, and existing scalar
+signatures are compatibility facades over the generated contract and the same
+semantic implementation. Their lifetimes, ownership, and provider I/O remain
+native concerns. They do not define independent policy or wire models. Legacy
+scalar selectors and status values are generated from protobuf, retaining their
+existing numeric ABI. New callers can use the generated operation envelope for
+scalar, general-CBOR, DER, TLV framing, and structured operations alike.
 
 ## Repository Shape
 

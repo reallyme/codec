@@ -13,6 +13,9 @@ use codec_adapter::scalar_ops::{
     encode_multikey, parse_cid, valid_cid, validate_encoded_binding, HexError, JcsError,
     MultikeyError,
 };
+use codec_proto::generated::proto::reallyme::codec::v1::{
+    CodecLegacyBoolOperation, CodecLegacyScalarOperation,
+};
 use codec_runtime::multicodec::{
     prefix_for_name as multicodec_prefix_for_name, strip_prefix as multicodec_strip_prefix,
     MulticodecOperationError,
@@ -30,58 +33,80 @@ use crate::status::{
     CODEC_UNKNOWN_MULTICODEC,
 };
 
-/// Maximum aggregate caller-controlled input accepted by the generic C ABI.
-///
-/// This check runs before decoding or copying so every operation, including
-/// future dispatch additions, inherits a finite allocation budget.
-pub(crate) const MAX_CODEC_FFI_INPUT_BYTES: usize = 1024 * 1024;
-
-/// Maximum generic result accepted by SDK adapters after an FFI size probe.
-///
-/// Structured outputs can expand substantially at SDK boundaries, so this is
-/// deliberately larger than the input budget. Keeping it finite prevents a
-/// corrupted or mismatched provider from turning the two-pass ABI into an
-/// unbounded allocation request in Swift or JNI callers.
-pub(crate) const MAX_CODEC_FFI_OUTPUT_BYTES: usize = 64 * 1024 * 1024;
+#[path = "codec/limits.rs"]
+mod limits;
+pub(crate) use limits::{MAX_CODEC_FFI_INPUT_BYTES, MAX_CODEC_FFI_OUTPUT_BYTES};
 
 /// Version of the exported C function signatures and calling conventions.
 ///
 /// SDKs must reject a library that does not expose this exact value before
 /// casting or calling any other dynamically resolved symbol.
-pub const CODEC_ABI_VERSION: u32 = 6;
+pub const CODEC_ABI_VERSION: u32 = codec_proto::CODEC_PROVIDER_ABI_VERSION;
 
-const CODEC_BASE64_ENCODE: u32 = 1;
-const CODEC_BASE64_DECODE: u32 = 2;
-const CODEC_BASE64URL_ENCODE: u32 = 3;
-const CODEC_BASE64URL_DECODE: u32 = 4;
-const CODEC_LOWER_HEX_ENCODE: u32 = 5;
-const CODEC_LOWER_HEX_DECODE: u32 = 6;
-const CODEC_BASE58BTC_ENCODE: u32 = 7;
-const CODEC_BASE58BTC_DECODE: u32 = 8;
-const CODEC_MULTIBASE_BASE58BTC_ENCODE: u32 = 9;
-const CODEC_MULTIBASE_BASE64URL_ENCODE: u32 = 10;
-const CODEC_MULTIBASE_DECODE: u32 = 11;
-const CODEC_MULTICODEC_PREFIX_FOR_NAME: u32 = 12;
-const CODEC_MULTICODEC_LOOKUP_PREFIX: u32 = 13;
-const CODEC_MULTICODEC_STRIP_PREFIX: u32 = 14;
-const CODEC_MULTICODEC_TABLE: u32 = 15;
-const CODEC_MULTIKEY_ENCODE: u32 = 16;
-const CODEC_MULTIKEY_PARSE: u32 = 17;
-const CODEC_REQUIRE_SUPPORTED_MULTICODEC: u32 = 18;
-const CODEC_DAG_CBOR_COMPUTE_CID: u32 = 21;
-const CODEC_DAG_CBOR_VERIFY_CID: u32 = 22;
-const CODEC_DAG_CBOR_SHA256_CONTENT_HASH: u32 = 23;
-const CODEC_DAG_CBOR_MULTIHASH: u32 = 24;
-const CODEC_TRY_PARSE_CID: u32 = 25;
-const CODEC_DAG_CBOR_CODEC_CODE: u32 = 26;
-const CODEC_CANONICALIZE_JSON: u32 = 27;
-const CODEC_PEM_DECODE: u32 = 28;
-const CODEC_PEM_ENCODE: u32 = 29;
-const CODEC_VALIDATE_KEY_BINDING: u32 = 30;
-const CODEC_VALIDATE_KEY_BINDING_NO_ALGORITHM: u32 = 31;
+const CODEC_BASE64_ENCODE: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_BASE64_ENCODE as u32;
+const CODEC_BASE64_DECODE: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_BASE64_DECODE as u32;
+const CODEC_BASE64URL_ENCODE: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_BASE64URL_ENCODE as u32;
+const CODEC_BASE64URL_DECODE: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_BASE64URL_DECODE as u32;
+const CODEC_LOWER_HEX_ENCODE: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_LOWER_HEX_ENCODE as u32;
+const CODEC_LOWER_HEX_DECODE: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_LOWER_HEX_DECODE as u32;
+const CODEC_BASE58BTC_ENCODE: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_BASE58BTC_ENCODE as u32;
+const CODEC_BASE58BTC_DECODE: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_BASE58BTC_DECODE as u32;
+const CODEC_MULTIBASE_BASE58BTC_ENCODE: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_MULTIBASE_BASE58BTC_ENCODE as u32;
+const CODEC_MULTIBASE_BASE64URL_ENCODE: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_MULTIBASE_BASE64URL_ENCODE as u32;
+const CODEC_MULTIBASE_DECODE: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_MULTIBASE_DECODE as u32;
+const CODEC_MULTICODEC_PREFIX_FOR_NAME: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_MULTICODEC_PREFIX_FOR_NAME as u32;
+const CODEC_MULTICODEC_LOOKUP_PREFIX: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_MULTICODEC_LOOKUP_PREFIX as u32;
+const CODEC_MULTICODEC_STRIP_PREFIX: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_MULTICODEC_STRIP_PREFIX as u32;
+const CODEC_MULTICODEC_TABLE: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_MULTICODEC_TABLE as u32;
+const CODEC_MULTIKEY_ENCODE: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_MULTIKEY_ENCODE as u32;
+const CODEC_MULTIKEY_PARSE: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_MULTIKEY_PARSE as u32;
+const CODEC_REQUIRE_SUPPORTED_MULTICODEC: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_REQUIRE_SUPPORTED_MULTICODEC as u32;
+const CODEC_DAG_CBOR_COMPUTE_CID: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_DAG_CBOR_COMPUTE_CID as u32;
+const CODEC_DAG_CBOR_VERIFY_CID: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_DAG_CBOR_VERIFY_CID as u32;
+const CODEC_DAG_CBOR_SHA256_CONTENT_HASH: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_DAG_CBOR_SHA256_CONTENT_HASH as u32;
+const CODEC_DAG_CBOR_MULTIHASH: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_DAG_CBOR_MULTIHASH as u32;
+const CODEC_TRY_PARSE_CID: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_TRY_PARSE_CID as u32;
+const CODEC_DAG_CBOR_CODEC_CODE: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_DAG_CBOR_CODEC_CODE as u32;
+const CODEC_CANONICALIZE_JSON: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_CANONICALIZE_JSON as u32;
+const CODEC_PEM_DECODE: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_PEM_DECODE as u32;
+const CODEC_PEM_ENCODE: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_PEM_ENCODE as u32;
+const CODEC_VALIDATE_KEY_BINDING: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_VALIDATE_KEY_BINDING as u32;
+const CODEC_VALIDATE_KEY_BINDING_NO_ALGORITHM: u32 =
+    CodecLegacyScalarOperation::CODEC_LEGACY_SCALAR_OPERATION_VALIDATE_KEY_BINDING_NO_ALGORITHM
+        as u32;
 
-const CODEC_BOOL_BINDING_TYPE_MATCHES_CODEC: u32 = 1;
-const CODEC_BOOL_IS_VALID_CID_STRING: u32 = 2;
+const CODEC_BOOL_BINDING_TYPE_MATCHES_CODEC: u32 =
+    CodecLegacyBoolOperation::CODEC_LEGACY_BOOL_OPERATION_BINDING_TYPE_MATCHES_CODEC as u32;
+const CODEC_BOOL_IS_VALID_CID_STRING: u32 =
+    CodecLegacyBoolOperation::CODEC_LEGACY_BOOL_OPERATION_IS_VALID_CID_STRING as u32;
 
 type CodecOutput = Zeroizing<Vec<u8>>;
 
@@ -91,57 +116,12 @@ pub use operation::{
     rm_codec_process_operation_json,
 };
 
-/// Returns the exact C ABI operation contract version implemented by this library.
-///
-/// This leaf function only returns a compile-time constant and therefore has
-/// no operation that can panic or unwind across the C boundary.
-#[no_mangle]
-pub extern "C" fn rm_codec_abi_version() -> u32 {
-    CODEC_ABI_VERSION
-}
-
-// The package version is separate from the ABI version: a release can change
-// codec behaviour without changing C signatures. SDKs check both before
-// accepting a provider so a stale binary cannot silently serve new sources.
-fn package_version_component(value: &'static str) -> u32 {
-    value.parse::<u32>().unwrap_or(u32::MAX)
-}
-
-/// Returns the major version of the compiled FFI crate package.
-#[no_mangle]
-pub extern "C" fn rm_codec_package_version_major() -> u32 {
-    package_version_component(env!("CARGO_PKG_VERSION_MAJOR"))
-}
-
-/// Returns the minor version of the compiled FFI crate package.
-#[no_mangle]
-pub extern "C" fn rm_codec_package_version_minor() -> u32 {
-    package_version_component(env!("CARGO_PKG_VERSION_MINOR"))
-}
-
-/// Returns the patch version of the compiled FFI crate package.
-#[no_mangle]
-pub extern "C" fn rm_codec_package_version_patch() -> u32 {
-    package_version_component(env!("CARGO_PKG_VERSION_PATCH"))
-}
-
-/// Returns the authoritative generic C ABI aggregate input limit.
-///
-/// Platform SDKs use this value after ABI-version validation so caller-side
-/// fail-fast checks cannot drift from the Rust boundary.
-#[no_mangle]
-pub extern "C" fn rm_codec_max_ffi_input_bytes() -> usize {
-    MAX_CODEC_FFI_INPUT_BYTES
-}
-
-/// Returns the authoritative generic C ABI output allocation limit.
-///
-/// Two-pass SDK callers reject provider-reported lengths above this value
-/// before allocating managed arrays.
-#[no_mangle]
-pub extern "C" fn rm_codec_max_ffi_output_bytes() -> usize {
-    MAX_CODEC_FFI_OUTPUT_BYTES
-}
+#[path = "codec/read_version.rs"]
+mod read_version;
+pub use read_version::{
+    rm_codec_abi_version, rm_codec_max_ffi_input_bytes, rm_codec_max_ffi_output_bytes,
+    rm_codec_package_version_major, rm_codec_package_version_minor, rm_codec_package_version_patch,
+};
 
 fn read_text<'a>(ptr: *const u8, len: usize) -> Result<&'a str, CodecStatus> {
     // SAFETY: All exported ABI entry points define input pointers as borrowed

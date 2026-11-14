@@ -35,23 +35,15 @@ impl DerLimits {
         elements: usize,
         integer_len: usize,
     ) -> Result<Self, DerError> {
-        if input_len == 0
-            || input_len > MAX_DER_INPUT_LEN
-            || nesting_depth == 0
-            || nesting_depth > MAX_DER_NESTING_DEPTH
-            || elements == 0
-            || elements > MAX_DER_ELEMENTS
-            || integer_len == 0
-            || integer_len > MAX_DER_INTEGER_LEN
-        {
-            return Err(DerError::new(DerErrorReason::InvalidLimits));
-        }
-        Ok(Self {
-            input_len,
-            nesting_depth,
-            elements,
-            integer_len,
-        })
+        let invalid = || DerError::new(DerErrorReason::InvalidLimits);
+        Self::try_from(
+            &codec_proto::generated::proto::reallyme::codec::v1::CodecDerLimits {
+                input_len: Some(u64::try_from(input_len).map_err(|_| invalid())?),
+                nesting_depth: Some(u64::try_from(nesting_depth).map_err(|_| invalid())?),
+                elements: Some(u64::try_from(elements).map_err(|_| invalid())?),
+                integer_len: Some(u64::try_from(integer_len).map_err(|_| invalid())?),
+            },
+        )
     }
 }
 
@@ -63,5 +55,30 @@ impl Default for DerLimits {
             elements: MAX_DER_ELEMENTS,
             integer_len: MAX_DER_INTEGER_LEN,
         }
+    }
+}
+
+impl TryFrom<&codec_proto::generated::proto::reallyme::codec::v1::CodecDerLimits> for DerLimits {
+    type Error = DerError;
+    fn try_from(
+        value: &codec_proto::generated::proto::reallyme::codec::v1::CodecDerLimits,
+    ) -> Result<Self, Self::Error> {
+        fn limit(value: Option<u64>, maximum: usize) -> Result<usize, DerError> {
+            let value = match value {
+                None => maximum,
+                Some(value) => usize::try_from(value)
+                    .map_err(|_| DerError::new(DerErrorReason::InvalidLimits))?,
+            };
+            if value == 0 || value > maximum {
+                return Err(DerError::new(DerErrorReason::InvalidLimits));
+            }
+            Ok(value)
+        }
+        Ok(Self {
+            input_len: limit(value.input_len, MAX_DER_INPUT_LEN)?,
+            nesting_depth: limit(value.nesting_depth, MAX_DER_NESTING_DEPTH)?,
+            elements: limit(value.elements, MAX_DER_ELEMENTS)?,
+            integer_len: limit(value.integer_len, MAX_DER_INTEGER_LEN)?,
+        })
     }
 }

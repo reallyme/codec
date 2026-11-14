@@ -38,6 +38,10 @@ public  final class CodecMulticodecLookupPrefixRequest extends
   public static final int VALUE_FIELD_NUMBER = 1;
   private com.google.protobuf.ByteString value_;
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>bytes value = 1 [json_name = "value"];</code>
    * @return The value.
    */
@@ -46,6 +50,10 @@ public  final class CodecMulticodecLookupPrefixRequest extends
     return value_;
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>bytes value = 1 [json_name = "value"];</code>
    * @param value The value to set.
    */
@@ -55,6 +63,10 @@ public  final class CodecMulticodecLookupPrefixRequest extends
     value_ = value;
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>bytes value = 1 [json_name = "value"];</code>
    */
   private void clearValue() {
@@ -160,6 +172,10 @@ public  final class CodecMulticodecLookupPrefixRequest extends
 
 
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>bytes value = 1 [json_name = "value"];</code>
      * @return The value.
      */
@@ -168,6 +184,10 @@ public  final class CodecMulticodecLookupPrefixRequest extends
       return instance.getValue();
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>bytes value = 1 [json_name = "value"];</code>
      * @param value The value to set.
      * @return This builder for chaining.
@@ -178,6 +198,10 @@ public  final class CodecMulticodecLookupPrefixRequest extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>bytes value = 1 [json_name = "value"];</code>
      * @return This builder for chaining.
      */

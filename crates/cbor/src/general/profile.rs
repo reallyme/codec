@@ -4,49 +4,11 @@
 
 use super::error::{error, CborError, ErrorReason};
 
-/// Received indefinite-length policy.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-#[non_exhaustive]
-pub enum LengthPolicy {
-    /// Reject all indefinite-length items.
-    DefiniteOnly,
-    /// Accept well-formed indefinite containers and chunked strings.
-    AllowIndefinite,
-}
-
-/// Serialization checks are independent of map ordering.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-#[non_exhaustive]
-pub enum Serialization {
-    /// Preserve received widths without requiring shortest encodings.
-    Received,
-    /// Require shortest arguments and shortest exact floating-point encodings.
-    Preferred,
-}
-
-/// Explicit floating-point acceptance policy.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-#[non_exhaustive]
-pub enum FloatPolicy {
-    /// Accept all binary16/32/64 values, including infinities and NaNs.
-    All,
-    /// Accept finite values only, including both signs of zero.
-    FiniteOnly,
-    /// Reject all floating-point values.
-    Reject,
-}
-
-/// Optional ordering constraint on complete received key encodings.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-#[non_exhaustive]
-pub enum MapOrdering {
-    /// Preserve any received order; semantic key uniqueness is still checked.
-    Received,
-    /// Compare encoded length first, then encoded bytes.
-    LengthFirst,
-    /// Compare complete key encodings lexicographically.
-    Bytewise,
-}
+/// Schema-generated policies used by the native compatibility facade.
+pub use codec_proto::generated::proto::reallyme::codec::v1::{
+    CodecGeneralCborFloatPolicy as FloatPolicy, CodecGeneralCborLengthPolicy as LengthPolicy,
+    CodecGeneralCborMapOrdering as MapOrdering, CodecGeneralCborSerialization as Serialization,
+};
 
 /// Basic validity and selected serialization guarantees.
 ///
@@ -62,6 +24,10 @@ pub struct Profile {
 }
 
 impl Profile {
+    pub(super) fn ensure_supported(self) -> Result<(), CborError> {
+        Self::new(self.serialization, self.lengths, self.floats, self.ordering).map(|_| ())
+    }
+
     /// Construct an explicit profile; preferred serialization requires definite lengths.
     pub fn new(
         serialization: Serialization,
@@ -69,6 +35,19 @@ impl Profile {
         floats: FloatPolicy,
         ordering: MapOrdering,
     ) -> Result<Self, CborError> {
+        ensure_lengths_supported(lengths)?;
+        if !matches!(
+            serialization,
+            Serialization::Received | Serialization::Preferred
+        ) || !matches!(
+            floats,
+            FloatPolicy::All | FloatPolicy::FiniteOnly | FloatPolicy::Reject
+        ) || !matches!(
+            ordering,
+            MapOrdering::Received | MapOrdering::LengthFirst | MapOrdering::Bytewise
+        ) {
+            return Err(error(ErrorReason::UnsupportedPolicy));
+        }
         if serialization == Serialization::Preferred && lengths != LengthPolicy::DefiniteOnly {
             return Err(error(ErrorReason::UnsupportedPolicy));
         }
@@ -138,5 +117,12 @@ impl Profile {
     #[must_use]
     pub const fn map_ordering(self) -> MapOrdering {
         self.ordering
+    }
+}
+
+pub(super) fn ensure_lengths_supported(value: LengthPolicy) -> Result<(), CborError> {
+    match value {
+        LengthPolicy::DefiniteOnly | LengthPolicy::AllowIndefinite => Ok(()),
+        _ => Err(error(ErrorReason::UnsupportedPolicy)),
     }
 }

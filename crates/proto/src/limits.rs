@@ -36,12 +36,21 @@ const CODEC_PROTO_MAX_STRUCTURAL_BYTES_PER_CBOR_NODE: usize = 128;
 const CODEC_PROTO_MAX_FIXED_OPERATION_BYTES: usize = 4_096;
 const CODEC_PROTO_JSON_MAX_TEXT_ESCAPE_EXPANSION: usize = 6;
 
+/// Hard ceiling on actual source bytes for the five TLV operations.
+pub const MAX_CODEC_TLV_INPUT_BYTES: usize = 16_777_216;
+
+/// Transport budget for structured operations before the TLV source allowance.
+pub const MAX_CODEC_PROTO_STRUCTURED_MESSAGE_BYTES: usize =
+    max_codec_proto_cbor_message_bytes_const();
+
 /// Maximum accepted binary protobuf message size at codec wire boundaries.
 ///
-/// This derived cap preserves every value inside the deterministic-CBOR
-/// semantic byte/node limits after recursive generated-protobuf wrapping. It is
-/// a transport limit, not permission for a larger semantic CBOR document.
-pub const MAX_CODEC_PROTO_MESSAGE_BYTES: usize = max_codec_proto_message_bytes_const();
+/// Covers the largest permitted TLV source and deterministic-CBOR tree with
+/// their generated framing. Individual operations apply their own limits.
+pub const MAX_CODEC_PROTO_MESSAGE_BYTES: usize = larger_transport_limit(
+    MAX_CODEC_PROTO_STRUCTURED_MESSAGE_BYTES,
+    MAX_CODEC_TLV_INPUT_BYTES.checked_add(CODEC_PROTO_MAX_FIXED_OPERATION_BYTES),
+);
 
 /// Maximum accepted `CodecError` envelope size at codec wire boundaries.
 pub const MAX_CODEC_PROTO_ERROR_ENVELOPE_BYTES: usize = 4096;
@@ -50,8 +59,34 @@ pub const MAX_CODEC_PROTO_ERROR_ENVELOPE_BYTES: usize = 4096;
 ///
 /// The derivation includes worst-case JSON escaping for text, base64 expansion
 /// for byte strings, recursive generated field structure, and fixed operation
-/// framing. Semantic validation still applies the smaller CBOR profile limits.
-pub const MAX_CODEC_PROTO_JSON_BYTES: usize = max_codec_proto_json_bytes_const();
+/// framing, as well as the base64 representation of the largest TLV source.
+pub const MAX_CODEC_PROTO_JSON_BYTES: usize = larger_transport_limit(
+    max_codec_proto_cbor_json_bytes_const(),
+    max_codec_proto_tlv_json_bytes_const(),
+);
+
+const fn larger_transport_limit(other: usize, tlv: Option<usize>) -> usize {
+    match tlv {
+        Some(tlv) if other != 0 => {
+            if tlv > other {
+                tlv
+            } else {
+                other
+            }
+        }
+        _ => 0,
+    }
+}
+
+const fn max_codec_proto_tlv_json_bytes_const() -> Option<usize> {
+    let Some(rounded) = MAX_CODEC_TLV_INPUT_BYTES.checked_add(2) else {
+        return None;
+    };
+    let Some(base64_bytes) = (rounded / 3).checked_mul(4) else {
+        return None;
+    };
+    base64_bytes.checked_add(CODEC_PROTO_MAX_FIXED_OPERATION_BYTES)
+}
 
 const fn max_codec_proto_json_tokens_const() -> usize {
     let Some(node_tokens) =
@@ -65,7 +100,7 @@ const fn max_codec_proto_json_tokens_const() -> usize {
     }
 }
 
-const fn max_codec_proto_message_bytes_const() -> usize {
+const fn max_codec_proto_cbor_message_bytes_const() -> usize {
     let Some(payload_bytes) = CODEC_PROTO_DETERMINISTIC_CBOR_TEXT_BYTES
         .checked_add(CODEC_PROTO_DETERMINISTIC_CBOR_BYTE_STRING_BYTES)
     else {
@@ -85,7 +120,7 @@ const fn max_codec_proto_message_bytes_const() -> usize {
     }
 }
 
-const fn max_codec_proto_json_bytes_const() -> usize {
+const fn max_codec_proto_cbor_json_bytes_const() -> usize {
     let Some(text_bytes) = CODEC_PROTO_DETERMINISTIC_CBOR_TEXT_BYTES
         .checked_mul(CODEC_PROTO_JSON_MAX_TEXT_ESCAPE_EXPANSION)
     else {
@@ -133,7 +168,6 @@ const CODEC_PROTO_JSON_OUTER_AND_KEY_CONTAINERS: usize = 8;
 
 pub(crate) const MAX_CODEC_PROTO_JSON_NESTING_DEPTH: usize = codec_proto_json_nesting_depth();
 pub(crate) const CODEC_PROTO_RECURSION_LIMIT: u32 = codec_proto_recursion_limit();
-pub(crate) const CODEC_PROTO_UNKNOWN_FIELD_LIMIT: usize = 0;
 
 const fn codec_proto_recursion_limit() -> u32 {
     let Some(recursive_layers) = CODEC_PROTO_DETERMINISTIC_CBOR_NESTING_DEPTH
@@ -160,8 +194,30 @@ const fn codec_proto_json_nesting_depth() -> usize {
     }
 }
 
-const _: () = assert!(CODEC_PROTO_RECURSION_LIMIT != 0);
-const _: () = assert!(MAX_CODEC_PROTO_JSON_NESTING_DEPTH != 0);
-const _: () = assert!(MAX_CODEC_PROTO_JSON_TOKENS != 0);
-const _: () = assert!(MAX_CODEC_PROTO_MESSAGE_BYTES == 10_489_856);
-const _: () = assert!(MAX_CODEC_PROTO_JSON_BYTES == 16_082_264);
+// Array lengths make these compile-time invariants impossible to defer to a
+// runtime panic, while retaining exact transport-cap and nonzero checks.
+const _: [(); 1] = [(); if CODEC_PROTO_RECURSION_LIMIT != 0 {
+    1
+} else {
+    0
+}];
+const _: [(); 1] = [(); if MAX_CODEC_PROTO_JSON_NESTING_DEPTH != 0 {
+    1
+} else {
+    0
+}];
+const _: [(); 1] = [(); if MAX_CODEC_PROTO_JSON_TOKENS != 0 {
+    1
+} else {
+    0
+}];
+const _: [(); 1] = [(); if MAX_CODEC_PROTO_MESSAGE_BYTES == 16_781_312 {
+    1
+} else {
+    0
+}];
+const _: [(); 1] = [(); if MAX_CODEC_PROTO_JSON_BYTES == 22_373_720 {
+    1
+} else {
+    0
+}];

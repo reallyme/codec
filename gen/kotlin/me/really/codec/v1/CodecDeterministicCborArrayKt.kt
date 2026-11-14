@@ -36,6 +36,10 @@ public object CodecDeterministicCborArrayKt {
     @kotlin.OptIn(com.google.protobuf.kotlin.OnlyForUseByGeneratedProtoCode::class)
     public class ValuesProxy private constructor() : com.google.protobuf.kotlin.DslProxy()
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];`
      */
      public val values: com.google.protobuf.kotlin.DslList<me.really.codec.v1.CodecDeterministicCborValue, ValuesProxy>
@@ -44,6 +48,10 @@ public object CodecDeterministicCborArrayKt {
         _builder.valuesList
       )
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];`
      * @param value The values to add.
      */
@@ -53,6 +61,10 @@ public object CodecDeterministicCborArrayKt {
       _builder.addValues(value)
     }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];`
      * @param value The values to add.
      */
@@ -63,6 +75,10 @@ public object CodecDeterministicCborArrayKt {
       add(value)
     }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];`
      * @param values The values to add.
      */
@@ -72,6 +88,10 @@ public object CodecDeterministicCborArrayKt {
       _builder.addAllValues(values)
     }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];`
      * @param values The values to add.
      */
@@ -82,6 +102,10 @@ public object CodecDeterministicCborArrayKt {
       addAll(values)
     }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];`
      * @param index The index to set the value at.
      * @param value The values to set.
@@ -92,6 +116,10 @@ public object CodecDeterministicCborArrayKt {
       _builder.setValues(index, value)
     }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];`
      */
     @kotlin.jvm.JvmSynthetic

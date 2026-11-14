@@ -38,6 +38,10 @@ public  final class CodecDeterministicCborMap extends
   public static final int ENTRIES_FIELD_NUMBER = 1;
   private com.google.protobuf.Internal.ProtobufList<me.really.codec.v1.CodecDeterministicCborMapEntry> entries_;
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
    */
   @java.lang.Override
@@ -45,6 +49,10 @@ public  final class CodecDeterministicCborMap extends
     return entries_;
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
    */
   public java.util.List<? extends me.really.codec.v1.CodecDeterministicCborMapEntryOrBuilder>
@@ -52,6 +60,10 @@ public  final class CodecDeterministicCborMap extends
     return entries_;
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
    */
   @java.lang.Override
@@ -59,6 +71,10 @@ public  final class CodecDeterministicCborMap extends
     return entries_.size();
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
    */
   @java.lang.Override
@@ -66,6 +82,10 @@ public  final class CodecDeterministicCborMap extends
     return entries_.get(index);
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
    */
   public me.really.codec.v1.CodecDeterministicCborMapEntryOrBuilder getEntriesOrBuilder(
@@ -81,6 +101,10 @@ public  final class CodecDeterministicCborMap extends
   }
 
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
    */
   private void setEntries(
@@ -90,6 +114,10 @@ public  final class CodecDeterministicCborMap extends
     entries_.set(index, value);
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
    */
   private void addEntries(me.really.codec.v1.CodecDeterministicCborMapEntry value) {
@@ -98,6 +126,10 @@ public  final class CodecDeterministicCborMap extends
     entries_.add(value);
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
    */
   private void addEntries(
@@ -107,6 +139,10 @@ public  final class CodecDeterministicCborMap extends
     entries_.add(index, value);
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
    */
   private void addAllEntries(
@@ -116,12 +152,20 @@ public  final class CodecDeterministicCborMap extends
         values, entries_);
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
    */
   private void clearEntries() {
     entries_ = emptyProtobufList();
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
    */
   private void removeEntries(int index) {
@@ -227,6 +271,10 @@ public  final class CodecDeterministicCborMap extends
 
 
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
      */
     @java.lang.Override
@@ -235,12 +283,20 @@ public  final class CodecDeterministicCborMap extends
           instance.getEntriesList());
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
      */
     @java.lang.Override
     public int getEntriesCount() {
       return instance.getEntriesCount();
     }/**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
      */
     @java.lang.Override
@@ -248,6 +304,10 @@ public  final class CodecDeterministicCborMap extends
       return instance.getEntries(index);
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
      */
     public Builder setEntries(
@@ -257,6 +317,10 @@ public  final class CodecDeterministicCborMap extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
      */
     public Builder setEntries(
@@ -267,6 +331,10 @@ public  final class CodecDeterministicCborMap extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
      */
     public Builder addEntries(me.really.codec.v1.CodecDeterministicCborMapEntry value) {
@@ -275,6 +343,10 @@ public  final class CodecDeterministicCborMap extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
      */
     public Builder addEntries(
@@ -284,6 +356,10 @@ public  final class CodecDeterministicCborMap extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
      */
     public Builder addEntries(
@@ -293,6 +369,10 @@ public  final class CodecDeterministicCborMap extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
      */
     public Builder addEntries(
@@ -303,6 +383,10 @@ public  final class CodecDeterministicCborMap extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
      */
     public Builder addAllEntries(
@@ -312,6 +396,10 @@ public  final class CodecDeterministicCborMap extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
      */
     public Builder clearEntries() {
@@ -320,6 +408,10 @@ public  final class CodecDeterministicCborMap extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
      */
     public Builder removeEntries(int index) {

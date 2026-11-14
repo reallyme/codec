@@ -54,6 +54,7 @@ jobs:
           - deterministic_cbor
           - general_cbor
           - der
+          - tlv
           - multibase
           - multicodec
           - multikey

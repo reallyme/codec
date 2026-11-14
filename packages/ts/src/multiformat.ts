@@ -33,18 +33,9 @@ import {
 } from "./readOutput.js";
 import { requireReallyMeCodecWasmProvider } from "./wasmProvider.js";
 
-export type ReallyMeMulticodecTag =
-  | "encryption"
-  | "hash"
-  | "key"
-  | "multihash"
-  | "multikey";
-
-export type ReallyMeKeyMaterialKind =
-  | "not-key"
-  | "public-key"
-  | "private-key"
-  | "symmetric-key";
+import { projectKeyMaterialKind, projectMulticodecTag } from "./proto/generated/sdkContract.js";
+import type { ReallyMeKeyMaterialKind, ReallyMeMulticodecTag } from "./proto/generated/sdkContract.js";
+export type { ReallyMeKeyMaterialKind, ReallyMeMulticodecTag } from "./proto/generated/sdkContract.js";
 
 export type ReallyMeMulticodecMetadata = Readonly<{
   name: string;
@@ -80,40 +71,9 @@ const requireNoProviderUnknownFields = (message: Message): void => {
   }
 };
 
-const sdkTag = (tag: CodecTag): ReallyMeMulticodecTag => {
-  switch (tag) {
-    case CodecTag.ENCRYPTION:
-      return "encryption";
-    case CodecTag.HASH:
-      return "hash";
-    case CodecTag.KEY:
-      return "key";
-    case CodecTag.MULTIHASH:
-      return "multihash";
-    case CodecTag.MULTIKEY:
-      return "multikey";
-    case CodecTag.UNSPECIFIED:
-    default:
-      throw new ReallyMeCodecError("provider-failure");
-  }
-};
-
-const sdkKeyMaterial = (
-  keyMaterial: CodecKeyMaterialKind,
-): ReallyMeKeyMaterialKind => {
-  switch (keyMaterial) {
-    case CodecKeyMaterialKind.NOT_KEY:
-      return "not-key";
-    case CodecKeyMaterialKind.PUBLIC_KEY:
-      return "public-key";
-    case CodecKeyMaterialKind.PRIVATE_KEY:
-      return "private-key";
-    case CodecKeyMaterialKind.SYMMETRIC_KEY:
-      return "symmetric-key";
-    case CodecKeyMaterialKind.UNSPECIFIED:
-    default:
-      throw new ReallyMeCodecError("provider-failure");
-  }
+const requireProjectedMetadata = <T>(value: T | undefined): T => {
+  if (value === undefined) throw new ReallyMeCodecError("provider-failure");
+  return value;
 };
 
 const readMulticodecMetadata = (
@@ -131,8 +91,8 @@ const readMulticodecMetadata = (
   const metadata = {
     name: value.name,
     alg: value.algorithmName,
-    tag: sdkTag(value.tag),
-    keyMaterial: sdkKeyMaterial(value.keyMaterialKind),
+    tag: requireProjectedMetadata(projectMulticodecTag(value.tag)),
+    keyMaterial: requireProjectedMetadata(projectKeyMaterialKind(value.keyMaterialKind)),
     prefix: snapshotProviderBytes(value.prefix),
   };
   if (value.variableLength || value.fixedLength === 0) {
@@ -145,11 +105,18 @@ const validateMulticodecMetadata = (
   value: Message & {
     tag: CodecTag;
     keyMaterialKind: CodecKeyMaterialKind;
+    fixedLength: number;
+    variableLength: boolean;
   },
 ): void => {
   requireNoProviderUnknownFields(value);
-  sdkTag(value.tag);
-  sdkKeyMaterial(value.keyMaterialKind);
+  // The legacy wire shape has three length states. A variable rule cannot
+  // also specify a fixed length; accepting both would discard provider data.
+  if (value.variableLength && value.fixedLength !== 0) {
+    throw new ReallyMeCodecError("provider-failure");
+  }
+  requireProjectedMetadata(projectMulticodecTag(value.tag));
+  requireProjectedMetadata(projectKeyMaterialKind(value.keyMaterialKind));
 };
 
 export const base58btcEncode = (bytes: Uint8Array): string => {
@@ -308,6 +275,12 @@ export const multikeyParse = (multikey: string): ReallyMeParsedMultikey => {
   const result = operationResult.result.value;
   try {
     requireNoProviderUnknownFields(result);
+    if (
+      result.variablePublicKeyLength !== (result.expectedPublicKeyLength === 0) ||
+      (!result.variablePublicKeyLength && result.expectedPublicKeyLength !== result.publicKey.length)
+    ) {
+      throw new ReallyMeCodecError("provider-failure");
+    }
     const parsed = {
       codecName: result.codecName,
       algorithmName: result.algorithmName,

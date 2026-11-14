@@ -53,7 +53,10 @@ test("release readiness rejects duplicate arguments", () => {
 
 test("repository-local source policy is verified before it executes", () => {
   const policyPath = "scripts/release-readiness/source-policy.mjs";
-  const trackedCheck = readinessSource.indexOf(`requireTracked("${policyPath}")`);
+  const pinnedPath = readinessSource.indexOf(`["${policyPath}", "`);
+  const trackedCheck = readinessSource.indexOf(
+    "for (const path of POLICY_MODULE_SHA256.keys()) {\n  requireTracked(path);",
+  );
   const dynamicImport = readinessSource.indexOf(
     'await import("./release-readiness/source-policy.mjs")',
   );
@@ -62,7 +65,8 @@ test("repository-local source policy is verified before it executes", () => {
     readinessSource.includes('from "./release-readiness/source-policy.mjs"'),
     false,
   );
-  assert.ok(trackedCheck >= 0);
+  assert.ok(pinnedPath >= 0);
+  assert.ok(trackedCheck > pinnedPath);
   assert.ok(dynamicImport > trackedCheck);
 });
 
@@ -74,7 +78,7 @@ test("tracked-mode file listing rejects missing directories", () => {
       "-e",
       `
         import { pathToFileURL } from "node:url";
-        import { createReleaseReadinessContext } from "./scripts/release-readiness/core.mjs";
+        const { createReleaseReadinessContext } = await import(process.env.RELEASE_READINESS_CORE_URL);
 
         const { listFiles } = createReleaseReadinessContext({
           scriptUrl: pathToFileURL(\`\${process.cwd()}/README.md\`).href,
@@ -87,6 +91,10 @@ test("tracked-mode file listing rejects missing directories", () => {
     {
       cwd: repositoryRoot,
       encoding: "utf8",
+      env: { ...process.env,
+        RELEASE_READINESS_CORE_URL: new URL("core.mjs", `file://${resolve(process.env.REALLYME_RELEASE_READINESS_ROOT ?? resolve(repositoryRoot, ".release-readiness"))}/`).href,
+        RELEASE_READINESS_ENFORCED_VERSION: "0.7.0",
+      },
       stdio: "pipe",
     },
   );

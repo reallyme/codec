@@ -38,6 +38,10 @@ public  final class CodecDeterministicCborArray extends
   public static final int VALUES_FIELD_NUMBER = 1;
   private com.google.protobuf.Internal.ProtobufList<me.really.codec.v1.CodecDeterministicCborValue> values_;
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
    */
   @java.lang.Override
@@ -45,6 +49,10 @@ public  final class CodecDeterministicCborArray extends
     return values_;
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
    */
   public java.util.List<? extends me.really.codec.v1.CodecDeterministicCborValueOrBuilder>
@@ -52,6 +60,10 @@ public  final class CodecDeterministicCborArray extends
     return values_;
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
    */
   @java.lang.Override
@@ -59,6 +71,10 @@ public  final class CodecDeterministicCborArray extends
     return values_.size();
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
    */
   @java.lang.Override
@@ -66,6 +82,10 @@ public  final class CodecDeterministicCborArray extends
     return values_.get(index);
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
    */
   public me.really.codec.v1.CodecDeterministicCborValueOrBuilder getValuesOrBuilder(
@@ -81,6 +101,10 @@ public  final class CodecDeterministicCborArray extends
   }
 
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
    */
   private void setValues(
@@ -90,6 +114,10 @@ public  final class CodecDeterministicCborArray extends
     values_.set(index, value);
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
    */
   private void addValues(me.really.codec.v1.CodecDeterministicCborValue value) {
@@ -98,6 +126,10 @@ public  final class CodecDeterministicCborArray extends
     values_.add(value);
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
    */
   private void addValues(
@@ -107,6 +139,10 @@ public  final class CodecDeterministicCborArray extends
     values_.add(index, value);
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
    */
   private void addAllValues(
@@ -116,12 +152,20 @@ public  final class CodecDeterministicCborArray extends
         values, values_);
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
    */
   private void clearValues() {
     values_ = emptyProtobufList();
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
    */
   private void removeValues(int index) {
@@ -227,6 +271,10 @@ public  final class CodecDeterministicCborArray extends
 
 
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
      */
     @java.lang.Override
@@ -235,12 +283,20 @@ public  final class CodecDeterministicCborArray extends
           instance.getValuesList());
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
      */
     @java.lang.Override
     public int getValuesCount() {
       return instance.getValuesCount();
     }/**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
      */
     @java.lang.Override
@@ -248,6 +304,10 @@ public  final class CodecDeterministicCborArray extends
       return instance.getValues(index);
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
      */
     public Builder setValues(
@@ -257,6 +317,10 @@ public  final class CodecDeterministicCborArray extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
      */
     public Builder setValues(
@@ -267,6 +331,10 @@ public  final class CodecDeterministicCborArray extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
      */
     public Builder addValues(me.really.codec.v1.CodecDeterministicCborValue value) {
@@ -275,6 +343,10 @@ public  final class CodecDeterministicCborArray extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
      */
     public Builder addValues(
@@ -284,6 +356,10 @@ public  final class CodecDeterministicCborArray extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
      */
     public Builder addValues(
@@ -293,6 +369,10 @@ public  final class CodecDeterministicCborArray extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
      */
     public Builder addValues(
@@ -303,6 +383,10 @@ public  final class CodecDeterministicCborArray extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
      */
     public Builder addAllValues(
@@ -312,6 +396,10 @@ public  final class CodecDeterministicCborArray extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
      */
     public Builder clearValues() {
@@ -320,6 +408,10 @@ public  final class CodecDeterministicCborArray extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>repeated .reallyme.codec.v1.CodecDeterministicCborValue values = 1 [json_name = "values"];</code>
      */
     public Builder removeValues(int index) {

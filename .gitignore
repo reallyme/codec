@@ -95,4 +95,5 @@ externalNativeBuild/
 .cxx/
 **/.cxx/
 
-AGENTS.md
+# Pinned external policy package; never vendor shared enforcement.
+/.release-readiness/

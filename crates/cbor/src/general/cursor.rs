@@ -24,6 +24,7 @@ pub struct Cursor<'a> {
 impl<'a> Cursor<'a> {
     /// Create a cursor with explicit transport and indefinite-length limits.
     pub fn new(input: &'a [u8], limits: Limits, lengths: LengthPolicy) -> Result<Self, CborError> {
+        super::profile::ensure_lengths_supported(lengths)?;
         check_input(input, limits)?;
         Ok(Self {
             input,

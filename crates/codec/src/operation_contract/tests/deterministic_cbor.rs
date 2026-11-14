@@ -8,11 +8,11 @@ fn deterministic_cbor_encode_request_returns_canonical_bytes() {
         operation: Some(
             CodecDeterministicCborEncodeRequest {
                 value: buffa::MessageField::some(deterministic_cbor_map_fixture()),
-                __buffa_unknown_fields: Default::default(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
 
     let result = result_payload(&process_operation_response(&request.encode_to_vec()));
@@ -35,12 +35,12 @@ fn deterministic_cbor_decode_request_returns_generated_value() {
     let request = CodecOperationRequest {
         operation: Some(
             CodecDeterministicCborDecodeRequest {
-                encoded: vec![0x1b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff],
-                __buffa_unknown_fields: Default::default(),
+                encoded: vec![0x1b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff].into(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
 
     let result = result_payload(&process_operation_response(&request.encode_to_vec()));
@@ -50,11 +50,11 @@ fn deterministic_cbor_decode_request_returns_generated_value() {
         operation: Some(
             CodecDeterministicCborEncodeRequest {
                 value: core::mem::take(&mut decoded.value),
-                __buffa_unknown_fields: Default::default(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
     let reencoded = result_payload(&process_operation_response(
         &reencoded_request.encode_to_vec(),
@@ -77,22 +77,22 @@ fn deterministic_cbor_semantic_maximum_is_reachable_through_protobuf_lanes() {
     let value = CodecDeterministicCborValue {
         value: Some(
             CodecDeterministicCborBytes {
-                value: vec![0_u8; payload_len],
-                __buffa_unknown_fields: Default::default(),
+                value: vec![0_u8; payload_len].into(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
     let encode_request = CodecOperationRequest {
         operation: Some(
             CodecDeterministicCborEncodeRequest {
                 value: buffa::MessageField::some(value),
-                __buffa_unknown_fields: Default::default(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
 
     let binary_request = encode_request.encode_to_vec();
@@ -117,11 +117,11 @@ fn deterministic_cbor_semantic_maximum_is_reachable_through_protobuf_lanes() {
                 // deliberately forbids moving the field out. Keep the test copy explicit;
                 // the generated decode request owns and zeroizes this copy in turn.
                 encoded: encoded.encoded.clone(),
-                __buffa_unknown_fields: Default::default(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
     let decode_binary = decode_request.encode_to_vec();
     let decode_envelope = process_operation_response(&decode_binary);
@@ -181,11 +181,11 @@ fn deterministic_cbor_maximum_depth_matches_binary_and_proto_json_lanes() {
                 value: buffa::MessageField::some(deterministic_cbor_nested_map_fixture(
                     MAX_DETERMINISTIC_CBOR_NESTING_DEPTH,
                 )),
-                __buffa_unknown_fields: Default::default(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
 
     let binary = process_operation_response(&encode_request.encode_to_vec());
@@ -206,11 +206,11 @@ fn deterministic_cbor_maximum_depth_matches_binary_and_proto_json_lanes() {
         operation: Some(
             CodecDeterministicCborDecodeRequest {
                 encoded: core::mem::take(&mut encoded.encoded),
-                __buffa_unknown_fields: Default::default(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
     let decoded_binary = process_operation_response(&decode_request.encode_to_vec());
     let decoded_json = serde_json::to_vec(&decode_request).unwrap();
@@ -234,21 +234,21 @@ fn deterministic_cbor_rejects_malformed_generated_value() {
                             value: Some(
                                 CodecDeterministicCborNegativeInteger {
                                     value: 0,
-                                    __buffa_unknown_fields: Default::default(),
+
                                 }
                                 .into(),
                             ),
-                            __buffa_unknown_fields: Default::default(),
+
                         }
                         .into(),
                     ),
-                    __buffa_unknown_fields: Default::default(),
+
                 }),
-                __buffa_unknown_fields: Default::default(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
 
     let error = codec_error_payload(&process_operation_response(&request.encode_to_vec()));
@@ -261,37 +261,12 @@ fn deterministic_cbor_rejects_malformed_generated_value() {
 
 #[test]
 fn deterministic_cbor_rejects_nested_unknown_fields() {
-    let mut value = CodecDeterministicCborValue {
-        value: Some(
-            CodecDeterministicCborText {
-                value: "identity-value".to_owned(),
-                __buffa_unknown_fields: Default::default(),
-            }
-            .into(),
-        ),
-        __buffa_unknown_fields: Default::default(),
-    };
-    value.__buffa_unknown_fields.push(UnknownField {
-        number: 99,
-        data: UnknownFieldData::Varint(7),
-    });
-    let request = CodecOperationRequest {
-        operation: Some(
-            CodecDeterministicCborEncodeRequest {
-                value: buffa::MessageField::some(value),
-                __buffa_unknown_fields: Default::default(),
-            }
-            .into(),
-        ),
-        __buffa_unknown_fields: Default::default(),
-    };
-
-    let error = codec_error_payload(&process_operation_response(&request.encode_to_vec()));
-    assert_eq!(error.branch(), CodecWireErrorBranch::Boundary);
-    assert_eq!(
-        error.reason(),
-        CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF
-    );
+    let value = CodecDeterministicCborValue { value: Some(CodecDeterministicCborText { value: "identity-value".into() }.into()) };
+    let nested = length_delimited_wire(1, &with_unknown_wire_field(&value));
+    let request = length_delimited_wire(5000, &nested);
+    let error = codec_error_payload(&process_operation_response(&request));
+        assert_eq!(error.branch(), CodecWireErrorBranch::Boundary);
+        assert_eq!(error.reason(), CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF);
 }
 
 struct TestOperationPayload {
@@ -309,12 +284,12 @@ fn proto_json_sensitive_bytes_reject_nonzero_base64_trailing_bits() {
     let request = CodecOperationRequest {
         operation: Some(
             CodecDeterministicCborDecodeRequest {
-                encoded: vec![0x00],
-                __buffa_unknown_fields: Default::default(),
+                encoded: vec![0x00].into(),
+
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
+
     };
     let canonical = serde_json::to_string(&request).unwrap();
     assert!(canonical.contains("\"AA==\""));

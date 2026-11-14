@@ -6,10 +6,114 @@ version: v2
 plugins:
   # Rust Buffa message/view types. This mirrors the platform workspace
   # contract-generation convention and intentionally avoids build.rs codegen.
-  - local: protoc-gen-buffa
+  - local: protoc-gen-reallyme-buffa
     out: crates/proto/src/generated/buffa
-    opt: [views=true, json=true]
-  - local: protoc-gen-buffa-packaging
+    strategy: all
+    opt:
+      - views=true
+      - json=true
+      - zeroize=true
+      - unknown_fields=false
+      - deny_unknown_json_fields=true
+      - allow_unmatched_message_rules=false
+      - bytes_type_custom_in=.reallyme.codec.v1=crate::guarded::SecretBytes
+      - string_type_custom_in=.reallyme.codec.v1=crate::guarded::SecretString
+      - json_policy_type=crate::guarded::SecretBytes
+      - json_policy_type=crate::guarded::SecretString
+      # Keep classified messages and their containers on caller-owned backing.
+      # Release readiness checks this list against the sensitivity inventory.
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecApiOperationRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecApiOperationResponse
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecApiOperationResult
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecBoolResult
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecBytesRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecBytesResult
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDagCborDecodeRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDagCborDecodeResult
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDagCborEncodeRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDagCborEncodeResult
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDagCborVerifyCidRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDerDecodeRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDerPairRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDerReadRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDerReadResult
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDerSchema
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDerUnsignedIntegerPair
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDerValue
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDeterministicCborArray
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDeterministicCborBool
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDeterministicCborBytes
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDeterministicCborDecodeRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDeterministicCborDecodeResult
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDeterministicCborEncodeRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDeterministicCborEncodeResult
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDeterministicCborInteger
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDeterministicCborMap
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDeterministicCborMapEntry
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDeterministicCborMapKey
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDeterministicCborNegativeInteger
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDeterministicCborNull
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDeterministicCborText
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDeterministicCborUnsignedInteger
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecDeterministicCborValue
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborArray
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborChunks
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborEmbeddedRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborEncodeRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborFloat
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborFloatCompareRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborFloatProperties
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborFloatPropertiesRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborFrame
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborFrames
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborHeader
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborInspectRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborInspectionResult
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborInteger
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborMap
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborMapEntry
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborNegative
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborSimple
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborSourceRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborTag
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborTaggedBytes
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborUnsigned
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecGeneralCborValue
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecLibraryLoadRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecMulticodecLookupPrefixRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecMultikeyEncodeRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecMultikeyParseRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecMultikeyParseResult
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecOperationRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecOperationResponse
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecOperationResult
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecOptionalTextResult
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecPemDecodeRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecPemDecodeResult
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecPemEncodeRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecPemEncodeResult
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecProviderOperationRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecTextRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecTextResult
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecTlvFrame
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecTlvHeader
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecTlvLength
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecTlvSourceRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecUint32Result
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecValidateKeyBindingRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecVerifiedLibraryRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecWasmReinstantiateRequest
+      - skip_debug=.reallyme.codec.v1.CodecGeneralCborErrorReason
+      - skip_debug=.reallyme.codec.v1.CodecDerErrorReason
+      - skip_debug=.reallyme.codec.v1.CodecTlvErrorReason
+      - skip_debug=.reallyme.codec.v1.CodecGeneralCborLengthPolicy
+      - skip_debug=.reallyme.codec.v1.CodecGeneralCborSerialization
+      - skip_debug=.reallyme.codec.v1.CodecGeneralCborFloatPolicy
+      - skip_debug=.reallyme.codec.v1.CodecGeneralCborMapOrdering
+      - skip_debug=.reallyme.codec.v1.CodecGeneralCborFloatWidth
+      - skip_debug=.reallyme.codec.v1.CodecGeneralCborMajorType
+      - skip_debug=.reallyme.codec.v1.CodecGeneralCborArgumentWidth
+  - local: protoc-gen-reallyme-buffa-packaging
     out: crates/proto/src/generated/buffa
     strategy: all
 

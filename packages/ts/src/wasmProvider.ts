@@ -4,7 +4,8 @@
 
 import { ReallyMeCodecError } from "./errors.js";
 import type { ReallyMeCodecErrorCode } from "./errors.js";
-import * as bundledWasm from "../dist/wasm/reallyme_codec_wasm.js";
+import { isReallyMeCodecErrorCode } from "./proto/generated/sdkContract.js";
+import { matchesBundledWasmModule } from "../dist/wasm/bundledModule.js";
 
 type BytesToStringFn = (bytes: Uint8Array) => unknown;
 type StringToBytesFn = (text: string) => unknown;
@@ -86,22 +87,8 @@ let providerNeedsRecovery = false;
 let reinstantiate: (() => unknown) | undefined;
 const DAG_CBOR_CODEC_CODE = 0x71;
 
-const wasmErrorCode = (error: unknown): ReallyMeCodecErrorCode | undefined => {
-  switch (error) {
-    case "invalid-input":
-      return "invalid-input";
-    case "non-canonical":
-      return "non-canonical";
-    case "unsupported-codec":
-      return "unsupported-codec";
-    case "unsupported-ipld-value":
-      return "unsupported-ipld-value";
-    case "provider-failure":
-      return "provider-failure";
-    default:
-      return undefined;
-  }
-};
+const wasmErrorCode = (error: unknown): ReallyMeCodecErrorCode | undefined =>
+  isReallyMeCodecErrorCode(error) ? error : undefined;
 
 const requireObject = (module: unknown): object => {
   if (typeof module !== "object" || module === null) {
@@ -211,7 +198,7 @@ export const installReallyMeCodecWasmProvider = (module: unknown): void => {
   // The generated ES module namespace is immutable. Identity pins the public
   // installer to the Rust build shipped in this package instead of accepting
   // a structurally compatible object supplied by another script.
-  if (module !== bundledWasm) {
+  if (!matchesBundledWasmModule(module)) {
     throw new ReallyMeCodecError("provider-failure");
   }
   const providerModule = requireObject(module);

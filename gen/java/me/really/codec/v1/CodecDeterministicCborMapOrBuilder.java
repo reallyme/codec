@@ -11,15 +11,27 @@ public interface CodecDeterministicCborMapOrBuilder extends
     com.google.protobuf.MessageLiteOrBuilder {
 
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
    */
   java.util.List<me.really.codec.v1.CodecDeterministicCborMapEntry>
       getEntriesList();
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
    */
   me.really.codec.v1.CodecDeterministicCborMapEntry getEntries(int index);
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>repeated .reallyme.codec.v1.CodecDeterministicCborMapEntry entries = 1 [json_name = "entries"];</code>
    */
   int getEntriesCount();

@@ -4,7 +4,27 @@ All packages in the ReallyMe Codec release line share one version. Security
 changes are called out when they affect accepted input or an integration
 boundary.
 
-## 0.3.6 (unreleased)
+## 0.4.0 (unreleased)
+
+- Use ReallyMe Buffa 0.1.1 for the Rust protobuf contract. Generated messages
+  now own and wipe sensitive fields and repeated storage without a generated
+  Rust source patch. Protobuf field numbers and encoded values are unchanged.
+  Standalone enum decoding omits rejected values from diagnostics and wipes
+  strings transferred by the deserializer.
+  Rust callers constructing generated messages must convert owned byte and
+  string fields with `.into()` and take fields from a mutable Drop type with
+  `mem::take` when transferring ownership.
+- Add TLV identifier, length, header, prefix, and exact framing operations
+  with bounded source spans. Read identifiers and declared lengths without a
+  value, and opt into source limits up to 16 MiB. Definite BER and strict
+  DER framing remain separate from schema-directed DER decoding.
+- Generate SDK enum and error projections from the schema while preserving
+  existing SDK values. Check generation and the Swift, Kotlin, and TypeScript
+  SDKs together on Apple Silicon using the pinned Release Readiness runner.
+- Align the TypeScript WASM initializer declarations with the integrity check:
+  both reject precompiled `WebAssembly.Module` values.
+
+### Changes since 0.3.4
 
 - Import the shipped C header in the Swift linked provider so calls use the C
   ABI and signatures are checked by the compiler. Install the XCFramework

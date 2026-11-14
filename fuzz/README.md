@@ -24,6 +24,7 @@ own empty `[workspace]` so it does not inherit lint settings that libFuzzer's
 | `dag_cbor` | DAG-CBOR decode + canonical re-encode + CID parse/verify | `codec_cbor::{decode_dag_cbor, encode_dag_cbor, try_parse_cid, verify_dag_cbor_cid}` |
 | `deterministic_cbor` | generic deterministic-CBOR decode + canonical re-encode | `codec_cbor::{decode_deterministic_cbor, encode_deterministic_cbor}` |
 | `general_cbor` | bounded borrowed framing, profiles, key equivalence, exact received embedding, cursor consumption | `codec_cbor::general::{frame_prefix, validate_exact, encode, Cursor}` |
+| `tlv` | bounded definite BER/ISO 7816 and DER headers, exact source spans, prefix/exact framing | `reallyme_codec::tlv::{read_header, frame_prefix, frame_exact}` |
 | `operation_contract` | executable protobuf + generated ProtoJSON dispatch | `reallyme_codec::operation_contract::{process_operation_response, process_operation_response_json}` |
 | `jcs_text` | strict JSON parsing and canonicalization idempotence | `codec_jcs::canonicalize_json_text` |
 

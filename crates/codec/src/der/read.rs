@@ -37,6 +37,19 @@ pub struct DerReader<'a> {
 }
 
 impl<'a> DerReader<'a> {
+    #[cfg(feature = "operation-contract")]
+    pub(super) fn contract_element_limit(&self) -> usize {
+        self.limits.elements
+    }
+
+    #[cfg(feature = "operation-contract")]
+    pub(super) fn contract_remaining(&self) -> Result<&'a [u8], DerError> {
+        let position = usize::try_from(self.inner.position())
+            .map_err(|_| DerError::new(DerErrorReason::ArithmeticOverflow))?;
+        self.input
+            .get(position..)
+            .ok_or(DerError::new(DerErrorReason::ArithmeticOverflow))
+    }
     pub(super) fn new(
         input: &'a [u8],
         limits: DerLimits,

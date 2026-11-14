@@ -24,7 +24,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
 const runnerRelativePath = "scripts/run_pinned_release_readiness.mjs";
 const checkerRelativePath = "scripts/check_release_readiness.mjs";
-const coreRelativePath = "scripts/release-readiness/core.mjs";
+const coreRelativePath = ".release-readiness/core.mjs";
+const packageRoot = process.env.REALLYME_RELEASE_READINESS_ROOT ?? join(repositoryRoot, ".release-readiness");
 const checkerPinDeclaration = /const LOCAL_CHECKER_SHA256 =\n  "[0-9a-f]{64}";/u;
 const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
@@ -35,8 +36,14 @@ function fixture(t) {
   const checker = join(root, checkerRelativePath);
   const core = join(root, coreRelativePath);
   mkdirSync(dirname(core), { recursive: true });
+  mkdirSync(dirname(runner), { recursive: true });
   cpSync(join(repositoryRoot, runnerRelativePath), runner);
-  cpSync(join(repositoryRoot, coreRelativePath), core);
+  cpSync(join(packageRoot, "core.mjs"), core);
+  cpSync(join(packageRoot, "package.json"), join(root, ".release-readiness/package.json"));
+  mkdirSync(join(root, ".release-readiness/scripts"), { recursive: true });
+  cpSync(join(packageRoot, "scripts/run-consumer-check.mjs"), join(root, ".release-readiness/scripts/run-consumer-check.mjs"));
+  const initialized = spawnSync("git", ["init", "--quiet", "--initial-branch=main"], { cwd: root, encoding: "utf8" });
+  assert.equal(initialized.status, 0, initialized.stderr);
   // Isolate pin tests from changes to repository policy. A separate baseline
   // test below checks the real checkout, so a stale pin still fails clearly.
   const checkerSource = [
@@ -108,6 +115,10 @@ function fixture(t) {
   `);
   const env = { ...process.env };
   delete env.CI;
+  delete env.REALLYME_RELEASE_READINESS_ROOT;
+  delete env.RELEASE_READINESS_CORE_URL;
+  delete env.RELEASE_READINESS_ENFORCED_VERSION;
+  delete env.RELEASE_READINESS_SOURCE_POLICY_FD;
   const run = (arguments_ = [], overrides = {}) => {
     const result = spawnSync(process.execPath, [
       "--import", pathToFileURL(preload).href, runner, ...arguments_,
@@ -153,6 +164,7 @@ test("the direct checker rejects a stale policy pin before running repository ch
   }
   const result = spawnSync(process.execPath, [f.checker], {
     cwd: f.root, encoding: "utf8", timeout: 10_000,
+    env: { ...process.env, REALLYME_RELEASE_READINESS_ROOT: join(f.root, ".release-readiness") },
   });
   assert.equal(result.error, undefined);
   assert.equal(result.status, 1);
@@ -166,10 +178,21 @@ test("the direct checker authenticates the core before executing its top-level c
   writeFileSync(f.core, `${readFileSync(f.core, "utf8")}\nprocess.exit(94);\n`);
   const result = spawnSync(process.execPath, [f.checker], {
     cwd: f.root, encoding: "utf8", timeout: 10_000,
+    env: { ...process.env, REALLYME_RELEASE_READINESS_ROOT: join(f.root, ".release-readiness") },
   });
   assert.equal(result.error, undefined);
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /vendored core does not match the reviewed upstream pin/u);
+  assert.match(result.stderr, /package core does not match the reviewed upstream pin/u);
+});
+
+test("an alternate core URL cannot replace the authenticated package core", (t) => {
+  const f = fixture(t);
+  const alternate = join(f.root, "alternate.mjs");
+  cpSync(f.core, alternate);
+  const result = f.run(["--check-pins"], { RELEASE_READINESS_CORE_URL: pathToFileURL(alternate).href });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /supplied core URL does not identify the authenticated package core/u);
+  assert.equal(existsSync(join(f.root, "checker-executed")), false);
 });
 
 test("verified local bytes run offline from any working directory and forward policy modes", (t) => {
@@ -189,6 +212,18 @@ test("checker failures preserve their exit status", (t) => {
   assert.equal(f.run([], { CHECKER_EXIT_STATUS: "37" }).status, 37);
 });
 
+for (const [extension, language] of [["rs", "rust"], ["ts", "typescript"], ["swift", "swift"], ["kt", "kotlin"]]) {
+  test(`the official runner requires proof of the shared ${language} policy`, (t) => {
+    const f = fixture(t);
+    writeFileSync(join(f.root, `source.${extension}`), "// synthetic source\n");
+    const tracked = spawnSync("git", ["add", `source.${extension}`], { cwd: f.root, encoding: "utf8" });
+    assert.equal(tracked.status, 0, tracked.stderr);
+    const result = f.run();
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, new RegExp(`did not enforce the shared ${language} source policy`, "u"));
+  });
+}
+
 test("pin-only verification does not execute the checker", (t) => {
   const f = fixture(t);
   assert.equal(f.run(["--check-pins"]).status, 0);
@@ -197,7 +232,7 @@ test("pin-only verification does not execute the checker", (t) => {
 
 for (const [key, message, limit] of [
   ["checker", "local checker", 524_288],
-  ["core", "vendored core", 262_144],
+  ["core", "package core", 262_144],
 ]) {
   test(`tampered ${key} is rejected before execution or upstream access`, (t) => {
     const f = fixture(t);

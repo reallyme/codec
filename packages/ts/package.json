@@ -1,6 +1,6 @@
 {
   "name": "@reallyme/codec",
-  "version": "0.3.6",
+  "version": "0.4.0",
   "description": "TypeScript facade for the ReallyMe codec WASM package.",
   "license": "MIT OR Apache-2.0",
   "sideEffects": false,
@@ -36,6 +36,7 @@
     "prepack": "npm run build",
     "test:browser": "npm run build && npm run test:browser:built",
     "test:browser:built": "node scripts/browser-wasm-test.mjs",
+    "lint": "node scripts/lint-typescript.mjs",
     "typecheck": "tsc --noEmit",
     "test": "npm run build && node --test \"test/*.test.mjs\""
   },

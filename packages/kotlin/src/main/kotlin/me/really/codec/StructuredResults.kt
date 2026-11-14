@@ -5,29 +5,11 @@
 package me.really.codec
 
 import me.really.codec.v1.CodecDagCborVerifyCidResult
-import me.really.codec.v1.CodecKeyMaterialKind
 import me.really.codec.v1.CodecMulticodecLookupResult
 import me.really.codec.v1.CodecMulticodecSpec
 import me.really.codec.v1.CodecMulticodecTableResult
 import me.really.codec.v1.CodecMultikeyParseResult
 import me.really.codec.v1.CodecPemDecodeResult
-import me.really.codec.v1.CodecPemLabel
-import me.really.codec.v1.CodecTag
-
-public enum class ReallyMeMulticodecTag {
-    ENCRYPTION,
-    HASH,
-    KEY,
-    MULTIHASH,
-    MULTIKEY,
-}
-
-public enum class ReallyMeKeyMaterialKind {
-    NOT_KEY,
-    PUBLIC_KEY,
-    PRIVATE_KEY,
-    SYMMETRIC_KEY,
-}
 
 public class ReallyMeMulticodecMetadata internal constructor(
     public val name: String,
@@ -81,42 +63,35 @@ public class ReallyMeDagCborCidVerification internal constructor(
     override fun toString(): String = "ReallyMeDagCborCidVerification(<redacted>)"
 }
 
-public enum class ReallyMePemLabel(public val label: String) {
-    PRIVATE_KEY("PRIVATE KEY"),
-    EC_PRIVATE_KEY("EC PRIVATE KEY"),
-    PUBLIC_KEY("PUBLIC KEY"),
-}
+public class ReallyMePemDecodeOptions
+    @JvmOverloads
+    public constructor(
+        allowedLabels: List<ReallyMePemLabel> = emptyList(),
+        public val maxInputLen: Int = 0,
+        public val maxDerLen: Int = 0,
+    ) {
+        public val allowedLabels: List<ReallyMePemLabel> = allowedLabels.toList()
 
-public class ReallyMePemDecodeOptions @JvmOverloads public constructor(
-    allowedLabels: List<ReallyMePemLabel> = emptyList(),
-    public val maxInputLen: Int = 0,
-    public val maxDerLen: Int = 0,
-) {
-    public val allowedLabels: List<ReallyMePemLabel> = allowedLabels.toList()
-
-    init {
-        if (maxInputLen < 0 || maxDerLen < 0) {
-            throw ReallyMeCodecException.InvalidInput()
+        init {
+            if (maxInputLen < 0 || maxDerLen < 0) {
+                throw ReallyMeCodecException.InvalidInput()
+            }
         }
     }
-}
 
-public enum class ReallyMePemLineEnding {
-    LF,
-    CRLF,
-}
-
-public class ReallyMePemEncodeOptions @JvmOverloads public constructor(
-    public val maxDerLen: Int = 0,
-    public val lineWidth: Int = 0,
-    public val lineEnding: ReallyMePemLineEnding? = null,
-) {
-    init {
-        if (maxDerLen < 0 || lineWidth < 0 || lineWidth > 76) {
-            throw ReallyMeCodecException.InvalidInput()
+public class ReallyMePemEncodeOptions
+    @JvmOverloads
+    public constructor(
+        public val maxDerLen: Int = 0,
+        public val lineWidth: Int = 0,
+        public val lineEnding: ReallyMePemLineEnding? = null,
+    ) {
+        init {
+            if (maxDerLen < 0 || lineWidth < 0 || lineWidth > 76) {
+                throw ReallyMeCodecException.InvalidInput()
+            }
         }
     }
-}
 
 public class ReallyMePemDocument internal constructor(
     public val label: ReallyMePemLabel,
@@ -142,9 +117,7 @@ public class ReallyMePemDocument internal constructor(
     override fun toString(): String = "ReallyMePemDocument(<redacted>)"
 }
 
-internal fun sdkMulticodecLookupResult(
-    result: CodecMulticodecLookupResult,
-): ReallyMeMulticodecLookupResult {
+internal fun sdkMulticodecLookupResult(result: CodecMulticodecLookupResult): ReallyMeMulticodecLookupResult {
     if (result.reallyMeHasUnknownFieldsForValidation() || !result.hasMetadata()) {
         throw ReallyMeCodecException.ProviderFailure()
     }
@@ -166,6 +139,16 @@ internal fun sdkParsedMultikey(result: CodecMultikeyParseResult): ReallyMeParsed
     if (result.reallyMeHasUnknownFieldsForValidation()) {
         throw ReallyMeCodecException.ProviderFailure()
     }
+    // A parsed key has a nonzero fixed length or a variable rule. Check the
+    // legacy pair before copying bytes so no contradictory state is hidden.
+    if (result.variablePublicKeyLength != (result.expectedPublicKeyLength == 0) ||
+        (
+            !result.variablePublicKeyLength &&
+                Integer.toUnsignedLong(result.expectedPublicKeyLength) != result.publicKey.size().toLong()
+        )
+    ) {
+        throw ReallyMeCodecException.ProviderFailure()
+    }
     val publicKey = result.publicKey.toByteArray()
     return try {
         ReallyMeParsedMultikey(
@@ -183,9 +166,7 @@ internal fun sdkParsedMultikey(result: CodecMultikeyParseResult): ReallyMeParsed
     }
 }
 
-internal fun sdkDagCborCidVerification(
-    result: CodecDagCborVerifyCidResult,
-): ReallyMeDagCborCidVerification {
+internal fun sdkDagCborCidVerification(result: CodecDagCborVerifyCidResult): ReallyMeDagCborCidVerification {
     if (result.reallyMeHasUnknownFieldsForValidation()) {
         throw ReallyMeCodecException.ProviderFailure()
     }
@@ -204,17 +185,13 @@ internal fun sdkPemDocument(result: CodecPemDecodeResult): ReallyMePemDocument {
     }
 }
 
-internal fun protoPemLabel(label: ReallyMePemLabel): CodecPemLabel =
-    when (label) {
-        ReallyMePemLabel.PRIVATE_KEY -> CodecPemLabel.CODEC_PEM_LABEL_PRIVATE_KEY
-        ReallyMePemLabel.EC_PRIVATE_KEY -> CodecPemLabel.CODEC_PEM_LABEL_EC_PRIVATE_KEY
-        ReallyMePemLabel.PUBLIC_KEY -> CodecPemLabel.CODEC_PEM_LABEL_PUBLIC_KEY
-    }
-
-internal fun sdkMulticodecMetadata(
-    result: CodecMulticodecSpec,
-): ReallyMeMulticodecMetadata {
+internal fun sdkMulticodecMetadata(result: CodecMulticodecSpec): ReallyMeMulticodecMetadata {
     if (result.reallyMeHasUnknownFieldsForValidation()) {
+        throw ReallyMeCodecException.ProviderFailure()
+    }
+    // The legacy message also represents not-applicable as zero/false, but a
+    // variable rule must never carry a nonzero fixed length.
+    if (result.variableLength && result.fixedLength != 0) {
         throw ReallyMeCodecException.ProviderFailure()
     }
     return ReallyMeMulticodecMetadata(
@@ -230,38 +207,3 @@ internal fun sdkMulticodecMetadata(
         },
     )
 }
-
-private fun sdkMulticodecTag(tag: CodecTag): ReallyMeMulticodecTag =
-    when (tag) {
-        CodecTag.CODEC_TAG_ENCRYPTION -> ReallyMeMulticodecTag.ENCRYPTION
-        CodecTag.CODEC_TAG_HASH -> ReallyMeMulticodecTag.HASH
-        CodecTag.CODEC_TAG_KEY -> ReallyMeMulticodecTag.KEY
-        CodecTag.CODEC_TAG_MULTIHASH -> ReallyMeMulticodecTag.MULTIHASH
-        CodecTag.CODEC_TAG_MULTIKEY -> ReallyMeMulticodecTag.MULTIKEY
-        CodecTag.CODEC_TAG_UNSPECIFIED,
-        CodecTag.UNRECOGNIZED,
-        -> throw ReallyMeCodecException.ProviderFailure()
-    }
-
-private fun sdkKeyMaterialKind(kind: CodecKeyMaterialKind): ReallyMeKeyMaterialKind =
-    when (kind) {
-        CodecKeyMaterialKind.CODEC_KEY_MATERIAL_KIND_NOT_KEY ->
-            ReallyMeKeyMaterialKind.NOT_KEY
-        CodecKeyMaterialKind.CODEC_KEY_MATERIAL_KIND_PUBLIC_KEY ->
-            ReallyMeKeyMaterialKind.PUBLIC_KEY
-        CodecKeyMaterialKind.CODEC_KEY_MATERIAL_KIND_PRIVATE_KEY ->
-            ReallyMeKeyMaterialKind.PRIVATE_KEY
-        CodecKeyMaterialKind.CODEC_KEY_MATERIAL_KIND_SYMMETRIC_KEY ->
-            ReallyMeKeyMaterialKind.SYMMETRIC_KEY
-        CodecKeyMaterialKind.CODEC_KEY_MATERIAL_KIND_UNSPECIFIED,
-        CodecKeyMaterialKind.UNRECOGNIZED,
-        -> throw ReallyMeCodecException.ProviderFailure()
-    }
-
-private fun sdkPemLabel(label: String): ReallyMePemLabel =
-    when (label) {
-        "PRIVATE KEY" -> ReallyMePemLabel.PRIVATE_KEY
-        "EC PRIVATE KEY" -> ReallyMePemLabel.EC_PRIVATE_KEY
-        "PUBLIC KEY" -> ReallyMePemLabel.PUBLIC_KEY
-        else -> throw ReallyMeCodecException.ProviderFailure()
-    }

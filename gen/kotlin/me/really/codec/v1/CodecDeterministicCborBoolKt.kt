@@ -30,6 +30,10 @@ public object CodecDeterministicCborBoolKt {
     internal fun _build(): me.really.codec.v1.CodecDeterministicCborBool = _builder.build()
 
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `bool value = 1 [json_name = "value"];`
      */
     public var value: kotlin.Boolean
@@ -40,6 +44,10 @@ public object CodecDeterministicCborBoolKt {
         _builder.value = value
       }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `bool value = 1 [json_name = "value"];`
      */
     public fun clearValue() {

@@ -35,12 +35,21 @@ public interface CodecMultikeyParseResultOrBuilder extends
       getAlgorithmNameBytes();
 
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>bytes public_key = 3 [json_name = "publicKey"];</code>
    * @return The publicKey.
    */
   com.google.protobuf.ByteString getPublicKey();
 
   /**
+   * <pre>
+   * Legacy length rule: nonzero/false is fixed and must match public_key's
+   * byte length; zero/true is variable. The other combinations are invalid.
+   * </pre>
+   *
    * <code>uint32 expected_public_key_length = 4 [json_name = "expectedPublicKeyLength"];</code>
    * @return The expectedPublicKeyLength.
    */

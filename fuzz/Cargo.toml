@@ -40,91 +40,98 @@ codec-proto = { package = "reallyme-codec-proto", path = "../crates/proto", feat
 
 [[bin]]
 name = "multibase"
-path = "fuzz_targets/multibase.rs"
+path = "tests/targets/multibase.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
 name = "multicodec"
-path = "fuzz_targets/multicodec.rs"
+path = "tests/targets/multicodec.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
 name = "multikey"
-path = "fuzz_targets/multikey.rs"
+path = "tests/targets/multikey.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
 name = "base64url"
-path = "fuzz_targets/base64url.rs"
+path = "tests/targets/base64url.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
 name = "dag_cbor"
-path = "fuzz_targets/dag_cbor.rs"
+path = "tests/targets/dag_cbor.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
 name = "general_cbor"
-path = "fuzz_targets/general_cbor.rs"
+path = "tests/targets/general_cbor.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
 name = "deterministic_cbor"
-path = "fuzz_targets/deterministic_cbor.rs"
+path = "tests/targets/deterministic_cbor.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
 name = "operation_contract"
-path = "fuzz_targets/operation_contract.rs"
+path = "tests/targets/operation_contract.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
 name = "jcs_text"
-path = "fuzz_targets/jcs_text.rs"
+path = "tests/targets/jcs_text.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
 name = "base64"
-path = "fuzz_targets/base64.rs"
+path = "tests/targets/base64.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
 name = "hex"
-path = "fuzz_targets/hex.rs"
+path = "tests/targets/hex.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
 name = "pem_decode"
-path = "fuzz_targets/pem_decode.rs"
+path = "tests/targets/pem_decode.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
 name = "der"
-path = "fuzz_targets/der.rs"
+path = "tests/targets/der.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "tlv"
+path = "tests/targets/tlv.rs"
 test = false
 doc = false
 bench = false

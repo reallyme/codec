@@ -45,6 +45,10 @@ public  final class CodecDagCborEncodeRequest extends
   public static final int VALUE_FIELD_NUMBER = 1;
   private me.really.codec.v1.CodecDeterministicCborValue value_;
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>.reallyme.codec.v1.CodecDeterministicCborValue value = 1 [json_name = "value"];</code>
    */
   @java.lang.Override
@@ -52,6 +56,10 @@ public  final class CodecDagCborEncodeRequest extends
     return ((bitField0_ & 0x00000001) != 0);
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>.reallyme.codec.v1.CodecDeterministicCborValue value = 1 [json_name = "value"];</code>
    */
   @java.lang.Override
@@ -59,6 +67,10 @@ public  final class CodecDagCborEncodeRequest extends
     return value_ == null ? me.really.codec.v1.CodecDeterministicCborValue.getDefaultInstance() : value_;
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>.reallyme.codec.v1.CodecDeterministicCborValue value = 1 [json_name = "value"];</code>
    */
   private void setValue(me.really.codec.v1.CodecDeterministicCborValue value) {
@@ -67,6 +79,10 @@ public  final class CodecDagCborEncodeRequest extends
     bitField0_ |= 0x00000001;
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>.reallyme.codec.v1.CodecDeterministicCborValue value = 1 [json_name = "value"];</code>
    */
   @java.lang.SuppressWarnings("ReferenceEquality")
@@ -82,6 +98,10 @@ public  final class CodecDagCborEncodeRequest extends
     bitField0_ |= 0x00000001;
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>.reallyme.codec.v1.CodecDeterministicCborValue value = 1 [json_name = "value"];</code>
    */
   private void clearValue() {
@@ -194,6 +214,10 @@ public  final class CodecDagCborEncodeRequest extends
 
 
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>.reallyme.codec.v1.CodecDeterministicCborValue value = 1 [json_name = "value"];</code>
      */
     @java.lang.Override
@@ -201,6 +225,10 @@ public  final class CodecDagCborEncodeRequest extends
       return instance.hasValue();
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>.reallyme.codec.v1.CodecDeterministicCborValue value = 1 [json_name = "value"];</code>
      */
     @java.lang.Override
@@ -208,6 +236,10 @@ public  final class CodecDagCborEncodeRequest extends
       return instance.getValue();
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>.reallyme.codec.v1.CodecDeterministicCborValue value = 1 [json_name = "value"];</code>
      */
     public Builder setValue(me.really.codec.v1.CodecDeterministicCborValue value) {
@@ -216,6 +248,10 @@ public  final class CodecDagCborEncodeRequest extends
       return this;
       }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>.reallyme.codec.v1.CodecDeterministicCborValue value = 1 [json_name = "value"];</code>
      */
     public Builder setValue(
@@ -225,6 +261,10 @@ public  final class CodecDagCborEncodeRequest extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>.reallyme.codec.v1.CodecDeterministicCborValue value = 1 [json_name = "value"];</code>
      */
     public Builder mergeValue(me.really.codec.v1.CodecDeterministicCborValue value) {
@@ -233,6 +273,10 @@ public  final class CodecDagCborEncodeRequest extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>.reallyme.codec.v1.CodecDeterministicCborValue value = 1 [json_name = "value"];</code>
      */
     public Builder clearValue() {  copyOnWrite();

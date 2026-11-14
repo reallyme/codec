@@ -181,6 +181,14 @@ public enum CodecErrorReason
    */
   CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE(409),
   /**
+   * <code>CODEC_ERROR_REASON_CANONICAL_INVALID_DER = 410;</code>
+   */
+  CODEC_ERROR_REASON_CANONICAL_INVALID_DER(410),
+  /**
+   * <code>CODEC_ERROR_REASON_CANONICAL_INVALID_TLV = 411;</code>
+   */
+  CODEC_ERROR_REASON_CANONICAL_INVALID_TLV(411),
+  /**
    * <pre>
    * Backend failures.
    * </pre>
@@ -368,6 +376,14 @@ public enum CodecErrorReason
    */
   public static final int CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE_VALUE = 409;
   /**
+   * <code>CODEC_ERROR_REASON_CANONICAL_INVALID_DER = 410;</code>
+   */
+  public static final int CODEC_ERROR_REASON_CANONICAL_INVALID_DER_VALUE = 410;
+  /**
+   * <code>CODEC_ERROR_REASON_CANONICAL_INVALID_TLV = 411;</code>
+   */
+  public static final int CODEC_ERROR_REASON_CANONICAL_INVALID_TLV_VALUE = 411;
+  /**
    * <pre>
    * Backend failures.
    * </pre>
@@ -452,6 +468,8 @@ public enum CodecErrorReason
       case 407: return CODEC_ERROR_REASON_CANONICAL_CBOR_MAP_KEYS_OUT_OF_ORDER;
       case 408: return CODEC_ERROR_REASON_CANONICAL_CBOR_TRAILING_BYTES;
       case 409: return CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE;
+      case 410: return CODEC_ERROR_REASON_CANONICAL_INVALID_DER;
+      case 411: return CODEC_ERROR_REASON_CANONICAL_INVALID_TLV;
       case 500: return CODEC_ERROR_REASON_BACKEND_INTERNAL;
       case 600: return CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF;
       case 601: return CODEC_ERROR_REASON_BOUNDARY_MALFORMED_JSON;

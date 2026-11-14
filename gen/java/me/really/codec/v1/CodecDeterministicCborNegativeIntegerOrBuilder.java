@@ -11,6 +11,10 @@ public interface CodecDeterministicCborNegativeIntegerOrBuilder extends
     com.google.protobuf.MessageLiteOrBuilder {
 
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>sint64 value = 1 [json_name = "value"];</code>
    * @return The value.
    */

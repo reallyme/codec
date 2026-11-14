@@ -30,6 +30,10 @@ public object CodecDeterministicCborUnsignedIntegerKt {
     internal fun _build(): me.really.codec.v1.CodecDeterministicCborUnsignedInteger = _builder.build()
 
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `uint64 value = 1 [json_name = "value"];`
      */
     public var value: kotlin.Long
@@ -40,6 +44,10 @@ public object CodecDeterministicCborUnsignedIntegerKt {
         _builder.value = value
       }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `uint64 value = 1 [json_name = "value"];`
      */
     public fun clearValue() {

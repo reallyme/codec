@@ -203,6 +203,14 @@ export const stripSourceStringsAndComments = (source) => {
   return output;
 };
 
+/** Find schema booleans that duplicate protobuf's own field presence. */
+export const findManualProtoPresenceFields = (source) => {
+  const declarations = stripSourceStringsAndComments(source);
+  return [...declarations.matchAll(/\bbool\s+([A-Za-z_][A-Za-z0-9_]*)\s*=/gu)]
+    .map((match) => match[1])
+    .filter((name) => name.startsWith("has_") || /_(?:present|is_set)$/u.test(name));
+};
+
 export const sourceBlockFromNeedle = ({
   source,
   startNeedle,

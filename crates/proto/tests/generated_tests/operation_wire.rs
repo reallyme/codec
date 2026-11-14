@@ -27,12 +27,10 @@ fn operation_request_wire_tags_use_sparse_family_bands() {
             CodecOperationRequest {
                 operation: Some(
                     CodecMulticodecPrefixForNameRequest {
-                        name: String::new(),
-                        __buffa_unknown_fields: Default::default(),
+                        name: String::new().into(),
                     }
                     .into(),
                 ),
-                __buffa_unknown_fields: Default::default(),
             },
             &[0xc2, 0x3e, 0x00][..],
         ),
@@ -40,24 +38,16 @@ fn operation_request_wire_tags_use_sparse_family_bands() {
             CodecOperationRequest {
                 operation: Some(
                     CodecMulticodecLookupPrefixRequest {
-                        value: Vec::new(),
-                        __buffa_unknown_fields: Default::default(),
+                        value: Vec::new().into(),
                     }
                     .into(),
                 ),
-                __buffa_unknown_fields: Default::default(),
             },
             &[0xca, 0x3e, 0x00][..],
         ),
         (
             CodecOperationRequest {
-                operation: Some(
-                    CodecMulticodecTableRequest {
-                        __buffa_unknown_fields: Default::default(),
-                    }
-                    .into(),
-                ),
-                __buffa_unknown_fields: Default::default(),
+                operation: Some(CodecMulticodecTableRequest {}.into()),
             },
             &[0xd2, 0x3e, 0x00][..],
         ),
@@ -65,12 +55,10 @@ fn operation_request_wire_tags_use_sparse_family_bands() {
             CodecOperationRequest {
                 operation: Some(
                     CodecMultikeyParseRequest {
-                        multikey: String::new(),
-                        __buffa_unknown_fields: Default::default(),
+                        multikey: String::new().into(),
                     }
                     .into(),
                 ),
-                __buffa_unknown_fields: Default::default(),
             },
             &[0x82, 0x7d, 0x00][..],
         ),
@@ -78,13 +66,11 @@ fn operation_request_wire_tags_use_sparse_family_bands() {
             CodecOperationRequest {
                 operation: Some(
                     CodecDagCborVerifyCidRequest {
-                        cid: String::new(),
-                        payload: Vec::new(),
-                        __buffa_unknown_fields: Default::default(),
+                        cid: String::new().into(),
+                        payload: Vec::new().into(),
                     }
                     .into(),
                 ),
-                __buffa_unknown_fields: Default::default(),
             },
             &[0xc2, 0xbb, 0x01, 0x00][..],
         ),
@@ -92,13 +78,11 @@ fn operation_request_wire_tags_use_sparse_family_bands() {
             CodecOperationRequest {
                 operation: Some(
                     CodecPemDecodeRequest {
-                        pem: Vec::new(),
+                        pem: Vec::new().into(),
                         options: buffa::MessageField::none(),
-                        __buffa_unknown_fields: Default::default(),
                     }
                     .into(),
                 ),
-                __buffa_unknown_fields: Default::default(),
             },
             &[0x82, 0xfa, 0x01, 0x00][..],
         ),
@@ -107,11 +91,9 @@ fn operation_request_wire_tags_use_sparse_family_bands() {
                 operation: Some(
                     CodecDeterministicCborEncodeRequest {
                         value: buffa::MessageField::none(),
-                        __buffa_unknown_fields: Default::default(),
                     }
                     .into(),
                 ),
-                __buffa_unknown_fields: Default::default(),
             },
             &[0xc2, 0xb8, 0x02, 0x00][..],
         ),
@@ -119,12 +101,10 @@ fn operation_request_wire_tags_use_sparse_family_bands() {
             CodecOperationRequest {
                 operation: Some(
                     CodecDeterministicCborDecodeRequest {
-                        encoded: Vec::new(),
-                        __buffa_unknown_fields: Default::default(),
+                        encoded: Vec::new().into(),
                     }
                     .into(),
                 ),
-                __buffa_unknown_fields: Default::default(),
             },
             &[0xca, 0xb8, 0x02, 0x00][..],
         ),
@@ -151,56 +131,48 @@ fn operation_result_wire_tags_use_sparse_family_bands() {
         (
             CodecOperationResult {
                 result: Some(CodecMulticodecSpec::default().into()),
-                __buffa_unknown_fields: Default::default(),
             },
             &[0xc2, 0x3e, 0x00][..],
         ),
         (
             CodecOperationResult {
                 result: Some(CodecMulticodecLookupResult::default().into()),
-                __buffa_unknown_fields: Default::default(),
             },
             &[0xca, 0x3e, 0x00][..],
         ),
         (
             CodecOperationResult {
                 result: Some(CodecMulticodecTableResult::default().into()),
-                __buffa_unknown_fields: Default::default(),
             },
             &[0xd2, 0x3e, 0x00][..],
         ),
         (
             CodecOperationResult {
                 result: Some(CodecMultikeyParseResult::default().into()),
-                __buffa_unknown_fields: Default::default(),
             },
             &[0x82, 0x7d, 0x00][..],
         ),
         (
             CodecOperationResult {
                 result: Some(CodecDagCborVerifyCidResult::default().into()),
-                __buffa_unknown_fields: Default::default(),
             },
             &[0xc2, 0xbb, 0x01, 0x00][..],
         ),
         (
             CodecOperationResult {
                 result: Some(CodecPemDecodeResult::default().into()),
-                __buffa_unknown_fields: Default::default(),
             },
             &[0x82, 0xfa, 0x01, 0x00][..],
         ),
         (
             CodecOperationResult {
                 result: Some(CodecDeterministicCborEncodeResult::default().into()),
-                __buffa_unknown_fields: Default::default(),
             },
             &[0xc2, 0xb8, 0x02, 0x00][..],
         ),
         (
             CodecOperationResult {
                 result: Some(CodecDeterministicCborDecodeResult::default().into()),
-                __buffa_unknown_fields: Default::default(),
             },
             &[0xca, 0xb8, 0x02, 0x00][..],
         ),
@@ -215,34 +187,25 @@ fn operation_result_wire_tags_use_sparse_family_bands() {
 fn operation_response_outcome_wire_tags_are_stable() {
     let result = CodecOperationResponse {
         outcome: Some(CodecOperationResult::default().into()),
-        __buffa_unknown_fields: Default::default(),
     };
     assert_eq!(result.encode_to_vec(), &[0x0a, 0x00]);
 
     let error = CodecOperationResponse {
         outcome: Some(CodecError::default().into()),
-        __buffa_unknown_fields: Default::default(),
     };
     assert_eq!(error.encode_to_vec(), &[0x12, 0x00]);
 }
 
 #[test]
 fn deterministic_cbor_contract_wire_bytes_are_stable() {
-    let unsigned = CodecDeterministicCborUnsignedInteger {
-        value: 24,
-        __buffa_unknown_fields: Default::default(),
-    };
+    let unsigned = CodecDeterministicCborUnsignedInteger { value: 24 };
     assert_eq!(unsigned.encode_to_vec(), &[0x08, 0x18]);
 
-    let negative = CodecDeterministicCborNegativeInteger {
-        value: -1,
-        __buffa_unknown_fields: Default::default(),
-    };
+    let negative = CodecDeterministicCborNegativeInteger { value: -1 };
     assert_eq!(negative.encode_to_vec(), &[0x08, 0x01]);
 
     let integer = CodecDeterministicCborInteger {
         value: Some(unsigned.into()),
-        __buffa_unknown_fields: Default::default(),
     };
     assert_eq!(integer.encode_to_vec(), &[0x0a, 0x02, 0x08, 0x18]);
 
@@ -253,20 +216,17 @@ fn deterministic_cbor_contract_wire_bytes_are_stable() {
     );
 
     let encode_result = CodecDeterministicCborEncodeResult {
-        encoded: vec![0xa0],
-        __buffa_unknown_fields: Default::default(),
+        encoded: vec![0xa0].into(),
     };
     assert_eq!(encode_result.encode_to_vec(), &[0x0a, 0x01, 0xa0]);
 
     let prefix_result = CodecOperationResult {
         result: Some(CodecMulticodecSpec::default().into()),
-        __buffa_unknown_fields: Default::default(),
     };
     assert_eq!(prefix_result.encode_to_vec(), &[0xc2, 0x3e, 0x00]);
 
     let operation_result = CodecOperationResult {
         result: Some(encode_result.into()),
-        __buffa_unknown_fields: Default::default(),
     };
     assert_eq!(
         operation_result.encode_to_vec(),
@@ -275,7 +235,6 @@ fn deterministic_cbor_contract_wire_bytes_are_stable() {
 
     let response = CodecOperationResponse {
         outcome: Some(operation_result.into()),
-        __buffa_unknown_fields: Default::default(),
     };
     assert_eq!(
         response.encode_to_vec(),
@@ -286,11 +245,9 @@ fn deterministic_cbor_contract_wire_bytes_are_stable() {
         result: Some(
             CodecDeterministicCborDecodeResult {
                 value: buffa::MessageField::some(deterministic_cbor_text_value("hi")),
-                __buffa_unknown_fields: Default::default(),
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
     };
     assert_eq!(
         decode_result.encode_to_vec(),
@@ -313,15 +270,12 @@ fn deterministic_cbor_generated_debug_redacts_recursive_values() {
         result: Some(
             CodecDeterministicCborDecodeResult {
                 value: buffa::MessageField::some(map),
-                __buffa_unknown_fields: Default::default(),
             }
             .into(),
         ),
-        __buffa_unknown_fields: Default::default(),
     };
     let response = CodecOperationResponse {
         outcome: Some(operation_result.clone().into()),
-        __buffa_unknown_fields: Default::default(),
     };
 
     let response_debug = format!("{response:?}");

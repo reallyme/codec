@@ -14,6 +14,10 @@
     "nodes": 65536,
     "containerEntries": 16384
   },
+  "tlv": {
+    "defaultInputBytes": 1048576,
+    "maximumInputBytes": 16777216
+  },
   "protobuf": {
     "structuralBytesPerNode": 128,
     "fixedOperationBytes": 4096,

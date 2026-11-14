@@ -41,6 +41,7 @@ public  final class CodecPemEncodeResult extends
    * <pre>
    * PEM armor may contain private-key material and remains byte-oriented so
    * SDK callers can promptly wipe the returned owner.
+   * SENSITIVE: payload ownership requires redaction and zeroization.
    * </pre>
    *
    * <code>bytes pem = 1 [json_name = "pem"];</code>
@@ -54,6 +55,7 @@ public  final class CodecPemEncodeResult extends
    * <pre>
    * PEM armor may contain private-key material and remains byte-oriented so
    * SDK callers can promptly wipe the returned owner.
+   * SENSITIVE: payload ownership requires redaction and zeroization.
    * </pre>
    *
    * <code>bytes pem = 1 [json_name = "pem"];</code>
@@ -68,6 +70,7 @@ public  final class CodecPemEncodeResult extends
    * <pre>
    * PEM armor may contain private-key material and remains byte-oriented so
    * SDK callers can promptly wipe the returned owner.
+   * SENSITIVE: payload ownership requires redaction and zeroization.
    * </pre>
    *
    * <code>bytes pem = 1 [json_name = "pem"];</code>
@@ -178,6 +181,7 @@ public  final class CodecPemEncodeResult extends
      * <pre>
      * PEM armor may contain private-key material and remains byte-oriented so
      * SDK callers can promptly wipe the returned owner.
+     * SENSITIVE: payload ownership requires redaction and zeroization.
      * </pre>
      *
      * <code>bytes pem = 1 [json_name = "pem"];</code>
@@ -191,6 +195,7 @@ public  final class CodecPemEncodeResult extends
      * <pre>
      * PEM armor may contain private-key material and remains byte-oriented so
      * SDK callers can promptly wipe the returned owner.
+     * SENSITIVE: payload ownership requires redaction and zeroization.
      * </pre>
      *
      * <code>bytes pem = 1 [json_name = "pem"];</code>
@@ -206,6 +211,7 @@ public  final class CodecPemEncodeResult extends
      * <pre>
      * PEM armor may contain private-key material and remains byte-oriented so
      * SDK callers can promptly wipe the returned owner.
+     * SENSITIVE: payload ownership requires redaction and zeroization.
      * </pre>
      *
      * <code>bytes pem = 1 [json_name = "pem"];</code>

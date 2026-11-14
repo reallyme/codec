@@ -13,13 +13,14 @@ import java.util.zip.ZipFile
 
 plugins {
     kotlin("jvm") version "2.4.21"
+    id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
     `java-library`
     `maven-publish`
     signing
 }
 
 group = "me.really"
-version = "0.3.6"
+version = "0.4.0"
 
 // The JVM jar and Android AAR expose the same me.really.codec classes.
 // The shared capability makes Gradle reject a graph containing both.
@@ -167,10 +168,25 @@ fun expectedNativeDigestMetadata(bytes: ByteArray): String =
 
 kotlin {
     jvmToolchain(21)
+    explicitApi()
+    compilerOptions {
+        allWarningsAsErrors.set(true)
+    }
     sourceSets {
         main {
             kotlin.srcDir("../../gen/kotlin")
         }
+    }
+}
+
+ktlint {
+    version.set("1.5.0")
+    filter {
+        // Generated bindings are verified by Buf freshness, not style rules.
+        exclude { entry ->
+            entry.file.toPath().normalize().startsWith(rootProject.file("../../gen").toPath().normalize())
+        }
+        exclude("**/generated/**")
     }
 }
 

@@ -30,6 +30,10 @@ public object CodecDeterministicCborNegativeIntegerKt {
     internal fun _build(): me.really.codec.v1.CodecDeterministicCborNegativeInteger = _builder.build()
 
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `sint64 value = 1 [json_name = "value"];`
      */
     public var value: kotlin.Long
@@ -40,6 +44,10 @@ public object CodecDeterministicCborNegativeIntegerKt {
         _builder.value = value
       }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `sint64 value = 1 [json_name = "value"];`
      */
     public fun clearValue() {

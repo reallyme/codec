@@ -86,6 +86,10 @@ public  final class CodecDagCborVerifyCidRequest extends
   public static final int PAYLOAD_FIELD_NUMBER = 2;
   private com.google.protobuf.ByteString payload_;
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>bytes payload = 2 [json_name = "payload"];</code>
    * @return The payload.
    */
@@ -94,6 +98,10 @@ public  final class CodecDagCborVerifyCidRequest extends
     return payload_;
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>bytes payload = 2 [json_name = "payload"];</code>
    * @param value The payload to set.
    */
@@ -103,6 +111,10 @@ public  final class CodecDagCborVerifyCidRequest extends
     payload_ = value;
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>bytes payload = 2 [json_name = "payload"];</code>
    */
   private void clearPayload() {
@@ -257,6 +269,10 @@ public  final class CodecDagCborVerifyCidRequest extends
     }
 
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>bytes payload = 2 [json_name = "payload"];</code>
      * @return The payload.
      */
@@ -265,6 +281,10 @@ public  final class CodecDagCborVerifyCidRequest extends
       return instance.getPayload();
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>bytes payload = 2 [json_name = "payload"];</code>
      * @param value The payload to set.
      * @return This builder for chaining.
@@ -275,6 +295,10 @@ public  final class CodecDagCborVerifyCidRequest extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>bytes payload = 2 [json_name = "payload"];</code>
      * @return This builder for chaining.
      */

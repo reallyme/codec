@@ -157,6 +157,11 @@ public object CodecMulticodecSpecKt {
     }
 
     /**
+     * ```
+     * Legacy length rule: nonzero/false is fixed, zero/true is variable, and
+     * zero/false is not applicable. Nonzero/true is invalid provider metadata.
+     * ```
+     *
      * `uint32 fixed_length = 6 [json_name = "fixedLength"];`
      */
     public var fixedLength: kotlin.Int
@@ -167,6 +172,11 @@ public object CodecMulticodecSpecKt {
         _builder.fixedLength = value
       }
     /**
+     * ```
+     * Legacy length rule: nonzero/false is fixed, zero/true is variable, and
+     * zero/false is not applicable. Nonzero/true is invalid provider metadata.
+     * ```
+     *
      * `uint32 fixed_length = 6 [json_name = "fixedLength"];`
      */
     public fun clearFixedLength() {

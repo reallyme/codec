@@ -31,11 +31,21 @@ const add = (path, declaration, value, terminator = ";") => {
 const deterministic = limits.deterministicCbor;
 const dag = limits.dagCbor;
 const protobuf = limits.protobuf;
+const tlv = limits.tlv;
 const payloadBytes = deterministic.aggregateTextBytes + deterministic.aggregateByteStringBytes;
 const jsonTextBytes = deterministic.aggregateTextBytes * protobuf.jsonTextEscapeExpansion;
 const jsonByteStringBytes = Math.floor((deterministic.aggregateByteStringBytes + 2) / 3) * 4;
 const structuralBytes = deterministic.nodes * protobuf.structuralBytesPerNode;
-const protoJsonBytes = jsonTextBytes + jsonByteStringBytes + structuralBytes + protobuf.fixedOperationBytes;
+const tlvJsonBytes = Math.floor((tlv.maximumInputBytes + 2) / 3) * 4;
+const protoMessageBytes = Math.max(payloadBytes + structuralBytes, tlv.maximumInputBytes)
+  + protobuf.fixedOperationBytes;
+const protoJsonBytes = Math.max(jsonTextBytes + jsonByteStringBytes + structuralBytes, tlvJsonBytes)
+  + protobuf.fixedOperationBytes;
+add("crates/proto/src/limits.rs", "pub const MAX_CODEC_TLV_INPUT_BYTES: usize = ", tlv.maximumInputBytes);
+add("crates/codec/src/tlv/validate_options.rs", "pub const DEFAULT_INPUT_BYTES: usize = ", tlv.defaultInputBytes);
+add("packages/ts/src/boundary.ts", "const MAX_CODEC_TLV_INPUT_BYTES = ", tlv.maximumInputBytes);
+add("packages/ts/src/boundary.ts", "const MAX_CODEC_TLV_JSON_PAYLOAD_BYTES = ", tlvJsonBytes);
+add("packages/kotlin/src/main/kotlin/me/really/codec/CodecWireLimits.kt", "internal const val MAX_CODEC_PROTO_MESSAGE_BYTES: Int = ", protoMessageBytes, "");
 const messageDepth = deterministic.nestingDepth * protobuf.messageLayersPerMapDepth
   + protobuf.messageOuterLayers;
 const tsMessageDepth = messageDepth + protobuf.typescriptExtraRecursionLayers;
@@ -68,8 +78,8 @@ for (const [suffix, value, property] of shared) {
   add("crates/cbor/src/deterministic/limits.rs", `pub const ${name}: usize = `, value);
   add("packages/ts/src/deterministicCborBoundary.ts", `export const ${name} = `, value);
   if (kotlinNames.has(property)) {
-    add("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", `private const val ${kotlinNames.get(property)}: Int = `, value, "");
-    add("packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift", `private let ${swiftNames.get(property)} = `, value, "");
+    add("packages/kotlin/src/main/kotlin/me/really/codec/CodecWireLimits.kt", `internal const val ${kotlinNames.get(property)}: Int = `, value, "");
+    add("packages/swift/Sources/ReallyMeCodec/ValidateDeterministicCbor.swift", `let ${swiftNames.get(property)} = `, value, "");
   }
 }
 for (const [suffix, value] of [
@@ -78,7 +88,7 @@ for (const [suffix, value] of [
   ["MAX_DAG_CBOR_CONTAINER_ENTRIES", dag.containerEntries],
   ["MAX_DAG_CBOR_INPUT_LEN", dag.inputBytes],
 ]) {
-  add("crates/cbor/src/lib.rs", `pub const ${suffix}: usize = `, value);
+  add("crates/cbor/src/limits.rs", `pub const ${suffix}: usize = `, value);
 }
 for (const [name, value] of [
   ["CODEC_PROTO_DETERMINISTIC_CBOR_TEXT_BYTES", deterministic.aggregateTextBytes],
@@ -113,13 +123,11 @@ for (const [name, value] of [
   add("packages/ts/src/boundary.ts", `const ${name} = `, value);
 }
 add("packages/ts/src/deterministicCborBoundary.ts", "export const MAX_DETERMINISTIC_CBOR_PROTO_RECURSION_DEPTH = ", tsMessageDepth);
-add("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "private const val MAX_CODEC_PROTO_STRUCTURAL_BYTES_PER_NODE: Int = ", protobuf.structuralBytesPerNode, "");
-add("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "private const val MAX_CODEC_PROTO_FIXED_OPERATION_BYTES: Int = ", protobuf.fixedOperationBytes, "");
-add("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "private const val MAX_DETERMINISTIC_CBOR_PROTO_MESSAGE_DEPTH: Int = ", messageDepth, "");
+add("packages/kotlin/src/main/kotlin/me/really/codec/CodecWireLimits.kt", "internal const val MAX_DETERMINISTIC_CBOR_PROTO_MESSAGE_DEPTH: Int = ", messageDepth, "");
 add("packages/swift/Sources/ReallyMeCodec/CallCodecWithRustCAbi.swift", "private let maxProtoJsonRequestLength = ", protoJsonBytes, "");
-add("packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift", "private let maxCodecProtoStructuralBytesPerDeterministicCborNode = ", protobuf.structuralBytesPerNode, "");
-add("packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift", "private let maxCodecProtoFixedDeterministicCborOperationBytes = ", protobuf.fixedOperationBytes, "");
-add("packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift", "let maxDeterministicCborProtoMessageDepth = ", swiftMessageDepth, "");
+add("packages/swift/Sources/ReallyMeCodec/ValidateDeterministicCbor.swift", "private let maxCodecProtoStructuralBytesPerDeterministicCborNode = ", protobuf.structuralBytesPerNode, "");
+add("packages/swift/Sources/ReallyMeCodec/ValidateDeterministicCbor.swift", "private let maxCodecProtoFixedDeterministicCborOperationBytes = ", protobuf.fixedOperationBytes, "");
+add("packages/swift/Sources/ReallyMeCodec/ValidateDeterministicCbor.swift", "let maxDeterministicCborProtoMessageDepth = ", swiftMessageDepth, "");
 
 for (const [path, entries] of edits) {
   const absolute = resolve(root, path);

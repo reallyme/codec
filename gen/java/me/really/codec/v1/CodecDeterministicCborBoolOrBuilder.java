@@ -11,6 +11,10 @@ public interface CodecDeterministicCborBoolOrBuilder extends
     com.google.protobuf.MessageLiteOrBuilder {
 
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>bool value = 1 [json_name = "value"];</code>
    * @return The value.
    */

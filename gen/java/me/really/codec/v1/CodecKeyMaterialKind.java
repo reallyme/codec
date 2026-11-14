@@ -22,18 +22,34 @@ public enum CodecKeyMaterialKind
    */
   CODEC_KEY_MATERIAL_KIND_UNSPECIFIED(0),
   /**
+   * <pre>
+   * sdk-order: 1
+   * </pre>
+   *
    * <code>CODEC_KEY_MATERIAL_KIND_PUBLIC_KEY = 1;</code>
    */
   CODEC_KEY_MATERIAL_KIND_PUBLIC_KEY(1),
   /**
+   * <pre>
+   * sdk-order: 2
+   * </pre>
+   *
    * <code>CODEC_KEY_MATERIAL_KIND_PRIVATE_KEY = 2;</code>
    */
   CODEC_KEY_MATERIAL_KIND_PRIVATE_KEY(2),
   /**
+   * <pre>
+   * sdk-order: 3
+   * </pre>
+   *
    * <code>CODEC_KEY_MATERIAL_KIND_SYMMETRIC_KEY = 3;</code>
    */
   CODEC_KEY_MATERIAL_KIND_SYMMETRIC_KEY(3),
   /**
+   * <pre>
+   * sdk-order: 0
+   * </pre>
+   *
    * <code>CODEC_KEY_MATERIAL_KIND_NOT_KEY = 4;</code>
    */
   CODEC_KEY_MATERIAL_KIND_NOT_KEY(4),
@@ -45,18 +61,34 @@ public enum CodecKeyMaterialKind
    */
   public static final int CODEC_KEY_MATERIAL_KIND_UNSPECIFIED_VALUE = 0;
   /**
+   * <pre>
+   * sdk-order: 1
+   * </pre>
+   *
    * <code>CODEC_KEY_MATERIAL_KIND_PUBLIC_KEY = 1;</code>
    */
   public static final int CODEC_KEY_MATERIAL_KIND_PUBLIC_KEY_VALUE = 1;
   /**
+   * <pre>
+   * sdk-order: 2
+   * </pre>
+   *
    * <code>CODEC_KEY_MATERIAL_KIND_PRIVATE_KEY = 2;</code>
    */
   public static final int CODEC_KEY_MATERIAL_KIND_PRIVATE_KEY_VALUE = 2;
   /**
+   * <pre>
+   * sdk-order: 3
+   * </pre>
+   *
    * <code>CODEC_KEY_MATERIAL_KIND_SYMMETRIC_KEY = 3;</code>
    */
   public static final int CODEC_KEY_MATERIAL_KIND_SYMMETRIC_KEY_VALUE = 3;
   /**
+   * <pre>
+   * sdk-order: 0
+   * </pre>
+   *
    * <code>CODEC_KEY_MATERIAL_KIND_NOT_KEY = 4;</code>
    */
   public static final int CODEC_KEY_MATERIAL_KIND_NOT_KEY_VALUE = 4;

@@ -20,17 +20,20 @@ use crate::codec::{
     MAX_CODEC_FFI_INPUT_BYTES, MAX_CODEC_FFI_OUTPUT_BYTES,
 };
 use crate::guard::with_redacted_panic_hook;
-use crate::status::{
-    CODEC_BUFFER_TOO_SMALL, CODEC_INTERNAL_ERROR, CODEC_INVALID_ARGUMENT,
-    CODEC_INVALID_MULTICODEC_PREFIX, CODEC_NON_CANONICAL_HEX, CODEC_NON_CANONICAL_JSON, CODEC_OK,
-    CODEC_UNKNOWN_MULTICODEC,
-};
+use crate::status::{CODEC_BUFFER_TOO_SMALL, CODEC_OK};
 use codec_proto::{MAX_CODEC_PROTO_JSON_BYTES, MAX_CODEC_PROTO_MESSAGE_BYTES};
 use codec_runtime::operation_contract::resource_limit_operation_response;
 use jni::objects::{JByteArray, JObject};
 use jni::sys::{jbyteArray, jint, jlong};
 use jni::{EnvUnowned, Outcome};
 use std::ptr;
+
+#[path = "kotlin_codec/map_error.rs"]
+mod map_error;
+use map_error::{
+    throw_for_status, throw_invalid_input, throw_provider_failure, throw_provider_failure_if_clear,
+    validate_managed_input_lengths,
+};
 
 fn guarded_jni_call<F, T>(operation: F) -> Option<T>
 where
@@ -475,92 +478,6 @@ pub extern "system" fn Java_me_really_codec_ReallyMeCodecNative_processBoolNativ
     }
 }
 
-fn validate_managed_input_lengths<'local>(
-    env: &mut jni::Env<'local>,
-    inputs: &[&JByteArray<'local>],
-    maximum: usize,
-) -> jni::errors::Result<()> {
-    let mut aggregate = 0_usize;
-    for input in inputs {
-        let length = match input.len(env) {
-            Ok(value) => value,
-            Err(_) => return throw_provider_failure(env),
-        };
-        aggregate = match aggregate.checked_add(length) {
-            Some(value) => value,
-            None => return throw_invalid_input(env),
-        };
-        if aggregate > maximum {
-            return throw_invalid_input(env);
-        }
-    }
-    Ok(())
-}
-
-fn throw_provider_failure_if_clear(env: &mut EnvUnowned<'_>) {
-    let _outcome = env.with_env(|env| -> jni::errors::Result<()> {
-        if !env.exception_check() {
-            env.throw_new_void(jni::jni_str!(
-                "me/really/codec/ReallyMeCodecException$ProviderFailure"
-            ))?;
-        }
-        Ok(())
-    });
-}
-
-fn throw_for_status<'local, T>(env: &mut jni::Env<'local>, status: i32) -> jni::errors::Result<T> {
-    match status {
-        CODEC_INVALID_ARGUMENT => throw_invalid_input(env),
-        CODEC_NON_CANONICAL_HEX | CODEC_NON_CANONICAL_JSON => throw_non_canonical(env),
-        CODEC_INVALID_MULTICODEC_PREFIX | CODEC_UNKNOWN_MULTICODEC => throw_unsupported_codec(env),
-        CODEC_INTERNAL_ERROR => throw_provider_failure(env),
-        _ => throw_provider_failure(env),
-    }
-}
-
-fn throw_unsupported_codec<'local, T>(env: &mut jni::Env<'local>) -> jni::errors::Result<T> {
-    env.throw_new_void(jni::jni_str!(
-        "me/really/codec/ReallyMeCodecException$UnsupportedCodec"
-    ))?;
-    Err(jni::errors::Error::JavaException)
-}
-
-fn throw_non_canonical<'local, T>(env: &mut jni::Env<'local>) -> jni::errors::Result<T> {
-    env.throw_new_void(jni::jni_str!(
-        "me/really/codec/ReallyMeCodecException$NonCanonical"
-    ))?;
-    Err(jni::errors::Error::JavaException)
-}
-
-fn throw_invalid_input<'local, T>(env: &mut jni::Env<'local>) -> jni::errors::Result<T> {
-    env.throw_new_void(jni::jni_str!(
-        "me/really/codec/ReallyMeCodecException$InvalidInput"
-    ))?;
-    Err(jni::errors::Error::JavaException)
-}
-
-fn throw_provider_failure<'local, T>(env: &mut jni::Env<'local>) -> jni::errors::Result<T> {
-    env.throw_new_void(jni::jni_str!(
-        "me/really/codec/ReallyMeCodecException$ProviderFailure"
-    ))?;
-    Err(jni::errors::Error::JavaException)
-}
-
 #[cfg(test)]
-mod tests {
-    use super::{probed_output_capacity, MAX_CODEC_FFI_OUTPUT_BYTES};
-    use crate::status::{CODEC_BUFFER_TOO_SMALL, CODEC_INTERNAL_ERROR, CODEC_OK};
-
-    #[test]
-    fn generic_output_probe_is_strict_and_bounded() {
-        assert_eq!(probed_output_capacity(CODEC_OK, 0), Some(0));
-        assert_eq!(probed_output_capacity(CODEC_BUFFER_TOO_SMALL, 1), Some(1));
-        assert_eq!(probed_output_capacity(CODEC_OK, 1), None);
-        assert_eq!(probed_output_capacity(CODEC_BUFFER_TOO_SMALL, 0), None);
-        assert_eq!(
-            probed_output_capacity(CODEC_BUFFER_TOO_SMALL, MAX_CODEC_FFI_OUTPUT_BYTES + 1),
-            None
-        );
-        assert_eq!(probed_output_capacity(CODEC_INTERNAL_ERROR, 1), None);
-    }
-}
+#[path = "kotlin_codec_tests.rs"]
+mod tests;

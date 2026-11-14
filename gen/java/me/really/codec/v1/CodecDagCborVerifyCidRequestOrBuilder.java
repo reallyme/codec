@@ -23,6 +23,10 @@ public interface CodecDagCborVerifyCidRequestOrBuilder extends
       getCidBytes();
 
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>bytes payload = 2 [json_name = "payload"];</code>
    * @return The payload.
    */

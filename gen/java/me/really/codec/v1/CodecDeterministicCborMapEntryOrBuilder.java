@@ -11,22 +11,38 @@ public interface CodecDeterministicCborMapEntryOrBuilder extends
     com.google.protobuf.MessageLiteOrBuilder {
 
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>.reallyme.codec.v1.CodecDeterministicCborMapKey key = 1 [json_name = "key"];</code>
    * @return Whether the key field is set.
    */
   boolean hasKey();
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>.reallyme.codec.v1.CodecDeterministicCborMapKey key = 1 [json_name = "key"];</code>
    * @return The key.
    */
   me.really.codec.v1.CodecDeterministicCborMapKey getKey();
 
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>.reallyme.codec.v1.CodecDeterministicCborValue value = 2 [json_name = "value"];</code>
    * @return Whether the value field is set.
    */
   boolean hasValue();
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>.reallyme.codec.v1.CodecDeterministicCborValue value = 2 [json_name = "value"];</code>
    * @return The value.
    */

@@ -4,9 +4,9 @@
 
 import Foundation
 #if canImport(Darwin)
-import Darwin
+    import Darwin
 #elseif canImport(Glibc)
-import Glibc
+    import Glibc
 #endif
 
 enum ReallyMeCodecMemory {
@@ -36,11 +36,11 @@ enum ReallyMeCodecMemory {
             return
         }
         #if canImport(Darwin)
-        _ = memset_s(baseAddress, buffer.count, 0, buffer.count)
+            _ = memset_s(baseAddress, buffer.count, 0, buffer.count)
         #elseif canImport(Glibc)
-        explicit_bzero(baseAddress, buffer.count)
+            explicit_bzero(baseAddress, buffer.count)
         #else
-        #error("ReallyMeCodec requires a non-elidable platform memory wipe primitive")
+            #error("ReallyMeCodec requires a non-elidable platform memory wipe primitive")
         #endif
     }
 }

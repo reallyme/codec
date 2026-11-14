@@ -15,7 +15,7 @@ pub mod serde_bytes;
 pub mod serde_option_bytes;
 
 pub use decode::{base64url_bytes_to_bytes, base64url_to_bytes};
-/// Maximum accepted encoded base64url text length.
-pub const MAX_BASE64URL_INPUT_LEN: usize = 2 * 1024 * 1024;
+mod limits;
 pub use encode::bytes_to_base64url;
 pub use error::Base64UrlError;
+pub use limits::MAX_BASE64URL_INPUT_LEN;

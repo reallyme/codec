@@ -138,6 +138,10 @@ public  final class CodecMultikeyParseResult extends
   public static final int PUBLIC_KEY_FIELD_NUMBER = 3;
   private com.google.protobuf.ByteString publicKey_;
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>bytes public_key = 3 [json_name = "publicKey"];</code>
    * @return The publicKey.
    */
@@ -146,6 +150,10 @@ public  final class CodecMultikeyParseResult extends
     return publicKey_;
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>bytes public_key = 3 [json_name = "publicKey"];</code>
    * @param value The publicKey to set.
    */
@@ -155,6 +163,10 @@ public  final class CodecMultikeyParseResult extends
     publicKey_ = value;
   }
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>bytes public_key = 3 [json_name = "publicKey"];</code>
    */
   private void clearPublicKey() {
@@ -165,6 +177,11 @@ public  final class CodecMultikeyParseResult extends
   public static final int EXPECTED_PUBLIC_KEY_LENGTH_FIELD_NUMBER = 4;
   private int expectedPublicKeyLength_;
   /**
+   * <pre>
+   * Legacy length rule: nonzero/false is fixed and must match public_key's
+   * byte length; zero/true is variable. The other combinations are invalid.
+   * </pre>
+   *
    * <code>uint32 expected_public_key_length = 4 [json_name = "expectedPublicKeyLength"];</code>
    * @return The expectedPublicKeyLength.
    */
@@ -173,6 +190,11 @@ public  final class CodecMultikeyParseResult extends
     return expectedPublicKeyLength_;
   }
   /**
+   * <pre>
+   * Legacy length rule: nonzero/false is fixed and must match public_key's
+   * byte length; zero/true is variable. The other combinations are invalid.
+   * </pre>
+   *
    * <code>uint32 expected_public_key_length = 4 [json_name = "expectedPublicKeyLength"];</code>
    * @param value The expectedPublicKeyLength to set.
    */
@@ -181,6 +203,11 @@ public  final class CodecMultikeyParseResult extends
     expectedPublicKeyLength_ = value;
   }
   /**
+   * <pre>
+   * Legacy length rule: nonzero/false is fixed and must match public_key's
+   * byte length; zero/true is variable. The other combinations are invalid.
+   * </pre>
+   *
    * <code>uint32 expected_public_key_length = 4 [json_name = "expectedPublicKeyLength"];</code>
    */
   private void clearExpectedPublicKeyLength() {
@@ -414,6 +441,10 @@ public  final class CodecMultikeyParseResult extends
     }
 
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>bytes public_key = 3 [json_name = "publicKey"];</code>
      * @return The publicKey.
      */
@@ -422,6 +453,10 @@ public  final class CodecMultikeyParseResult extends
       return instance.getPublicKey();
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>bytes public_key = 3 [json_name = "publicKey"];</code>
      * @param value The publicKey to set.
      * @return This builder for chaining.
@@ -432,6 +467,10 @@ public  final class CodecMultikeyParseResult extends
       return this;
     }
     /**
+     * <pre>
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * </pre>
+     *
      * <code>bytes public_key = 3 [json_name = "publicKey"];</code>
      * @return This builder for chaining.
      */
@@ -442,6 +481,11 @@ public  final class CodecMultikeyParseResult extends
     }
 
     /**
+     * <pre>
+     * Legacy length rule: nonzero/false is fixed and must match public_key's
+     * byte length; zero/true is variable. The other combinations are invalid.
+     * </pre>
+     *
      * <code>uint32 expected_public_key_length = 4 [json_name = "expectedPublicKeyLength"];</code>
      * @return The expectedPublicKeyLength.
      */
@@ -450,6 +494,11 @@ public  final class CodecMultikeyParseResult extends
       return instance.getExpectedPublicKeyLength();
     }
     /**
+     * <pre>
+     * Legacy length rule: nonzero/false is fixed and must match public_key's
+     * byte length; zero/true is variable. The other combinations are invalid.
+     * </pre>
+     *
      * <code>uint32 expected_public_key_length = 4 [json_name = "expectedPublicKeyLength"];</code>
      * @param value The expectedPublicKeyLength to set.
      * @return This builder for chaining.
@@ -460,6 +509,11 @@ public  final class CodecMultikeyParseResult extends
       return this;
     }
     /**
+     * <pre>
+     * Legacy length rule: nonzero/false is fixed and must match public_key's
+     * byte length; zero/true is variable. The other combinations are invalid.
+     * </pre>
+     *
      * <code>uint32 expected_public_key_length = 4 [json_name = "expectedPublicKeyLength"];</code>
      * @return This builder for chaining.
      */

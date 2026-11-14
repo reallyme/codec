@@ -20,6 +20,34 @@ enum CodecErrorOrigin {
   CODEC_ERROR_ORIGIN_PROVIDER = 2;
 }
 
+// Stable SDK presentation of codec and host-provider failures. Existing wire
+// operations continue to report their more precise CodecErrorReason. SDK view
+// generation uses the names below; platform-only categories are explicitly
+// marked so they do not widen the other SDKs' existing error types.
+enum CodecSdkErrorCategory {
+  CODEC_SDK_ERROR_CATEGORY_UNSPECIFIED = 0;
+  // sdk: swift
+  CODEC_SDK_ERROR_CATEGORY_UNSUPPORTED_PLATFORM = 1;
+  // sdk: swift
+  CODEC_SDK_ERROR_CATEGORY_DYNAMIC_LIBRARY_NOT_FOUND = 2;
+  // sdk: swift
+  CODEC_SDK_ERROR_CATEGORY_DYNAMIC_LIBRARY_LOAD_FAILED = 3;
+  // sdk: swift
+  CODEC_SDK_ERROR_CATEGORY_PROVIDER_UNAVAILABLE = 4;
+  // sdk: swift
+  CODEC_SDK_ERROR_CATEGORY_SYMBOL_NOT_FOUND = 5;
+  // sdk: swift,typescript,kotlin; kotlin-base: true
+  CODEC_SDK_ERROR_CATEGORY_INVALID_INPUT = 6;
+  // sdk: swift,typescript,kotlin; kotlin-parent: INVALID_INPUT
+  CODEC_SDK_ERROR_CATEGORY_UNSUPPORTED_CODEC = 7;
+  // sdk: swift,typescript,kotlin; kotlin-parent: INVALID_INPUT
+  CODEC_SDK_ERROR_CATEGORY_UNSUPPORTED_IPLD_VALUE = 8;
+  // sdk: swift,typescript,kotlin; kotlin-parent: INVALID_INPUT
+  CODEC_SDK_ERROR_CATEGORY_NON_CANONICAL = 9;
+  // sdk: swift,typescript,kotlin
+  CODEC_SDK_ERROR_CATEGORY_PROVIDER_FAILURE = 10;
+}
+
 message CodecError {
   oneof error {
     CodecBaseEncodingError base_encoding = 1;
@@ -50,17 +78,20 @@ message CodecMulticodecPrefixForNameRequest {
 }
 
 message CodecMulticodecLookupPrefixRequest {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   bytes value = 1;
 }
 
 message CodecMulticodecTableRequest {}
 
 message CodecMultikeyParseRequest {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   string multikey = 1;
 }
 
 message CodecDagCborVerifyCidRequest {
   string cid = 1;
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   bytes payload = 2;
 }
 
@@ -69,20 +100,24 @@ message CodecDagCborVerifyCidRequest {
 // the adapter even though the reusable recursive value schema can represent
 // the wider deterministic-CBOR key domain.
 message CodecDagCborEncodeRequest {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   CodecDeterministicCborValue value = 1;
 }
 
 message CodecDagCborEncodeResult {
   // Encoded DAG-CBOR bytes may contain the complete sensitive document.
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   bytes encoded = 1;
 }
 
 message CodecDagCborDecodeRequest {
   // Encoded DAG-CBOR bytes may contain the complete sensitive document.
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   bytes encoded = 1;
 }
 
 message CodecDagCborDecodeResult {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   CodecDeterministicCborValue value = 1;
 }
 
@@ -97,6 +132,7 @@ message CodecPemDecodeOptions {
 message CodecPemDecodeRequest {
   // PEM may contain private-key material. Bytes avoid long-lived immutable
   // managed strings and let generated hardening wipe the owned request field.
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   bytes pem = 1;
   CodecPemDecodeOptions options = 2;
 }
@@ -119,6 +155,7 @@ message CodecPemEncodeRequest {
   // DER may contain private-key material. Generated owned-message drop wipes
   // the retained field; transport decoders may create temporary copies that
   // cannot be reliably wiped. Use binary requests for secret-bearing DER.
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   bytes der = 2;
   CodecPemEncodeOptions options = 3;
 }
@@ -126,6 +163,7 @@ message CodecPemEncodeRequest {
 message CodecPemEncodeResult {
   // PEM armor may contain private-key material and remains byte-oriented so
   // SDK callers can promptly wipe the returned owner.
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   bytes pem = 1;
 }
 
@@ -134,14 +172,17 @@ message CodecPemEncodeResult {
 message CodecDeterministicCborNull {}
 
 message CodecDeterministicCborBool {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   bool value = 1;
 }
 
 message CodecDeterministicCborUnsignedInteger {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   uint64 value = 1;
 }
 
 message CodecDeterministicCborNegativeInteger {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   sint64 value = 1;
 }
 
@@ -156,10 +197,12 @@ message CodecDeterministicCborInteger {
 }
 
 message CodecDeterministicCborText {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   string value = 1;
 }
 
 message CodecDeterministicCborBytes {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   bytes value = 1;
 }
 
@@ -174,15 +217,19 @@ message CodecDeterministicCborMapKey {
 }
 
 message CodecDeterministicCborMapEntry {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   CodecDeterministicCborMapKey key = 1;
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   CodecDeterministicCborValue value = 2;
 }
 
 message CodecDeterministicCborArray {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   repeated CodecDeterministicCborValue values = 1;
 }
 
 message CodecDeterministicCborMap {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   repeated CodecDeterministicCborMapEntry entries = 1;
 }
 
@@ -202,20 +249,24 @@ message CodecDeterministicCborValue {
 }
 
 message CodecDeterministicCborEncodeRequest {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   CodecDeterministicCborValue value = 1;
 }
 
 message CodecDeterministicCborEncodeResult {
   // Encoded CBOR bytes may contain the complete sensitive document.
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   bytes encoded = 1;
 }
 
 message CodecDeterministicCborDecodeRequest {
   // Encoded CBOR bytes may contain the complete sensitive document.
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   bytes encoded = 1;
 }
 
 message CodecDeterministicCborDecodeResult {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   CodecDeterministicCborValue value = 1;
 }
 
@@ -239,6 +290,8 @@ message CodecOperationResult {
     CodecPemEncodeResult pem_encode = 4001;
     CodecDeterministicCborEncodeResult deterministic_cbor_encode = 5000;
     CodecDeterministicCborDecodeResult deterministic_cbor_decode = 5001;
+
+    // Schema-defined scalar, borrowed-parser, and provider metadata operations.
   }
 }
 
@@ -282,6 +335,8 @@ message CodecOperationRequest {
     // 5000-5999: deterministic generic-CBOR encode/decode.
     CodecDeterministicCborEncodeRequest deterministic_cbor_encode = 5000;
     CodecDeterministicCborDecodeRequest deterministic_cbor_decode = 5001;
+
+    // Schema-defined scalar, borrowed-parser, and provider metadata operations.
   }
 }
 
@@ -290,19 +345,28 @@ message CodecOperationRequest {
 // SDKs do not pass ad hoc strings across FFI or RPC boundaries.
 enum CodecKeyMaterialKind {
   CODEC_KEY_MATERIAL_KIND_UNSPECIFIED = 0;
+  // sdk-order: 1
   CODEC_KEY_MATERIAL_KIND_PUBLIC_KEY = 1;
+  // sdk-order: 2
   CODEC_KEY_MATERIAL_KIND_PRIVATE_KEY = 2;
+  // sdk-order: 3
   CODEC_KEY_MATERIAL_KIND_SYMMETRIC_KEY = 3;
+  // sdk-order: 0
   CODEC_KEY_MATERIAL_KIND_NOT_KEY = 4;
 }
 
 // CodecTag classifies the protocol role of a multicodec table entry.
 enum CodecTag {
   CODEC_TAG_UNSPECIFIED = 0;
+  // sdk-order: 0
   CODEC_TAG_ENCRYPTION = 1;
+  // sdk-order: 2
   CODEC_TAG_KEY = 2;
+  // sdk-order: 1
   CODEC_TAG_HASH = 3;
+  // sdk-order: 3
   CODEC_TAG_MULTIHASH = 4;
+  // sdk-order: 4
   CODEC_TAG_MULTIKEY = 5;
 }
 
@@ -319,6 +383,8 @@ message CodecMulticodecSpec {
   bytes prefix = 3;
   CodecTag tag = 4;
   CodecKeyMaterialKind key_material_kind = 5;
+  // Legacy length rule: nonzero/false is fixed, zero/true is variable, and
+  // zero/false is not applicable. Nonzero/true is invalid provider metadata.
   uint32 fixed_length = 6;
   bool variable_length = 7;
   string algorithm_name = 8;
@@ -341,7 +407,10 @@ message CodecMulticodecTableResult {
 message CodecMultikeyParseResult {
   string codec_name = 1;
   string algorithm_name = 2;
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   bytes public_key = 3;
+  // Legacy length rule: nonzero/false is fixed and must match public_key's
+  // byte length; zero/true is variable. The other combinations are invalid.
   uint32 expected_public_key_length = 4;
   bool variable_public_key_length = 5;
 }
@@ -361,6 +430,7 @@ message CodecPemDecodeResult {
   // decode results are responsible for copying it into their language's
   // sensitive-buffer owner and wiping intermediate protobuf containers as soon
   // as practical.
+  // SENSITIVE: payload ownership requires redaction and zeroization.
   bytes der = 2;
 }
 
@@ -462,6 +532,8 @@ enum CodecErrorReason {
   CODEC_ERROR_REASON_CANONICAL_CBOR_MAP_KEYS_OUT_OF_ORDER = 407;
   CODEC_ERROR_REASON_CANONICAL_CBOR_TRAILING_BYTES = 408;
   CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE = 409;
+  CODEC_ERROR_REASON_CANONICAL_INVALID_DER = 410;
+  CODEC_ERROR_REASON_CANONICAL_INVALID_TLV = 411;
 
   // Backend failures.
   CODEC_ERROR_REASON_BACKEND_INTERNAL = 500;
@@ -471,4 +543,928 @@ enum CodecErrorReason {
   CODEC_ERROR_REASON_BOUNDARY_MALFORMED_JSON = 601;
   CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED = 602;
   CODEC_ERROR_REASON_BOUNDARY_MISSING_OPERATION = 603;
+}
+
+// Every executable codec operation is declared here. Native borrowed APIs
+// are compatibility facades over these contracts and preserve caller ownership.
+// Existing field numbers and existing operation encodings are permanent.
+
+message CodecBytesRequest {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  bytes value = 1;
+}
+
+message CodecTextRequest {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  string value = 1;
+}
+
+message CodecEmptyRequest {
+}
+
+message CodecBytesResult {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  bytes value = 1;
+}
+
+message CodecTextResult {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  string value = 1;
+}
+
+message CodecBoolResult {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  bool value = 1;
+}
+
+message CodecUint32Result {
+  // SENSITIVE: observations retain caller-controlled scalar payloads.
+  uint32 value = 1;
+}
+
+message CodecEmptyResult {
+}
+
+message CodecOptionalTextResult {
+  CodecTextResult value = 1;
+}
+
+message CodecMultikeyEncodeRequest {
+  string codec_name = 1;
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  bytes public_key = 2;
+}
+
+message CodecBindingTypeMatchesCodecRequest {
+  string binding_type = 1;
+  string codec_name = 2;
+}
+
+message CodecValidateKeyBindingRequest {
+  string binding_type = 1;
+  optional string algorithm = 2;
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  string multikey = 3;
+}
+
+enum CodecGeneralCborLengthPolicy {
+  CODEC_GENERAL_CBOR_LENGTH_POLICY_UNSPECIFIED = 0;
+  CODEC_GENERAL_CBOR_LENGTH_POLICY_DEFINITE_ONLY = 1;
+  CODEC_GENERAL_CBOR_LENGTH_POLICY_ALLOW_INDEFINITE = 2;
+}
+
+enum CodecGeneralCborSerialization {
+  CODEC_GENERAL_CBOR_SERIALIZATION_UNSPECIFIED = 0;
+  CODEC_GENERAL_CBOR_SERIALIZATION_RECEIVED = 1;
+  CODEC_GENERAL_CBOR_SERIALIZATION_PREFERRED = 2;
+}
+
+enum CodecGeneralCborFloatPolicy {
+  CODEC_GENERAL_CBOR_FLOAT_POLICY_UNSPECIFIED = 0;
+  CODEC_GENERAL_CBOR_FLOAT_POLICY_ALL = 1;
+  CODEC_GENERAL_CBOR_FLOAT_POLICY_FINITE_ONLY = 2;
+  CODEC_GENERAL_CBOR_FLOAT_POLICY_REJECT = 3;
+}
+
+enum CodecGeneralCborMapOrdering {
+  CODEC_GENERAL_CBOR_MAP_ORDERING_UNSPECIFIED = 0;
+  CODEC_GENERAL_CBOR_MAP_ORDERING_RECEIVED = 1;
+  CODEC_GENERAL_CBOR_MAP_ORDERING_LENGTH_FIRST = 2;
+  CODEC_GENERAL_CBOR_MAP_ORDERING_BYTEWISE = 3;
+}
+
+enum CodecGeneralCborFloatWidth {
+  CODEC_GENERAL_CBOR_FLOAT_WIDTH_UNSPECIFIED = 0;
+  CODEC_GENERAL_CBOR_FLOAT_WIDTH_BINARY16 = 1;
+  CODEC_GENERAL_CBOR_FLOAT_WIDTH_BINARY32 = 2;
+  CODEC_GENERAL_CBOR_FLOAT_WIDTH_BINARY64 = 3;
+}
+
+enum CodecGeneralCborMajorType {
+  CODEC_GENERAL_CBOR_MAJOR_TYPE_UNSPECIFIED = 0;
+  CODEC_GENERAL_CBOR_MAJOR_TYPE_UNSIGNED = 1;
+  CODEC_GENERAL_CBOR_MAJOR_TYPE_NEGATIVE = 2;
+  CODEC_GENERAL_CBOR_MAJOR_TYPE_BYTES = 3;
+  CODEC_GENERAL_CBOR_MAJOR_TYPE_TEXT = 4;
+  CODEC_GENERAL_CBOR_MAJOR_TYPE_ARRAY = 5;
+  CODEC_GENERAL_CBOR_MAJOR_TYPE_MAP = 6;
+  CODEC_GENERAL_CBOR_MAJOR_TYPE_TAG = 7;
+  CODEC_GENERAL_CBOR_MAJOR_TYPE_SIMPLE = 8;
+}
+
+enum CodecGeneralCborArgumentWidth {
+  CODEC_GENERAL_CBOR_ARGUMENT_WIDTH_UNSPECIFIED = 0;
+  CODEC_GENERAL_CBOR_ARGUMENT_WIDTH_INLINE = 1;
+  CODEC_GENERAL_CBOR_ARGUMENT_WIDTH_ONE = 2;
+  CODEC_GENERAL_CBOR_ARGUMENT_WIDTH_TWO = 3;
+  CODEC_GENERAL_CBOR_ARGUMENT_WIDTH_FOUR = 4;
+  CODEC_GENERAL_CBOR_ARGUMENT_WIDTH_EIGHT = 5;
+  CODEC_GENERAL_CBOR_ARGUMENT_WIDTH_INDEFINITE = 6;
+  CODEC_GENERAL_CBOR_ARGUMENT_WIDTH_BREAK = 7;
+}
+
+enum CodecGeneralCborInspection {
+  CODEC_GENERAL_CBOR_INSPECTION_UNSPECIFIED = 0;
+  CODEC_GENERAL_CBOR_INSPECTION_RECEIVED_BYTES = 1;
+  CODEC_GENERAL_CBOR_INSPECTION_BODY_BYTES = 2;
+  CODEC_GENERAL_CBOR_INSPECTION_INTEGER = 3;
+  CODEC_GENERAL_CBOR_INSPECTION_FLOAT = 4;
+  CODEC_GENERAL_CBOR_INSPECTION_SIMPLE_VALUE = 5;
+  CODEC_GENERAL_CBOR_INSPECTION_BOOL = 6;
+  CODEC_GENERAL_CBOR_INSPECTION_BYTES = 7;
+  CODEC_GENERAL_CBOR_INSPECTION_TEXT = 8;
+  CODEC_GENERAL_CBOR_INSPECTION_STRING_CHUNKS = 9;
+  CODEC_GENERAL_CBOR_INSPECTION_CHILDREN = 10;
+  CODEC_GENERAL_CBOR_INSPECTION_TAGGED_BYTES = 11;
+}
+
+// Omitted limit fields select defaults; explicit zero retains its native limit semantics.
+// Present options require all four policy enums; omitting options selects received defaults.
+// Wire receipt collections are bounded by twice entries to include map key/value pairs.
+message CodecGeneralCborOptions {
+  CodecGeneralCborSerialization serialization = 1;
+  CodecGeneralCborLengthPolicy lengths = 2;
+  CodecGeneralCborFloatPolicy floats = 3;
+  CodecGeneralCborMapOrdering ordering = 4;
+  optional uint64 input_bytes = 5;
+  optional uint64 output_bytes = 6;
+  optional uint64 depth = 7;
+  optional uint64 nodes = 8;
+  optional uint64 entries = 9;
+  optional uint64 byte_string_bytes = 10;
+  optional uint64 text_bytes = 11;
+  optional uint64 work = 12;
+}
+
+// A checked half-open span in the request source; bytes are never reconstructed.
+message CodecByteSpan {
+  uint64 offset = 1;
+  uint64 length = 2;
+}
+
+// IEEE bits are transported as integers so NaN payloads and signed zero survive exactly.
+message CodecGeneralCborFloat {
+  CodecGeneralCborFloatWidth width = 1;
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  uint64 bits = 2;
+}
+
+// Negative integers represent -1-argument, including values below i64::MIN.
+message CodecGeneralCborInteger {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  bool negative = 1;
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  uint64 argument = 2;
+}
+
+message CodecGeneralCborHeader {
+  CodecGeneralCborMajorType major_type = 1;
+  CodecGeneralCborArgumentWidth width = 2;
+  // SENSITIVE: observations retain caller-controlled scalar payloads.
+  optional uint64 argument = 3;
+  uint64 encoded_length = 4;
+  optional bool preferred_argument = 5;
+  optional bool preferred_float = 6;
+  CodecGeneralCborFloat float_value = 7;
+}
+
+// All spans refer to the original request input, retaining received headers and map order.
+message CodecGeneralCborFrame {
+  CodecByteSpan received = 1;
+  CodecByteSpan header_bytes = 2;
+  CodecByteSpan body = 3;
+  CodecGeneralCborHeader header = 4;
+  bool validated = 5;
+  CodecGeneralCborOptions options = 6;
+}
+
+message CodecGeneralCborFrames {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  repeated CodecGeneralCborFrame values = 1;
+  uint64 consumed_bytes = 2;
+}
+
+message CodecGeneralCborChunks {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  repeated CodecByteSpan values = 1;
+}
+
+message CodecGeneralCborTaggedBytes {
+  // SENSITIVE: observations retain caller-controlled scalar payloads.
+  uint64 tag = 1;
+  CodecByteSpan received = 2;
+  CodecByteSpan payload = 3;
+}
+
+message CodecGeneralCborSourceRequest {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  bytes encoded = 1;
+  CodecGeneralCborOptions options = 2;
+}
+
+message CodecGeneralCborInspectRequest {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  bytes encoded = 1;
+  CodecGeneralCborOptions options = 2;
+  CodecGeneralCborInspection inspection = 3;
+  bool validate = 4;
+}
+
+// Outer options bound framing; embedded options validate the exact tag-24 payload.
+message CodecGeneralCborEmbeddedRequest {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  bytes encoded = 1;
+  CodecGeneralCborOptions outer_options = 2;
+  CodecGeneralCborOptions embedded_options = 3;
+}
+
+message CodecGeneralCborInspectionResult {
+  oneof value {
+    CodecBytesResult bytes_value = 1;
+    CodecTextResult text_value = 2;
+    CodecGeneralCborInteger integer_value = 3;
+    CodecGeneralCborFloat float_value = 4;
+    CodecUint32Result simple_value = 5;
+    CodecBoolResult bool_value = 6;
+    CodecGeneralCborChunks chunks = 7;
+    CodecGeneralCborFrames children = 8;
+    CodecGeneralCborTaggedBytes tagged_bytes = 9;
+  }
+}
+
+message CodecGeneralCborUnsigned {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  uint64 argument = 1;
+}
+
+message CodecGeneralCborNegative {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  uint64 argument = 1;
+}
+
+message CodecGeneralCborSimple {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  uint32 value = 1;
+}
+
+message CodecGeneralCborArray {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  repeated CodecGeneralCborValue values = 1;
+}
+
+message CodecGeneralCborMapEntry {
+  CodecGeneralCborValue key = 1;
+  CodecGeneralCborValue value = 2;
+}
+
+message CodecGeneralCborMap {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  repeated CodecGeneralCborMapEntry entries = 1;
+}
+
+message CodecGeneralCborTag {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  uint64 tag = 1;
+  CodecGeneralCborValue value = 2;
+}
+
+// Received values embed their complete original encoding verbatim.
+message CodecGeneralCborValue {
+  oneof value {
+    CodecGeneralCborUnsigned unsigned_value = 1;
+    CodecGeneralCborNegative negative_value = 2;
+    CodecBytesResult bytes_value = 3;
+    CodecTextResult text_value = 4;
+    CodecGeneralCborArray array_value = 5;
+    CodecGeneralCborMap map_value = 6;
+    CodecGeneralCborTag tag_value = 7;
+    CodecGeneralCborFloat float_value = 8;
+    CodecBoolResult bool_value = 9;
+    CodecEmptyResult null_value = 10;
+    CodecEmptyResult undefined_value = 11;
+    CodecGeneralCborSimple simple_value = 12;
+    CodecBytesResult received_value = 13;
+  }
+}
+
+message CodecGeneralCborEncodeRequest {
+  CodecGeneralCborValue value = 1;
+  CodecGeneralCborOptions options = 2;
+}
+
+enum CodecGeneralCborErrorReason {
+  CODEC_GENERAL_CBOR_ERROR_REASON_UNSPECIFIED = 0;
+  // Error text: empty input
+  CODEC_GENERAL_CBOR_ERROR_REASON_EMPTY_INPUT = 1;
+  // Error text: truncated item
+  CODEC_GENERAL_CBOR_ERROR_REASON_TRUNCATED = 2;
+  // Error text: reserved additional information
+  CODEC_GENERAL_CBOR_ERROR_REASON_RESERVED_ADDITIONAL_INFORMATION = 3;
+  // Error text: invalid indefinite argument
+  CODEC_GENERAL_CBOR_ERROR_REASON_INVALID_INDEFINITE_ARGUMENT = 4;
+  // Error text: unexpected break
+  CODEC_GENERAL_CBOR_ERROR_REASON_UNEXPECTED_BREAK = 5;
+  // Error text: invalid simple value encoding
+  CODEC_GENERAL_CBOR_ERROR_REASON_INVALID_SIMPLE_VALUE = 6;
+  // Error text: invalid string chunk
+  CODEC_GENERAL_CBOR_ERROR_REASON_INVALID_CHUNK = 7;
+  // Error text: indefinite length is not allowed
+  CODEC_GENERAL_CBOR_ERROR_REASON_INDEFINITE_NOT_ALLOWED = 8;
+  // Error text: non-preferred argument encoding
+  CODEC_GENERAL_CBOR_ERROR_REASON_NON_PREFERRED_ARGUMENT = 9;
+  // Error text: non-preferred floating-point encoding
+  CODEC_GENERAL_CBOR_ERROR_REASON_NON_PREFERRED_FLOAT = 10;
+  // Error text: floating-point values are not allowed
+  CODEC_GENERAL_CBOR_ERROR_REASON_FLOAT_NOT_ALLOWED = 11;
+  // Error text: non-finite floating-point value
+  CODEC_GENERAL_CBOR_ERROR_REASON_NON_FINITE_FLOAT = 12;
+  // Error text: invalid UTF-8
+  CODEC_GENERAL_CBOR_ERROR_REASON_INVALID_UTF8 = 13;
+  // Error text: duplicate map key
+  CODEC_GENERAL_CBOR_ERROR_REASON_DUPLICATE_MAP_KEY = 14;
+  // Error text: map key ordering violation
+  CODEC_GENERAL_CBOR_ERROR_REASON_MAP_KEY_ORDER = 15;
+  // Error text: trailing data
+  CODEC_GENERAL_CBOR_ERROR_REASON_TRAILING_DATA = 16;
+  // Error text: unexpected item type
+  CODEC_GENERAL_CBOR_ERROR_REASON_WRONG_TYPE = 17;
+  // Error text: unexpected tag
+  CODEC_GENERAL_CBOR_ERROR_REASON_WRONG_TAG = 18;
+  // Error text: empty embedded CBOR
+  CODEC_GENERAL_CBOR_ERROR_REASON_EMPTY_EMBEDDED_ITEM = 19;
+  // Error text: non-contiguous string contents
+  CODEC_GENERAL_CBOR_ERROR_REASON_NON_CONTIGUOUS_STRING = 20;
+  // Error text: invalid resource limit
+  CODEC_GENERAL_CBOR_ERROR_REASON_INVALID_LIMIT = 21;
+  // Error text: unsupported profile combination
+  CODEC_GENERAL_CBOR_ERROR_REASON_UNSUPPORTED_POLICY = 22;
+  // Error text: input limit exceeded
+  CODEC_GENERAL_CBOR_ERROR_REASON_INPUT_LIMIT = 23;
+  // Error text: output limit exceeded
+  CODEC_GENERAL_CBOR_ERROR_REASON_OUTPUT_LIMIT = 24;
+  // Error text: nesting limit exceeded
+  CODEC_GENERAL_CBOR_ERROR_REASON_DEPTH_LIMIT = 25;
+  // Error text: node limit exceeded
+  CODEC_GENERAL_CBOR_ERROR_REASON_NODE_LIMIT = 26;
+  // Error text: container entry limit exceeded
+  CODEC_GENERAL_CBOR_ERROR_REASON_ENTRY_LIMIT = 27;
+  // Error text: byte-string content limit exceeded
+  CODEC_GENERAL_CBOR_ERROR_REASON_BYTE_STRING_LIMIT = 28;
+  // Error text: text content limit exceeded
+  CODEC_GENERAL_CBOR_ERROR_REASON_TEXT_LIMIT = 29;
+  // Error text: validation work limit exceeded
+  CODEC_GENERAL_CBOR_ERROR_REASON_WORK_LIMIT = 30;
+  // Error text: container declaration exceeds remaining input
+  CODEC_GENERAL_CBOR_ERROR_REASON_CONTAINER_EXCEEDS_INPUT = 31;
+  // Error text: length arithmetic overflow
+  CODEC_GENERAL_CBOR_ERROR_REASON_ARITHMETIC_OVERFLOW = 32;
+  // Error text: bounded allocation failed
+  CODEC_GENERAL_CBOR_ERROR_REASON_ALLOCATION_FAILURE = 33;
+}
+
+message CodecGeneralCborError {
+  CodecErrorReason reason = 1;
+  CodecGeneralCborErrorReason detail = 2;
+}
+
+enum CodecDerType {
+  CODEC_DER_TYPE_UNSPECIFIED = 0;
+  CODEC_DER_TYPE_UNSIGNED_INTEGER = 1;
+  CODEC_DER_TYPE_INTEGER = 2;
+  CODEC_DER_TYPE_BOOLEAN = 3;
+  CODEC_DER_TYPE_OCTET_STRING = 4;
+  CODEC_DER_TYPE_BIT_STRING = 5;
+  CODEC_DER_TYPE_NULL = 6;
+  CODEC_DER_TYPE_OBJECT_IDENTIFIER = 7;
+  CODEC_DER_TYPE_UTF8_STRING = 8;
+  CODEC_DER_TYPE_SEQUENCE = 9;
+  CODEC_DER_TYPE_SET_OF = 10;
+}
+
+message CodecDerLimits {
+  optional uint64 input_len = 1;
+  optional uint64 nesting_depth = 2;
+  optional uint64 elements = 3;
+  optional uint64 integer_len = 4;
+}
+
+// SEQUENCE children are ordered required fields; SET OF requires exactly one element schema.
+message CodecDerSchema {
+  CodecDerType kind = 1;
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  repeated CodecDerSchema children = 2;
+}
+
+message CodecDerDecodeRequest {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  bytes encoded = 1;
+  CodecDerLimits limits = 2;
+  CodecDerSchema schema = 3;
+}
+
+message CodecDerPairRequest {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  bytes encoded = 1;
+  CodecDerLimits limits = 2;
+}
+
+// Read one prefix field; container and document exhaustion remain explicit schema operations.
+message CodecDerReadRequest {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  bytes encoded = 1;
+  CodecDerLimits limits = 2;
+  CodecDerType kind = 3;
+}
+
+// INTEGER bytes retain the native signed representation or unsigned minimal magnitude.
+message CodecDerValue {
+  CodecDerType kind = 1;
+  CodecByteSpan received = 2;
+  CodecByteSpan contents = 3;
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  bytes bytes_value = 4;
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  optional bool bool_value = 5;
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  optional uint32 unused_bits = 6;
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  repeated CodecDerValue children = 7;
+}
+
+message CodecDerReadResult {
+  CodecDerValue value = 1;
+  uint64 consumed_bytes = 2;
+}
+
+message CodecDerUnsignedIntegerPair {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  bytes first = 1;
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  bytes second = 2;
+}
+
+enum CodecDerErrorReason {
+  CODEC_DER_ERROR_REASON_UNSPECIFIED = 0;
+  // Error text: empty document
+  CODEC_DER_ERROR_REASON_EMPTY_INPUT = 1;
+  // Error text: invalid limits
+  CODEC_DER_ERROR_REASON_INVALID_LIMITS = 2;
+  // Error text: input limit exceeded
+  CODEC_DER_ERROR_REASON_INPUT_TOO_LARGE = 3;
+  // Error text: nesting limit exceeded
+  CODEC_DER_ERROR_REASON_NESTING_TOO_DEEP = 4;
+  // Error text: element limit exceeded
+  CODEC_DER_ERROR_REASON_TOO_MANY_ELEMENTS = 5;
+  // Error text: integer limit exceeded
+  CODEC_DER_ERROR_REASON_INTEGER_TOO_LARGE = 6;
+  // Error text: truncated input
+  CODEC_DER_ERROR_REASON_TRUNCATED_INPUT = 7;
+  // Error text: indefinite length
+  CODEC_DER_ERROR_REASON_INDEFINITE_LENGTH = 8;
+  // Error text: noncanonical encoding
+  CODEC_DER_ERROR_REASON_NON_CANONICAL_ENCODING = 9;
+  // Error text: invalid integer
+  CODEC_DER_ERROR_REASON_INVALID_INTEGER = 10;
+  // Error text: invalid tag
+  CODEC_DER_ERROR_REASON_INVALID_TAG = 11;
+  // Error text: unexpected tag
+  CODEC_DER_ERROR_REASON_UNEXPECTED_TAG = 12;
+  // Error text: invalid length
+  CODEC_DER_ERROR_REASON_INVALID_LENGTH = 13;
+  // Error text: invalid value
+  CODEC_DER_ERROR_REASON_INVALID_VALUE = 14;
+  // Error text: trailing data
+  CODEC_DER_ERROR_REASON_TRAILING_DATA = 15;
+  // Error text: noncanonical set ordering
+  CODEC_DER_ERROR_REASON_SET_ORDERING = 16;
+  // Error text: length arithmetic overflow
+  CODEC_DER_ERROR_REASON_ARITHMETIC_OVERFLOW = 17;
+  // Error text: bounded allocation failed
+  CODEC_DER_ERROR_REASON_ALLOCATION_FAILURE = 18;
+}
+
+message CodecDerError {
+  CodecErrorReason reason = 1;
+  CodecDerErrorReason detail = 2;
+}
+
+// Flat, definite-length framing. Neither profile decodes ASN.1 value semantics
+// or recursively validates constructed contents. The strict DER schema reader
+// remains the operation for complete DER validation.
+enum CodecTlvProfile {
+  CODEC_TLV_PROFILE_UNSPECIFIED = 0;
+  // Preserve every identifier octet and allow redundant definite length octets.
+  // End-of-contents and a zero initial high-tag group are not definite values.
+  CODEC_TLV_PROFILE_ISO7816_DEFINITE_BER = 1;
+  // Require a canonical outer identifier and minimal definite outer length.
+  CODEC_TLV_PROFILE_ASN1_DER_FRAMING = 2;
+}
+
+// Omitted fields select defaults; explicit zero is invalid. Limits can only
+// select values up to the hard ceilings: input 16 MiB, identifier 32 octets,
+// length 8 octets. The input limit includes any unconsumed suffix.
+// Defaults are 1 MiB, 4 identifier octets, and 4 long-form length payload octets.
+// length_octets excludes the initial short/long-form discriminator octet.
+message CodecTlvLimits {
+  optional uint64 input_bytes = 1;
+  optional uint64 identifier_octets = 2;
+  optional uint64 length_octets = 3;
+}
+
+// An explicit known nonzero profile is required, even when limits are omitted.
+message CodecTlvOptions {
+  CodecTlvProfile profile = 1;
+  CodecTlvLimits limits = 2;
+}
+
+message CodecTlvSourceRequest {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  bytes encoded = 1;
+  CodecTlvOptions options = 2;
+}
+
+// A complete wire identifier prefix. No length field is read.
+message CodecTlvIdentifier {
+  CodecByteSpan identifier = 1;
+  uint64 consumed_bytes = 2;
+}
+
+// A complete definite length prefix. No value bytes are required.
+message CodecTlvLength {
+  CodecByteSpan length_octets = 1;
+  // SENSITIVE: observations retain caller-controlled scalar payloads.
+  uint64 declared_value_length = 2;
+  uint64 consumed_bytes = 3;
+}
+
+// Every span fits the supplied source. This receipt makes no claim that the
+// declared value has arrived: only a complete identifier and length are needed.
+// The supplied remainder begins at consumed_bytes and remains bounded by input.
+message CodecTlvHeader {
+  CodecByteSpan identifier = 1;
+  CodecByteSpan length_octets = 2;
+  CodecByteSpan header_bytes = 3;
+  // SENSITIVE: observations retain caller-controlled scalar payloads.
+  uint64 declared_value_length = 4;
+  uint64 consumed_bytes = 5;
+}
+
+// Only complete values have frame receipts. Contents remain opaque, including
+// constructed values. Prefix leaves source[consumed_bytes..] unconsumed; exact
+// rejects that suffix unless it is empty. No payload allocation is performed.
+message CodecTlvFrame {
+  CodecTlvHeader header = 1;
+  CodecByteSpan received = 2;
+  CodecByteSpan contents = 3;
+  uint64 consumed_bytes = 4;
+}
+
+enum CodecTlvErrorReason {
+  CODEC_TLV_ERROR_REASON_UNSPECIFIED = 0;
+  // Error text: empty input
+  CODEC_TLV_ERROR_REASON_EMPTY_INPUT = 1;
+  // Error text: unsupported framing profile
+  CODEC_TLV_ERROR_REASON_INVALID_PROFILE = 2;
+  // Error text: invalid resource limits
+  CODEC_TLV_ERROR_REASON_INVALID_LIMITS = 3;
+  // Error text: input limit exceeded
+  CODEC_TLV_ERROR_REASON_INPUT_LIMIT = 4;
+  // Error text: identifier octet limit exceeded
+  CODEC_TLV_ERROR_REASON_IDENTIFIER_LIMIT = 5;
+  // Error text: length octet limit exceeded
+  CODEC_TLV_ERROR_REASON_LENGTH_LIMIT = 6;
+  // Error text: truncated identifier
+  CODEC_TLV_ERROR_REASON_TRUNCATED_IDENTIFIER = 7;
+  // Error text: truncated length
+  CODEC_TLV_ERROR_REASON_TRUNCATED_LENGTH = 8;
+  // Error text: truncated value
+  CODEC_TLV_ERROR_REASON_TRUNCATED_VALUE = 9;
+  // Error text: indefinite length is not supported
+  CODEC_TLV_ERROR_REASON_UNSUPPORTED_INDEFINITE_LENGTH = 10;
+  // Error text: noncanonical identifier
+  CODEC_TLV_ERROR_REASON_NONCANONICAL_IDENTIFIER = 11;
+  // Error text: noncanonical length
+  CODEC_TLV_ERROR_REASON_NONCANONICAL_LENGTH = 12;
+  // Error text: trailing data
+  CODEC_TLV_ERROR_REASON_TRAILING_DATA = 13;
+  // Error text: length arithmetic overflow
+  CODEC_TLV_ERROR_REASON_ARITHMETIC_OVERFLOW = 14;
+  // Error text: reserved length encoding
+  CODEC_TLV_ERROR_REASON_INVALID_LENGTH = 15;
+  // Error text: invalid definite-value identifier
+  CODEC_TLV_ERROR_REASON_INVALID_IDENTIFIER = 16;
+}
+
+message CodecTlvError {
+  CodecErrorReason reason = 1;
+  CodecTlvErrorReason detail = 2;
+}
+
+message CodecProviderInfoRequest {
+}
+
+message CodecProviderInfo {
+  uint32 abi_version = 1;
+  uint32 package_major = 2;
+  uint32 package_minor = 3;
+  uint32 package_patch = 4;
+  uint64 max_input_bytes = 5;
+  uint64 max_output_bytes = 6;
+  uint64 max_operation_response_bytes = 7;
+}
+
+// Host provider operation: verify before loading; paths never appear in errors.
+message CodecVerifiedLibraryRequest {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  string absolute_path = 1;
+  bytes expected_sha256 = 2;
+}
+
+message CodecVerifiedLibraryResult {
+  CodecProviderInfo provider = 1;
+}
+
+// Provider lifecycle belongs to the host adapter, never the pure codec core.
+message CodecProviderOperationRequest {
+  oneof operation {
+    CodecProviderInfoRequest info = 1;
+    CodecVerifiedLibraryRequest verify_library = 2;
+    CodecLibraryLoadRequest load_library = 3;
+    CodecWasmInitializeRequest initialize_wasm = 4;
+    CodecWasmReinstantiateRequest reinstantiate_wasm = 5;
+  }
+}
+
+message CodecProviderOperationResult {
+  oneof result {
+    CodecProviderInfo info = 1;
+    CodecVerifiedLibraryResult verified_library = 2;
+    CodecLoadedLibraryResult loaded_library = 3;
+    CodecProviderInfo initialized_wasm = 4;
+    CodecEmptyResult reinstantiated_wasm = 5;
+  }
+}
+
+
+message CodecGeneralCborFloatPropertiesRequest {
+  CodecGeneralCborFloat value = 1;
+}
+
+message CodecGeneralCborFloatCompareRequest {
+  CodecGeneralCborFloat left = 1;
+  CodecGeneralCborFloat right = 2;
+}
+
+message CodecGeneralCborFloatProperties {
+  CodecGeneralCborFloat value = 1;
+  CodecGeneralCborFloatWidth shortest_width = 2;
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  bool finite = 3;
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  bool nan = 4;
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  uint64 widened_binary64_bits = 5;
+}
+
+// Explicit unverified loading is only for a library built in a trusted host.
+// It is a compatibility operation and never substitutes for verification.
+message CodecLibraryLoadRequest {
+  // SENSITIVE: payload ownership requires redaction and zeroization.
+  string absolute_path = 1;
+}
+
+message CodecLoadedLibraryResult {
+  CodecProviderInfo provider = 1;
+}
+
+// Host I/O adapters obtain these bytes before provider initialization. Compiled
+// modules cannot satisfy this contract because their source bytes are unavailable.
+message CodecWasmInitializeRequest {
+  bytes module_bytes = 1;
+}
+
+// Host recovery uses only the private module cached after byte verification.
+// A caller cannot supply an unverified compiled module through this operation.
+message CodecWasmReinstantiateRequest {
+}
+
+// Legacy scalar selectors remain available only as compatibility adapters.
+// New callers select operations through CodecApiOperationRequest instead.
+enum CodecLegacyScalarOperation {
+  CODEC_LEGACY_SCALAR_OPERATION_UNSPECIFIED = 0;
+  CODEC_LEGACY_SCALAR_OPERATION_BASE64_ENCODE = 1;
+  CODEC_LEGACY_SCALAR_OPERATION_BASE64_DECODE = 2;
+  CODEC_LEGACY_SCALAR_OPERATION_BASE64URL_ENCODE = 3;
+  CODEC_LEGACY_SCALAR_OPERATION_BASE64URL_DECODE = 4;
+  CODEC_LEGACY_SCALAR_OPERATION_LOWER_HEX_ENCODE = 5;
+  CODEC_LEGACY_SCALAR_OPERATION_LOWER_HEX_DECODE = 6;
+  CODEC_LEGACY_SCALAR_OPERATION_BASE58BTC_ENCODE = 7;
+  CODEC_LEGACY_SCALAR_OPERATION_BASE58BTC_DECODE = 8;
+  CODEC_LEGACY_SCALAR_OPERATION_MULTIBASE_BASE58BTC_ENCODE = 9;
+  CODEC_LEGACY_SCALAR_OPERATION_MULTIBASE_BASE64URL_ENCODE = 10;
+  CODEC_LEGACY_SCALAR_OPERATION_MULTIBASE_DECODE = 11;
+  CODEC_LEGACY_SCALAR_OPERATION_MULTICODEC_PREFIX_FOR_NAME = 12;
+  CODEC_LEGACY_SCALAR_OPERATION_MULTICODEC_LOOKUP_PREFIX = 13;
+  CODEC_LEGACY_SCALAR_OPERATION_MULTICODEC_STRIP_PREFIX = 14;
+  CODEC_LEGACY_SCALAR_OPERATION_MULTICODEC_TABLE = 15;
+  CODEC_LEGACY_SCALAR_OPERATION_MULTIKEY_ENCODE = 16;
+  CODEC_LEGACY_SCALAR_OPERATION_MULTIKEY_PARSE = 17;
+  CODEC_LEGACY_SCALAR_OPERATION_REQUIRE_SUPPORTED_MULTICODEC = 18;
+  CODEC_LEGACY_SCALAR_OPERATION_DAG_CBOR_COMPUTE_CID = 21;
+  CODEC_LEGACY_SCALAR_OPERATION_DAG_CBOR_VERIFY_CID = 22;
+  CODEC_LEGACY_SCALAR_OPERATION_DAG_CBOR_SHA256_CONTENT_HASH = 23;
+  CODEC_LEGACY_SCALAR_OPERATION_DAG_CBOR_MULTIHASH = 24;
+  CODEC_LEGACY_SCALAR_OPERATION_TRY_PARSE_CID = 25;
+  CODEC_LEGACY_SCALAR_OPERATION_DAG_CBOR_CODEC_CODE = 26;
+  CODEC_LEGACY_SCALAR_OPERATION_CANONICALIZE_JSON = 27;
+  CODEC_LEGACY_SCALAR_OPERATION_PEM_DECODE = 28;
+  CODEC_LEGACY_SCALAR_OPERATION_PEM_ENCODE = 29;
+  CODEC_LEGACY_SCALAR_OPERATION_VALIDATE_KEY_BINDING = 30;
+  CODEC_LEGACY_SCALAR_OPERATION_VALIDATE_KEY_BINDING_NO_ALGORITHM = 31;
+}
+
+enum CodecLegacyBoolOperation {
+  CODEC_LEGACY_BOOL_OPERATION_UNSPECIFIED = 0;
+  CODEC_LEGACY_BOOL_OPERATION_BINDING_TYPE_MATCHES_CODEC = 1;
+  CODEC_LEGACY_BOOL_OPERATION_IS_VALID_CID_STRING = 2;
+}
+
+// No error status (zero) is success in the legacy C ABI. Structured protobuf
+// responses always use their explicit outcome oneof instead of this selector.
+enum CodecLegacyAbiStatus {
+  CODEC_LEGACY_ABI_STATUS_UNSPECIFIED = 0;
+  CODEC_LEGACY_ABI_STATUS_INVALID_ARGUMENT = -1;
+  CODEC_LEGACY_ABI_STATUS_BUFFER_TOO_SMALL = -5;
+  CODEC_LEGACY_ABI_STATUS_INTERNAL_ERROR = -128;
+}
+
+// Expanded operation envelope. Existing CodecOperation* messages retain their
+// original branches and field numbers, preserving their wire bytes.
+message CodecApiOperationRequest {
+  reserved 1 to 999;
+
+  oneof operation {
+    // 1000-1999: multicodec table and prefix lookups. The upstream registry
+    // is intentionally broad, so keep ample room for validation and lookup
+    // operations without mixing them with adjacent codec families.
+    CodecMulticodecPrefixForNameRequest multicodec_prefix_for_name = 1000;
+    CodecMulticodecLookupPrefixRequest multicodec_lookup_prefix = 1001;
+    CodecMulticodecTableRequest multicodec_table = 1002;
+
+    // 2000-2999: multikey parsing and validation.
+    CodecMultikeyParseRequest multikey_parse = 2000;
+
+    // 3000-3999: DAG-CBOR and content-addressed canonicalization helpers.
+    CodecDagCborVerifyCidRequest dag_cbor_verify_cid = 3000;
+    CodecDagCborEncodeRequest dag_cbor_encode = 3001;
+    CodecDagCborDecodeRequest dag_cbor_decode = 3002;
+
+    // 4000-4999: PEM armor and DER envelope helpers.
+    CodecPemDecodeRequest pem_decode = 4000;
+    CodecPemEncodeRequest pem_encode = 4001;
+
+    // 5000-5999: deterministic generic-CBOR encode/decode.
+    CodecDeterministicCborEncodeRequest deterministic_cbor_encode = 5000;
+    CodecDeterministicCborDecodeRequest deterministic_cbor_decode = 5001;
+
+    // Schema-defined scalar, borrowed-parser, and provider metadata operations.
+    CodecBytesRequest multicodec_strip_prefix = 1003;
+    CodecMultikeyEncodeRequest multikey_encode = 2001;
+    CodecBindingTypeMatchesCodecRequest binding_type_matches_codec = 2002;
+    CodecValidateKeyBindingRequest validate_key_binding = 2003;
+    CodecTextRequest require_supported_multicodec = 2004;
+    CodecBytesRequest dag_cbor_compute_cid = 3003;
+    CodecBytesRequest dag_cbor_multihash = 3004;
+    CodecBytesRequest dag_cbor_sha256_content_hash = 3005;
+    CodecTextRequest is_valid_cid_string = 3006;
+    CodecTextRequest try_parse_cid = 3007;
+    CodecEmptyRequest dag_cbor_codec_code = 3008;
+    CodecGeneralCborSourceRequest general_cbor_read_header = 6000;
+    CodecGeneralCborSourceRequest general_cbor_frame_exact = 6001;
+    CodecGeneralCborSourceRequest general_cbor_frame_prefix = 6002;
+    CodecGeneralCborSourceRequest general_cbor_validate_exact = 6003;
+    CodecGeneralCborSourceRequest general_cbor_validate_prefix = 6004;
+    CodecGeneralCborEncodeRequest general_cbor_encode = 6005;
+    CodecGeneralCborInspectRequest general_cbor_inspect = 6006;
+    CodecGeneralCborSourceRequest general_cbor_cursor = 6007;
+    CodecGeneralCborEmbeddedRequest general_cbor_validate_embedded = 6008;
+    CodecDerDecodeRequest der_decode = 7000;
+    CodecDerPairRequest der_decode_unsigned_integer_pair = 7001;
+    CodecDerReadRequest der_read = 7002;
+    CodecBytesRequest base64_encode = 8000;
+    CodecTextRequest base64_decode = 8001;
+    CodecBytesRequest base64url_encode = 8010;
+    CodecTextRequest base64url_decode = 8011;
+    CodecBytesRequest base64url_decode_bytes = 8012;
+    CodecBytesRequest lower_hex_encode = 8020;
+    CodecTextRequest lower_hex_decode = 8021;
+    CodecBytesRequest base58btc_encode = 8030;
+    CodecTextRequest base58btc_decode = 8031;
+    CodecBytesRequest multibase_base58btc_encode = 8040;
+    CodecBytesRequest multibase_base64url_encode = 8041;
+    CodecTextRequest multibase_decode = 8042;
+    CodecTextRequest canonicalize_json = 9000;
+    CodecProviderInfoRequest provider_info = 10000;
+    CodecGeneralCborFloatPropertiesRequest general_cbor_float_properties = 6009;
+    CodecGeneralCborFloatCompareRequest general_cbor_float_equivalent = 6010;
+    // 11000-11999: bounded definite BER/ISO 7816 and DER header framing.
+    CodecTlvSourceRequest tlv_read_header = 11000;
+    CodecTlvSourceRequest tlv_frame_prefix = 11001;
+    CodecTlvSourceRequest tlv_frame_exact = 11002;
+    CodecTlvSourceRequest tlv_read_identifier = 11003;
+    CodecTlvSourceRequest tlv_read_length = 11004;
+  }
+}
+
+message CodecApiOperationResult {
+  // Structured result fields use the same permanent family bands as their
+  // corresponding requests. Reserve the pre-family range so a future result
+  // cannot accidentally introduce a second compact numbering convention.
+  reserved 1 to 999;
+
+  oneof result {
+    CodecMulticodecSpec multicodec_prefix_for_name = 1000;
+    CodecMulticodecLookupResult multicodec_lookup_prefix = 1001;
+    CodecMulticodecTableResult multicodec_table = 1002;
+    CodecMultikeyParseResult multikey_parse = 2000;
+    CodecDagCborVerifyCidResult dag_cbor_verify_cid = 3000;
+    CodecDagCborEncodeResult dag_cbor_encode = 3001;
+    CodecDagCborDecodeResult dag_cbor_decode = 3002;
+    CodecPemDecodeResult pem_decode = 4000;
+    CodecPemEncodeResult pem_encode = 4001;
+    CodecDeterministicCborEncodeResult deterministic_cbor_encode = 5000;
+    CodecDeterministicCborDecodeResult deterministic_cbor_decode = 5001;
+
+    // Schema-defined scalar, borrowed-parser, and provider metadata operations.
+    CodecBytesResult multicodec_strip_prefix = 1003;
+    CodecTextResult multikey_encode = 2001;
+    CodecBoolResult binding_type_matches_codec = 2002;
+    CodecEmptyResult validate_key_binding = 2003;
+    CodecTextResult require_supported_multicodec = 2004;
+    CodecTextResult dag_cbor_compute_cid = 3003;
+    CodecBytesResult dag_cbor_multihash = 3004;
+    CodecBytesResult dag_cbor_sha256_content_hash = 3005;
+    CodecBoolResult is_valid_cid_string = 3006;
+    CodecOptionalTextResult try_parse_cid = 3007;
+    CodecUint32Result dag_cbor_codec_code = 3008;
+    CodecGeneralCborHeader general_cbor_read_header = 6000;
+    CodecGeneralCborFrame general_cbor_frame_exact = 6001;
+    CodecGeneralCborFrame general_cbor_frame_prefix = 6002;
+    CodecGeneralCborFrame general_cbor_validate_exact = 6003;
+    CodecGeneralCborFrame general_cbor_validate_prefix = 6004;
+    CodecBytesResult general_cbor_encode = 6005;
+    CodecGeneralCborInspectionResult general_cbor_inspect = 6006;
+    CodecGeneralCborFrames general_cbor_cursor = 6007;
+    CodecGeneralCborFrame general_cbor_validate_embedded = 6008;
+    CodecDerValue der_decode = 7000;
+    CodecDerUnsignedIntegerPair der_decode_unsigned_integer_pair = 7001;
+    CodecDerReadResult der_read = 7002;
+    CodecTextResult base64_encode = 8000;
+    CodecBytesResult base64_decode = 8001;
+    CodecTextResult base64url_encode = 8010;
+    CodecBytesResult base64url_decode = 8011;
+    CodecBytesResult base64url_decode_bytes = 8012;
+    CodecTextResult lower_hex_encode = 8020;
+    CodecBytesResult lower_hex_decode = 8021;
+    CodecTextResult base58btc_encode = 8030;
+    CodecBytesResult base58btc_decode = 8031;
+    CodecTextResult multibase_base58btc_encode = 8040;
+    CodecTextResult multibase_base64url_encode = 8041;
+    CodecBytesResult multibase_decode = 8042;
+    CodecTextResult canonicalize_json = 9000;
+    CodecProviderInfo provider_info = 10000;
+    CodecGeneralCborFloatProperties general_cbor_float_properties = 6009;
+    CodecBoolResult general_cbor_float_equivalent = 6010;
+    CodecTlvHeader tlv_read_header = 11000;
+    CodecTlvFrame tlv_frame_prefix = 11001;
+    CodecTlvFrame tlv_frame_exact = 11002;
+    CodecTlvIdentifier tlv_read_identifier = 11003;
+    CodecTlvLength tlv_read_length = 11004;
+  }
+}
+
+message CodecApiOperationResponse {
+  oneof outcome {
+    CodecApiOperationResult result = 1;
+    CodecApiError error = 2;
+  }
+}
+
+message CodecApiError {
+  oneof error {
+    CodecBaseEncodingError base_encoding = 1;
+    CodecPemError pem = 2;
+    CodecMultiformatError multiformat = 3;
+    CodecCanonicalizationError canonicalization = 4;
+    CodecBackendError backend = 5;
+    CodecBoundaryError boundary = 6;
+    CodecGeneralCborError general_cbor = 7;
+    CodecDerError der = 8;
+    CodecTlvError tlv = 9;
+  }
+
+  // Error origin is explicit so SDKs never infer caller-versus-provider
+  // attribution from branch-specific numeric reason ranges. Missing, unknown,
+  // or inconsistent origin values must fail closed as provider failures.
+  CodecErrorOrigin origin = 100;
 }

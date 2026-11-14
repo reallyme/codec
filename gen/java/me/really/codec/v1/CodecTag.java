@@ -20,22 +20,42 @@ public enum CodecTag
    */
   CODEC_TAG_UNSPECIFIED(0),
   /**
+   * <pre>
+   * sdk-order: 0
+   * </pre>
+   *
    * <code>CODEC_TAG_ENCRYPTION = 1;</code>
    */
   CODEC_TAG_ENCRYPTION(1),
   /**
+   * <pre>
+   * sdk-order: 2
+   * </pre>
+   *
    * <code>CODEC_TAG_KEY = 2;</code>
    */
   CODEC_TAG_KEY(2),
   /**
+   * <pre>
+   * sdk-order: 1
+   * </pre>
+   *
    * <code>CODEC_TAG_HASH = 3;</code>
    */
   CODEC_TAG_HASH(3),
   /**
+   * <pre>
+   * sdk-order: 3
+   * </pre>
+   *
    * <code>CODEC_TAG_MULTIHASH = 4;</code>
    */
   CODEC_TAG_MULTIHASH(4),
   /**
+   * <pre>
+   * sdk-order: 4
+   * </pre>
+   *
    * <code>CODEC_TAG_MULTIKEY = 5;</code>
    */
   CODEC_TAG_MULTIKEY(5),
@@ -47,22 +67,42 @@ public enum CodecTag
    */
   public static final int CODEC_TAG_UNSPECIFIED_VALUE = 0;
   /**
+   * <pre>
+   * sdk-order: 0
+   * </pre>
+   *
    * <code>CODEC_TAG_ENCRYPTION = 1;</code>
    */
   public static final int CODEC_TAG_ENCRYPTION_VALUE = 1;
   /**
+   * <pre>
+   * sdk-order: 2
+   * </pre>
+   *
    * <code>CODEC_TAG_KEY = 2;</code>
    */
   public static final int CODEC_TAG_KEY_VALUE = 2;
   /**
+   * <pre>
+   * sdk-order: 1
+   * </pre>
+   *
    * <code>CODEC_TAG_HASH = 3;</code>
    */
   public static final int CODEC_TAG_HASH_VALUE = 3;
   /**
+   * <pre>
+   * sdk-order: 3
+   * </pre>
+   *
    * <code>CODEC_TAG_MULTIHASH = 4;</code>
    */
   public static final int CODEC_TAG_MULTIHASH_VALUE = 4;
   /**
+   * <pre>
+   * sdk-order: 4
+   * </pre>
+   *
    * <code>CODEC_TAG_MULTIKEY = 5;</code>
    */
   public static final int CODEC_TAG_MULTIKEY_VALUE = 5;

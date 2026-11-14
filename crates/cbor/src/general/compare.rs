@@ -170,6 +170,7 @@ pub(super) fn equivalent(
             }
             Ok(left_count == right_count)
         }
+        _ => Err(error(ErrorReason::WrongType)),
     }
 }
 

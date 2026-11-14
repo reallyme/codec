@@ -30,6 +30,10 @@ public object CodecMultikeyParseRequestKt {
     internal fun _build(): me.really.codec.v1.CodecMultikeyParseRequest = _builder.build()
 
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `string multikey = 1 [json_name = "multikey"];`
      */
     public var multikey: kotlin.String
@@ -40,6 +44,10 @@ public object CodecMultikeyParseRequestKt {
         _builder.multikey = value
       }
     /**
+     * ```
+     * SENSITIVE: payload ownership requires redaction and zeroization.
+     * ```
+     *
      * `string multikey = 1 [json_name = "multikey"];`
      */
     public fun clearMultikey() {

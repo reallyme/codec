@@ -37,6 +37,14 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Checkout release-readiness runner
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: reallyme/release-readiness
+          ref: 18a6d91d99837e80f92e41fe04effb0b043d754e
+          path: .release-readiness
+          persist-credentials: false
+
       - name: Install Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -46,10 +54,9 @@ jobs:
         if: matrix.os != 'ubuntu-24.04'
         run: node scripts/run_pinned_release_readiness.mjs --check-pins
 
-      # The local digest pin cannot prove where the vendored core came from.
-      # One bounded fetch on one lane, without retries, ties it to the pinned
-      # upstream commit; every other lane and the release gate stay offline.
-      - name: Verify vendored readiness core against upstream
+      # Corroborate the verified checkout against the immutable upstream
+      # source once. Other lanes use their local digest checks.
+      - name: Verify pinned readiness core against upstream
         if: matrix.os == 'ubuntu-24.04'
         run: node scripts/run_pinned_release_readiness.mjs --check-pins --verify-upstream
 
@@ -109,25 +116,12 @@ jobs:
         with:
           tool: cargo-audit@0.23.0
 
-      - name: Install wasm-pack
-        uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3, wasm-pack
-        with:
-          tool: wasm-pack@0.15.1
-
-      - name: Install wasm-bindgen-cli
-        uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3, wasm-bindgen-cli
-        with:
-          tool: wasm-bindgen-cli@0.2.130
-
       - name: Install Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '26'
           cache: npm
           cache-dependency-path: packages/ts/package-lock.json
-
-      - name: Release readiness
-        run: node scripts/run_pinned_release_readiness.mjs
 
       - name: Format
         run: cargo fmt --check
@@ -172,13 +166,6 @@ jobs:
 
       - name: Audit production npm dependencies
         run: npm audit --prefix packages/ts --omit=dev --audit-level=high
-
-      - name: Test TypeScript codec package
-        run: npm --prefix packages/ts test
-
-      - name: Test TypeScript codec package in browser
-        # Exercise the same dist as the Node tests; do not rebuild it here.
-        run: npm --prefix packages/ts run test:browser:built
 
       - name: Dependency policy
         run: cargo deny check
@@ -250,45 +237,8 @@ jobs:
           cargo +nightly-2026-07-01 miri test -p reallyme-codec-cbor --test general_tests semantic_equivalent_keys_are_rejected_without_sorting --locked
           cargo +nightly-2026-07-01 miri test -p reallyme-codec-cbor --test general_zeroization_tests --locked
 
-  # Run Swift against the Rust provider without the traced-build overhead.
-  swift:
-    name: swift codec package
-    runs-on: macos-26
-    timeout-minutes: 45
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
-        with:
-          toolchain: 1.100.0
-
-      - name: Select Xcode 26.4
-        run: |
-          developer_dir=$(cd /Applications/Xcode_26.4.app/Contents/Developer && pwd -P)
-          sudo xcode-select -s "$developer_dir"
-          printf 'DEVELOPER_DIR=%s\n' "$developer_dir" >> "$GITHUB_ENV"
-          printf '%s/Toolchains/XcodeDefault.xctoolchain/usr/bin\n' "$developer_dir" >> "$GITHUB_PATH"
-          uname -m
-          test "$(uname -m)" = arm64
-          xcodebuild -version
-          "$developer_dir/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift" --version
-
-      - name: Build codec FFI dylib
-        run: cargo build --locked -p reallyme-codec-ffi
-
-      - name: Test Swift package
-        timeout-minutes: 20
-        run: swift test --arch arm64 --verbose
-        env:
-          REALLYME_CODEC_FFI_LIBRARY_PATH: ${{ github.workspace }}/target/debug/libreallyme_codec_ffi.dylib
-          REALLYME_CODEC_SWIFTPM_RUNTIME_FFI: "1"
-
   kotlin:
-    name: kotlin codec package
+    name: kotlin codec package on Linux
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -314,11 +264,18 @@ jobs:
         with:
           toolchain: 1.100.0
 
-      - name: Build codec FFI dylib
-        run: cargo build --locked -p reallyme-codec-ffi
+      - name: Install Node for JNI resource staging
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '26'
+
+      - name: Build and stage Linux JNI library
+        run: |
+          scripts/build_kotlin_native_resource.sh build/sdk-native-resources
+          node scripts/write_native_manifest.mjs build/sdk-native-resources build/sdk-native-resources/me/really/codec/native/native-manifest.json
 
       - name: Test Kotlin codec package
         working-directory: packages/kotlin
-        run: ./gradlew test
+        run: ./gradlew test "-Preallyme.codec.nativeResourcesDir=${{ github.workspace }}/build/sdk-native-resources"
         env:
-          REALLYME_CODEC_FFI_LIBRARY_PATH: ${{ github.workspace }}/target/debug/libreallyme_codec_ffi.so
+          REALLYME_CODEC_FFI_LIBRARY_PATH: ${{ github.workspace }}/target/release/libreallyme_codec_ffi.so

@@ -11,11 +11,19 @@ public interface CodecMultikeyParseRequestOrBuilder extends
     com.google.protobuf.MessageLiteOrBuilder {
 
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>string multikey = 1 [json_name = "multikey"];</code>
    * @return The multikey.
    */
   java.lang.String getMultikey();
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>string multikey = 1 [json_name = "multikey"];</code>
    * @return The bytes for multikey.
    */

@@ -8,13 +8,32 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-// Authenticate the core before importing it: a static import would execute its
-// top-level code before the direct local command could reject a changed pin.
-const pinCheck = spawnSync(process.execPath, [
-  fileURLToPath(new URL("./run_pinned_release_readiness.mjs", import.meta.url)),
-  "--check-pins",
-], {
-  cwd: fileURLToPath(new URL("../", import.meta.url)),
+const supportedArguments = new Set([
+  "--generated-freshness",
+  "--release-packages",
+]);
+const suppliedArguments = new Set();
+for (const argument of process.argv.slice(2)) {
+  if (!supportedArguments.has(argument)) {
+    console.error(`release readiness check failed: unsupported argument ${argument}`); process.exit(1);
+  }
+  if (suppliedArguments.has(argument)) {
+    console.error(`release readiness check failed: argument ${argument} was specified more than once`); process.exit(1);
+  }
+  suppliedArguments.add(argument);
+}
+
+
+// Direct invocation delegates to the pinned package runner. Its authenticated
+// core and source-policy proof channel must govern every successful mode.
+const runnerPath = fileURLToPath(new URL("./run_pinned_release_readiness.mjs", import.meta.url));
+if (process.env.RELEASE_READINESS_CORE_URL === undefined) {
+  const delegated = spawnSync(process.execPath, [runnerPath, ...process.argv.slice(2)], {
+    cwd: fileURLToPath(new URL("../", import.meta.url)), stdio: "inherit",
+  });
+  process.exit(Number.isInteger(delegated.status) ? delegated.status : 1);
+}
+const pinCheck = spawnSync(process.execPath, [runnerPath, "--check-pins"], {
   stdio: ["ignore", "ignore", "inherit"],
 });
 if (pinCheck.error !== undefined || pinCheck.status !== 0) {
@@ -26,11 +45,20 @@ if (pinCheck.error !== undefined || pinCheck.status !== 0) {
 // is itself pinned by the runner, so changing any policy module requires
 // updating this table, which in turn trips the checker pin for review.
 const POLICY_MODULE_SHA256 = new Map([
-  ["scripts/release-readiness/source-policy.mjs", "a55e529143a42335caf59eae5a474048500192e633b515dab0c6abf493ea16ab"],
-  ["scripts/verify_release_version.mjs", "187f480910b98bdd180c0a194385eb6d63f4d48af53ad30625d8029b3cf632b2"],
-  ["scripts/codec_proto_sensitivity.mjs", "b1ae294f0a1113df2209d59824d02aca0604ad7103d8e0c3cc7332ab968b7621"],
+  ["packages/ts/scripts/lint-typescript.mjs", "ac3fbad064d2655773cc5c8476eda63e5e1cff0e53cceb6d9cf0faca923df89d"],
+  ["scripts/check_swift_source_style.mjs", "24a53cb703ea5763ace64a7c6e43a96ec721235cfe6efec6b0bec134b43d0455"],
+  ["scripts/release-readiness/sdk-source-policy.mjs", "9527f3842536ed78e8d4358c4a802f7ecf1669c6537d87d67a4d6ccb6e28011f"],
+  ["scripts/generate_codec_sdk_contract.mjs", "0f0c49b1f3f8185c6599aa4123b8b432224e146760561a2d45d5e37d9dae9cd0"],
+  ["scripts/codec_proto_schema.mjs", "4ee81a8a3c896d70a871bfb4a0724c007d709891a88580c3eed777bb80ddcbc9"],
+  ["scripts/release-readiness/native-proto-policy.mjs", "f7713ec21913a67d1b4b7c32890f0bcb1981a5c0d0900649dacb923e70a3142f"],
+  ["scripts/generate_codec_proto.mjs", "6bd8d27443bac3540d89bb7c0e95253028d7f8584efbb91797451e343c4ed043"],
+  ["scripts/generate_codec_proto_support.mjs", "6ec4f0c7727003fd2d36e537a51f27a0f20bf5cbdf194de912857d94c0ba462a"],
+  ["scripts/harden_codec_sdk_proto.mjs", "60636ba0bc757c45ec951ca13d79fedba29620f605a1c1d4e6b6d0c8c3c0d0ae"],
+  ["scripts/release-readiness/source-policy.mjs", "1bc1368be565bfb972ef68a7b3a532c5b1969f40ef9893cd660fb1c244a4202e"],
+  ["scripts/verify_release_version.mjs", "bc858e3f4bd98b808b5557b7c50755b4a0d3595393842d7cd01728f853d86215"],
+  ["scripts/codec_proto_sensitivity.mjs", "e74e8459712b1091f4dc413fe32d9c6a4b160d90d110d22f9cb52601d5c3ca77"],
   ["scripts/validate_codec_vectors.mjs", "2441249555b41a4dddc20096ae56521a165058284f933bf418b074dd76420fb9"],
-  ["scripts/generate_codec_limits.mjs", "dbe5a7226f82aee0a23a1156c5814056a5ca680a5c01e27760c13a6d5edafa8e"],
+  ["scripts/generate_codec_limits.mjs", "9f566d26749206dffcabf2795b4ce5cd7f20d51ce6d863e0527b91b64d143256"],
 ]);
 for (const [path, expected] of POLICY_MODULE_SHA256) {
   let actual;
@@ -51,7 +79,7 @@ for (const [path, expected] of POLICY_MODULE_SHA256) {
 }
 
 const { createReleaseReadinessContext, scrubCommentsForAssertion } =
-  await import("./release-readiness/core.mjs");
+  await import(process.env.RELEASE_READINESS_CORE_URL);
 const { ReleaseVersionError, verifyCheckedOutReleaseVersion } =
   await import("./verify_release_version.mjs");
 const {
@@ -69,19 +97,10 @@ const codecProtoSensitiveMessageNames = [...new Set([
     .map((classification) => classification.message),
   ...codecProtoSensitiveOwnerMessages,
 ])];
-const codecProtoDirectSensitiveMessageNames = [...new Set(
-  [
-    ...codecProtoScalarFieldClassifications,
-    ...codecProtoSensitiveNonTextFieldClassifications,
-  ]
-    .filter((classification) => classification.sensitivity === "sensitive")
-    .map((classification) => classification.message),
-)];
-const codecProtoDropRequiredMessageNames = [...new Set([
-  ...codecProtoDirectSensitiveMessageNames,
-  ...codecProtoSensitiveOwnerMessages,
-])];
-
+const readinessContext = createReleaseReadinessContext({
+  scriptUrl: import.meta.url,
+  requireTrackedFiles: true,
+});
 const {
   readText,
   readJson,
@@ -93,38 +112,22 @@ const {
   assertLockPackageVersion,
   assertNodeWorkflowJobsPinNode,
   assertProtoContract,
-  assertReallyMeOperationBoundaryContract,
-  assertReallyMeProtobufReleasePolicy,
-  assertReallyMeVendoredCorePolicy,
+  assertReallyMeReleasePackagePolicy,
+  assertRustSourcePolicy,
+  assertCargoMetadataPolicy,
   assertSpdxHeaders,
   assertWorkflowActionsPinned,
   assertWorkflowUsesStepPinnedTo,
   extractWorkflowSteps,
   assertCargoFuzzWorkflowPolicy,
   assertWorkflowPermissionsPolicy,
-} = createReleaseReadinessContext({
-  scriptUrl: import.meta.url,
-  requireTrackedFiles: true,
-});
-
-const supportedArguments = new Set([
-  "--generated-freshness",
-  "--release-packages",
-]);
-const suppliedArguments = new Set();
-for (const argument of process.argv.slice(2)) {
-  if (!supportedArguments.has(argument)) {
-    fail(`unsupported argument ${argument}`);
-  }
-  if (suppliedArguments.has(argument)) {
-    fail(`argument ${argument} was specified more than once`);
-  }
-  suppliedArguments.add(argument);
-}
+} = readinessContext;
 
 // This policy module executes inside the release gate. Requiring it explicitly
 // prevents an untracked worktree file from influencing release readiness.
-requireTracked("scripts/release-readiness/source-policy.mjs");
+for (const path of POLICY_MODULE_SHA256.keys()) {
+  requireTracked(path);
+}
 // Script regression suites run once per host in the repository policy job,
 // whose glob is asserted below; running them here again would only repeat it.
 try {
@@ -135,6 +138,7 @@ try {
   fail("scripts/validate_codec_vectors.mjs failed");
 }
 const {
+  findManualProtoPresenceFields,
   sourceBlockFromNeedle,
   stripSourceComments,
   stripSourceStringsAndComments,
@@ -297,6 +301,8 @@ const assertSetEquals = ({ label, actual, expected }) => {
 const assertTypescriptProtoFacadeCompleteness = ({ facadePath, generatedPath }) => {
   const facadeSource = readText(facadePath);
   const generatedSource = readText(generatedPath);
+  const valueBlock = facadeSource.match(/export\s*\{([\s\S]*?)\}\s*from/u);
+  if (valueBlock === null) fail(`${facadePath} is missing its generated value export block`);
   const typeBlock = facadeSource.match(/export type\s*\{([\s\S]*?)\}\s*from/u);
   if (typeBlock === null) {
     fail(`${facadePath} is missing its generated type export block`);
@@ -304,7 +310,7 @@ const assertTypescriptProtoFacadeCompleteness = ({ facadePath, generatedPath }) 
 
   assertSetEquals({
     label: `${facadePath} generated schema exports`,
-    actual: sortedUniqueMatches(facadeSource, /\b(Codec[A-Za-z0-9_]+Schema)\b/gu),
+    actual: sortedUniqueMatches(valueBlock[1], /\b(Codec[A-Za-z0-9_]+Schema)\b/gu),
     expected: sortedUniqueMatches(generatedSource, /export const (Codec[A-Za-z0-9_]+Schema)\b/gu),
   });
   assertSetEquals({
@@ -314,7 +320,18 @@ const assertTypescriptProtoFacadeCompleteness = ({ facadePath, generatedPath }) 
   });
 };
 
-assertReallyMeVendoredCorePolicy({ version: "0.7.0" });
+assertReallyMeReleasePackagePolicy({ version: "0.7.0" });
+assertRustSourcePolicy({ generatedPrefixes: ["crates/proto/src/generated"] });
+assertCargoMetadataPolicy({
+  metadataArgs: ["metadata", "--locked", "--format-version", "1", "--no-deps"],
+  packages: [{
+    name: "reallyme-codec-proto",
+    dependencies: [{
+      name: "reallyme-buffa", rename: "buffa", source: "registry",
+      requirement: "=0.1.1", features: ["json", "zeroize"],
+    }],
+  }],
+});
 // Every governed tracked source must name the same copyright holder. Only
 // generator output that cannot carry a header is excluded, with a typed reason.
 assertSpdxHeaders({
@@ -338,8 +355,8 @@ assertCargoFuzzWorkflowPolicy({
   },
 });
 
-const codecPackageVersion = "0.3.6";
-const codecProtoPackageVersion = "0.3.6";
+const codecPackageVersion = "0.4.0";
+const codecProtoPackageVersion = "0.4.0";
 assertContains("Package.swift", `let ffiArtifactVersion = "${codecPackageVersion}"`);
 // The probes are separate Cargo workspaces. Root workspace metadata cannot
 // detect a release bump that leaves their own lockfile package entries stale.
@@ -390,7 +407,7 @@ if (rootCargo.includes("crates/crypto") || rootCargo.includes("crates/proto/cryp
   fail("root Cargo.toml still references removed crypto crates");
 }
 assertContains("Cargo.toml", 'repository = "https://github.com/reallyme/codec"');
-assertContains("Cargo.toml", 'buffa = { version = "0.9.2", features = ["json"] }');
+assertContains("Cargo.toml", 'buffa = { package = "reallyme-buffa", version = "=0.1.1", features = ["json", "zeroize"] }');
 assertContains("README.md", "ReallyMe Codec is one cross-language codec operation contract for identity data.");
 assertContains("README.md", "released in lockstep with `reallyme-codec`");
 assertContains("README.md", "SDK consumers should usually start with the umbrella package");
@@ -447,8 +464,9 @@ assertContains("crates/ffi/src/codec.rs", "rm_codec_max_operation_response_bytes
 assertContains("crates/ffi/src/codec.rs", "rm_codec_max_ffi_input_bytes");
 assertContains("crates/ffi/src/codec.rs", "rm_codec_max_ffi_output_bytes");
 assertContains("crates/ffi/src/codec.rs", "CODEC_ABI_VERSION");
-assertContains("crates/ffi/src/codec.rs", "CODEC_ABI_VERSION: u32 = 6");
-assertContains("crates/codec/src/operation_contract/mod.rs", "include!(\"dispatch.rs\")");
+assertContains("crates/ffi/src/codec.rs", "CODEC_ABI_VERSION: u32 = codec_proto::CODEC_PROVIDER_ABI_VERSION");
+assertContains("crates/proto/src/provider_limits.rs", "CODEC_PROVIDER_ABI_VERSION: u32 = 6");
+assertContains("crates/codec/src/operation_contract/run_contract.rs", "include!(\"dispatch.rs\")");
 assertContains("crates/codec/src/operation_contract/dispatch.rs", "pub fn process_operation_response");
 assertContains(
   "crates/codec/src/operation_contract/tests/dispatch_multiformat.rs",
@@ -522,7 +540,7 @@ for (const rustTypedDagCborNeedle of [
   assertContains("crates/codec/src/operation_contract/execute_documents.rs", rustTypedDagCborNeedle);
 }
 assertTypescriptExport({
-  path: "packages/ts/src/cbor.ts",
+  path: "packages/ts/src/processCbor.ts",
   exportNeedle: "export const dagCborEncode = (value: ReallyMeCborValue): Uint8Array =>",
   requiredNeedles: [
     "processGeneratedOperationRequest(",
@@ -541,7 +559,7 @@ assertTypescriptExport({
   ],
 });
 assertTypescriptExport({
-  path: "packages/ts/src/cbor.ts",
+  path: "packages/ts/src/processCbor.ts",
   exportNeedle: "export const dagCborDecode = (bytes: Uint8Array): ReallyMeCborValue =>",
   requiredNeedles: [
     "processGeneratedOperationRequest(",
@@ -558,11 +576,11 @@ assertTypescriptExport({
     "base64urlEncode(value.value)",
   ],
 });
-assertContains("packages/ts/src/cbor.ts", 'Readonly<{ type: "bytes"; value: Uint8Array }>');
-assertContains("packages/ts/src/cbor.ts", "value: snapshotProviderBytes(");
-assertContains("packages/ts/src/cbor.ts", "const entries: CodecDeterministicCborMapEntry[] = []");
-assertContains("packages/ts/src/cbor.ts", "const values: ReallyMeCborValue[] = []");
-assertContains("packages/ts/src/cbor.ts", "const bytes = snapshotDeterministicCborBytes(");
+assertContains("packages/ts/src/cborValues.ts", 'Readonly<{ type: "bytes"; value: Uint8Array }>');
+assertContains("packages/ts/src/convertDagCbor.ts", "value: snapshotProviderBytes(");
+assertContains("packages/ts/src/convertDagCbor.ts", "const entries: CodecDeterministicCborMapEntry[] = []");
+assertContains("packages/ts/src/convertDagCbor.ts", "const values: ReallyMeCborValue[] = []");
+assertContains("packages/ts/src/convertDagCbor.ts", "const bytes = snapshotDeterministicCborBytes(");
 assertContains("packages/ts/test/reallyme-codec.test.mjs", 'value: { type: "bytes", value: bytes(0, 1, 2) }');
 for (const removedTsDagCborJsonNeedle of [
   "function cborValueForJson",
@@ -573,18 +591,20 @@ for (const removedTsDagCborJsonNeedle of [
   "requireReallyMeCodecWasmProvider().dagCborEncode",
   "requireReallyMeCodecWasmProvider().dagCborDecode",
 ]) {
-  assertNotContains("packages/ts/src/cbor.ts", removedTsDagCborJsonNeedle);
+  for (const module of ["cbor", "processCbor", "convertDagCbor", "validateDagCbor"]) {
+    assertNotContains(`packages/ts/src/${module}.ts`, removedTsDagCborJsonNeedle);
+  }
 }
-assertContains("packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift", ".dagCborEncode(request)");
-assertContains("packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift", ".dagCborDecode(request)");
-assertContains("packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift", "processGeneratedOperation(request: request)");
-assertContains("packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift", "case .dagCborEncode(var result)?");
-assertContains("packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift", "case .dagCborDecode(var result)?");
+assertContains("packages/swift/Sources/ReallyMeCodec/ProcessCbor.swift", ".dagCborEncode(request)");
+assertContains("packages/swift/Sources/ReallyMeCodec/ProcessCbor.swift", ".dagCborDecode(request)");
+assertContains("packages/swift/Sources/ReallyMeCodec/ProcessCbor.swift", "processGeneratedOperation(request: request)");
+assertContains("packages/swift/Sources/ReallyMeCodec/ProcessCbor.swift", "case .dagCborEncode(var result)?");
+assertContains("packages/swift/Sources/ReallyMeCodec/ProcessCbor.swift", "case .dagCborDecode(var result)?");
 assertNotContains("packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift", "deterministicCborPayload(request:");
 assertNotContains("packages/swift/Sources/ReallyMeCodec/StructuredResults.swift", "serializedBytes: resultBytes");
 assertNotContains("packages/swift/Sources/ReallyMeCodec/StructuredResults.swift", "from resultBytes");
-assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", ".setDagCborEncode(");
-assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", ".setDagCborDecode(");
+assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ConvertCborProto.kt", ".setDagCborEncode(");
+assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ConvertCborProto.kt", ".setDagCborDecode(");
 assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "processOperation(dagCborEncodeRequest(value))");
 assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "CodecOperationResult.ResultCase.DAG_CBOR_ENCODE");
 assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "CodecOperationResult.ResultCase.DAG_CBOR_DECODE");
@@ -597,7 +617,8 @@ assertContains("crates/ffi/src/codec.rs", "CODEC_PEM_ENCODE");
 assertNotContains("crates/ffi/src/codec.rs", "fn typed_dag_cbor_scalar_payload");
 assertNotContains("crates/ffi/src/codec.rs", "CodecDagCborEncodeRequest");
 assertNotContains("crates/ffi/src/codec.rs", "CodecDagCborDecodeRequest");
-assertContains("crates/ffi/src/codec.rs", "CODEC_ABI_VERSION: u32 = 6");
+assertContains("crates/ffi/src/codec.rs", "CODEC_ABI_VERSION: u32 = codec_proto::CODEC_PROVIDER_ABI_VERSION");
+assertContains("crates/proto/src/provider_limits.rs", "CODEC_PROVIDER_ABI_VERSION: u32 = 6");
 assertNotContains("packages/swift/Sources/ReallyMeCodec/ReallyMeCodec.swift", "dagCborEncode(taggedJson");
 assertNotContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "dagCborEncode(taggedJson");
 assertNotContains("packages/ts/src/cbor.ts", "bytesBase64url");
@@ -615,9 +636,9 @@ assertContains("crates/ffi/src/kotlin_codec.rs", "with_redacted_panic_hook");
 assertContains("crates/pem/src/encode.rs", "String::with_capacity(output_length)");
 assertContains("crates/pem/src/decode.rs", "String::with_capacity(body_capacity)");
 assertNotContains("crates/pem/src/decode.rs", '.replace("\\r\\n"');
-assertContains("crates/codec/src/lib.rs", "canonicalize_json_text");
-assertContains("crates/codec/src/lib.rs", "canonicalize_trusted_json_value");
-assertNotContains("crates/codec/src/lib.rs", "canonicalize_json, JcsError");
+assertContains("crates/codec/src/jcs.rs", "canonicalize_json_text");
+assertContains("crates/codec/src/jcs.rs", "canonicalize_trusted_json_value");
+assertNotContains("crates/codec/src/jcs.rs", "canonicalize_json, JcsError");
 assertNotContains("crates/jcs/src/lib.rs", "canonicalize_json;");
 assertNotContains("crates/jcs/src/canonicalize.rs", "pub fn canonicalize_json(");
 assertNotContains("crates/jcs/tests/jcs_tests.rs", "deprecated_value_alias");
@@ -638,7 +659,7 @@ assertContains(
   "crates/ffi/src/kotlin_codec.rs",
   "validate_managed_input_lengths",
 );
-assertContains("crates/ffi/src/kotlin_codec.rs", "aggregate.checked_add(length)");
+assertContains("crates/ffi/src/kotlin_codec/map_error.rs", "aggregate.checked_add(length)");
 assertContains("crates/wasm/Cargo.toml", 'name = "reallyme-codec-wasm"');
 assertContains("crates/wasm/src/boundary.rs", "MAX_WASM_INPUT_BYTES");
 assertContains("crates/wasm/src/boundary.rs", "checked_add");
@@ -748,15 +769,15 @@ assertContains(
   "processOperationNative",
 );
 assertContains(
-  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
-  "private fun <T> processOperation(",
+  "packages/kotlin/src/main/kotlin/me/really/codec/CallCodec.kt",
+  "internal fun <T> processOperation(",
 );
 assertContains(
-  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/CallCodec.kt",
   "UnsafeByteOperations.unsafeWrap(responseBytes).newCodedInput()",
 );
 assertContains(
-  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/CallCodec.kt",
   "input.enableAliasing(true)",
 );
 for (const resultCase of [
@@ -773,7 +794,7 @@ for (const resultCase of [
   );
 }
 assertContains(
-  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/CallCodec.kt",
   "responseBytes.fill(0)",
 );
 assertContains(
@@ -846,30 +867,8 @@ assertContains(
   "scripts/run_pinned_release_readiness.mjs",
   "local checker does not match the reviewed repository policy pin",
 );
-assertContains(
-  "scripts/run_pinned_release_readiness.mjs",
-  "vendored core bytes do not match the pinned upstream core",
-);
-assertContains(
-  "scripts/release-readiness/core.mjs",
-  'RELEASE_READINESS_VERSION = "0.7.0"',
-);
-assertContains(
-  "scripts/run_pinned_release_readiness.mjs",
-  "spawnSync(process.execPath, [LOCAL_CHECKER_PATH",
-);
-assertContains(
-  "scripts/release-readiness/core.mjs",
-  "job ${job.name} permissions must be a flat explicit mapping",
-);
-assertContains(
-  "scripts/release-readiness/core.mjs",
-  "extractWorkflowRunCommands",
-);
-assertContains(
-  "scripts/release-readiness/core.mjs",
-  "cargo-fuzz installation must be in a named workflow step",
-);
+assertContains("scripts/run_pinned_release_readiness.mjs", "fileURLToPath(officialRunnerUrl)");
+assertContains("scripts/run_pinned_release_readiness.mjs", "RELEASE_READINESS_RUNNER_SHA256");
 assertContains(
   "scripts/release-readiness/source-policy.test.mjs",
   "TypeScript block comments do not nest or hide following code",
@@ -905,7 +904,11 @@ assertContains(
   `reallyme-codec-proto = { version = "${codecProtoPackageVersion}", features = ["generated"] }`,
 );
 assertProtoContract("crates/proto/proto/reallyme/codec/v1/codec.proto");
-assertReallyMeOperationBoundaryContract({
+if (findManualProtoPresenceFields(readText("crates/proto/proto/reallyme/codec/v1/codec.proto")).length !== 0) {
+  fail("codec.proto must use optional/message/oneof presence instead of manual presence booleans");
+}
+const { assertNativeOperationBoundary } = await import("./release-readiness/native-proto-policy.mjs");
+assertNativeOperationBoundary(readinessContext, {
   protoPath: "crates/proto/proto/reallyme/codec/v1/codec.proto",
   operationRequest: "CodecOperationRequest",
   operationResponse: "CodecOperationResponse",
@@ -968,11 +971,13 @@ assertReallyMeOperationBoundaryContract({
       processOperationNeedle: "public fun processOperation(request: ByteArray)",
       processOperationJsonNeedle:
         "public fun processOperationJson(requestJson: ByteArray)",
+      binaryResponsePath: "packages/kotlin/src/main/kotlin/me/really/codec/CallCodec.kt",
+      binaryResponseNeedle: "CodecOperationResponse.parseFrom(input)",
     },
   ],
 });
 assertContains(
-  "packages/swift/Tests/ReallyMeCodecTests/ReallyMeCodecTests.swift",
+  "packages/swift/Tests/ReallyMeCodecTests/ProviderSafetyTests.swift",
   "UInt(Int.max) + 1",
 );
 
@@ -1052,7 +1057,7 @@ const generatedStructuredOperations = [
     protoOperationField: "CodecMulticodecTableRequest multicodec_table = 1002;",
     protoRequestMessage: "message CodecMulticodecTableRequest",
     protoResultMessage: "message CodecMulticodecTableResult",
-    protoVariant: "CodecOperation::MulticodecTable(request) => {",
+    protoVariant: "CodecOperation::MulticodecTable(_) => {",
     rustPath: codecContractExecuteMultiformatPath,
     contractFunction: "fn process_multicodec_table(",
     contractNeedles: [
@@ -1101,7 +1106,7 @@ const generatedStructuredOperations = [
       "verify_dag_cbor_cid(cid, payload).map_err(dag_cbor_boundary_error)",
       "dag_cbor_verify_cid_result_proto(verification)",
     ],
-    tsPath: "packages/ts/src/cbor.ts",
+    tsPath: "packages/ts/src/processCbor.ts",
     tsExport:
       "export const dagCborVerifyCidDetails = (\n  cid: string,\n  bytes: Uint8Array,",
     tsNeedles: [
@@ -1151,7 +1156,7 @@ const generatedStructuredOperations = [
       "validate_deterministic_value(proto_value, 0, &mut limits)?",
       "encode_deterministic_cbor_value(&value).map_err(deterministic_cbor_wire_error)?",
     ],
-    tsPath: "packages/ts/src/cbor.ts",
+    tsPath: "packages/ts/src/processCbor.ts",
     tsExport: "export const deterministicCborEncode = (value: unknown): Uint8Array =>",
     tsNeedles: [
       "case: \"deterministicCborEncode\"",
@@ -1174,7 +1179,7 @@ const generatedStructuredOperations = [
       "decode_deterministic_cbor_value(encoded).map_err(deterministic_cbor_wire_error)?",
       "CodecDeterministicCborDecodeResult",
     ],
-    tsPath: "packages/ts/src/cbor.ts",
+    tsPath: "packages/ts/src/processCbor.ts",
     tsExport:
       "export const deterministicCborDecode = (\n  bytes: Uint8Array,",
     tsNeedles: [
@@ -1186,6 +1191,137 @@ const generatedStructuredOperations = [
     ],
   },
 ];
+
+// The legacy envelope stays source-compatible. Every expanded operation must
+// have a generated result at the same wire tag and exactly one concrete handler.
+const expandedSchema = readText(codecProtoSchemaPath);
+const operationFields = (name) => {
+  const body = expandedSchema.match(new RegExp(`message ${name} \\{([\\s\\S]*?)\n\\}`, "u"))?.[1];
+  if (body === undefined) fail(`missing generated envelope ${name}`);
+  return [...body.matchAll(/^\s+(\w+) (\w+) = (\d+);/gmu)].map((match) => ({ type: match[1], name: match[2], tag: match[3] }));
+};
+const expandedRequests = operationFields("CodecApiOperationRequest");
+const expandedResults = operationFields("CodecApiOperationResult");
+assertSetEquals({
+  label: "provider lifecycle request/result wire tags",
+  actual: operationFields("CodecProviderOperationRequest").map((field) => field.tag).sort(),
+  expected: operationFields("CodecProviderOperationResult").map((field) => field.tag).sort(),
+});
+assertContains(codecProtoSchemaPath, "CodecWasmReinstantiateRequest reinstantiate_wasm = 5;");
+assertContains(codecProtoSchemaPath, "CodecEmptyResult reinstantiated_wasm = 5;");
+const expandedHandlers = ["dispatch_api", "execute_scalars", "execute_general_cbor", "execute_der", "execute_tlv"]
+  .map((name) => {
+    const source = stripSourceComments(readText(`crates/codec/src/operation_contract/${name}.rs`));
+    // Routing patterns delegate ownership; only the leaf arm implements an
+    // operation. Empty-request leaves still count as their own implementation.
+    return name === "dispatch_api" ? source.replace(/\bOperation::\w+\(_\)/gu, "") : source;
+  }).join("\n");
+const declaredHandlers = [...expandedHandlers.matchAll(/\bOperation::(\w+)\((?:request|_)\)(?=\s*(?:=>|\|))/gu)].map((match) => match[1]);
+const declaredResults = [...expandedHandlers.matchAll(/\b(?:OperationResult|ApiResult)::(\w+)\(/gu)].map((match) => match[1]);
+assertSetEquals({ label: "expanded operation result wire tags", actual: expandedResults.map((field) => `${field.name}:${field.tag}`).sort(), expected: expandedRequests.map((field) => `${field.name}:${field.tag}`).sort() });
+const operationVariant = (name) => name.replace(/(^|_)([a-z])/gu, (_match, _separator, letter) => letter.toUpperCase());
+for (const field of expandedRequests) {
+  const variant = operationVariant(field.name);
+  if (declaredHandlers.filter((name) => name === variant).length !== 1 || !declaredResults.includes(variant)) {
+    fail(`expanded operation ${field.name} must have one semantic handler and its generated result`);
+  }
+}
+const operationVectorsPath = "vectors/codec-operation-vectors.json";
+const operationVectors = readJson(operationVectorsPath);
+if (operationVectors.schemaVersion !== 1 || !Array.isArray(operationVectors.cases) ||
+    operationVectors.cases.length !== expandedRequests.length) {
+  fail("every expanded schema operation requires a conformance vector");
+}
+const expectedVectorOperations = expandedRequests.map((field) =>
+  `${field.name.replace(/_([a-z])/gu, (_match, letter) => letter.toUpperCase())}:${field.tag}`,
+).sort();
+const actualVectorOperations = [];
+for (const vector of operationVectors.cases) {
+  if (typeof vector.operation !== "string" || !Number.isSafeInteger(vector.fieldNumber) ||
+      typeof vector.requestJson !== "string" || typeof vector.requestHex !== "string" ||
+      !/^(?:[0-9a-f]{2})+$/u.test(vector.requestHex) ||
+      vector.checks === null || typeof vector.checks !== "object" || Array.isArray(vector.checks)) {
+    fail("operation conformance vectors require typed names, wire bytes, JSON requests, and checks");
+  }
+  let request;
+  try { request = JSON.parse(vector.requestJson); } catch { fail("invalid conformance request JSON"); }
+  if (request === null || typeof request !== "object" || Array.isArray(request) ||
+      Object.keys(request).length !== 1 || !Object.hasOwn(request, vector.operation)) {
+    fail("operation conformance vector must select its declared operation");
+  }
+  actualVectorOperations.push(`${vector.operation}:${vector.fieldNumber}`);
+}
+assertSetEquals({ label: "operation conformance vectors", actual: actualVectorOperations.sort(), expected: expectedVectorOperations });
+for (const path of [
+  "crates/codec/tests/complete_contract_tests.rs",
+  "packages/ts/test/complete-contract.test.mjs",
+  "packages/swift/Tests/ReallyMeCodecTests/CompleteContractTests.swift",
+  "packages/kotlin/src/test/kotlin/me/really/codec/CompleteContractTest.kt",
+]) {
+  assertContains(path, "codec-operation-vectors.json");
+}
+for (const field of operationFields("CodecOperationRequest")) {
+  if (!expandedRequests.some((candidate) => candidate.name === field.name && candidate.tag === field.tag && candidate.type === field.type)) {
+    fail(`expanded envelope changed legacy operation ${field.name}`);
+  }
+}
+for (const field of operationFields("CodecOperationResult")) {
+  if (!expandedResults.some((candidate) => candidate.name === field.name && candidate.tag === field.tag && candidate.type === field.type)) {
+    fail(`expanded envelope changed legacy result ${field.name}`);
+  }
+}
+for (const [path, needle] of [
+  ["crates/codec/src/operation_contract/dispatch.rs", "decode_protobuf::<ApiRequest>(request_bytes)"],
+  ["crates/codec/src/operation_contract/dispatch.rs", "decode_json::<ApiRequest>(request_json)"],
+  ["crates/codec/src/operation_contract/dispatch_api.rs", "super::process_operation_request(request)?"],
+  ["crates/cbor/src/general/error.rs", "CodecGeneralCborErrorReason as ErrorReason"],
+  ["crates/codec/src/der/error.rs", "CodecDerErrorReason as DerErrorReason"],
+  ["crates/codec/src/operation_contract/execute_scalar_native.rs", "CodecBytesRequestView"],
+  ["crates/adapter/src/scalar_ops.rs", "pub use codec_runtime::operation_contract::scalar_ops::{"],
+  ["crates/codec/src/operation_contract/execute_scalars.rs", "scalar_ops as scalar"],
+  ["packages/ts/scripts/build-wasm.mjs", "The generated WASM initializer declaration layout changed."],
+]) assertContains(path, needle);
+
+const scalarDispatchSource = stripSourceStringsAndComments(readText("crates/codec/src/operation_contract/execute_scalars.rs"));
+if (/\bcodec_\w+::[a-z]\w*\s*\(/u.test(scalarDispatchSource)) {
+  fail("scalar dispatch must call the shared semantic implementation instead of primitive functions");
+}
+const legacyScalarSource = stripSourceStringsAndComments(readText("crates/adapter/src/scalar_ops.rs"));
+if (/\b(?:fn|struct|enum)\b/u.test(legacyScalarSource)) {
+  fail("the legacy scalar adapter must only re-export the shared generated-contract implementation");
+}
+
+// Framing stays separate from the schema-directed DER reader. Shared goldens
+// cover complete headers, absent values, borrowed extents, and typed failures.
+for (const path of [
+  "crates/codec/tests/tlv_contract_tests.rs",
+  "packages/ts/test/tlv-contract.test.mjs",
+  "packages/swift/Tests/ReallyMeCodecTests/TlvContractTests.swift",
+  "packages/kotlin/src/test/kotlin/me/really/codec/TlvContractTest.kt",
+]) assertContains(path, "tlv-framing-vectors.json");
+assertContains("crates/codec/src/operation_contract/execute_tlv.rs", "tlv::read_header");
+assertContains("crates/codec/src/operation_contract/execute_tlv.rs", "tlv::frame_prefix");
+assertContains("crates/codec/src/operation_contract/execute_tlv.rs", "tlv::frame_exact");
+assertContains("crates/codec/src/operation_contract/execute_tlv.rs", "tlv::read_identifier");
+assertContains("crates/codec/src/operation_contract/execute_tlv.rs", "tlv::read_length");
+assertContains("crates/codec/src/tlv/error.rs", "CodecTlvErrorReason as ErrorReason");
+assertContains("crates/proto/src/error.rs", "pub fn from_tlv_reason");
+const tlvVectors = readJson("vectors/tlv-framing-vectors.json");
+if (tlvVectors.schemaVersion !== 1 || !Array.isArray(tlvVectors.cases) || tlvVectors.cases.length === 0) {
+  fail("TLV framing requires independent transport goldens");
+}
+const tlvVectorNames = new Set();
+for (const vector of tlvVectors.cases) {
+  const key = `${vector.name}:${vector.operation}`;
+  if (typeof vector.name !== "string" || vector.name.length === 0 || tlvVectorNames.has(key) ||
+      !["tlvReadHeader", "tlvFramePrefix", "tlvFrameExact", "tlvReadIdentifier", "tlvReadLength"].includes(vector.operation) ||
+      typeof vector.requestJson !== "string" || typeof vector.requestHex !== "string" ||
+      typeof vector.responseHex !== "string" ||
+      !/^(?:[0-9a-f]{2})+$/u.test(vector.requestHex) || !/^(?:[0-9a-f]{2})+$/u.test(vector.responseHex)) {
+    fail("TLV framing goldens require unique names, generated operations, and exact wire bytes");
+  }
+  tlvVectorNames.add(key);
+}
 
 const remainingStructuredSemanticOperations = [
   {
@@ -1227,7 +1363,7 @@ for (const operation of remainingStructuredSemanticOperations) {
     "crates/codec/src/operation_contract/core/mod.rs",
     `mod ${operation.moduleName};`,
   );
-  assertNotContains("crates/codec/src/lib.rs", `pub mod ${operation.moduleName};`);
+  assertNotContains("crates/codec/src/lib.rs", "pub mod contract_core;");
   assertContains(operation.path, "#[non_exhaustive]");
   for (const needle of operation.fileNeedles) {
     assertContains(operation.path, needle);
@@ -1351,12 +1487,7 @@ for (const operation of generatedStructuredOperations) {
     needle: contractCallNeedle,
     label: `${operation.name} operation variant`,
   });
-  assertBlockContains({
-    path: codecContractDispatchPath,
-    block: variantBlock,
-    needle: "reject_unknown_fields(&request.__buffa_unknown_fields)?",
-    label: `${operation.name} operation variant`,
-  });
+
 
   assertRustFunction({
     path: operationRustPath,
@@ -1395,14 +1526,14 @@ for (const sdkPath of [
   assertNotContains(sdkPath, "reason >= ");
   assertNotContains(sdkPath, "reason <=");
 }
-assertContains("packages/ts/src/operationContract.ts", "const errorCodeForCodecErrorMessage =");
+assertContains("packages/ts/src/classifyOperationError.ts", "const errorCodeForCodecErrorMessage =");
 for (const reasonRange of [
   "reason < 100 || reason > 199",
   "reason < 200 || reason > 299",
   "reason < 300 || reason > 399",
   "reason < 400 || reason > 499",
 ]) {
-  assertContains("packages/ts/src/operationContract.ts", reasonRange);
+  assertContains("packages/ts/src/classifyOperationError.ts", reasonRange);
 }
 for (const typedSdkResultReaderPath of [
   "packages/swift/Sources/ReallyMeCodec/StructuredResults.swift",
@@ -1424,11 +1555,11 @@ assertContains(
   "Self.isNonCanonicalReason(error.reason)",
 );
 assertContains(
-  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/CallCodec.kt",
   "private fun exceptionForCodecError(codecError: CodecError)",
 );
 assertContains(
-  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/CallCodec.kt",
   "reason.number in expectedRange",
 );
 
@@ -1500,11 +1631,11 @@ assertContains(
   "MAX_DETERMINISTIC_CBOR_PROTO_RECURSION_DEPTH = 198",
 );
 assertContains(
-  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/CodecWireLimits.kt",
   "MAX_DETERMINISTIC_CBOR_PROTO_MESSAGE_DEPTH: Int = 197",
 );
 assertContains(
-  "packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift",
+  "packages/swift/Sources/ReallyMeCodec/ValidateDeterministicCbor.swift",
   "maxDeterministicCborProtoMessageDepth = 198",
 );
 for (const swiftTransportNeedle of [
@@ -1514,24 +1645,22 @@ for (const swiftTransportNeedle of [
   "serialized.count <= maxDeterministicCborProtoMessageBytes",
 ]) {
   assertContains(
-    "packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift",
+    swiftTransportNeedle.startsWith("serialized.count")
+      ? "packages/swift/Sources/ReallyMeCodec/ProcessCbor.swift"
+      : "packages/swift/Sources/ReallyMeCodec/ValidateDeterministicCbor.swift",
     swiftTransportNeedle,
   );
 }
+for (const path of ["ValidateDeterministicCbor", "ValidateProviderCbor"]) {
+  assertContains(`packages/swift/Sources/ReallyMeCodec/${path}.swift`, "boundedDeterministicCborUtf8Length(");
+  assertNotContains(`packages/swift/Sources/ReallyMeCodec/${path}.swift`, ".utf8.count");
+}
 assertContains(
-  "packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift",
-  "boundedDeterministicCborUtf8Length(",
-);
-assertNotContains(
-  "packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift",
-  ".utf8.count",
-);
-assertContains(
-  "packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift",
+  "packages/swift/Sources/ReallyMeCodec/ValidateProviderCbor.swift",
   "rejectDuplicateProviderDeterministicCborMapKeys(",
 );
 assertContains(
-  "packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift",
+  "packages/swift/Sources/ReallyMeCodec/ValidateProviderCbor.swift",
   "compareDeterministicCborUtf8(",
 );
 assertContains(
@@ -1544,7 +1673,7 @@ assertContains(
 );
 assertContains(
   "packages/swift/Sources/ReallyMeCodec/DataErgonomics.swift",
-  "func base64urlEncode(_ data: Data) throws -> String",
+  "func base64urlEncode(_ data: Data) throws(ReallyMeCodecError) -> String",
 );
 assertContains(
   "packages/swift/Sources/ReallyMeCodec/DataErgonomics.swift",
@@ -1555,7 +1684,7 @@ assertContains(
   "public static func bytes(_ value: Data)",
 );
 assertContains(
-  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/ValidateProviderCbor.kt",
   "rejectDuplicateProviderDeterministicCborMapKeys(",
 );
 assertContains(
@@ -1570,11 +1699,11 @@ assertContains(
   "packages/kotlin/src/main/kotlin/me/really/codec/DeterministicCbor.kt",
   "entries: List<Pair<String, ReallyMeDeterministicCborValue>>",
 );
-assertContains("packages/ts/src/cbor.ts", "export const ReallyMeDeterministicCbor =");
-assertContains("packages/ts/src/cbor.ts", "export const ReallyMeDagCbor =");
-assertContains("packages/ts/src/cbor.ts", "bytes(value: Uint8Array)");
-assertContains("packages/ts/src/cbor.ts", "negative(value: number | bigint)");
-assertContains("packages/ts/src/cbor.ts", "text(value: string)");
+assertContains("packages/ts/src/constructCbor.ts", "export const ReallyMeDeterministicCbor =");
+assertContains("packages/ts/src/constructCbor.ts", "export const ReallyMeDagCbor =");
+assertContains("packages/ts/src/constructCbor.ts", "bytes(value: Uint8Array)");
+assertContains("packages/ts/src/constructCbor.ts", "negative(value: number | bigint)");
+assertContains("packages/ts/src/constructCbor.ts", "text(value: string)");
 for (const sdkVectorTest of [
   "packages/swift/Tests/ReallyMeCodecTests/DeterministicCborVectorTests.swift",
   "packages/kotlin/src/test/kotlin/me/really/codec/DeterministicCborVectorTest.kt",
@@ -1621,7 +1750,7 @@ for (const [conversionPath, conversionNeedle] of [
 ]) {
   assertContains(conversionPath, conversionNeedle);
 }
-assertContains("crates/codec/src/operation_contract/mod.rs", 'include!("copy_limits.rs")');
+assertContains("crates/codec/src/operation_contract/run_contract.rs", 'include!("copy_limits.rs")');
 
 assertContains("buf.gen.yaml", "out: crates/proto/src/generated/buffa");
 assertContains("buf.gen.yaml", "out: packages/ts/src/proto/generated");
@@ -1639,26 +1768,28 @@ for (const transportDerivationNeedle of [
   "CODEC_PROTO_DETERMINISTIC_CBOR_BYTE_STRING_BYTES",
   "CODEC_PROTO_DETERMINISTIC_CBOR_NODES",
   "CODEC_PROTO_MAX_STRUCTURAL_BYTES_PER_CBOR_NODE",
-  "max_codec_proto_message_bytes_const()",
-  "max_codec_proto_json_bytes_const()",
+  "max_codec_proto_cbor_message_bytes_const()",
+  "max_codec_proto_cbor_json_bytes_const()",
+  "max_codec_proto_tlv_json_bytes_const()",
+  "MAX_CODEC_TLV_INPUT_BYTES.checked_add(CODEC_PROTO_MAX_FIXED_OPERATION_BYTES)",
 ]) {
   assertContains("crates/proto/src/limits.rs", transportDerivationNeedle);
 }
 for (const typescriptTransportNeedle of [
   "MAX_CODEC_PROTO_STRUCTURAL_BYTES_PER_NODE",
   "MAX_CODEC_PROTO_FIXED_OPERATION_BYTES",
+  "MAX_CODEC_TLV_INPUT_BYTES",
+  "MAX_CODEC_TLV_JSON_PAYLOAD_BYTES",
   "MAX_CODEC_PROTO_MESSAGE_BYTES =",
   "MAX_CODEC_PROTO_JSON_BYTES =",
 ]) {
   assertContains("packages/ts/src/boundary.ts", typescriptTransportNeedle);
 }
 for (const kotlinTransportNeedle of [
-  "MAX_CODEC_PROTO_STRUCTURAL_BYTES_PER_NODE",
-  "MAX_CODEC_PROTO_FIXED_OPERATION_BYTES",
   "MAX_CODEC_PROTO_MESSAGE_BYTES: Int =",
 ]) {
   assertContains(
-    "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
+    "packages/kotlin/src/main/kotlin/me/really/codec/CodecWireLimits.kt",
     kotlinTransportNeedle,
   );
 }
@@ -1685,8 +1816,8 @@ assertContains(
 assertContains("crates/proto/tests/generated_tests/error_wire.rs", "bounded_protobuf_decode_rejects_oversized_messages");
 assertContains("crates/proto/tests/generated_tests/error_wire.rs", "json_decode_rejects_inputs_that_expand_past_binary_cap");
 assertContains(".github/workflows/protobuf-ci.yml", "scripts/run_pinned_release_readiness.mjs");
-assertContains(".github/workflows/protobuf-ci.yml", "cargo install protoc-gen-buffa-packaging");
-assertContains("scripts/check_release_readiness.mjs", '["buf", ["lint"]]');
+assertContains(".github/workflows/protobuf-ci.yml", "cargo install reallyme-protoc-gen-buffa-packaging");
+assertContains("scripts/generate_codec_proto.mjs", '["buf", ["lint"]]');
 assertContains(".github/workflows/protobuf-ci.yml", "buf breaking --against \".git#tag=${release_tag}\"");
 assertContains(".github/workflows/protobuf-ci.yml", "buf breaking --against '.git#branch=origin/main'");
 assertContains(
@@ -1704,7 +1835,7 @@ assertWorkflowUsesStepPinnedTo(
 );
 assertContains(
   ".github/workflows/protobuf-ci.yml",
-  "checksum: fad1e38d6909bbb583a4da81d8c02a01046e2cd663bde7e337dd24277393764b",
+  "checksum: f71b009ebd8530b12fd85b060c6c245e15d6e5110ccc8da48d8b6fa71e59330b",
 );
 assertContains(".github/workflows/protobuf-ci.yml", "github_token: ${{ github.token }}");
 assertContains(".github/workflows/protobuf-ci.yml", "setup_only: true");
@@ -1831,7 +1962,7 @@ const packageReleaseWorkflows = Object.freeze([
 for (const workflowPath of packagePreflightWorkflows) {
   assertContains(workflowPath, "Resolve release SHA");
   assertContains(workflowPath, 'default: ""');
-  assertContains(workflowPath, "default: 0.3.6");
+  assertContains(workflowPath, "default: 0.4.0");
 }
 for (const workflowPath of packageReleaseWorkflows) {
   assertContains(workflowPath, "Verify reviewed release SHA");
@@ -1947,7 +2078,7 @@ assertContains(".github/workflows/npm-package-release.yml", "npm pack --ignore-s
 assertContains(".github/workflows/npm-package-release.yml", "--provenance --access public --ignore-scripts");
 assertContains(".github/workflows/npm-package-release.yml", "EXPECTED_TARBALL_SHA256");
 assertContains("Cargo.toml", 'wasm-bindgen = "=0.2.130"');
-assertContains(".github/workflows/code-checks.yml", "wasm-bindgen-cli@0.2.130");
+assertContains(".github/workflows/protobuf-ci.yml", "wasm-bindgen-cli@0.2.130");
 assertContains(".github/workflows/npm-package-preflight.yml", "wasm-bindgen-cli@0.2.130");
 assertContains(".github/workflows/npm-package-release.yml", "wasm-bindgen-cli@0.2.130");
 assertContains(".github/workflows/npm-package-release.yml", "NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}");
@@ -1986,10 +2117,10 @@ assertContains(".github/workflows/codeql.yml", "compileKotlin compileJava");
 assertContains(".github/workflows/codeql.yml", "compileReleaseKotlin compileReleaseJavaWithJavac");
 assertNotContains(".github/workflows/codeql.yml", "- language: swift");
 assertNotContains(".github/workflows/codeql.yml", "matrix.language == 'swift'");
-assertContains(".github/workflows/code-checks.yml", "name: swift codec package\n    runs-on: macos-26");
-assertContains(".github/workflows/code-checks.yml", 'test "$(uname -m)" = arm64');
-assertContains(".github/workflows/code-checks.yml", "swift test --arch arm64 --verbose");
-assertContains(".github/workflows/code-checks.yml", 'REALLYME_CODEC_SWIFTPM_RUNTIME_FFI: "1"');
+assertContains(".github/workflows/protobuf-ci.yml", "runs-on: macos-26");
+assertContains(".github/workflows/protobuf-ci.yml", 'test "$(uname -m)" = arm64');
+assertContains("scripts/release-readiness/sdk-source-policy.mjs", '"test", "--arch", "arm64"');
+assertContains(".github/workflows/protobuf-ci.yml", 'REALLYME_CODEC_SWIFTPM_RUNTIME_FFI: "1"');
 assertContains(".github/workflows/code-checks.yml", "npm audit --prefix packages/ts --omit=dev --audit-level=high");
 assertContains(".github/dependabot.yml", "package-ecosystem: cargo");
 assertContains(".github/dependabot.yml", "package-ecosystem: gradle");
@@ -1999,8 +2130,8 @@ assertNotContains(".github/workflows/fuzz.yml", "cargo +nightly fuzz");
 assertContains(".github/workflows/fuzz.yml", "- operation_contract");
 assertContains("fuzz/Cargo.toml", 'name = "operation_contract"');
 assertContains("fuzz/README.md", "`operation_contract`");
-assertContains("fuzz/fuzz_targets/operation_contract.rs", "process_operation_response(data)");
-assertContains("fuzz/fuzz_targets/operation_contract.rs", "process_operation_response_json(data)");
+assertContains("fuzz/tests/targets/operation_contract.rs", "process_operation_response(data)");
+assertContains("fuzz/tests/targets/operation_contract.rs", "process_operation_response_json(data)");
 assertContains(".github/workflows/fuzz.yml", "- deterministic_cbor");
 assertContains("fuzz/Cargo.toml", 'name = "deterministic_cbor"');
 assertContains("fuzz/README.md", "`deterministic_cbor`");
@@ -2013,23 +2144,23 @@ assertContains(
   "fn simultaneous_operations_are_deterministic_and_cleanup_is_independent()",
 );
 assertContains(
-  "fuzz/fuzz_targets/deterministic_cbor.rs",
+  "fuzz/tests/targets/deterministic_cbor.rs",
   "decode_deterministic_cbor(data)",
 );
 assertContains(
-  "fuzz/fuzz_targets/deterministic_cbor.rs",
+  "fuzz/tests/targets/deterministic_cbor.rs",
   "encode_deterministic_cbor(&value)",
 );
 assertContains(
-  "fuzz/fuzz_targets/deterministic_cbor.rs",
+  "fuzz/tests/targets/deterministic_cbor.rs",
   "decode_deterministic_cbor(&encoded)",
 );
 assertContains(
-  "fuzz/fuzz_targets/deterministic_cbor.rs",
+  "fuzz/tests/targets/deterministic_cbor.rs",
   "assert_eq!(encoded_again, encoded)",
 );
 assertContains("fuzz/Cargo.toml", 'name = "jcs_text"');
-assertContains("fuzz/fuzz_targets/jcs_text.rs", "canonicalize_json_text(json)");
+assertContains("fuzz/tests/targets/jcs_text.rs", "canonicalize_json_text(json)");
 assertContains("fuzz/README.md", "`jcs_text`");
 assertContains(".github/workflows/fuzz.yml", "- jcs_text");
 assertContains("scripts/test_native_sanitizers.sh", "nightly-2026-07-01");
@@ -2040,55 +2171,55 @@ assertContains(".github/workflows/kotlin-android-package-release.yml", "Test and
 assertContains(".github/workflows/kotlin-android-package-release.yml", "Build Android AAR");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "requireFullNativeResources=true");
 assertContains("packages/kotlin/settings.gradle.kts", 'rootProject.name = "reallyme-codec"');
-assertContains("packages/kotlin/README.md", "me.really:codec:0.3.6");
+assertContains("packages/kotlin/README.md", "me.really:codec:0.4.0");
 assertContains("packages/kotlin/README.md", "ships Rust JNI libraries as platform resources");
 assertContains(
-  "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodecRustNativeProvider.kt",
   "/me/really/codec/native",
 );
 assertContains(
-  "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodecRustNativeProvider.kt",
   'ANDROID_LIBRARY_NAME: String = "reallyme_codec_ffi"',
 );
 assertContains(
-  "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodecRustNativeProvider.kt",
   "System.loadLibrary(ANDROID_LIBRARY_NAME)",
 );
 assertContains(
-  "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodecRustNativeProvider.kt",
   "createPrivateExtractionDirectory",
 );
 assertContains(
-  "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/ExtractNativeLibrary.kt",
   "MessageDigest.isEqual",
 );
 assertContains(
-  "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodecRustNativeProvider.kt",
   "isSecurePosixTempMode",
 );
 assertContains(
-  "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodecRustNativeProvider.kt",
   "isTrustedPosixTempOwner",
 );
 assertContains(
-  "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/ExtractNativeLibrary.kt",
   "AclFileAttributeView",
 );
 assertContains(
-  "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/ExtractNativeLibrary.kt",
   "restrictAclToOwner",
 );
 assertContains(
-  "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/ExtractNativeLibrary.kt",
   "makeExtractedLibraryReadOnly",
 );
 assertNotContains(
-  "packages/kotlin/src/main/kotlin/me/really/codec/RustNativeProvider.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodecRustNativeProvider.kt",
   "File.createTempFile",
 );
 assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "@JvmStatic");
 assertContains(
-  "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt",
+  "packages/kotlin/src/main/kotlin/me/really/codec/WithCodecBytes.kt",
   "UnsafeByteOperations.unsafeWrap(bytes)",
 );
 assertNotContains(
@@ -2106,16 +2237,16 @@ assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt
 assertContains("crates/ffi/src/codec.rs", "MAX_CODEC_FFI_OUTPUT_BYTES");
 assertContains("crates/ffi/src/kotlin_codec.rs", "probed_output_capacity");
 assertContains("crates/ffi/src/kotlin_codec.rs", "produced_len != output.len()");
-assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "CodingErrorAction.REPORT");
-assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "bytes.fill(0)");
-assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "Character.isSurrogate(character)");
-assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "CODEC_ERROR_REASON_CANONICAL_INTERNAL");
+assertContains("packages/kotlin/src/main/kotlin/me/really/codec/WithCodecBytes.kt", "CodingErrorAction.REPORT");
+assertContains("packages/kotlin/src/main/kotlin/me/really/codec/WithCodecBytes.kt", "bytes.fill(0)");
+assertContains("packages/kotlin/src/main/kotlin/me/really/codec/WithCodecBytes.kt", "Character.isSurrogate(character)");
+assertContains("packages/kotlin/src/main/kotlin/me/really/codec/CallCodec.kt", "CODEC_ERROR_REASON_CANONICAL_INTERNAL");
 assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "withTextBytes");
 assertContains(
-  "packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt",
+  "packages/kotlin/src/test/kotlin/me/really/codec/NativeProviderSafetyTest.kt",
   "nativeDigestMetadataAndTempPermissionsFailClosed",
 );
-assertContains("packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", 'ReallyMeCodec.canonicalizeJson("\\uD800")');
+assertContains("packages/kotlin/src/test/kotlin/me/really/codec/NativeProviderSafetyTest.kt", 'ReallyMeCodec.canonicalizeJson("\\uD800")');
 assertContains("packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", 'assertNull(codec.tryParseCid("not-a-cid"))');
 assertContains("packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", "assertEquals(0x71, codec.dagCborCodecCode())");
 assertContains("packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", 'codec.base58btcDecode("")');
@@ -2266,10 +2397,10 @@ if (!readText("Package.swift").startsWith("// swift-tools-version: 6.3\n")) {
 assertContains("Package.swift", 'name: "ReallyMeCodec"');
 assertNotContains("Package.swift", 'name: "ReallyMeCodecProto"');
 assertContains("Package.swift", 'path: "packages/swift/Sources/ReallyMeCodec"');
-if (readText("packages/swift/Sources/ReallyMeCodec/GeneratedCodecProto.swift") !== readText("gen/swift/reallyme/codec/v1/codec.pb.swift")) {
+if (readText("packages/swift/Sources/ReallyMeCodec/Generated/CodecProto.swift") !== readText("gen/swift/reallyme/codec/v1/codec.pb.swift")) {
   fail("Swift internal protobuf source differs from the generated wire contract");
 }
-assertNotContains("packages/swift/Sources/ReallyMeCodec/GeneratedCodecProto.swift", "public nonisolated struct ReallyMeProto");
+assertNotContains("packages/swift/Sources/ReallyMeCodec/Generated/CodecProto.swift", "public nonisolated struct ReallyMeProto");
 assertNotContains("gen/swift/reallyme/codec/v1/codec.pb.swift", "public nonisolated struct ReallyMeProto");
 assertContains("buf.gen.yaml", "Visibility=Internal");
 assertContains("Package.swift", 'name: "ReallyMeCodecFFI"');
@@ -2281,9 +2412,9 @@ assertContains("Package.swift", "path: ffiArtifactLocalPathOverride");
 assertContains("Package.swift", "runtimeFfiPathExists = FileManager.default.fileExists(");
 assertContains("Package.swift", "runtimeFfiPathIsDirectory.boolValue");
 assertContains("Package.swift", "REALLYME_CODEC_SWIFTPM_RUNTIME_FFI");
-assertContains("packages/swift/Sources/ReallyMeCodec/ReallyMeCodec.swift", "public func tryParseCid(_ cid: String) throws -> String?");
-assertContains("packages/swift/Sources/ReallyMeCodec/ReallyMeCodec.swift", "public func dagCborCodecCode() throws -> UInt32");
-assertContains("packages/swift/Sources/ReallyMeCodec/ReallyMeCodec.swift", "consuming [UInt8]");
+assertContains("packages/swift/Sources/ReallyMeCodec/ReallyMeCodec.swift", "public func tryParseCid(_ cid: String) throws(ReallyMeCodecError) -> String?");
+assertContains("packages/swift/Sources/ReallyMeCodec/ReallyMeCodec.swift", "public func dagCborCodecCode() throws(ReallyMeCodecError) -> UInt32");
+assertContains("packages/swift/Sources/ReallyMeCodec/WithCodecBytes.swift", "consuming [UInt8]");
 assertContains("packages/swift/Sources/ReallyMeCodec/ReallyMeCodec.swift", "withTextBytes");
 assertContains("packages/swift/Sources/ReallyMeCodec/ReallyMeCodec.swift", "withOwnedBytes");
 assertContains("packages/swift/Sources/ReallyMeCodec/ReallyMeCodec.swift", "operationResult.result = nil");
@@ -2292,8 +2423,8 @@ assertContains("packages/swift/Sources/ReallyMeCodec/MemoryHygiene.swift", "expl
 assertContains("packages/swift/Sources/ReallyMeCodec/MemoryHygiene.swift", "clearOwned");
 assertNotContains("packages/swift/Sources/ReallyMeCodec/MemoryHygiene.swift", "resetBytes");
 assertNotContains("packages/swift/Sources/ReallyMeCodec/MemoryHygiene.swift", "initialize(repeating:");
-assertContains("packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift", "swap(&value.value, &detachedValue)");
-assertContains("packages/swift/Sources/ReallyMeCodec/DeterministicCbor.swift", "detachedValue = nil");
+assertContains("packages/swift/Sources/ReallyMeCodec/ProcessCbor.swift", "swap(&value.value, &detachedValue)");
+assertContains("packages/swift/Sources/ReallyMeCodec/ProcessCbor.swift", "detachedValue = nil");
 assertContains("packages/swift/Sources/ReallyMeCodec/CallCodecWithRustCAbi.swift", "expectedCodecAbiVersion");
 assertContains(
   "packages/swift/Sources/ReallyMeCodec/CallCodecWithRustCAbi.swift",
@@ -2305,7 +2436,7 @@ assertContains(
 );
 assertContains(
   "packages/swift/Sources/ReallyMeCodec/ReallyMeCodec.swift",
-  "func processGeneratedOperation(request: [UInt8]) throws -> ReallyMeProtoCodecOperationResult",
+  "func processGeneratedOperation(request: [UInt8]) throws(ReallyMeCodecError) -> ReallyMeProtoCodecOperationResult",
 );
 assertContains(
   "packages/swift/Sources/ReallyMeCodec/ReallyMeCodec.swift",
@@ -2340,8 +2471,8 @@ assertContains("packages/swift/Tests/ReallyMeCodecTests/ReallyMeCodecTests.swift
 assertContains("packages/swift/Tests/ReallyMeCodecTests/ReallyMeCodecTests.swift", "testSharedVectorSuiteCoversSwiftPublicMethods");
 assertContains("packages/swift/Tests/ReallyMeCodecTests/ReallyMeCodecTests.swift", "testSharedVectorSuiteRejectsNonCanonicalInputs");
 assertContains("packages/swift/Tests/ReallyMeCodecTests/ReallyMeCodecTests.swift", "codec.processOperationJson");
-assertContains("packages/swift/Tests/ReallyMeCodecTests/ReallyMeCodecTests.swift", "testAbiVersionMismatchFailsClosed");
-assertContains("packages/swift/Tests/ReallyMeCodecTests/ReallyMeCodecTests.swift", "testSensitiveGeneratedMultikeyRequestFormattingIsRedacted");
+assertContains("packages/swift/Tests/ReallyMeCodecTests/ProviderSafetyTests.swift", "testAbiVersionMismatchFailsClosed");
+assertContains("packages/swift/Tests/ReallyMeCodecTests/ProviderSafetyTests.swift", "testSensitiveGeneratedMultikeyRequestFormattingIsRedacted");
 assertContains("packages/swift/Tests/ReallyMeCodecTests/ReallyMeCodecTests.swift", "testSwiftDataAndCborBuildersPreserveCanonicalBytes");
 assertContains("packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", "deterministicAndDagCborBuildersPreserveCanonicalBytes");
 assertContains("packages/ts/test/reallyme-codec.test.mjs", "CBOR helper builders preserve canonical bytes");
@@ -2378,7 +2509,10 @@ assertContains("packages/swift/README.md", "REALLYME_CODEC_SWIFTPM_RUNTIME_FFI=1
 assertNotContains(".github/workflows/swift-package-preflight.yml", "REALLYME_CODEC_SWIFTPM_RUNTIME_FFI");
 assertNotContains(".github/workflows/swift-package-preflight.yml", "cargo build --locked -p reallyme-codec-ffi");
 assertNotContains(".github/workflows/swift-package-preflight.yml", "node --test scripts/verify_swift_release_artifact.test.mjs");
-assertContains(".github/workflows/code-checks.yml", "cargo build --locked -p reallyme-codec-ffi");
+assertContains(".github/workflows/protobuf-ci.yml", "scripts/build_kotlin_native_resource.sh build/sdk-native-resources");
+assertContains(".github/workflows/protobuf-ci.yml", "node scripts/write_native_manifest.mjs build/sdk-native-resources");
+assertContains(".github/workflows/protobuf-ci.yml", "/target/release/libreallyme_codec_ffi.dylib");
+assertContains(".github/workflows/protobuf-ci.yml", "REALLYME_CODEC_KOTLIN_NATIVE_RESOURCES_DIR");
 assertContains(".github/workflows/swift-package-preflight.yml", "Build SwiftPM binary artifact");
 assertContains(".github/workflows/swift-package-preflight.yml", "Upload Swift release candidate");
 assertContains(".github/workflows/swift-package-preflight.yml", "Bind manifest to Swift release candidate");
@@ -2392,10 +2526,9 @@ assertContains(".github/workflows/swift-package-preflight.yml", "--local-artifac
 assertNotContains(".github/workflows/swift-package-preflight.yml", "swift package reset");
 assertContains(".github/workflows/swift-package-preflight.yml", "Test Swift package with linked binary target");
 assertContains(".github/workflows/swift-package-preflight.yml", "swift test --arch arm64 --verbose");
-assertContains(
-  ".github/workflows/swift-package-preflight.yml",
-  "node scripts/run_pinned_release_readiness.mjs --release-packages",
-);
+assertContains("scripts/verify_release_attestation.mjs", "PROTOBUF_WORKFLOW");
+assertContains("scripts/verify_swift_release_artifact.mjs", "Package.swift local artifact override must be empty");
+
 assertSubstringsInOrder(".github/workflows/swift-package-preflight.yml", [
   "Build SwiftPM binary artifact",
   "Bind manifest to Swift release candidate",
@@ -2406,13 +2539,13 @@ assertSubstringsInOrder(".github/workflows/swift-package-preflight.yml", [
 ]);
 assertContains("packages/ts/src/multiformat.ts", "ensureStringValue(encoded)");
 assertContains("packages/ts/src/multiformat.ts", "snapshotBoundedBytesInput(bytes)");
-assertContains("packages/ts/src/cbor.ts", "ensureStringValue(cid)");
-assertContains("packages/ts/src/cbor.ts", "payloadSnapshot.fill(0)");
-assertContains("packages/ts/src/cbor.ts", "readDataProperty");
-assertContains("packages/ts/src/cbor.ts", 'readDataProperty(value, "length")');
-assertContains("packages/ts/src/cbor.ts", 'throw new ReallyMeCodecError("provider-failure")');
+assertContains("packages/ts/src/processCbor.ts", "ensureStringValue(cid)");
+assertContains("packages/ts/src/processCbor.ts", "payloadSnapshot.fill(0)");
+assertContains("packages/ts/src/validateDagCbor.ts", "readDataProperty");
+assertContains("packages/ts/src/validateDagCbor.ts", 'readDataProperty(value, "length")');
+assertContains("packages/ts/src/processCbor.ts", 'throw new ReallyMeCodecError("provider-failure")');
 assertContains(
-  "packages/ts/src/cbor.ts",
+  "packages/ts/src/readDeterministicCborProto.ts",
   "recordDeterministicCborMapKey(key, keys, providerFailure)",
 );
 assertContains("packages/ts/src/boundary.ts", "MAX_CODEC_BOUNDARY_NODES = MAX_CODEC_FFI_INPUT_BYTES");
@@ -2435,7 +2568,7 @@ assertContains(
   "packages/ts/src/operationContract.ts",
   "clearGeneratedOperationResult(response.outcome.value)",
 );
-assertContains("packages/ts/src/operationContract.ts", "wipeGeneratedCborValue");
+assertContains("packages/ts/src/clearGeneratedOperation.ts", "wipeGeneratedCborValue");
 assertContains("packages/ts/src/wasmProvider.ts", '"processOperation"');
 assertContains(
   "packages/ts/src/operationContract.ts",
@@ -2447,29 +2580,29 @@ assertContains(
   "detachGeneratedOperationResultBytes(response.outcome.value)",
 );
 assertContains(
-  "packages/ts/src/operationContract.ts",
+  "packages/ts/src/clearGeneratedOperation.ts",
   "export const clearGeneratedOperationResult =",
 );
 assertContains("packages/ts/src/proto.ts", "CodecOperationResponseSchema");
 assertContains("packages/ts/src/proto.ts", "CodecOperationResultSchema");
 assertContains("packages/ts/src/operationContract.ts", "errorCodeForCodecErrorMessage");
 assertContains("packages/ts/src/operationContract.ts", "MAX_CODEC_PROTO_MESSAGE_BYTES");
-assertContains("packages/ts/src/operationContract.ts", "CodecErrorReason.CANONICAL_INTERNAL");
-assertContains("packages/ts/src/operationContract.ts", 'case "boundary":');
-assertContains("packages/ts/src/operationContract.ts", "expectedOrigin = CodecErrorOrigin.CALLER");
+assertContains("packages/ts/src/classifyOperationError.ts", "CodecErrorReason.CANONICAL_INTERNAL");
+assertContains("packages/ts/src/classifyOperationError.ts", 'case "boundary":');
+assertContains("packages/ts/src/classifyOperationError.ts", "expectedOrigin = CodecErrorOrigin.CALLER");
 assertNotContains("packages/ts/tsconfig.json", '"DOM"');
 assertContains("packages/ts/src/readOutput.ts", "MAX_CODEC_FFI_OUTPUT_BYTES");
 assertContains("packages/ts/src/readOutput.ts", "export const snapshotBoundedBytesInput =");
 assertContains("packages/ts/src/readOutput.ts", "ArrayBuffer.isView(value)");
 assertContains("packages/ts/src/readOutput.ts", "Object.getPrototypeOf(value) !== Uint8Array.prototype");
 assertContains("packages/ts/src/readOutput.ts", "Object.getOwnPropertyDescriptor(value, property)");
-assertContains("packages/ts/src/operationContract.ts", "if (text.length > maximum)");
+assertContains("packages/ts/src/validateGeneratedCbor.ts", "if (text.length > maximum)");
 assertContains(
-  "packages/ts/src/cbor.ts",
+  "packages/ts/src/validateDagCbor.ts",
   "MAX_DETERMINISTIC_CBOR_NODES - state.nodes",
 );
-assertContains("packages/ts/src/cbor.ts", "wipeDagCborValueBytes(child)");
-assertContains("packages/ts/src/cbor.ts", "wipeDeterministicCborValueBytes(normalized)");
+assertContains("packages/ts/src/convertDagCbor.ts", "wipeDagCborValueBytes(child)");
+assertContains("packages/ts/src/processCbor.ts", "wipeDeterministicCborValueBytes(normalized)");
 assertContains("packages/ts/test/reallyme-codec.test.mjs", "decodedBytes.value instanceof Uint8Array");
 assertContains(
   "packages/ts/test/dag-cbor-provider.test.mjs",
@@ -2560,7 +2693,7 @@ assertNotContains("crates/wasm/src/cbor.rs", "js_name = dagCborVerifyCid");
 assertContains("packages/ts/src/proto.ts", "CodecBackendErrorSchema");
 assertContains("packages/ts/test/reallyme-codec.test.mjs", 'assert.deepEqual(base58btcDecode(""), bytes())');
 assertContains("packages/ts/test/reallyme-codec.test.mjs", 'dagCborVerifyCidDetails("", encoded)');
-assertContains("packages/ts/src/cbor.ts", "export const dagCborVerifyCid = (cid: string, bytes: Uint8Array): boolean =>");
+assertContains("packages/ts/src/processCbor.ts", "export const dagCborVerifyCid = (cid: string, bytes: Uint8Array): boolean =>");
 assertContains("packages/ts/test/reallyme-codec.test.mjs", "binary protobuf and generated ProtoJSON return equivalent responses");
 assertContains("packages/ts/test/reallyme-codec.test.mjs", "superseded direct WASM structured result exports are absent");
 assertContains("packages/ts/test/reallyme-codec.test.mjs", "array metadata is snapshotted once without invoking proxy getters");
@@ -2604,7 +2737,13 @@ assertTypescriptExport({
   ],
   forbiddenNeedles: ["toBinary("],
 });
-assertContains("packages/ts/src/serializeExactBinary.ts", "reflect(schema, message, false)");
+const serializerExceptionPath = "packages/ts/src/serializeExactBinary.ts";
+const serializerExceptionDigest = createHash("sha256")
+  .update(readFileSync(new URL(`../${serializerExceptionPath}`, import.meta.url))).digest("hex");
+if (serializerExceptionDigest !== "e9f644b3c10200cf1db04434d1fcec0197c83f68e81199eb7ec61407acc861be") {
+  fail("the temporary TypeScript serializer exception requires review");
+}
+assertContains(serializerExceptionPath, "reflect(schema, message, false)");
 assertContains("packages/ts/src/serializeExactBinary.ts", "message.sortedFields");
 assertContains("packages/ts/test/reallyme-codec.test.mjs", "exact request serialization matches protobuf-es for every request shape");
 assertContains("packages/ts/test/reallyme-codec.test.mjs", "exact request serialization retains only the returned sensitive buffer");
@@ -2781,7 +2920,7 @@ assertContains(
   ".github/workflows/kotlin-android-package-release.yml",
   '{ yes 2>/dev/null || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "ndk;29.0.14206865"',
 );
-assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.3.6");
+assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.4.0");
 assertContains("packages/kotlin-android/README.md", "never sourced from the Git worktree");
 assertContains(
   "packages/kotlin-android/gradle.properties",
@@ -2836,8 +2975,8 @@ assertContains("packages/kotlin-android/build.gradle.kts", 'if (name.endsWith("T
 assertContains("packages/ts/package.json", '"test:browser": "npm run build && npm run test:browser:built"');
 assertContains("packages/ts/package.json", '"test:browser:built": "node scripts/browser-wasm-test.mjs"');
 assertContains("packages/ts/package.json", '"test": "npm run build && node --test \\"test/*.test.mjs\\""');
-assertSubstringsInOrder(".github/workflows/code-checks.yml", [
-  "run: npm --prefix packages/ts test",
+assertSubstringsInOrder(".github/workflows/protobuf-ci.yml", [
+  "node scripts/run_pinned_release_readiness.mjs --generated-freshness",
   "run: npm --prefix packages/ts run test:browser:built",
 ]);
 for (const path of [
@@ -2855,12 +2994,12 @@ assertContains("packages/ts/scripts/browser-wasm-test.mjs", "deterministicCborDe
 assertContains("packages/ts/scripts/browser-wasm-test.mjs", '"@bufbuild/protobuf/reflect": "/node_modules/@bufbuild/protobuf/dist/esm/reflect/index.js"');
 assertContains("packages/ts/scripts/browser-wasm-test.mjs", '"@bufbuild/protobuf/wire": "/node_modules/@bufbuild/protobuf/dist/esm/wire/index.js"');
 assertContains("packages/ts/scripts/browser-wasm-test.mjs", "Chrome or Chromium is required");
-assertContains(".github/workflows/code-checks.yml", "Test TypeScript codec package in browser");
+assertContains(".github/workflows/protobuf-ci.yml", "Test TypeScript codec package in browser");
 assertContains(".github/workflows/npm-package-preflight.yml", "Test TypeScript codec package in browser");
 
 assertContains("README.md", "https://github.com/reallyme/codec");
 assertContains("README.md", "https://www.npmjs.com/package/@reallyme/codec");
-assertContains("README.md", "me.really:codec:0.3.6");
+assertContains("README.md", "me.really:codec:0.4.0");
 assertContains("README.md", "reallyme-codec-proto");
 assertContains("README.md", "## Published Surfaces");
 assertContains("README.md", "`me.really:codec-android` AAR");
@@ -2902,18 +3041,6 @@ assertContains("crates/proto/proto/reallyme/codec/v1/codec.proto", "message Code
 assertContains("crates/proto/proto/reallyme/codec/v1/codec.proto", "enum CodecErrorReason");
 assertContains(".github/workflows/protobuf-ci.yml", "--generated-freshness");
 assertContains("crates/proto/Cargo.toml", '"buffa/json"');
-assertContains("scripts/redact_codec_proto_debug.mjs", "validateScalarFieldClassifications");
-assertContains("scripts/redact_codec_proto_debug.mjs", "validateSensitiveRustHardening");
-assertContains("scripts/redact_codec_proto_debug.mjs", "hardenSensitiveSerialize");
-assertContains("scripts/redact_codec_proto_debug.mjs", "hardenSensitiveViewSerialize");
-assertContains("scripts/redact_codec_proto_debug.mjs", "__reallyme_decode_sensitive_base64");
-assertContains("scripts/redact_codec_proto_debug.mjs", "replaceAllRequired");
-assertContains("scripts/redact_codec_proto_debug.mjs", "impl ::core::ops::Drop for");
-assertContains("scripts/redact_codec_proto_debug.mjs", "deserialize_zeroizing_bytes");
-assertContains("scripts/redact_codec_proto_debug.mjs", "Zeroize::zeroize");
-assertContains("scripts/redact_codec_proto_debug.mjs", "__reallyme_zeroize_unknown_fields");
-assertContains("scripts/redact_codec_proto_debug.mjs", "deny_unknown_fields");
-assertContains("scripts/redact_codec_proto_debug.mjs", "--check-idempotent");
 assertContains("scripts/codec_proto_sensitivity.mjs", "codecProtoScalarFieldClassifications");
 assertContains(
   "scripts/codec_proto_sensitivity.mjs",
@@ -2927,158 +3054,22 @@ for (const messageName of codecProtoProviderOutputMessages) {
     "public boolean reallyMeHasUnknownFieldsForValidation()",
   );
 }
-assertReallyMeProtobufReleasePolicy({
-  // Review the exact CLI version together with its workflow checksum pin.
-  bufVersion: "1.75.0",
-  buffaVersion: "0.9.2",
-  generatedFreshnessMode,
-  workflowMode: "delegated",
-  generatedFreshnessStepRun:
-    "node scripts/run_pinned_release_readiness.mjs --generated-freshness",
-  installBufAction: "bufbuild/buf-action",
-  hardeningPolicy: {
-    hardeningScript: "scripts/redact_codec_proto_debug.mjs",
-    protoSchema: "crates/proto/proto/reallyme/codec/v1/codec.proto",
-    generatedRust: "crates/proto/src/generated/buffa/reallyme.codec.v1.codec.rs",
-    generatedView: "crates/proto/src/generated/buffa/reallyme.codec.v1.codec.__view.rs",
-    protoCargo: "crates/proto/Cargo.toml",
-    requiredScriptNeedles: [
-      "codecProtoScalarFieldClassifications",
-      "codecProtoSensitiveNonTextFieldClassifications",
-      "codecProtoProviderOutputMessages",
-      "validateScalarFieldClassifications",
-      "validateSensitiveRustHardening",
-      "hardenSensitiveSerialize",
-      "hardenSensitiveViewSerialize",
-      "__reallyme_decode_sensitive_base64",
-      "__reallyme_deserialize_sensitive_bytes_zeroizing",
-      "replaceAllRequired",
-      "missing a generated-path or Drop wipe",
-      "still accepts ignored ProtoJSON fields",
-      "impl ::core::ops::Drop for",
-      "deserialize_zeroizing_bytes",
-      "Zeroize::zeroize",
-      "__reallyme_zeroize_unknown_fields",
-      "deny_unknown_fields",
-    ],
-    requiredCargoNeedles: [
-      '"buffa/json"',
-      "base64 = { workspace = true, optional = true }",
-    ],
-    scalarFieldClassifications: codecProtoScalarFieldClassifications,
-    requiredGeneratedNeedles: [
-      "fn __reallyme_zeroize_unknown_fields(",
-      "fn __reallyme_serialize_sensitive_bytes",
-      "fn __reallyme_decode_sensitive_base64",
-      "fn __reallyme_deserialize_sensitive_bytes_zeroizing",
-      "__REALLYME_SENSITIVE_BASE64_STANDARD",
-      "__REALLYME_SENSITIVE_BASE64_URL_SAFE",
-      "impl ::core::ops::Drop for CodecOperationRequest",
-      "Buffa's generated message contract requires Clone",
-      "#[serde(default, deny_unknown_fields)]",
-      '.field("payload", &"<redacted>")',
-      '.field("value", &"<redacted>")',
-      '.field("pem", &"<redacted>")',
-      '.field("public_key", &"<redacted>")',
-      '.field("der", &"<redacted>")',
-      '.field("multikey", &"<redacted>")',
-      ...codecProtoDropRequiredMessageNames.map(
-        (message) => `impl ::core::ops::Drop for ${message}`,
-      ),
-    ],
-    forbiddenGeneratedNeedles: [
-      "::buffa::alloc::format!(",
-      "serde::de::IgnoredAny",
-      '.field("payload", &self.payload)',
-      '.field("value", &self.value)',
-      '.field("pem", &self.pem)',
-      '.field("public_key", &self.public_key)',
-      '.field("der", &self.der)',
-      '.field("multikey", &self.multikey)',
-    ],
-    requiredViewNeedles: [
-      "super::super::__ReallyMeSensitiveBytes",
-      ...codecProtoSensitiveMessageNames.map(
-        (message) => `impl<'a> ::core::fmt::Debug for ${message}View<'a>`,
-      ),
-    ],
-    additionalGeneratedPolicies: [
-      {
-        path: "gen/swift/reallyme/codec/v1/codec.pb.swift",
-        required: codecProtoSensitiveMessageNames.flatMap((message) => [
-          `ReallyMeProto${message}(<redacted>)`,
-          `nonisolated struct ReallyMeProto${message}: Sendable`,
-        ]),
-      },
-      ...codecProtoSensitiveMessageNames.map((message) => ({
-        path: `gen/java/me/really/codec/v1/${message}.java`,
-        required: [
-          `return "${message}{<redacted>}";`,
-          "return 0x524d;",
-        ],
-      })),
-    ],
-  },
-  generatedFreshness: {
-    generatedPaths: [
-      "crates/proto/src/generated",
-      "packages/ts/src/proto/generated",
-      "gen",
-    ],
-    commands: [
-      ["buf", ["lint"]],
-      ["buf", ["generate"]],
-      ["node", ["scripts/redact_codec_proto_debug.mjs"]],
-      ["node", ["scripts/redact_codec_proto_debug.mjs", "--check-idempotent"]],
-      ["cargo", ["fmt", "--package", "reallyme-codec-proto"]],
-    ],
-  },
-});
-assertContains(
-  "crates/proto/src/generated/buffa/reallyme.codec.v1.codec.rs",
-  '.field("der", &"<redacted>")',
-);
-assertContains(
-  "crates/proto/src/generated/buffa/reallyme.codec.v1.codec.rs",
-  "fn __reallyme_zeroize_unknown_fields(",
-);
-assertContains(
-  "crates/proto/src/generated/buffa/reallyme.codec.v1.codec.rs",
-  "#[serde(default, deny_unknown_fields)]",
-);
-assertNotContains(
-  "crates/proto/src/generated/buffa/reallyme.codec.v1.codec.rs",
-  '.field("der", &self.der)',
-);
-assertContains(
-  "crates/proto/src/generated/buffa/reallyme.codec.v1.codec.__view.rs",
-  "impl<'a> ::core::fmt::Debug for CodecPemDecodeResultView<'a>",
-);
-assertContains(
-  "crates/proto/src/generated/buffa/reallyme.codec.v1.codec.rs",
-  "impl ::core::ops::Drop for CodecOperationRequest",
-);
-assertContains(
-  "gen/java/me/really/codec/v1/CodecOperationRequest.java",
-  'return "CodecOperationRequest{<redacted>}";',
-);
-assertContains(
-  "gen/swift/reallyme/codec/v1/codec.pb.swift",
-  'ReallyMeProtoCodecOperationRequest(<redacted>)',
-);
-for (const sensitiveOwnedView of codecProtoSensitiveMessageNames.map(
-  (message) => `${message}OwnedView`,
-)) {
-  assertNotContains(
-    "crates/proto/src/generated/buffa/reallyme.codec.v1.codec.__view.rs",
-    sensitiveOwnedView,
-  );
-  assertNotContains(
-    "crates/proto/src/generated/buffa/reallyme.codec.v1.mod.rs",
-    sensitiveOwnedView,
-  );
+// Preserve the generator's Sendable conformance, including its checked COW
+// representation, while enforcing internal visibility and redacted reflection.
+const hardenedSwiftSource = readText("gen/swift/reallyme/codec/v1/codec.pb.swift");
+for (const message of codecProtoSensitiveMessageNames) {
+  const declaration = new RegExp(String.raw`nonisolated struct ReallyMeProto${message}: (?:@unchecked )?Sendable, CustomReflectable \{`, "u");
+  if (!declaration.test(hardenedSwiftSource)) {
+    fail(`generated Swift ${message} is missing its internal Sendable redacted facade`);
+  }
 }
-assertContains("scripts/redact_codec_proto_debug.mjs", "removeSensitiveRustOwnedViews");
+
+const { assertNativeProtoPolicy } = await import("./release-readiness/native-proto-policy.mjs");
+assertNativeProtoPolicy(readinessContext, {
+  sensitiveMessages: codecProtoSensitiveMessageNames,
+  generatedFreshnessMode,
+});
+
 assertContains(
   "crates/proto/tests/generated_tests.rs",
   "pem_decode_result_debug_redacts_der",
@@ -3103,5 +3094,8 @@ assertContains(
   "crates/proto/tests/generated_tests/operation_wire.rs",
   "operation_response_outcome_wire_tags_are_stable",
 );
+
+const { assertSdkSourcePolicies } = await import("./release-readiness/sdk-source-policy.mjs");
+assertSdkSourcePolicies(readinessContext);
 
 console.log("codec release readiness checks passed");

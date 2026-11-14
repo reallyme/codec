@@ -11,11 +11,19 @@ public interface CodecDeterministicCborTextOrBuilder extends
     com.google.protobuf.MessageLiteOrBuilder {
 
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>string value = 1 [json_name = "value"];</code>
    * @return The value.
    */
   java.lang.String getValue();
   /**
+   * <pre>
+   * SENSITIVE: payload ownership requires redaction and zeroization.
+   * </pre>
+   *
    * <code>string value = 1 [json_name = "value"];</code>
    * @return The bytes for value.
    */

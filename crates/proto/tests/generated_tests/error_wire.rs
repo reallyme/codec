@@ -24,11 +24,9 @@ fn codec_error_oneof_wire_bytes_are_stable() {
                         reason: EnumValue::from(
                             CodecErrorReason::CODEC_ERROR_REASON_BASE_INVALID_HEX,
                         ),
-                        __buffa_unknown_fields: Default::default(),
                     },
                 ))),
                 origin: EnumValue::from(CodecErrorOrigin::CODEC_ERROR_ORIGIN_CALLER),
-                __buffa_unknown_fields: Default::default(),
             },
             &[0x0a, 0x02, 0x08, 0x78, 0xa0, 0x06, 0x01][..],
         ),
@@ -38,10 +36,8 @@ fn codec_error_oneof_wire_bytes_are_stable() {
                     reason: EnumValue::from(
                         CodecErrorReason::CODEC_ERROR_REASON_PEM_UNSUPPORTED_LABEL,
                     ),
-                    __buffa_unknown_fields: Default::default(),
                 }))),
                 origin: EnumValue::from(CodecErrorOrigin::CODEC_ERROR_ORIGIN_CALLER),
-                __buffa_unknown_fields: Default::default(),
             },
             &[0x12, 0x03, 0x08, 0xca, 0x01, 0xa0, 0x06, 0x01][..],
         ),
@@ -52,11 +48,9 @@ fn codec_error_oneof_wire_bytes_are_stable() {
                         reason: EnumValue::from(
                             CodecErrorReason::CODEC_ERROR_REASON_MULTIFORMAT_UNKNOWN_MULTICODEC,
                         ),
-                        __buffa_unknown_fields: Default::default(),
                     },
                 ))),
                 origin: EnumValue::from(CodecErrorOrigin::CODEC_ERROR_ORIGIN_CALLER),
-                __buffa_unknown_fields: Default::default(),
             },
             &[0x1a, 0x03, 0x08, 0xae, 0x02, 0xa0, 0x06, 0x01][..],
         ),
@@ -67,11 +61,9 @@ fn codec_error_oneof_wire_bytes_are_stable() {
                         reason: EnumValue::from(
                             CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_INTERNAL,
                         ),
-                        __buffa_unknown_fields: Default::default(),
                     },
                 ))),
                 origin: EnumValue::from(CodecErrorOrigin::CODEC_ERROR_ORIGIN_PROVIDER),
-                __buffa_unknown_fields: Default::default(),
             },
             &[0x22, 0x03, 0x08, 0x94, 0x03, 0xa0, 0x06, 0x02][..],
         ),
@@ -79,10 +71,8 @@ fn codec_error_oneof_wire_bytes_are_stable() {
             CodecError {
                 error: Some(codec_error::Error::Backend(Box::new(CodecBackendError {
                     reason: EnumValue::from(CodecErrorReason::CODEC_ERROR_REASON_BACKEND_INTERNAL),
-                    __buffa_unknown_fields: Default::default(),
                 }))),
                 origin: EnumValue::from(CodecErrorOrigin::CODEC_ERROR_ORIGIN_PROVIDER),
-                __buffa_unknown_fields: Default::default(),
             },
             &[0x2a, 0x03, 0x08, 0xf4, 0x03, 0xa0, 0x06, 0x02][..],
         ),
@@ -160,10 +150,12 @@ fn bounded_protobuf_decode_rejects_oversized_messages() {
 
 #[test]
 fn json_decode_rejects_inputs_that_expand_past_binary_cap() {
+    // Base64 alone now hits the JSON limit first. Pair it with unescaped
+    // ASCII so this fixture still reaches the independent binary-size check.
+    const ASCII_BYTES: usize = 8_192;
     let message = CodecPemDecodeResult {
-        label: "PUBLIC KEY".to_owned(),
-        der: vec![7_u8; MAX_CODEC_PROTO_MESSAGE_BYTES],
-        __buffa_unknown_fields: Default::default(),
+        label: "A".repeat(ASCII_BYTES).into(),
+        der: vec![7_u8; MAX_CODEC_PROTO_MESSAGE_BYTES - ASCII_BYTES].into(),
     };
     let json = serde_json::to_vec(&message).unwrap();
     assert!(json.len() < MAX_CODEC_PROTO_JSON_BYTES);
@@ -179,9 +171,8 @@ fn json_decode_rejects_inputs_that_expand_past_binary_cap() {
 #[test]
 fn codec_result_wire_bytes_are_stable() {
     let pem = CodecPemDecodeResult {
-        label: "PUBLIC KEY".to_owned(),
-        der: vec![0x30, 0x03, 0x02, 0x01, 0x01],
-        __buffa_unknown_fields: Default::default(),
+        label: "PUBLIC KEY".to_owned().into(),
+        der: vec![0x30, 0x03, 0x02, 0x01, 0x01].into(),
     };
     assert_eq!(
         pem.encode_to_vec(),
@@ -193,9 +184,8 @@ fn codec_result_wire_bytes_are_stable() {
 
     let cid = CodecDagCborVerifyCidResult {
         valid: true,
-        expected_cid: "bafy".to_owned(),
-        actual_cid: "bafy".to_owned(),
-        __buffa_unknown_fields: Default::default(),
+        expected_cid: "bafy".to_owned().into(),
+        actual_cid: "bafy".to_owned().into(),
     };
     assert_eq!(
         cid.encode_to_vec(),
@@ -203,12 +193,11 @@ fn codec_result_wire_bytes_are_stable() {
     );
 
     let multikey = CodecMultikeyParseResult {
-        codec_name: "ed25519-pub".to_owned(),
-        algorithm_name: "Ed25519".to_owned(),
-        public_key: vec![0x01, 0x02, 0x03],
+        codec_name: "ed25519-pub".to_owned().into(),
+        algorithm_name: "Ed25519".to_owned().into(),
+        public_key: vec![0x01, 0x02, 0x03].into(),
         expected_public_key_length: 32,
         variable_public_key_length: false,
-        __buffa_unknown_fields: Default::default(),
     };
     assert_eq!(
         multikey.encode_to_vec(),
@@ -223,17 +212,16 @@ fn codec_result_wire_bytes_are_stable() {
 #[test]
 fn multicodec_spec_wire_bytes_pin_duplicate_code_and_prefix_fields() {
     let spec = CodecMulticodecSpec {
-        name: "ed25519-pub".to_owned(),
-        code: vec![0xed, 0x01],
-        prefix: vec![0xed, 0x01],
+        name: "ed25519-pub".to_owned().into(),
+        code: vec![0xed, 0x01].into(),
+        prefix: vec![0xed, 0x01].into(),
         tag: EnumValue::from(CodecTag::CODEC_TAG_KEY),
         key_material_kind: EnumValue::from(
             CodecKeyMaterialKind::CODEC_KEY_MATERIAL_KIND_PUBLIC_KEY,
         ),
         fixed_length: 32,
         variable_length: false,
-        algorithm_name: "Ed25519".to_owned(),
-        __buffa_unknown_fields: Default::default(),
+        algorithm_name: "Ed25519".to_owned().into(),
     };
 
     assert_eq!(

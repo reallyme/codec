@@ -14,7 +14,6 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class DeterministicCborVectorTest {
@@ -28,21 +27,27 @@ class DeterministicCborVectorTest {
     fun exactNodeAndContainerLimitsAreAccepted() {
         val codec = configuredCodec()
         val counts = listOf(16_384, 16_383, 16_383, 16_381)
-        val children = counts.map { count ->
-            ReallyMeDeterministicCborValue.Array(
-                List(count) { ReallyMeDeterministicCborValue.Null },
+        val children =
+            counts.map { count ->
+                ReallyMeDeterministicCborValue.Array(
+                    List(count) { ReallyMeDeterministicCborValue.Null },
+                )
+            }
+        val encoded =
+            codec.deterministicCborEncode(
+                ReallyMeDeterministicCborValue.Array(children),
             )
-        }
-        val encoded = codec.deterministicCborEncode(
-            ReallyMeDeterministicCborValue.Array(children),
-        )
         try {
-            val decoded = assertIs<ReallyMeDeterministicCborValue.Array>(
-                codec.deterministicCborDecode(encoded),
+            val decoded =
+                assertIs<ReallyMeDeterministicCborValue.Array>(
+                    codec.deterministicCborDecode(encoded),
+                )
+            assertEquals(
+                counts,
+                decoded.values.map { child ->
+                    assertIs<ReallyMeDeterministicCborValue.Array>(child).values.size
+                },
             )
-            assertEquals(counts, decoded.values.map { child ->
-                assertIs<ReallyMeDeterministicCborValue.Array>(child).values.size
-            })
         } finally {
             encoded.fill(0)
         }
@@ -53,16 +58,17 @@ class DeterministicCborVectorTest {
         val codec = configuredCodec()
         var value: ReallyMeDeterministicCborValue = ReallyMeDeterministicCborValue.Null
         repeat(64) {
-            value = ReallyMeDeterministicCborValue.Map(
-                listOf(
-                    ReallyMeDeterministicCborMapEntry(
-                        ReallyMeDeterministicCborMapKey.Integer(
-                            ReallyMeDeterministicCborInteger.Unsigned(0uL),
+            value =
+                ReallyMeDeterministicCborValue.Map(
+                    listOf(
+                        ReallyMeDeterministicCborMapEntry(
+                            ReallyMeDeterministicCborMapKey.Integer(
+                                ReallyMeDeterministicCborInteger.Unsigned(0uL),
+                            ),
+                            value,
                         ),
-                        value,
                     ),
-                ),
-            )
+                )
         }
         val encoded = codec.deterministicCborEncode(value)
         try {
@@ -106,12 +112,14 @@ class DeterministicCborVectorTest {
             val vector = vectorElement.requiredObject()
             val context = vector.requiredString("name") + ":" + vector.requiredString("reason")
             when (vector.requiredString("errorClass")) {
-                "non-canonical" -> assertFailsWith<ReallyMeCodecException.NonCanonical>(message = context) {
-                    codec.deterministicCborDecode(vector.requiredString("hex").hexToByteArray())
-                }
-                "invalid-input" -> assertFailsWith<ReallyMeCodecException.InvalidInput>(message = context) {
-                    codec.deterministicCborDecode(vector.requiredString("hex").hexToByteArray())
-                }
+                "non-canonical" ->
+                    assertFailsWith<ReallyMeCodecException.NonCanonical>(message = context) {
+                        codec.deterministicCborDecode(vector.requiredString("hex").hexToByteArray())
+                    }
+                "invalid-input" ->
+                    assertFailsWith<ReallyMeCodecException.InvalidInput>(message = context) {
+                        codec.deterministicCborDecode(vector.requiredString("hex").hexToByteArray())
+                    }
                 else -> error("unsupported vector error class")
             }
         }
@@ -120,9 +128,10 @@ class DeterministicCborVectorTest {
             val vector = vectorElement.requiredObject()
             val expected = vector.requiredString("hex").hexToByteArray()
             for (inputElement in vector.requiredArray("inputs")) {
-                val entries = inputElement.requiredArray().map { entryElement ->
-                    sdkMapEntry(entryElement.requiredObject())
-                }
+                val entries =
+                    inputElement.requiredArray().map { entryElement ->
+                        sdkMapEntry(entryElement.requiredObject())
+                    }
                 assertContentEquals(
                     expected,
                     codec.deterministicCborEncode(ReallyMeDeterministicCborValue.Map(entries)),
@@ -135,23 +144,25 @@ class DeterministicCborVectorTest {
     @Test
     fun typedBuildersPreserveDeterministicAndDagProfiles() {
         val codec = configuredCodec()
-        val deterministic = ReallyMeDeterministicCbor.mapInt(
-            listOf(
-                2UL to ReallyMeDeterministicCbor.text("b"),
-                1UL to ReallyMeDeterministicCbor.text("a"),
-            ),
-        )
+        val deterministic =
+            ReallyMeDeterministicCbor.mapInt(
+                listOf(
+                    2UL to ReallyMeDeterministicCbor.text("b"),
+                    1UL to ReallyMeDeterministicCbor.text("a"),
+                ),
+            )
         assertContentEquals(
             "a2016161026162".hexToByteArray(),
             codec.deterministicCborEncode(deterministic),
         )
 
-        val dag = ReallyMeDagCbor.mapText(
-            listOf(
-                "b" to ReallyMeDagCbor.unsignedLong(2),
-                "a" to ReallyMeDagCbor.bytes(byteArrayOf(0, 1, 2)),
-            ),
-        )
+        val dag =
+            ReallyMeDagCbor.mapText(
+                listOf(
+                    "b" to ReallyMeDagCbor.unsignedLong(2),
+                    "a" to ReallyMeDagCbor.bytes(byteArrayOf(0, 1, 2)),
+                ),
+            )
         assertContentEquals(
             "a2616143000102616202".hexToByteArray(),
             codec.dagCborEncode(dag),
@@ -236,17 +247,19 @@ class DeterministicCborVectorTest {
         }
 
         val payloadCount = MAXIMUM_CBOR_BYTES - CBOR_U32_LENGTH_HEADER_BYTES
-        val encoded = codec.deterministicCborEncode(
-            ReallyMeDeterministicCborValue.Bytes(ByteArray(payloadCount)),
-        )
+        val encoded =
+            codec.deterministicCborEncode(
+                ReallyMeDeterministicCborValue.Bytes(ByteArray(payloadCount)),
+            )
         assertEquals(MAXIMUM_CBOR_BYTES, encoded.size)
         assertContentEquals(
             byteArrayOf(0x5a, 0x00, 0x0f, 0xff.toByte(), 0xfb.toByte()),
             encoded.copyOfRange(0, CBOR_U32_LENGTH_HEADER_BYTES),
         )
-        val decoded = assertIs<ReallyMeDeterministicCborValue.Bytes>(
-            codec.deterministicCborDecode(encoded),
-        )
+        val decoded =
+            assertIs<ReallyMeDeterministicCborValue.Bytes>(
+                codec.deterministicCborDecode(encoded),
+            )
         val decodedBytes = decoded.bytes()
         try {
             assertEquals(payloadCount, decodedBytes.size)
@@ -259,9 +272,10 @@ class DeterministicCborVectorTest {
     @Test
     fun idkitInteroperabilityFixtureRoundTripsThroughTypedSdk() {
         val codec = configuredCodec()
-        val fixtures = deterministicCborVectors()
-            .requiredArray("interoperability")
-            .map { it.requiredObject() }
+        val fixtures =
+            deterministicCborVectors()
+                .requiredArray("interoperability")
+                .map { it.requiredObject() }
         val names = fixtures.map { it.requiredString("name") }.toSet()
         assertTrue("idkit-ios-synthetic-passport-claims-v1" in names)
         assertTrue("idkit-ios-synthetic-passport-claims-null-place-of-birth-v1" in names)
@@ -284,17 +298,19 @@ class DeterministicCborVectorTest {
             }
             assertEquals(64, fixture.requiredString("sha256").length)
             assertEquals(fixture.requiredInt("byteLength"), encoded.size)
-            val decoded = assertIs<ReallyMeDeterministicCborValue.Map>(
-                codec.deterministicCborDecode(encoded),
-                fixture.requiredString("name"),
-            )
+            val decoded =
+                assertIs<ReallyMeDeterministicCborValue.Map>(
+                    codec.deterministicCborDecode(encoded),
+                    fixture.requiredString("name"),
+                )
             assertEquals(fixture.requiredInt("entryCount"), decoded.entries.size)
             assertContentEquals(encoded, codec.deterministicCborEncode(decoded))
         }
     }
 
     private fun configuredCodec(): ReallyMeCodec {
-        System.getProperty(TEST_LIBRARY_PROPERTY)
+        System
+            .getProperty(TEST_LIBRARY_PROPERTY)
             ?.takeIf { it.isNotEmpty() }
             ?.let { ReallyMeCodecRustNativeProvider.loadLibrary(it) }
         return ReallyMeCodec
@@ -302,12 +318,15 @@ class DeterministicCborVectorTest {
 
     private fun deterministicCborVectors(): JsonObject {
         val root = File(System.getProperty("user.dir"))
-        val manifestFile = listOf(
-            File(root, "vectors/codec-vectors.json"),
-            File(root, "../../vectors/codec-vectors.json"),
-        ).firstOrNull { it.isFile } ?: error("missing codec vector manifest")
-        val manifest = JsonParser.parseString(manifestFile.readText(Charsets.UTF_8))
-            .requiredObject()
+        val manifestFile =
+            listOf(
+                File(root, "vectors/codec-vectors.json"),
+                File(root, "../../vectors/codec-vectors.json"),
+            ).firstOrNull { it.isFile } ?: error("missing codec vector manifest")
+        val manifest =
+            JsonParser
+                .parseString(manifestFile.readText(Charsets.UTF_8))
+                .requiredObject()
         require(manifest.requiredInt("schemaVersion") == 2) {
             "unsupported codec vector manifest schema"
         }
@@ -391,17 +410,17 @@ private fun JsonElement.requiredObject(): JsonObject {
     return asJsonObject
 }
 
-private fun JsonObject.required(name: String): JsonElement =
-    get(name) ?: error("missing codec vector field")
+private fun JsonObject.required(name: String): JsonElement = get(name) ?: error("missing codec vector field")
 
 private fun JsonObject.requiredObject(name: String): JsonObject = required(name).requiredObject()
 
 private fun JsonObject.requiredArray(name: String) = required(name).requiredArray()
 
-private fun JsonElement.requiredArray() = run {
-    require(isJsonArray) { "codec vector value must be an array" }
-    asJsonArray
-}
+private fun JsonElement.requiredArray() =
+    run {
+        require(isJsonArray) { "codec vector value must be an array" }
+        asJsonArray
+    }
 
 private fun JsonObject.requiredString(name: String): String {
     val value = required(name)

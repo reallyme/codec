@@ -32,6 +32,7 @@ public object CodecDeterministicCborEncodeResultKt {
     /**
      * ```
      * Encoded CBOR bytes may contain the complete sensitive document.
+     * SENSITIVE: payload ownership requires redaction and zeroization.
      * ```
      *
      * `bytes encoded = 1 [json_name = "encoded"];`
@@ -46,6 +47,7 @@ public object CodecDeterministicCborEncodeResultKt {
     /**
      * ```
      * Encoded CBOR bytes may contain the complete sensitive document.
+     * SENSITIVE: payload ownership requires redaction and zeroization.
      * ```
      *
      * `bytes encoded = 1 [json_name = "encoded"];`

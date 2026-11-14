@@ -40,6 +40,7 @@ public  final class CodecDagCborDecodeRequest extends
   /**
    * <pre>
    * Encoded DAG-CBOR bytes may contain the complete sensitive document.
+   * SENSITIVE: payload ownership requires redaction and zeroization.
    * </pre>
    *
    * <code>bytes encoded = 1 [json_name = "encoded"];</code>
@@ -52,6 +53,7 @@ public  final class CodecDagCborDecodeRequest extends
   /**
    * <pre>
    * Encoded DAG-CBOR bytes may contain the complete sensitive document.
+   * SENSITIVE: payload ownership requires redaction and zeroization.
    * </pre>
    *
    * <code>bytes encoded = 1 [json_name = "encoded"];</code>
@@ -65,6 +67,7 @@ public  final class CodecDagCborDecodeRequest extends
   /**
    * <pre>
    * Encoded DAG-CBOR bytes may contain the complete sensitive document.
+   * SENSITIVE: payload ownership requires redaction and zeroization.
    * </pre>
    *
    * <code>bytes encoded = 1 [json_name = "encoded"];</code>
@@ -174,6 +177,7 @@ public  final class CodecDagCborDecodeRequest extends
     /**
      * <pre>
      * Encoded DAG-CBOR bytes may contain the complete sensitive document.
+     * SENSITIVE: payload ownership requires redaction and zeroization.
      * </pre>
      *
      * <code>bytes encoded = 1 [json_name = "encoded"];</code>
@@ -186,6 +190,7 @@ public  final class CodecDagCborDecodeRequest extends
     /**
      * <pre>
      * Encoded DAG-CBOR bytes may contain the complete sensitive document.
+     * SENSITIVE: payload ownership requires redaction and zeroization.
      * </pre>
      *
      * <code>bytes encoded = 1 [json_name = "encoded"];</code>
@@ -200,6 +205,7 @@ public  final class CodecDagCborDecodeRequest extends
     /**
      * <pre>
      * Encoded DAG-CBOR bytes may contain the complete sensitive document.
+     * SENSITIVE: payload ownership requires redaction and zeroization.
      * </pre>
      *
      * <code>bytes encoded = 1 [json_name = "encoded"];</code>
