@@ -143,6 +143,37 @@ fn dag_longer_first_second_key_supplies_exact_span_and_is_rejected() {
     kani::cover!(budget.pending == 1, "second value remains unread");
 }
 
+#[kani::proof]
+#[kani::unwind(4)]
+fn dag_aa_decodes_at_the_first_key_offset() {
+    let mut budget = inner_entry_budget();
+    verify_aa_leaf::<3, 4, 6>(&MIXED_LENGTH_REVERSED, &mut budget);
+    assert!(budget.seen == 4 && budget.pending == 3);
+    kani::cover!(budget.seen == 4, "longer first key ends at offset 6");
+}
+
+#[kani::proof]
+#[kani::unwind(4)]
+fn dag_aa_decodes_at_the_second_key_offset() {
+    let mut budget = DecodeBudget {
+        seen: 5,
+        pending: 2,
+    };
+    verify_aa_leaf::<6, 7, 9>(&MIXED_LENGTH_CANONICAL, &mut budget);
+    assert!(budget.seen == 6 && budget.pending == 1);
+    kani::cover!(budget.seen == 6, "longer second key ends at offset 9");
+}
+
+fn verify_aa_leaf<const START: usize, const PAYLOAD: usize, const END: usize>(
+    wire: &[u8; 10],
+    budget: &mut DecodeBudget,
+) {
+    assert!(read_value_head(wire, START, budget) == Ok((MT_STRING, 2, PAYLOAD)));
+    let decoded = ManuallyDrop::new(extract_string(wire, PAYLOAD, 2));
+    assert!(matches!(&*decoded, Ok((text, end))
+        if *end == END && matches!(text.as_bytes(), [b'a', b'a'])));
+}
+
 fn inner_entry_budget() -> DecodeBudget {
     // Two map heads and the outer key have been read. Four inner nodes are
     // reserved by the two-entry map before its first key is decoded.
@@ -172,6 +203,12 @@ fn verify_text_entry<'a, const START: usize, const END: usize, const NEXT: usize
             child_calls += 1;
             if child_calls == 1 {
                 assert!(offset == START);
+                if matches!(&wire[START..END], [0x62, b'a', b'a']) {
+                    // The longer-key leaf checks supply the decoded text,
+                    // end offset and one-node budget change at this cursor.
+                    budget.enter()?;
+                    return Ok((CborValue::String(String::from("aa")), END));
+                }
                 let (major, argument, payload) = read_value_head(wire, START, budget)?;
                 assert!(major == MT_STRING);
                 let (key, end) = extract_string(wire, payload, argument)?;
