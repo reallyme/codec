@@ -11,7 +11,7 @@ on:
         description: Release version without leading v
         required: true
         type: string
-        default: 0.4.1
+        default: 0.4.2
 
 permissions:
   contents: read
@@ -184,7 +184,12 @@ jobs:
             git tag "v${RELEASE_VERSION}" "${tag_target}"
             git push origin "refs/tags/v${RELEASE_VERSION}"
           fi
-          gh release create "v${RELEASE_VERSION}" build/swift/ReallyMeCodecFFI.xcframework.zip --verify-tag --title "ReallyMe Codec v${RELEASE_VERSION}" --notes "ReallyMe Codec package release v${RELEASE_VERSION}."
+          gh release create "v${RELEASE_VERSION}" \
+            build/swift/ReallyMeCodecFFI.xcframework.zip \
+            build/swift/ReallyMeCodecFFI.xcframework.checksum \
+            --verify-tag \
+            --title "ReallyMe Codec v${RELEASE_VERSION}" \
+            --notes "ReallyMe Codec package release v${RELEASE_VERSION}."
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}

@@ -103,7 +103,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "der",
  "reallyme-codec-proto",
@@ -112,7 +112,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-proto"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "base64",
  "reallyme-buffa",
@@ -124,7 +124,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-der-feature-unification-probe"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "der",
  "reallyme-codec",

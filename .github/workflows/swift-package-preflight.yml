@@ -18,7 +18,7 @@ on:
         description: Release version without leading v
         required: true
         type: string
-        default: 0.4.1
+        default: 0.4.2
 
 permissions:
   contents: read
@@ -71,7 +71,7 @@ jobs:
   swift-package:
     name: swift package preflight
     needs: verify-source-sha
-    runs-on: macos-26
+    runs-on: xcode-27
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -89,10 +89,15 @@ jobs:
         with:
           node-version: '26'
 
-      - name: Select Xcode 26.4
+      - name: Check Swift Build toolchain
         run: |
-          sudo xcode-select -s /Applications/Xcode_26.4.app
+          xcodebuild -version
           swift --version
+
+      - name: Verify release version across package manifests
+        run: node scripts/verify_release_version.mjs "${RELEASE_VERSION}"
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
 
       # Code Checks covers the runtime-loaded provider for this exact SHA.
       # Preflight exercises the distinct linked provider and its release archive.
@@ -112,6 +117,10 @@ jobs:
         env:
           RELEASE_VERSION: ${{ inputs.version }}
 
+      - name: Test SwiftPM consumer with two binary targets
+        timeout-minutes: 15
+        run: bash scripts/test_swift_xcframework_consumer.sh build/swift/ReallyMeCodecFFI.xcframework.zip
+
       - name: Prepare local SwiftPM binary manifest
         run: |
           checksum="$(cat build/swift/ReallyMeCodecFFI.xcframework.checksum)"
@@ -128,8 +137,8 @@ jobs:
           cp target/aarch64-apple-darwin/release/libreallyme_codec_ffi.dylib target/debug/
           swift test --arch arm64 --verbose
 
-      # Upload only after linked-provider tests pass. Publication promotes these
-      # exact tested bytes rather than compiling another archive.
+      # Publication promotes the exact archive tested by both the binary
+      # consumer and the linked-provider suite.
       - name: Upload Swift release candidate
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

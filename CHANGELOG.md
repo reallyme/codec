@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.4.1 (unreleased)
+## 0.4.2 (unreleased)
+
+- Package the Swift XCFramework's module map and C header under
+  `Headers/ReallyMeCodecFFI/` in every slice so Swift Build can load Codec
+  alongside other binary dependencies such as CSecp256k1.
+
+## 0.4.1
 
 - Add independent general-CBOR options for encoded-scalar key equality and
   binary16-only NaNs.

@@ -45,7 +45,8 @@ class NativeProviderSafetyTest {
         assertFalse(ReallyMeCodecRustNativeProvider.isCompatibleAbiVersion(5))
         assertFalse(ReallyMeCodecRustNativeProvider.isCompatibleAbiVersion(0))
 
-        assertTrue(ReallyMeCodecRustNativeProvider.isCompatiblePackageVersion(0, 4, 1))
+        assertTrue(ReallyMeCodecRustNativeProvider.isCompatiblePackageVersion(0, 4, 2))
+        assertFalse(ReallyMeCodecRustNativeProvider.isCompatiblePackageVersion(0, 4, 1))
         assertFalse(ReallyMeCodecRustNativeProvider.isCompatiblePackageVersion(0, 3, 6))
         assertFalse(ReallyMeCodecRustNativeProvider.isCompatiblePackageVersion(0, 4, 0))
         assertFalse(ReallyMeCodecRustNativeProvider.isCompatiblePackageVersion(0, 3, 5))

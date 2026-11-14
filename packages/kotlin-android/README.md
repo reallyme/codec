@@ -6,7 +6,7 @@ The `me.really:codec-android` AAR includes the Kotlin API and native JNI librari
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.4.1")
+    implementation("me.really:codec-android:0.4.2")
 }
 ```
 

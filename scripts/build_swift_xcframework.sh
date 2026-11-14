@@ -12,6 +12,7 @@ if [[ "${TARGET_DIR}" != /* ]]; then
 fi
 BUILD_DIR="${ROOT_DIR}/build/swift"
 HEADERS_DIR="${BUILD_DIR}/headers"
+MODULE_HEADERS_DIR="${HEADERS_DIR}/ReallyMeCodecFFI"
 FRAMEWORK_DIR="${BUILD_DIR}/ReallyMeCodecFFI.xcframework"
 ZIP_PATH="${BUILD_DIR}/ReallyMeCodecFFI.xcframework.zip"
 CHECKSUM_PATH="${BUILD_DIR}/ReallyMeCodecFFI.xcframework.checksum"
@@ -43,32 +44,17 @@ copy_or_lipo() {
   fi
 }
 
-install_modulemaps() {
-  local slice
-  for slice in "${FRAMEWORK_DIR}"/*; do
-    if [ -d "${slice}/Headers" ]; then
-      # SwiftPM copies a static library's Headers directory into its include
-      # search path. Keep the module map beside the header so both survive.
-      cat >"${slice}/Headers/module.modulemap" <<'MODULEMAP'
-module ReallyMeCodecFFI {
-  header "reallyme_codec_ffi.h"
-  export *
-}
-MODULEMAP
-    fi
-  done
-}
-
 verify_xcframework_layout() {
-  local slice
-  for slice in "${FRAMEWORK_DIR}"/*; do
-    if [ -d "${slice}/Headers" ]; then
-      if [ ! -f "${slice}/Headers/module.modulemap" ] ||
-        [ ! -f "${slice}/Headers/reallyme_codec_ffi.h" ] ||
-        [ -e "${slice}/Modules/module.modulemap" ]; then
-        printf 'invalid SwiftPM static-library header layout: %s\n' "${slice}" >&2
-        exit 1
-      fi
+  local identifier slice
+  for identifier in macos-arm64_x86_64 ios-arm64 ios-arm64_x86_64-simulator; do
+    slice="${FRAMEWORK_DIR}/${identifier}"
+    if [ ! -f "${slice}/Headers/ReallyMeCodecFFI/module.modulemap" ] ||
+      [ ! -f "${slice}/Headers/ReallyMeCodecFFI/reallyme_codec_ffi.h" ] ||
+      [ -e "${slice}/Headers/module.modulemap" ] ||
+      [ -e "${slice}/Headers/reallyme_codec_ffi.h" ] ||
+      [ -e "${slice}/Modules/module.modulemap" ]; then
+      printf 'invalid SwiftPM static-library header layout: %s\n' "${slice}" >&2
+      exit 1
     fi
   done
 }
@@ -162,9 +148,19 @@ require_tool zip
 rustup component add llvm-tools-preview
 
 rm -rf "${BUILD_DIR}"
-mkdir -p "${HEADERS_DIR}" "${BUILD_DIR}/libs"
+mkdir -p "${MODULE_HEADERS_DIR}" "${BUILD_DIR}/libs"
 
-cat >"${HEADERS_DIR}/reallyme_codec_ffi.h" <<'HEADER'
+# Swift Build copies XCFramework headers into a shared include directory.
+# A module-specific directory lets other binary targets ship their own
+# module.modulemap while keeping this module map's header path relative.
+cat >"${MODULE_HEADERS_DIR}/module.modulemap" <<'MODULEMAP'
+module ReallyMeCodecFFI {
+  header "reallyme_codec_ffi.h"
+  export *
+}
+MODULEMAP
+
+cat >"${MODULE_HEADERS_DIR}/reallyme_codec_ffi.h" <<'HEADER'
 // SPDX-FileCopyrightText: 2026 ReallyMe Technologies Limited
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
@@ -263,7 +259,6 @@ xcodebuild -create-xcframework \
   -output "${FRAMEWORK_DIR}"
 
 normalize_xcframework_info_plist
-install_modulemaps
 verify_xcframework_layout
 
 rm -f "${ZIP_PATH}" "${CHECKSUM_PATH}"

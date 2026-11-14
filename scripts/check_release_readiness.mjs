@@ -368,8 +368,8 @@ assertCargoFuzzWorkflowPolicy({
   },
 });
 
-const codecPackageVersion = "0.4.1";
-const codecProtoPackageVersion = "0.4.1";
+const codecPackageVersion = "0.4.2";
+const codecProtoPackageVersion = "0.4.2";
 assertContains("Package.swift", `let ffiArtifactVersion = "${codecPackageVersion}"`);
 // The probes are separate Cargo workspaces. Root workspace metadata cannot
 // detect a release bump that leaves their own lockfile package entries stale.
@@ -1914,7 +1914,7 @@ const packageReleaseWorkflows = Object.freeze([
 for (const workflowPath of packagePreflightWorkflows) {
   assertContains(workflowPath, "Resolve release SHA");
   assertContains(workflowPath, 'default: ""');
-  assertContains(workflowPath, "default: 0.4.1");
+  assertContains(workflowPath, "default: 0.4.2");
 }
 for (const workflowPath of packageReleaseWorkflows) {
   assertContains(workflowPath, "Verify reviewed release SHA");
@@ -2123,7 +2123,7 @@ assertContains(".github/workflows/kotlin-android-package-release.yml", "Test and
 assertContains(".github/workflows/kotlin-android-package-release.yml", "Build Android AAR");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "requireFullNativeResources=true");
 assertContains("packages/kotlin/settings.gradle.kts", 'rootProject.name = "reallyme-codec"');
-assertContains("packages/kotlin/README.md", "me.really:codec:0.4.1");
+assertContains("packages/kotlin/README.md", "me.really:codec:0.4.2");
 assertContains("packages/kotlin/README.md", "ships Rust JNI libraries as platform resources");
 assertContains(
   "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodecRustNativeProvider.kt",
@@ -2448,13 +2448,15 @@ assertContains("docs/protobuf.md", "any SwiftProtobuf.Message");
 assertContains("docs/protobuf.md", "serde_json::to_*");
 assertContains("docs/protobuf.md", "TypeScript protobuf-es messages are plain JavaScript objects");
 assertContains("docs/protobuf.md", "degrade toward quadratic behavior");
-assertContains("scripts/build_swift_xcframework.sh", 'cat >"${slice}/Headers/module.modulemap"');
+assertContains("scripts/build_swift_xcframework.sh", 'cat >"${MODULE_HEADERS_DIR}/module.modulemap"');
+assertContains("scripts/build_swift_xcframework.sh", 'cat >"${MODULE_HEADERS_DIR}/reallyme_codec_ffi.h"');
 assertContains("scripts/build_swift_xcframework.sh", 'header "reallyme_codec_ffi.h"');
 assertNotContains("packages/swift/Sources/ReallyMeCodec/CallCodecWithRustCAbi.swift", "@_silgen_name(");
 assertNotContains("scripts/build_swift_xcframework.sh", 'cat >"${slice}/Modules/module.modulemap"');
 assertContains("scripts/build_swift_xcframework.sh", "verify_xcframework_layout");
 assertContains("scripts/build_swift_xcframework.sh", "normalize_xcframework_info_plist");
-assertContains("scripts/build_swift_xcframework.sh", "Headers/module.modulemap");
+assertContains("scripts/build_swift_xcframework.sh", "Headers/ReallyMeCodecFFI/module.modulemap");
+assertContains("scripts/build_swift_xcframework.sh", "Headers/ReallyMeCodecFFI/reallyme_codec_ffi.h");
 assertContains("scripts/prepare_swift_binary_manifest.mjs", "ffiArtifactChecksum");
 assertContains("scripts/prepare_swift_binary_manifest.mjs", "--local-artifact-path");
 assertContains("packages/swift/README.md", "REALLYME_CODEC_SWIFTPM_RUNTIME_FFI=1");
@@ -2469,6 +2471,11 @@ assertContains(".github/workflows/swift-package-preflight.yml", "Build SwiftPM b
 assertContains(".github/workflows/swift-package-preflight.yml", "Upload Swift release candidate");
 assertContains(".github/workflows/swift-package-preflight.yml", "Bind manifest to Swift release candidate");
 assertContains(".github/workflows/swift-package-preflight.yml", "Verify generated SwiftPM manifest and release candidate");
+assertContains(".github/workflows/swift-package-preflight.yml", "runs-on: xcode-27");
+assertContains(
+  ".github/workflows/swift-package-preflight.yml",
+  "bash scripts/test_swift_xcframework_consumer.sh build/swift/ReallyMeCodecFFI.xcframework.zip",
+);
 assertContains(
   ".github/workflows/swift-package-preflight.yml",
   `node scripts/verify_swift_release_artifact.mjs build/swift/ReallyMeCodecFFI.xcframework.zip build/swift/ReallyMeCodecFFI.xcframework.checksum Package.swift "\${RELEASE_VERSION}"`,
@@ -2485,6 +2492,7 @@ assertSubstringsInOrder(".github/workflows/swift-package-preflight.yml", [
   "Build SwiftPM binary artifact",
   "Bind manifest to Swift release candidate",
   "Verify generated SwiftPM manifest and release candidate",
+  "Test SwiftPM consumer with two binary targets",
   "Prepare local SwiftPM binary manifest",
   "Test Swift package with linked binary target",
   "Upload Swift release candidate",
@@ -2872,7 +2880,7 @@ assertContains(
   ".github/workflows/kotlin-android-package-release.yml",
   '{ yes 2>/dev/null || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "ndk;29.0.14206865"',
 );
-assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.4.1");
+assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.4.2");
 assertContains("packages/kotlin-android/README.md", "never sourced from the Git worktree");
 assertContains(
   "packages/kotlin-android/gradle.properties",
@@ -2951,7 +2959,7 @@ assertContains(".github/workflows/npm-package-preflight.yml", "Test TypeScript c
 
 assertContains("README.md", "https://github.com/reallyme/codec");
 assertContains("README.md", "https://www.npmjs.com/package/@reallyme/codec");
-assertContains("README.md", "me.really:codec:0.4.1");
+assertContains("README.md", "me.really:codec:0.4.2");
 assertContains("README.md", "reallyme-codec-proto");
 assertContains("README.md", "## Published Surfaces");
 assertContains("README.md", "`me.really:codec-android` AAR");
