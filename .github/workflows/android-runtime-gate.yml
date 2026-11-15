@@ -114,9 +114,6 @@ jobs:
           test "$sha" = "$GITHUB_SHA"
           export ADB="${ANDROID_HOME:?}/platform-tools/adb"
           helper=.release-readiness/scripts/android-runtime.mjs
-          # One deadline covers ADB discovery, cold boot, and Android services.
-          # Preserve the earlier gate's combined budget for those phases.
-          readonly readiness_wait_seconds=420
           emulator_log="$RUNNER_TEMP/android-runtime-emulator.log"
           emulator_pid=
 
@@ -160,8 +157,7 @@ jobs:
               >"$emulator_log" 2>&1 &
             emulator_pid=$!
 
-            if node "$helper" wait "$ANDROID_SERIAL" "$readiness_wait_seconds" &&
-               node "$helper" install "$ANDROID_SERIAL" "$APK_PATH"; then
+            if bash -e -o pipefail scripts/install-android-runtime-apk.sh "$ANDROID_SERIAL" "$APK_PATH"; then
               # Preserve system, events and crash buffers for failure diagnostics.
               timeout --kill-after=2s 10s "$ADB" -s "$ANDROID_SERIAL" logcat -b main -c
               bash -e -o pipefail scripts/test-android-runtime.sh "$ANDROID_SERIAL"

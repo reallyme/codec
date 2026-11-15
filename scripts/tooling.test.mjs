@@ -162,6 +162,45 @@ for (const scenario of ["success", "package-unavailable", "mount-unavailable", "
   });
 }
 
+for (const { name, outcomes, status, events } of [
+  { name: "rechecks a warm device", outcomes: [0, 75, 0, 0], status: 0,
+    events: ["wait 420", "install", "sleep 5", "wait 60", "install"] },
+  { name: "bounds recovery attempts", outcomes: [0, 75, 0, 75, 0, 75], status: 75,
+    events: ["wait 420", "install", "sleep 5", "wait 60", "install", "sleep 5", "wait 60", "install"] },
+  { name: "propagates readiness timeout", outcomes: [75], status: 75, events: ["wait 420"] },
+  { name: "propagates APK rejection", outcomes: [0, 1], status: 1, events: ["wait 420", "install"] },
+]) {
+  test(`Android APK installation ${name}`, { skip: !posixHost }, (t) => {
+    const root = fixture(t);
+    const script = copy(root, "scripts/install-android-runtime-apk.sh");
+    const helper = join(root, ".release-readiness/scripts/android-runtime.mjs");
+    mkdirSync(dirname(helper), { recursive: true });
+    const trace = join(root, "events");
+    const clock = join(root, "clock.sh");
+    writeFileSync(trace, "");
+    writeFileSync(clock, 'sleep() { printf "sleep %s\\n" "$1" >> "$TOOLING_FIXTURE/events"; }\n');
+    writeFileSync(helper, `
+      import assert from "node:assert/strict";
+      import { appendFileSync, readFileSync } from "node:fs";
+      const [command, serial, argument] = process.argv.slice(2);
+      assert.equal(serial, "emulator-5554");
+      assert.ok(command === "wait" || command === "install");
+      if (command === "install") assert.equal(argument, "/fixture/consumer.apk");
+      const trace = ${JSON.stringify(trace)};
+      const previous = readFileSync(trace, "utf8").split("\\n");
+      const attempt = previous.filter((line) => /^(?:wait |install$)/u.test(line)).length;
+      appendFileSync(trace, (command === "wait" ? "wait " + argument : command) + "\\n");
+      process.exit(${JSON.stringify(outcomes)}[attempt] ?? 2);
+    `);
+    const result = spawnSync("bash", ["-e", "-o", "pipefail", script, "emulator-5554", "/fixture/consumer.apk"], {
+      cwd: dirname(root), env: { ...environment(root), BASH_ENV: clock }, encoding: "utf8", timeout: toolFixtureTimeoutMs,
+    });
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, status, result.stderr);
+    assert.deepEqual(readFileSync(trace, "utf8").trim().split("\n"), events);
+  });
+}
+
 test("Swift binary manifest rejects ancestor path components", (t) => {
   const root = fixture(t);
   const script = copy(root, "scripts/prepare_swift_binary_manifest.mjs");
