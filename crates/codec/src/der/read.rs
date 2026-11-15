@@ -6,7 +6,7 @@ use der_core::asn1::{AnyRef, BitStringRef, IntRef, Null, OctetStringRef, UintRef
 use der_core::{Decode, EncodingRules, FixedTag, Header, Reader, SliceReader, Tag};
 
 use super::error::map_backend;
-use super::validate::validate_oid;
+use super::validate::{validate_bit_string_padding, validate_oid};
 use super::{DerBitStringRef, DerError, DerErrorReason, DerIntegerRef, DerLimits, DerOidRef};
 
 /// X.690 8.6.2.2: BIT STRING contents always begin with the unused-bits octet.
@@ -112,17 +112,9 @@ impl<'a> DerReader<'a> {
     /// Named-bit schemas must additionally enforce DER trailing-zero removal.
     pub fn read_bit_string(&mut self) -> Result<DerBitStringRef<'a>, DerError> {
         let value = self.decode_bounded::<BitStringRef<'a>>(BIT_STRING_MIN_CONTENTS_LEN, None)?;
-        // The foundation checks the unused-bit count, but does not reject
-        // nonzero padding. X.690 11.2.1 requires those unused bits to be zero.
         if let Some(last) = value.raw_bytes().last() {
-            let Some(mask) = 1_u8
-                .checked_shl(u32::from(value.unused_bits()))
-                .and_then(|shifted| shifted.checked_sub(1))
-            else {
-                return self.fail(DerErrorReason::InvalidValue);
-            };
-            if last & mask != 0 {
-                return self.fail(DerErrorReason::NonCanonicalEncoding);
+            if let Err(error) = validate_bit_string_padding(*last, value.unused_bits()) {
+                return self.fail(error.reason());
             }
         }
         Ok(DerBitStringRef {

@@ -2,9 +2,10 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use super::frame::{frame_from_header, require_exact_frame, value_end};
 use super::{
-    frame_exact, frame_prefix, read_header, read_length, ErrorReason, Limits, Options, Profile,
-    MAX_LENGTH_OCTETS,
+    read_header, read_identifier, read_length, ErrorReason, Limits, Options, Profile, TlvError,
+    MAX_IDENTIFIER_OCTETS, MAX_LENGTH_OCTETS,
 };
 
 const MAX_LENGTH_FIELD_BYTES: usize = 1 + MAX_LENGTH_OCTETS;
@@ -64,71 +65,180 @@ fn definite_length_matches_wire_format() {
 }
 
 #[kani::proof]
-#[kani::unwind(17)] // Also covers the generated option and receipt cleanup.
-fn complete_frame_and_receipt_partition_the_supplied_source() {
-    let bytes: [u8; MAX_FRAME_INPUT_BYTES] = kani::any();
-    let available: usize = kani::any();
+#[kani::unwind(34)]
+fn identifier_admission_matches_the_first_terminator_and_profile() {
+    let bytes: [u8; MAX_IDENTIFIER_OCTETS] = kani::any();
+    let supplied: u8 = kani::any();
+    let cap: u8 = kani::any();
     let der: bool = kani::any();
-    kani::assume(available <= bytes.len());
-    let input = &bytes[..available];
-    let options = options(der, 8);
-    let header = read_header(input, &options);
-    let prefix = frame_prefix(input, &options);
-    let exact = frame_exact(input, &options).map(|frame| frame.consumed_bytes());
+    kani::assume(usize::from(supplied) <= bytes.len());
+    kani::assume((1..=MAX_IDENTIFIER_OCTETS).contains(&usize::from(cap)));
+    let input = &bytes[..usize::from(supplied)];
+    let mut options = options(der, 8);
+    options.limits = Some(Limits {
+        identifier_octets: Some(u64::from(cap)),
+        ..Limits::default()
+    })
+    .into();
 
-    kani::cover!(
-        matches!(&prefix, Ok((_, rest)) if rest.is_empty()),
-        "exact frame"
-    );
-    kani::cover!(
-        matches!(&prefix, Ok((_, rest)) if !rest.is_empty()),
-        "frame with trailing bytes"
-    );
-    kani::cover!(
-        matches!(&prefix, Err(err) if err.reason() == ErrorReason::TruncatedValue),
-        "header with incomplete value"
-    );
-
-    match (header, prefix) {
-        (Err(header_error), Err(frame_error)) => {
-            assert_eq!(frame_error, header_error);
-            assert_eq!(exact, Err(header_error));
-        }
-        (Ok(header), Err(frame_error)) => {
-            assert_eq!(frame_error.reason(), ErrorReason::TruncatedValue);
-            assert!(
-                header.declared_value_length()
-                    > u64::try_from(header.supplied_remainder().len()).unwrap()
+    let actual = read_identifier(input, &options)
+        .map(|identifier| {
+            let end = identifier.consumed_bytes();
+            assert!(core::ptr::eq(identifier.identifier_bytes(), &input[..end]));
+            assert!(core::ptr::eq(
+                identifier.supplied_remainder(),
+                &input[end..]
+            ));
+            let receipt = identifier.contract().identifier.as_option().unwrap();
+            assert_eq!(receipt.offset, 0);
+            assert_eq!(usize::try_from(receipt.length), Ok(end));
+            assert_eq!(
+                usize::try_from(identifier.contract().consumed_bytes),
+                Ok(end)
             );
-            assert_eq!(exact, Err(frame_error));
-        }
-        (Ok(header), Ok((frame, remainder))) => {
-            let start = header.consumed_bytes();
-            let end = frame.consumed_bytes();
-            let length = frame.value_bytes().len();
-            assert!(start > 0 && end <= input.len());
-            assert_eq!(start.checked_add(length), Some(end));
-            assert_eq!(u64::try_from(length), Ok(header.declared_value_length()));
-            assert_eq!(input.get(..end), Some(frame.received_bytes()));
-            assert_eq!(input.get(start..end), Some(frame.value_bytes()));
-            assert_eq!(input.get(end..), Some(remainder));
-            if remainder.is_empty() {
-                assert_eq!(exact, Ok(end));
-            } else {
-                assert!(matches!(exact, Err(err) if err.reason() == ErrorReason::TrailingData));
-            }
+            end
+        })
+        .map_err(TlvError::reason);
+    let expected = identifier_reference(input, usize::from(cap), der);
+    assert_eq!(actual, expected);
+    kani::cover!(actual == Ok(1), "short identifier");
+    kani::cover!(
+        actual == Ok(MAX_IDENTIFIER_OCTETS),
+        "longest accepted identifier"
+    );
+    kani::cover!(
+        der && input == [0x5f, 0x01] && actual == Err(ErrorReason::NoncanonicalIdentifier),
+        "DER rejects high-tag form for a low tag"
+    );
+    kani::cover!(
+        !der && input == [0x5f, 0x01] && actual == Ok(2),
+        "ISO 7816 admits its encoded tag"
+    );
+    kani::cover!(
+        actual == Err(ErrorReason::IdentifierLimit),
+        "the limit is reached before the terminator"
+    );
+    kani::cover!(
+        actual == Err(ErrorReason::TruncatedIdentifier),
+        "source ends within the limit"
+    );
+}
 
-            let receipt = frame.into_contract();
-            assert_eq!(u64::try_from(end), Ok(receipt.consumed_bytes));
+fn identifier_reference(input: &[u8], cap: usize, der: bool) -> Result<usize, ErrorReason> {
+    let Some((&initial, rest)) = input.split_first() else {
+        return Err(ErrorReason::EmptyInput);
+    };
+    if initial == 0 {
+        return Err(ErrorReason::InvalidIdentifier);
+    }
+    if initial % 32 != 31 {
+        return Ok(1);
+    }
+
+    // The search space excludes bytes beyond the identifier limit. This
+    // specifies the precedence of the cap over any subsequent source byte.
+    let admitted = &rest[..rest.len().min(cap.checked_sub(1).unwrap())];
+    if admitted.first().is_some_and(|byte| byte % 128 == 0) {
+        return Err(if der {
+            ErrorReason::NoncanonicalIdentifier
+        } else {
+            ErrorReason::InvalidIdentifier
+        });
+    }
+    match admitted.iter().position(|&byte| byte < 128) {
+        Some(0) if der && admitted[0] < 31 => Err(ErrorReason::NoncanonicalIdentifier),
+        Some(index) => Ok(index.checked_add(2).unwrap()),
+        None if input.len() >= cap => Err(ErrorReason::IdentifierLimit),
+        None => Err(ErrorReason::TruncatedIdentifier),
+    }
+}
+
+#[kani::proof]
+fn declared_length_admits_exactly_the_remaining_source() {
+    let total: usize = kani::any();
+    let start: usize = kani::any();
+    let declared: u64 = kani::any();
+    kani::assume(start <= total);
+    let available = total.checked_sub(start).unwrap();
+    let end = u128::from(u64::try_from(start).unwrap()) + u128::from(declared);
+    let total_wide = u128::from(u64::try_from(total).unwrap());
+    let actual = value_end(start, available, declared).map_err(TlvError::reason);
+    let expected = if end <= total_wide {
+        Ok(usize::try_from(end).unwrap())
+    } else {
+        Err(ErrorReason::TruncatedValue)
+    };
+    assert_eq!(actual, expected);
+    kani::cover!(
+        end == total_wide && declared > 0,
+        "value consumes the entire source"
+    );
+    kani::cover!(
+        end < total_wide && declared == 0,
+        "zero-length value with trailing bytes"
+    );
+    kani::cover!(
+        start > 0 && end > u128::from(u64::MAX),
+        "declared size would overflow a uint64 offset"
+    );
+    kani::cover!(
+        declared == u64::from(u32::MAX) && total == start,
+        "large declaration with no value bytes"
+    );
+}
+
+#[kani::proof]
+#[kani::unwind(17)] // Also covers the generated option and receipt cleanup.
+fn frame_receipt_and_exact_admission_preserve_the_source_partition() {
+    const HEADER_BYTES: usize = 2;
+    const OCTET_STRING_TAG: u8 = 0x04;
+    let mut bytes: [u8; MAX_FRAME_INPUT_BYTES] = kani::any();
+    let declared: u8 = kani::any();
+    let supplied: u8 = kani::any();
+    let der: bool = kani::any();
+    kani::assume(declared < 128);
+    kani::assume((HEADER_BYTES..=bytes.len()).contains(&usize::from(supplied)));
+    (bytes[0], bytes[1]) = (OCTET_STRING_TAG, declared);
+    let input = &bytes[..usize::from(supplied)];
+
+    // Identifier and length admission are covered independently. Here the
+    // two-octet header feeds the same constructor as the public prefix API.
+    let header = read_header(input, &options(der, 8)).unwrap();
+    assert_eq!(header.consumed_bytes(), HEADER_BYTES);
+    let framed = frame_from_header(input, header);
+    let end = HEADER_BYTES.checked_add(usize::from(declared)).unwrap();
+    if end > input.len() {
+        assert!(matches!(framed, Err(error) if error.reason() == ErrorReason::TruncatedValue));
+    } else {
+        let (frame, rest) = framed.unwrap();
+        assert_eq!(frame.consumed_bytes(), end);
+        assert!(core::ptr::eq(frame.received_bytes(), &input[..end]));
+        assert!(core::ptr::eq(
+            frame.value_bytes(),
+            &input[HEADER_BYTES..end]
+        ));
+        assert!(core::ptr::eq(rest, &input[end..]));
+        // Exact admission consumes the same frame used for the span checks.
+        let exact = require_exact_frame((frame, rest));
+        if rest.is_empty() {
+            let receipt = exact.unwrap().into_contract();
+            assert_eq!(usize::try_from(receipt.consumed_bytes), Ok(end));
             let received = receipt.received.as_option().unwrap();
             assert_eq!(received.offset, 0);
-            assert_eq!(u64::try_from(end), Ok(received.length));
+            assert_eq!(usize::try_from(received.length), Ok(end));
             let contents = receipt.contents.as_option().unwrap();
-            assert_eq!(u64::try_from(start), Ok(contents.offset));
-            assert_eq!(u64::try_from(length), Ok(contents.length));
+            assert_eq!(usize::try_from(contents.offset), Ok(HEADER_BYTES));
+            assert_eq!(contents.length, u64::from(declared));
+        } else {
+            assert!(matches!(exact, Err(error) if error.reason() == ErrorReason::TrailingData));
         }
-        (Err(_), Ok(_)) => panic!("a complete frame requires a valid header"),
     }
+    kani::cover!(end == input.len(), "exact frame serializes source spans");
+    kani::cover!(
+        end < input.len(),
+        "exact API rejects trailing bytes after prefix admission"
+    );
+    kani::cover!(end > input.len(), "valid header with truncated value");
 }
 
 fn options(der: bool, length_octets: u8) -> Options {

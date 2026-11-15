@@ -30,6 +30,9 @@ jobs:
           - area: tlv
             package: reallyme-codec
             features: tlv
+          - area: der-contents
+            package: reallyme-codec
+            features: der
           - area: dispatch
             package: reallyme-codec
             features: operation-contract
