@@ -6,7 +6,7 @@
 #![allow(clippy::unwrap_used, reason = "fixed conformance fixtures")]
 
 use codec_cbor::general::{
-    encode, frame_exact, validate_exact, validate_prefix, CborError, ErrorReason, Float,
+    encode, frame_exact, validate_exact, validate_prefix, CborError, ErrorReason, Float, Item,
     LengthPolicy, Limits, MapEntry, MapKeyEquality, MapOrdering, NanPolicy, Profile, ValueRef,
 };
 
@@ -58,6 +58,57 @@ fn binary16_nan_keys_follow_selected_equality() {
     }
 }
 
+#[test]
+fn mixed_width_nan_keys_follow_received_and_preferred_admission() {
+    const HALF: [u8; 3] = [0xf9, 0x7e, 0x01];
+    const EXACT_WIDENING: [u8; 5] = [0xfa, 0x7f, 0xc0, 0x20, 0x00];
+    const EXTRA_FRACTION_BIT: [u8; 5] = [0xfa, 0x7f, 0xc0, 0x20, 0x01];
+    const WIRE_LENGTH: usize = 11;
+
+    let limits = Limits::default();
+    let received = Profile::received();
+    let preferred = Profile::preferred();
+    let encoded_scalars = cose();
+    for (wide, equivalent) in [(EXACT_WIDENING, true), (EXTRA_FRACTION_BIT, false)] {
+        for [first, second] in [
+            [HALF.as_slice(), wide.as_slice()],
+            [wide.as_slice(), HALF.as_slice()],
+        ] {
+            let mut wire = Vec::with_capacity(WIRE_LENGTH);
+            wire.push(0xa2);
+            wire.extend_from_slice(first);
+            wire.push(1);
+            wire.extend_from_slice(second);
+            wire.push(2);
+            assert_eq!(wire.len(), WIRE_LENGTH);
+
+            let received_item = validate_exact(&wire, received, limits);
+            let preferred_item = validate_exact(&wire, preferred, limits);
+            if equivalent {
+                assert_reason(received_item, ErrorReason::DuplicateMapKey);
+                assert_reason(preferred_item, ErrorReason::NonPreferredFloat);
+            } else {
+                assert_float_map_round_trip(
+                    &wire,
+                    [first, second],
+                    &received_item.unwrap(),
+                    received,
+                );
+                assert_float_map_round_trip(
+                    &wire,
+                    [first, second],
+                    &preferred_item.unwrap(),
+                    preferred,
+                );
+            }
+            assert_reason(
+                validate_exact(&wire, encoded_scalars, limits),
+                ErrorReason::NonPreferredFloat,
+            );
+        }
+    }
+}
+
 fn assert_binary16_map_policy(first: u16, second: u16, profile: Profile, duplicate: bool) {
     let limits = Limits::default();
     let wire = binary16_map(first, second);
@@ -75,20 +126,26 @@ fn assert_binary16_map_policy(first: u16, second: u16, profile: Profile, duplica
         return;
     }
 
-    let item = validated.unwrap();
+    assert_float_map_round_trip(
+        &wire,
+        [&wire[1..4], &wire[5..8]],
+        &validated.unwrap(),
+        profile,
+    );
+    assert_eq!(encoded.unwrap().as_bytes(), wire);
+}
+
+fn assert_float_map_round_trip(wire: &[u8], keys: [&[u8]; 2], item: &Item<'_>, profile: Profile) {
     assert_eq!(item.frame().received_bytes(), wire);
-    assert!(core::ptr::eq(
-        item.frame().received_bytes(),
-        wire.as_slice()
-    ));
+    assert!(core::ptr::eq(item.frame().received_bytes(), wire));
     let children = item
         .children()
         .unwrap()
         .collect::<Result<Vec<_>, _>>()
         .unwrap();
     assert_eq!(children.len(), 4);
-    assert_eq!(children[0].frame().received_bytes(), &wire[1..4]);
-    assert_eq!(children[2].frame().received_bytes(), &wire[5..8]);
+    assert_eq!(children[0].frame().received_bytes(), keys[0]);
+    assert_eq!(children[2].frame().received_bytes(), keys[1]);
 
     // Rebuild the entries from the validated children to observe any change
     // to a NaN's decoded bits or its association with the corresponding value.
@@ -104,9 +161,8 @@ fn assert_binary16_map_policy(first: u16, second: u16, profile: Profile, duplica
             ValueRef::Unsigned(second_value),
         ),
     ];
-    let reencoded = encode(&ValueRef::Map(&decoded_entries), profile, limits).unwrap();
+    let reencoded = encode(&ValueRef::Map(&decoded_entries), profile, Limits::default()).unwrap();
     assert_eq!(reencoded.as_bytes(), wire);
-    assert_eq!(encoded.unwrap().as_bytes(), wire);
 }
 
 #[test]
