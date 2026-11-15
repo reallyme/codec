@@ -2,7 +2,9 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use super::{utf16_cmp, validate_float, JcsError};
+use super::{
+    utf16_cmp, validate_float, validate_signed_integer, validate_unsigned_integer, JcsError,
+};
 use core::cmp::Ordering;
 
 #[kani::proof]
@@ -67,6 +69,84 @@ fn utf16_order_matches_the_scalar_rank_for_single_character_names() {
         "identical nonempty names"
     );
     assert_eq!(actual, expected);
+}
+
+#[kani::proof]
+#[kani::unwind(10)]
+fn utf16_order_matches_an_explicit_order_for_two_scalar_names() {
+    // Each surrogate pair falls between the ASCII/BMP prefix and the upper
+    // BMP. Within a shared first scalar the second scalar determines order.
+    const SORTED: [&str; 11] = [
+        "a",
+        "aa",
+        "aé",
+        "a\u{10000}",
+        "a\u{10001}",
+        "a\u{e000}",
+        "\u{10000}",
+        "\u{10000}a",
+        "\u{10000}z",
+        "\u{10000}\u{10ffff}",
+        "\u{e000}a",
+    ];
+    let left = usize::from(kani::any::<u8>());
+    let right = usize::from(kani::any::<u8>());
+    kani::assume(left < SORTED.len() && right < SORTED.len());
+    assert_eq!(utf16_cmp(SORTED[left], SORTED[right]), left.cmp(&right));
+    kani::cover!(
+        left == 6 && right == 7,
+        "the shared supplementary prefix ends on the left"
+    );
+    kani::cover!(
+        left == 3 && right == 5,
+        "upper BMP sorts after a supplementary suffix"
+    );
+    kani::cover!(
+        left == right && left == 9,
+        "two surrogate pairs compare equal"
+    );
+    kani::cover!(
+        left == 8 && right == 10,
+        "the first scalar decides before the suffix"
+    );
+}
+
+#[kani::proof]
+fn signed_and_unsigned_integer_admission_matches_the_interoperable_range() {
+    const FIRST_UNSAFE: i128 = 1_i128 << 53;
+    let signed: i64 = kani::any();
+    let unsigned: u64 = kani::any();
+    let signed_expected = if -FIRST_UNSAFE < i128::from(signed) && i128::from(signed) < FIRST_UNSAFE
+    {
+        Ok(())
+    } else {
+        Err(JcsError::IntegerOutsideInteroperableRange)
+    };
+    let unsigned_expected = if i128::from(unsigned) < FIRST_UNSAFE {
+        Ok(())
+    } else {
+        Err(JcsError::IntegerOutsideInteroperableRange)
+    };
+    assert_eq!(validate_signed_integer(signed), signed_expected);
+    assert_eq!(validate_unsigned_integer(unsigned), unsigned_expected);
+    kani::cover!(
+        i128::from(signed) == 1 - FIRST_UNSAFE,
+        "smallest interoperable integer"
+    );
+    kani::cover!(
+        i128::from(signed) == -FIRST_UNSAFE,
+        "first negative integer outside range"
+    );
+    kani::cover!(signed == i64::MIN, "minimum signed integer");
+    kani::cover!(
+        i128::from(unsigned) == FIRST_UNSAFE - 1,
+        "largest interoperable integer"
+    );
+    kani::cover!(
+        i128::from(unsigned) == FIRST_UNSAFE,
+        "first positive integer outside range"
+    );
+    kani::cover!(unsigned == u64::MAX, "maximum unsigned integer");
 }
 
 fn utf16_scalar_rank(scalar: char) -> u32 {

@@ -17,6 +17,7 @@ const SHA2_256_DIGEST_BYTES: usize = 32;
 const MAX_DIGEST_BYTES: usize = 64;
 const CID_V1_VERSION: u8 = 1;
 const DAG_PB: u64 = 0x70;
+const CID_V1_VARINT_BYTES: usize = 10;
 
 #[kani::proof]
 #[kani::unwind(12)]
@@ -187,6 +188,102 @@ fn cid_v1_wire_requires_minimal_varints_in_each_field() {
         field == 3 && extra_groups == 10 && parsed.is_none(),
         "overlong digest length past u64 varint width"
     );
+}
+
+#[kani::proof]
+#[kani::unwind(13)]
+fn cid_v1_wire_preserves_both_variable_width_registry_codes() {
+    const DIGEST_LEN: u8 = 3;
+    const WIRE_CAPACITY: usize = 1 + 2 * CID_V1_VARINT_BYTES + 1 + 3;
+    let codec: u64 = kani::any();
+    let algorithm: u64 = kani::any();
+    let digest: [u8; 3] = kani::any();
+    let complete: bool = kani::any();
+    let (mut codec_bytes, mut algorithm_bytes) =
+        ([0; CID_V1_VARINT_BYTES], [0; CID_V1_VARINT_BYTES]);
+    let mut wire = [0; WIRE_CAPACITY];
+    let Some(bytes) = compose_cid_v1_wire(
+        reference_varint(codec, &mut codec_bytes),
+        reference_varint(algorithm, &mut algorithm_bytes),
+        if complete { DIGEST_LEN } else { DIGEST_LEN - 1 },
+        &digest,
+        &mut wire,
+    ) else {
+        kani::assert(false, "both codes, the declared length and the digest fit");
+        return;
+    };
+    let parsed = parse_cid_wire(bytes, true);
+    assert_eq!(parsed.is_some(), complete);
+    if let Some(cid) = parsed {
+        assert_eq!(cid.version(), Version::V1);
+        assert_eq!(cid.codec(), codec);
+        assert_eq!(cid.hash().code(), algorithm);
+        assert_eq!(cid.hash().size(), DIGEST_LEN);
+        assert_eq!(cid.hash().digest(), &digest);
+    }
+    kani::cover!(
+        complete && codec < 128 && algorithm < 128,
+        "both codes use one octet"
+    );
+    kani::cover!(
+        complete && codec >= 128 && algorithm < 128,
+        "multi-octet codec only"
+    );
+    kani::cover!(
+        complete && codec < 128 && algorithm >= 128,
+        "multi-octet algorithm only"
+    );
+    kani::cover!(
+        complete && codec == u64::MAX && algorithm == u64::MAX,
+        "both codes use ten octets"
+    );
+    kani::cover!(
+        !complete && codec >= 128 && algorithm >= 128,
+        "both codes followed by excess digest data"
+    );
+}
+
+fn reference_varint(value: u64, output: &mut [u8; CID_V1_VARINT_BYTES]) -> Option<&[u8]> {
+    // Repeated division emits base-128 digits independently of the reader's
+    // shifts. The final octet is the first after which no digits remain.
+    let mut remaining = value;
+    for (index, octet) in output.iter_mut().enumerate() {
+        let digit = u8::try_from(remaining % 128).ok()?;
+        remaining /= 128;
+        if remaining == 0 {
+            *octet = digit;
+            return output.get(..=index);
+        }
+        *octet = digit | 0x80;
+    }
+    None
+}
+
+fn compose_cid_v1_wire<'a>(
+    codec: Option<&[u8]>,
+    algorithm: Option<&[u8]>,
+    length: u8,
+    digest: &[u8],
+    wire: &'a mut [u8],
+) -> Option<&'a [u8]> {
+    let codec = codec?;
+    let algorithm = algorithm?;
+    let length_offset = 1_usize
+        .checked_add(codec.len())?
+        .checked_add(algorithm.len())?;
+    let digest_offset = length_offset.checked_add(1)?;
+    let end = digest_offset.checked_add(digest.len())?;
+    let wire = wire.get_mut(..end)?;
+    let (prefix, body) = wire.split_at_mut_checked(length_offset)?;
+    let (version, codes) = prefix.split_first_mut()?;
+    *version = CID_V1_VERSION;
+    let (codec_field, algorithm_field) = codes.split_at_mut_checked(codec.len())?;
+    codec_field.copy_from_slice(codec);
+    algorithm_field.copy_from_slice(algorithm);
+    let (length_field, digest_field) = body.split_first_mut()?;
+    *length_field = length;
+    digest_field.copy_from_slice(digest);
+    Some(wire)
 }
 
 #[kani::proof]

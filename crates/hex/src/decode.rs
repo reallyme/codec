@@ -30,3 +30,7 @@ fn lower_hex_value(byte: u8) -> Result<u8, HexError> {
         _ => Err(HexError::InvalidCharacter),
     }
 }
+
+#[cfg(kani)]
+#[path = "decode_proof_tests.rs"]
+mod proofs;

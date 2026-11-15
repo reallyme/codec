@@ -46,6 +46,30 @@ impl<'a> Cursor<'a> {
     pub fn remaining_bytes(&self) -> &'a [u8] {
         self.remaining
     }
+
+    fn finish_step(
+        &mut self,
+        scanned: Result<Frame<'a>, CborError>,
+    ) -> Result<Frame<'a>, CborError> {
+        let result = scanned.and_then(|frame| {
+            let offset = add(self.offset, frame.received_bytes().len())?;
+            let consumed = self
+                .input
+                .get(..offset)
+                .ok_or(error(ErrorReason::Truncated))?;
+            let remaining = tail(self.input, offset)?;
+            // Commit the three cursor fields together after checking both
+            // spans. A framing error leaves the last valid partition intact.
+            self.offset = offset;
+            self.consumed = consumed;
+            self.remaining = remaining;
+            Ok(frame)
+        });
+        if result.is_err() {
+            self.failed = true;
+        }
+        result
+    }
 }
 
 impl<'a> Iterator for Cursor<'a> {
@@ -54,31 +78,14 @@ impl<'a> Iterator for Cursor<'a> {
         if self.failed || self.offset == self.input.len() {
             return None;
         }
-        let result = (|| {
-            let frame = scan(
-                tail(self.input, self.offset)?,
-                &mut self.budget,
-                0,
-                None,
-                true,
-                self.lengths,
-            )?;
-            let offset = add(self.offset, frame.received_bytes().len())?;
-            let consumed = self
-                .input
-                .get(..offset)
-                .ok_or(error(ErrorReason::Truncated))?;
-            let remaining = tail(self.input, offset)?;
-            self.offset = offset;
-            self.consumed = consumed;
-            self.remaining = remaining;
-            Ok(frame)
-        })();
-        if result.is_err() {
-            self.failed = true;
-        }
-        Some(result)
+        let framed = tail(self.input, self.offset)
+            .and_then(|remaining| scan(remaining, &mut self.budget, 0, None, true, self.lengths));
+        Some(self.finish_step(framed))
     }
 }
 
 impl core::iter::FusedIterator for Cursor<'_> {}
+
+#[cfg(kani)]
+#[path = "cursor_proof_tests.rs"]
+mod proofs;

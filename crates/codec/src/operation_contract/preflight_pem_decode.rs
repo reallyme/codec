@@ -118,6 +118,21 @@ fn count_pem_labels(bytes: &[u8], count: &mut usize) -> Result<(), CodecWireErro
     Ok(())
 }
 
+fn admit_operation_field(
+    number: u64,
+    wire_type: u64,
+    seen: &mut bool,
+) -> Result<bool, CodecWireError> {
+    if OPERATION_FIELD_NUMBERS.binary_search(&number).is_err() {
+        return Ok(false);
+    }
+    if *seen || wire_type != WIRE_LENGTH_DELIMITED {
+        return Err(malformed_request_wire_error());
+    }
+    *seen = true;
+    Ok(true)
+}
+
 fn preflight_binary_request(bytes: &[u8]) -> Result<(), CodecWireError> {
     if bytes.len() > MAX_CODEC_PROTO_MESSAGE_BYTES {
         return Err(pem_label_limit_error());
@@ -127,13 +142,9 @@ fn preflight_binary_request(bytes: &[u8]) -> Result<(), CodecWireError> {
     let mut seen_operation = false;
     while offset < bytes.len() {
         let operation = read_wire_field(bytes, &mut offset)?;
-        if OPERATION_FIELD_NUMBERS.binary_search(&operation.number).is_err() {
+        if !admit_operation_field(operation.number, operation.wire_type, &mut seen_operation)? {
             continue;
         }
-        if seen_operation || operation.wire_type != WIRE_LENGTH_DELIMITED {
-            return Err(malformed_request_wire_error());
-        }
-        seen_operation = true;
         let mut request_offset = 0_usize;
         let mut seen_request_fields = 0_u64;
         while request_offset < operation.bytes.len() {

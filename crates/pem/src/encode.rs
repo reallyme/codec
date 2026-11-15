@@ -112,3 +112,7 @@ fn encoded_pem_length(
         .and_then(|length| length.checked_add(footer_length))
         .ok_or(PemError::InvalidOptions)
 }
+
+#[cfg(kani)]
+#[path = "length_proof_tests.rs"]
+mod proofs;

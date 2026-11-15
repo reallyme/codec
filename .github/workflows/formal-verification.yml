@@ -28,8 +28,24 @@ jobs:
           - area: tlv
             package: reallyme-codec
             features: tlv
+          - area: dispatch
+            package: reallyme-codec
+            features: operation-contract
+            harness: 'dispatch_api::proofs::'
           - area: ffi-ranges
             package: reallyme-codec-ffi
+            features: ''
+          - area: multicodec
+            package: reallyme-codec-multicodec
+            features: ''
+          - area: multikey
+            package: reallyme-codec-multikey
+            features: ''
+          - area: hex
+            package: reallyme-codec-hex
+            features: ''
+          - area: pem
+            package: reallyme-codec-pem
             features: ''
     env:
       KANI_VERSION: '0.68.0'
@@ -62,12 +78,16 @@ jobs:
         env:
           PROOF_PACKAGE: ${{ matrix.package }}
           PROOF_FEATURES: ${{ matrix.features }}
+          PROOF_HARNESS: ${{ matrix.harness }}
         run: |
           cargo fetch --locked
           sha256sum Cargo.lock > "$RUNNER_TEMP/workspace-lock.sha256"
           args=(--package "$PROOF_PACKAGE" --lib --no-default-features)
           if [[ -n "$PROOF_FEATURES" ]]; then
             args+=(--features "$PROOF_FEATURES")
+          fi
+          if [[ -n "$PROOF_HARNESS" ]]; then
+            args+=(--harness "$PROOF_HARNESS")
           fi
           results="$RUNNER_TEMP/verification.json"
           CARGO_NET_OFFLINE=true cargo kani "${args[@]}" --output-format terse \
