@@ -55,7 +55,8 @@ function fixture(t) {
     printf '%s\\n' 'fixture signature' >"$2"
   `);
   executable(join(tools, "zip"), `
-    [[ "$BUNDLE_SCENARIO" != zip-error ]]
+    # Bash 3.2 can ignore errexit in this conditional subprocess.
+    if [[ "$BUNDLE_SCENARIO" == zip-error ]]; then exit 1; fi
     exec "$REAL_ZIP" "$@"
   `);
   const zip = spawnSync("sh", ["-c", "command -v zip"], { encoding: "utf8" });
@@ -123,7 +124,7 @@ test("Maven bundle template preserves prior archives when staging, signing, or Z
     ["1.2.3", { BUNDLE_SCENARIO: "zip-error" }, /could not create the Maven Central ZIP/u],
   ]) {
     const result = run(version, env, source);
-    assert.equal(result.status, 1, result.stderr);
+    assert.equal(result.status, 1, `${env.BUNDLE_SCENARIO ?? "different-source"}: ${result.stderr}`);
     assert.match(result.stderr, diagnostic);
     assert.equal(result.stdout, "");
     assert.deepEqual(readdirSync(output), ["reallyme-maven-central-1.2.3.zip"]);
