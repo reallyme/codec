@@ -12,17 +12,17 @@ import { resolve, sep } from "node:path";
 // Verify the immutable official package before executing its runner. Local
 // checker/module digests remain review tripwires; the package runner supplies
 // the core and enforces proof that every applicable source policy was invoked.
-const RELEASE_READINESS_COMMIT = "45b52cf353b0b85694a96c6addc985221274ff37";
+const RELEASE_READINESS_COMMIT = "5f30357e5c5e1cf757be793a45149c455730bdca";
 const RELEASE_READINESS_CORE_SHA256 =
-  "bd2732ab4af4193ab8f8a2bdde637d7445b1ec93d3b8d5b84b5de7146bdf543a";
+  "ca0bc8cce08d5b532ee54840a60483942c255cbee5b6e3f2cefd33d27d16e72f";
 const LOCAL_CHECKER_SHA256 =
-  "d08f799d816f5dd77596dc963d59ec1fe1a34e659f5c06639b111d0a975d52c9";
+  "e2776a4bffeab97d631b066a63bb30705501eb1a1a124049d04542411ee7e6fd";
 const RELEASE_READINESS_CORE_URL =
   `https://raw.githubusercontent.com/reallyme/release-readiness/${RELEASE_READINESS_COMMIT}/core.mjs`;
 const RELEASE_READINESS_RUNNER_SHA256 =
   "8b37649ae7da7d60a00ac442c3c5e49e7d6bc2491831ba07039c64c054f9904c";
 const RELEASE_READINESS_PACKAGE_SHA256 =
-  "2ccbb0aedc1e7aac2476efafdfb183f2e12ec42280913c5f1d224894d15676b1";
+  "5a0c2ba70e8c68f7c0664c224fb8afe141de3d779c8e90230c302646fb39f335";
 const RELEASE_READINESS_SUPPORT_FILES = [
   ["scripts/public-ci.mjs", "d6b13476c11589ca22cbb114deb3d2a3fb75f7ef86b4fdff2d8111be4ba03be7"],
   ["scripts/public-release.mjs", "d9eab592cba289d77ab78085606b5ec87b6e7c02c8b637f1f5051b4db333ffdd"],
