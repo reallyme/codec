@@ -18,7 +18,7 @@
 // `catch_unwind` cannot protect an embedding process when this crate is built
 // with panic=abort. Refuse such artifacts at compile time instead of shipping
 // a panic firewall that is structurally present but operationally inert.
-// Kani compiles with panic=abort and builds only the private pointer harnesses.
+// Kani compiles with panic=abort and builds only private boundary helpers.
 // Keep all ABI exports out of that build so every ABI artifact still requires
 // a working panic firewall.
 #[cfg(not(kani))]
@@ -30,6 +30,8 @@ compile_error!("reallyme-codec-ffi must be compiled with panic=unwind");
 pub mod codec;
 #[cfg(not(kani))]
 mod guard;
+#[cfg(any(kani, feature = "jni"))]
+mod jni_capacity;
 /// JNI bridge used by the Kotlin codec package.
 #[cfg(all(not(kani), feature = "jni"))]
 pub mod kotlin_codec;

@@ -91,7 +91,26 @@ pub(super) fn check_unique(
     budget: &mut Budget,
 ) -> Result<(), CborError> {
     let starts = keys.as_slice()?;
-    let len = starts.len();
+    check_unique_by(
+        starts.len(),
+        budget,
+        |first, second, budget| compare_at(input, starts, first, second, budget),
+        |first, second, budget| {
+            let left = frame_at(input, starts, first, budget)?;
+            let right = frame_at(input, starts, second, budget)?;
+            equivalent(&left, &right, budget, 0)
+        },
+    )
+}
+
+// The index traversal needs a preorder to group candidates and a separate
+// equality test to resolve ties. Both comparisons charge the same budget.
+fn check_unique_by(
+    len: usize,
+    budget: &mut Budget,
+    mut compare: impl FnMut(usize, usize, &mut Budget) -> Result<Ordering, CborError>,
+    mut equal: impl FnMut(usize, usize, &mut Budget) -> Result<bool, CborError>,
+) -> Result<(), CborError> {
     if len < 2 {
         return Ok(());
     }
@@ -100,20 +119,28 @@ pub(super) fn check_unique(
         let run = indices
             .get(..len)
             .ok_or(error(ErrorReason::ArithmeticOverflow))?;
-        return check_run(input, starts, run, budget);
+        return check_run(run, budget, &mut equal);
     }
     let mut order = try_indices(len)?;
     let mut scratch = try_indices(len)?;
-    merge_sort(input, starts, &mut order, &mut scratch, budget)?;
+    merge_sort(&mut order, &mut scratch, budget, &mut compare)?;
+    check_sorted_runs(&order, budget, &mut compare, &mut equal)
+}
 
+fn check_sorted_runs(
+    order: &[usize],
+    budget: &mut Budget,
+    compare: &mut impl FnMut(usize, usize, &mut Budget) -> Result<Ordering, CborError>,
+    equal: &mut impl FnMut(usize, usize, &mut Budget) -> Result<bool, CborError>,
+) -> Result<(), CborError> {
     let mut run_start = 0_usize;
-    for index in 1..=len {
+    for index in 1..=order.len() {
         let previous_index = index
             .checked_sub(1)
             .ok_or(error(ErrorReason::ArithmeticOverflow))?;
         let tied = match (order.get(previous_index), order.get(index)) {
             (Some(&previous), Some(&current)) => {
-                compare_at(input, starts, previous, current, budget)? == Ordering::Equal
+                compare(previous, current, budget)? == Ordering::Equal
             }
             _ => false,
         };
@@ -121,7 +148,7 @@ pub(super) fn check_unique(
             let run = order
                 .get(run_start..index)
                 .ok_or(error(ErrorReason::ArithmeticOverflow))?;
-            check_run(input, starts, run, budget)?;
+            check_run(run, budget, equal)?;
             run_start = index;
         }
     }
@@ -138,19 +165,16 @@ fn try_indices(len: usize) -> Result<Vec<usize>, CborError> {
 }
 
 fn check_run(
-    input: &[u8],
-    starts: &[usize],
     run: &[usize],
     budget: &mut Budget,
+    equal: &mut impl FnMut(usize, usize, &mut Budget) -> Result<bool, CborError>,
 ) -> Result<(), CborError> {
     for (position, &first) in run.iter().enumerate() {
         let rest = run
             .get(add(position, 1)?..)
             .ok_or(error(ErrorReason::ArithmeticOverflow))?;
         for &second in rest {
-            let left = frame_at(input, starts, first, budget)?;
-            let right = frame_at(input, starts, second, budget)?;
-            if equivalent(&left, &right, budget, 0)? {
+            if equal(first, second, budget)? {
                 return Err(error(ErrorReason::DuplicateMapKey));
             }
         }
@@ -159,11 +183,10 @@ fn check_run(
 }
 
 fn merge_sort(
-    input: &[u8],
-    starts: &[usize],
     order: &mut [usize],
     scratch: &mut [usize],
     budget: &mut Budget,
+    compare: &mut impl FnMut(usize, usize, &mut Budget) -> Result<Ordering, CborError>,
 ) -> Result<(), CborError> {
     let len = order.len();
     let mut width = 1_usize;
@@ -181,7 +204,7 @@ fn merge_sort(
             let output = scratch
                 .get_mut(start..end)
                 .ok_or(error(ErrorReason::ArithmeticOverflow))?;
-            merge(input, starts, left, right, output, budget)?;
+            merge(left, right, output, budget, compare)?;
             start = end;
         }
         if order.len() != scratch.len() {
@@ -196,20 +219,17 @@ fn merge_sort(
 }
 
 fn merge(
-    input: &[u8],
-    starts: &[usize],
     left: &[usize],
     right: &[usize],
     output: &mut [usize],
     budget: &mut Budget,
+    compare: &mut impl FnMut(usize, usize, &mut Budget) -> Result<Ordering, CborError>,
 ) -> Result<(), CborError> {
     let mut left = left.iter().copied().peekable();
     let mut right = right.iter().copied().peekable();
     for slot in output.iter_mut() {
         let take_left = match (left.peek(), right.peek()) {
-            (Some(&first), Some(&second)) => {
-                compare_at(input, starts, first, second, budget)? != Ordering::Greater
-            }
+            (Some(&first), Some(&second)) => compare(first, second, budget)? != Ordering::Greater,
             (Some(_), None) => true,
             (None, Some(_)) => false,
             (None, None) => return Err(error(ErrorReason::ArithmeticOverflow)),
@@ -306,7 +326,7 @@ fn key_order(
                 }
             }
         }
-        MajorType::Map => Ok(entry_count(left, budget)?.cmp(&entry_count(right, budget)?)),
+        MajorType::Map => map_key_order_by(left.body, right.body, budget, next),
         _ => Err(error(ErrorReason::UnsupportedPolicy)),
     }
 }
@@ -331,12 +351,25 @@ fn simple_key(frame: &Frame<'_>) -> Result<(u8, u8, u8, u64), CborError> {
 
 /// Count entries by walking the body, so definite and indefinite maps with
 /// the same content tie.
-fn entry_count(frame: &Frame<'_>, budget: &mut Budget) -> Result<usize, CborError> {
+fn map_key_order_by<'a, T>(
+    left: &'a [u8],
+    right: &'a [u8],
+    budget: &mut Budget,
+    mut read: impl FnMut(&'a [u8], &mut usize, &mut Budget) -> Result<T, CborError>,
+) -> Result<Ordering, CborError> {
+    Ok(entry_count_by(left, budget, &mut read)?.cmp(&entry_count_by(right, budget, &mut read)?))
+}
+
+fn entry_count_by<'a, T>(
+    body: &'a [u8],
+    budget: &mut Budget,
+    read: &mut impl FnMut(&'a [u8], &mut usize, &mut Budget) -> Result<T, CborError>,
+) -> Result<usize, CborError> {
     let mut offset = 0_usize;
     let mut count = 0_usize;
-    while offset < frame.body.len() {
-        next(frame.body, &mut offset, budget)?;
-        next(frame.body, &mut offset, budget)?;
+    while offset < body.len() {
+        read(body, &mut offset, budget)?;
+        read(body, &mut offset, budget)?;
         count = count
             .checked_add(1)
             .ok_or(error(ErrorReason::ArithmeticOverflow))?;
@@ -391,3 +424,7 @@ fn strings_order(
         }
     }
 }
+
+#[cfg(kani)]
+#[path = "unique_proof_tests.rs"]
+mod proofs;

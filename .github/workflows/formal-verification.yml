@@ -37,8 +37,11 @@ jobs:
             package: reallyme-codec
             features: operation-contract
             harness: 'dispatch_api::proofs::'
-          - area: ffi-ranges
+          - area: native-boundaries
             package: reallyme-codec-ffi
+            features: ''
+          - area: wasm-boundary
+            package: reallyme-codec-wasm
             features: ''
           - area: multicodec
             package: reallyme-codec-multicodec

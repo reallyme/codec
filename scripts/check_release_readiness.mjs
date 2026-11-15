@@ -672,7 +672,16 @@ assertContains(
   "crates/ffi/src/kotlin_codec.rs",
   "validate_managed_input_lengths",
 );
-assertContains("crates/ffi/src/kotlin_codec/map_error.rs", "aggregate.checked_add(length)");
+assertRustFunction({
+  path: "crates/ffi/src/kotlin_codec/map_error.rs",
+  functionNeedle: "fn validate_managed_input_lengths<",
+  requiredNeedles: ["input.len(env)", "checked_input_total(aggregate, length, maximum)"],
+});
+assertRustFunction({
+  path: "crates/ffi/src/jni_capacity.rs",
+  functionNeedle: "fn checked_input_total(",
+  requiredNeedles: ["used.checked_add(length)?", "total <= maximum"],
+});
 assertContains("crates/wasm/Cargo.toml", 'name = "reallyme-codec-wasm"');
 assertContains("crates/wasm/src/boundary.rs", "MAX_WASM_INPUT_BYTES");
 assertContains("crates/wasm/src/boundary.rs", "checked_add");
@@ -2188,8 +2197,23 @@ assertNotContains(".github/workflows/kotlin-android-package-release.yml", "-Prea
 assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "public fun tryParseCid(cid: String): String?");
 assertContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec.kt", "public fun dagCborCodecCode(): Int");
 assertContains("crates/ffi/src/codec.rs", "MAX_CODEC_FFI_OUTPUT_BYTES");
-assertContains("crates/ffi/src/kotlin_codec.rs", "probed_output_capacity");
-assertContains("crates/ffi/src/kotlin_codec.rs", "produced_len != output.len()");
+for (const functionNeedle of ["fn call_operation_boundary<", "fn process_output_with_function<"]) {
+  assertRustFunction({
+    path: "crates/ffi/src/kotlin_codec.rs",
+    functionNeedle,
+    requiredNeedles: [
+      "probed_output_capacity(",
+      "let mut copied_len = 0_usize;",
+      "&mut copied_len,",
+      "validate_output_copy(status, copied_len, output.len())",
+    ],
+  });
+}
+assertRustFunction({
+  path: "crates/ffi/src/jni_capacity.rs",
+  functionNeedle: "fn validate_output_copy(",
+  requiredNeedles: ["status != CODEC_OK", "copied_len != capacity"],
+});
 assertContains("packages/kotlin/src/main/kotlin/me/really/codec/WithCodecBytes.kt", "CodingErrorAction.REPORT");
 assertContains("packages/kotlin/src/main/kotlin/me/really/codec/WithCodecBytes.kt", "bytes.fill(0)");
 assertContains("packages/kotlin/src/main/kotlin/me/really/codec/WithCodecBytes.kt", "Character.isSurrogate(character)");

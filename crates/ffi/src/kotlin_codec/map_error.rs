@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use crate::jni_capacity::checked_input_total;
 use crate::status::{
     CODEC_INTERNAL_ERROR, CODEC_INVALID_ARGUMENT, CODEC_INVALID_MULTICODEC_PREFIX,
     CODEC_NON_CANONICAL_HEX, CODEC_NON_CANONICAL_JSON, CODEC_UNKNOWN_MULTICODEC,
@@ -20,13 +21,10 @@ pub(super) fn validate_managed_input_lengths<'local>(
             Ok(value) => value,
             Err(_) => return throw_provider_failure(env),
         };
-        aggregate = match aggregate.checked_add(length) {
+        aggregate = match checked_input_total(aggregate, length, maximum) {
             Some(value) => value,
             None => return throw_invalid_input(env),
         };
-        if aggregate > maximum {
-            return throw_invalid_input(env);
-        }
     }
     Ok(())
 }

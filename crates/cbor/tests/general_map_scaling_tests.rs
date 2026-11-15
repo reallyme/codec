@@ -165,6 +165,82 @@ fn semantic_equivalence_holds_on_the_sorted_path() {
     validate_exact(&key_map(&keys), Profile::received(), Limits::default()).unwrap();
 }
 
+#[test]
+fn reordered_compound_keys_are_duplicates_at_sixteen_and_seventeen_entries() {
+    const ORIGINAL: &[u8] = b"\xa2\x00\x01\x01\x02";
+    const REORDERED: &[u8] = b"\xa2\x01\x02\x00\x01";
+    const DISTINCT: &[u8] = b"\xa2\x01\x03\x00\x01";
+    const SAME_SIZE_DECOY: &[u8] = b"\xa2\x00\x00\x01\x02";
+    let profile = Profile::preferred();
+    let limits = Limits::default();
+    // The comparison recurses through arrays and tags before it reaches the
+    // reordered map. The outer values differ to detect a key/value mix-up.
+    for prefix in [&b""[..], &b"\x81"[..], &b"\xc1"[..]] {
+        let compound = |map: &[u8]| [prefix, map].concat();
+        let original = compound(ORIGINAL);
+        let reordered = compound(REORDERED);
+        let distinct = compound(DISTINCT);
+        let decoy = compound(SAME_SIZE_DECOY);
+        for count in [16_usize, 17] {
+            for first in 0..count {
+                for second in (0..count).filter(|&position| position != first) {
+                    let wire = compound_map_at_threshold(
+                        count, first, second, &original, &reordered, &decoy,
+                    );
+                    assert_eq!(
+                        reason(validate_exact(&wire, profile, limits)),
+                        Some(ErrorReason::DuplicateMapKey),
+                        "count {count}, first {first}, second {second}"
+                    );
+                }
+            }
+            let distinct_wire = compound_map_at_threshold(
+                count,
+                0,
+                count.checked_sub(1).unwrap(),
+                &original,
+                &distinct,
+                &decoy,
+            );
+            assert_eq!(
+                reason(validate_exact(&distinct_wire, profile, limits)),
+                None
+            );
+        }
+    }
+}
+
+fn compound_map_at_threshold(
+    count: usize,
+    first: usize,
+    second: usize,
+    original: &[u8],
+    other: &[u8],
+    decoy: &[u8],
+) -> Vec<u8> {
+    let middle = (1..count)
+        .find(|&index| index != first && index != second)
+        .unwrap();
+    let mut wire = vec![0xa0 | u8::try_from(count).unwrap()];
+    for index in 0..count {
+        if index == first {
+            wire.extend_from_slice(original);
+            wire.push(0x00);
+        } else if index == second {
+            wire.extend_from_slice(other);
+            wire.push(0x01);
+        } else {
+            if index == middle {
+                wire.extend_from_slice(decoy);
+            } else {
+                wire.push(u8::try_from(index).unwrap());
+            }
+            wire.push(0xf6);
+        }
+    }
+    wire
+}
+
 fn long_key_map(count: usize, key_len: usize) -> Vec<u8> {
     let mut input = map_header(count);
     for index in 0..count {

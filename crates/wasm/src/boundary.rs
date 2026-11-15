@@ -145,6 +145,11 @@ fn utf8_byte_len_for_js_string(value: &JsString) -> Result<usize, JsValue> {
     Ok(bytes)
 }
 
+fn checked_input_total(used: usize, length: usize, maximum: usize) -> Option<usize> {
+    let total = used.checked_add(length)?;
+    (total <= maximum).then_some(total)
+}
+
 /// Validate JS-owned inputs before wasm-bindgen copies strings into linear memory.
 pub(crate) fn validate_js_inputs(
     strings: &[&JsString],
@@ -152,20 +157,16 @@ pub(crate) fn validate_js_inputs(
 ) -> Result<(), JsValue> {
     let mut aggregate = 0_usize;
     for value in strings {
-        aggregate = aggregate
-            .checked_add(utf8_byte_len_for_js_string(value)?)
-            .ok_or_else(invalid_input)?;
-        if aggregate > MAX_WASM_INPUT_BYTES {
-            return Err(invalid_input());
-        }
+        aggregate = checked_input_total(
+            aggregate,
+            utf8_byte_len_for_js_string(value)?,
+            MAX_WASM_INPUT_BYTES,
+        )
+        .ok_or_else(invalid_input)?;
     }
     for value in byte_arrays {
-        aggregate = aggregate
-            .checked_add(byte_array_len(value)?)
+        aggregate = checked_input_total(aggregate, byte_array_len(value)?, MAX_WASM_INPUT_BYTES)
             .ok_or_else(invalid_input)?;
-        if aggregate > MAX_WASM_INPUT_BYTES {
-            return Err(invalid_input());
-        }
     }
     Ok(())
 }
@@ -184,35 +185,48 @@ pub(crate) fn zeroizing_bytes(value: &Uint8Array) -> Result<Zeroizing<Vec<u8>>, 
     zeroizing_bytes_with_maximum(value, MAX_WASM_INPUT_BYTES)
 }
 
+fn snapshot_capacity(length: u32, maximum: usize) -> Option<u32> {
+    let native_length = usize::try_from(length).ok()?;
+    (native_length <= maximum).then_some(length)
+}
+
+fn matches_observed_length(expected: u32, observed: Option<u32>) -> bool {
+    observed == Some(expected)
+}
+
+fn snapshot_copy_is_complete(
+    expected: u32,
+    copied: bool,
+    source_after: Option<u32>,
+    view_after: Option<u32>,
+) -> bool {
+    copied
+        && matches_observed_length(expected, source_after)
+        && matches_observed_length(expected, view_after)
+}
+
 pub(crate) fn zeroizing_bytes_with_maximum(
     value: &Uint8Array,
     maximum: usize,
 ) -> Result<Zeroizing<Vec<u8>>, JsValue> {
-    let expected_length_u32 = checked_array_length(value).map_err(|_| invalid_input())?;
-    let expected_length = usize::try_from(expected_length_u32).map_err(|_| invalid_input())?;
-    if expected_length > maximum {
-        return Err(invalid_input());
-    }
+    let source_length = checked_array_length(value).map_err(|_| invalid_input())?;
+    let capacity = snapshot_capacity(source_length, maximum).ok_or_else(invalid_input)?;
 
     // Do not call Uint8Array::to_vec() on caller-owned storage. js-sys sizes
     // that allocation from one length read and performs its unsafe raw copy
     // using another. A length-tracking view over a growable SharedArrayBuffer
     // can change between those reads. Bound the source view explicitly, copy
     // it into a fixed-length JavaScript owner, and only then cross into Rust.
-    let bounded_view =
-        checked_subarray(value, 0, expected_length_u32).map_err(|_| invalid_input())?;
-    if checked_array_length(&bounded_view).map_err(|_| invalid_input())? != expected_length_u32 {
+    let bounded_view = checked_subarray(value, 0, capacity).map_err(|_| invalid_input())?;
+    if !matches_observed_length(capacity, checked_array_length(&bounded_view).ok()) {
         return Err(invalid_input());
     }
-    let snapshot = Uint8Array::new_with_length(expected_length_u32);
+    let snapshot = Uint8Array::new_with_length(capacity);
     let copied = checked_set(&snapshot, bounded_view.as_ref(), 0);
-    let source_length = checked_array_length(value);
-    let view_length = checked_array_length(&bounded_view);
-    if copied.is_err()
-        || !matches!(source_length, Ok(length) if length == expected_length_u32)
-        || !matches!(view_length, Ok(length) if length == expected_length_u32)
-    {
-        snapshot.fill(0, 0, expected_length_u32);
+    let source_after = checked_array_length(value).ok();
+    let view_after = checked_array_length(&bounded_view).ok();
+    if !snapshot_copy_is_complete(capacity, copied.is_ok(), source_after, view_after) {
+        snapshot.fill(0, 0, capacity);
         return Err(invalid_input());
     }
 
@@ -220,7 +234,7 @@ pub(crate) fn zeroizing_bytes_with_maximum(
     // changing length during this copy. Wipe the temporary JavaScript owner as
     // soon as Rust has its zeroizing copy.
     let result = Zeroizing::new(snapshot.to_vec());
-    snapshot.fill(0, 0, expected_length_u32);
+    snapshot.fill(0, 0, capacity);
     Ok(result)
 }
 
@@ -234,10 +248,11 @@ pub(crate) fn validate_input_lengths_with_maximum(
 ) -> Result<(), JsValue> {
     let mut aggregate = 0_usize;
     for length in lengths {
-        aggregate = aggregate.checked_add(*length).ok_or_else(invalid_input)?;
-        if aggregate > maximum {
-            return Err(invalid_input());
-        }
+        aggregate = checked_input_total(aggregate, *length, maximum).ok_or_else(invalid_input)?;
     }
     Ok(())
 }
+
+#[cfg(kani)]
+#[path = "boundary_proof_tests.rs"]
+mod proofs;
