@@ -12,20 +12,20 @@ import { resolve, sep } from "node:path";
 // Verify the immutable official package before executing its runner. Local
 // checker/module digests remain review tripwires; the package runner supplies
 // the core and enforces proof that every applicable source policy was invoked.
-const RELEASE_READINESS_COMMIT = "5f30357e5c5e1cf757be793a45149c455730bdca";
+const RELEASE_READINESS_COMMIT = "55115f21d5bf9a3fbc1bb8d10484aecba6e7bd8f";
 const RELEASE_READINESS_CORE_SHA256 =
-  "ca0bc8cce08d5b532ee54840a60483942c255cbee5b6e3f2cefd33d27d16e72f";
+  "3f351bd201ed2f1068cbdd87884fb07759a7ae1f1f0148099df046d9580cecb6";
 const LOCAL_CHECKER_SHA256 =
-  "e2776a4bffeab97d631b066a63bb30705501eb1a1a124049d04542411ee7e6fd";
+  "dc193935a92c94428dc9b2a4c40bcaf0ed1a4ec6ce9f7e198075478946ff546e";
 const RELEASE_READINESS_CORE_URL =
   `https://raw.githubusercontent.com/reallyme/release-readiness/${RELEASE_READINESS_COMMIT}/core.mjs`;
 const RELEASE_READINESS_RUNNER_SHA256 =
-  "8b37649ae7da7d60a00ac442c3c5e49e7d6bc2491831ba07039c64c054f9904c";
+  "81ef5c47a24bd6a3d44f6ad8278541b9f9d61a781845775d5eb629b4c94ecd1b";
 const RELEASE_READINESS_PACKAGE_SHA256 =
-  "5a0c2ba70e8c68f7c0664c224fb8afe141de3d779c8e90230c302646fb39f335";
+  "bf0309c5b50066d278036b49a37b245cfd948b89fbaf1e43f1d3a03d668c77be";
 const RELEASE_READINESS_SUPPORT_FILES = [
-  ["scripts/public-ci.mjs", "d6b13476c11589ca22cbb114deb3d2a3fb75f7ef86b4fdff2d8111be4ba03be7"],
-  ["scripts/public-release.mjs", "d9eab592cba289d77ab78085606b5ec87b6e7c02c8b637f1f5051b4db333ffdd"],
+  ["scripts/public-ci.mjs", "6f958c4a6aa03f0ff2860979232fa51d5ea5d4d124db33895328d7cd33d91b53"],
+  ["scripts/public-release.mjs", "3aa9f122b627231a69deb18f98f582bd52b3bd8139108ab91241d027fc3f28af"],
   ["scripts/public-repo-policy.mjs", "fdad8fe9c0e85043b764a0321558af7a85324bceb7724c693a2824d955b0a204"],
   ["scripts/android-runtime.mjs", "5e80d5dee4a1ac225dfe155dd6d5477e1c52bc18be103f7b6fef181a0d4cb3c9"],
   ["scripts/android-publication.mjs", "539660a91b7b9150a9d85cafff35c5bbefd97a57541d2343f55f1d1243e3be7b"],

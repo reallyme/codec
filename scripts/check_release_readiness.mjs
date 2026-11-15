@@ -323,7 +323,7 @@ const assertTypescriptProtoFacadeCompleteness = ({ facadePath, generatedPath }) 
   });
 };
 
-assertReallyMeReleasePackagePolicy({ version: "0.9.3" });
+assertReallyMeReleasePackagePolicy({ version: "0.9.5" });
 const rustChecks = ".github/workflows/code-checks.yml";
 assertRustReleasePolicy({
   release: { workflow: rustChecks, job: "rust", step: "Test on the release toolchain" },
@@ -878,11 +878,11 @@ assertContains(
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  'const RELEASE_READINESS_COMMIT = "5f30357e5c5e1cf757be793a45149c455730bdca"',
+  'const RELEASE_READINESS_COMMIT = "55115f21d5bf9a3fbc1bb8d10484aecba6e7bd8f"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  '"ca0bc8cce08d5b532ee54840a60483942c255cbee5b6e3f2cefd33d27d16e72f"',
+  '"3f351bd201ed2f1068cbdd87884fb07759a7ae1f1f0148099df046d9580cecb6"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
