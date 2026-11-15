@@ -226,3 +226,7 @@ pub(crate) unsafe fn write_i32(ptr: *mut i32, value: i32) -> CodecStatus {
 #[cfg(test)]
 #[path = "pointer_tests.rs"]
 mod tests;
+
+#[cfg(kani)]
+#[path = "pointer_proof_tests.rs"]
+mod proofs;

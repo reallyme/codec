@@ -11,15 +11,19 @@ use proto::CodecApiOperationRequest as ApiRequest;
 use proto::CodecApiOperationResponse as ApiResponse;
 use proto::CodecApiOperationResult;
 
-pub(super) fn execute_api_request(
-    mut request: ApiRequest,
-) -> Result<CodecApiOperationResult, CodecWireError> {
-    let mut operation = request.operation.take().ok_or_else(|| {
+fn require_operation(request: &mut ApiRequest) -> Result<Operation, CodecWireError> {
+    request.operation.take().ok_or_else(|| {
         super::wire_error(
             codec_proto::CodecWireErrorBranch::Boundary,
             proto::CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_MISSING_OPERATION,
         )
-    })?;
+    })
+}
+
+pub(super) fn execute_api_request(
+    mut request: ApiRequest,
+) -> Result<CodecApiOperationResult, CodecWireError> {
+    let mut operation = require_operation(&mut request)?;
     let result = match &mut operation {
         Operation::MulticodecPrefixForName(request) => {
             return legacy_request(
@@ -192,3 +196,7 @@ pub(super) fn encode_api_operation_response(response: &ApiResponse) -> zeroize::
         Err(_) => zeroize::Zeroizing::new(super::INTERNAL_ERROR_OPERATION_RESPONSE.to_vec()),
     }
 }
+
+#[cfg(kani)]
+#[path = "dispatch_proof_tests.rs"]
+mod proofs;

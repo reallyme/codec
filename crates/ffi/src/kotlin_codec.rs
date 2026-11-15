@@ -17,9 +17,10 @@ use crate::codec::{
     rm_codec_max_operation_response_bytes, rm_codec_package_version_major,
     rm_codec_package_version_minor, rm_codec_package_version_patch, rm_codec_process,
     rm_codec_process_bool, rm_codec_process_operation, rm_codec_process_operation_json,
-    MAX_CODEC_FFI_INPUT_BYTES, MAX_CODEC_FFI_OUTPUT_BYTES,
+    MAX_CODEC_FFI_INPUT_BYTES,
 };
 use crate::guard::with_redacted_panic_hook;
+use crate::jni_capacity::{probed_output_capacity, validate_output_copy, CopyFailure, OutputKind};
 use crate::status::{CODEC_BUFFER_TOO_SMALL, CODEC_OK};
 use codec_proto::{MAX_CODEC_PROTO_JSON_BYTES, MAX_CODEC_PROTO_MESSAGE_BYTES};
 use codec_runtime::operation_contract::resource_limit_operation_response;
@@ -67,14 +68,6 @@ type CodecOperationProcessCFunction =
 
 struct NativeOutput {
     bytes: Zeroizing<Vec<u8>>,
-}
-
-fn probed_output_capacity(status: i32, produced_len: usize) -> Option<usize> {
-    match (status, produced_len) {
-        (CODEC_OK, 0) => Some(0),
-        (CODEC_BUFFER_TOO_SMALL, 1..=MAX_CODEC_FFI_OUTPUT_BYTES) => Some(produced_len),
-        _ => None,
-    }
 }
 
 /// Verifies that the loaded native image contains the expected JNI symbols.
@@ -281,26 +274,27 @@ fn call_operation_boundary<'local>(
             &mut produced_len,
         )
     };
-    if probe_status != CODEC_BUFFER_TOO_SMALL
-        || produced_len == 0
-        || produced_len > MAX_CODEC_PROTO_MESSAGE_BYTES
-    {
+    let Some(capacity) = probed_output_capacity(OutputKind::Protobuf, probe_status, produced_len)
+    else {
         return throw_provider_failure(env);
-    }
+    };
 
-    let mut output = Zeroizing::new(vec![0_u8; produced_len]);
+    let mut output = Zeroizing::new(vec![0_u8; capacity]);
+    // The second call must report its own length. The probe's length is
+    // already captured as capacity and cannot serve as a copy receipt.
+    let mut copied_len = 0_usize;
     // SAFETY: The request and output vectors are distinct JNI-frame-owned
-    // allocations and `produced_len` is writable stack storage.
+    // allocations and `copied_len` is writable stack storage.
     let status = unsafe {
         process(
             request_bytes.as_ptr(),
             request_bytes.len(),
             output.as_mut_ptr(),
             output.len(),
-            &mut produced_len,
+            &mut copied_len,
         )
     };
-    if status != CODEC_OK || produced_len != output.len() {
+    if validate_output_copy(status, copied_len, output.len()).is_err() {
         return throw_provider_failure(env);
     }
     Ok(output)
@@ -365,7 +359,9 @@ fn process_output_with_function<'local>(
     if first_status != CODEC_OK && first_status != CODEC_BUFFER_TOO_SMALL {
         return throw_for_status(env, first_status);
     }
-    let Some(output_capacity) = probed_output_capacity(first_status, produced_len) else {
+    let Some(output_capacity) =
+        probed_output_capacity(OutputKind::Generic, first_status, produced_len)
+    else {
         return throw_provider_failure(env);
     };
     if output_capacity == 0 {
@@ -375,8 +371,9 @@ fn process_output_with_function<'local>(
     }
 
     let mut output = Zeroizing::new(vec![0_u8; output_capacity]);
+    let mut copied_len = 0_usize;
     // SAFETY: The input byte vectors and output vector are owned by this JNI
-    // frame, non-aliasing, and live for the call. `produced_len` is a writable
+    // frame, non-aliasing, and live for the call. `copied_len` is a writable
     // stack-owned length output.
     let status = unsafe {
         process(
@@ -389,16 +386,14 @@ fn process_output_with_function<'local>(
             third_bytes.len(),
             output.as_mut_ptr(),
             output.len(),
-            &mut produced_len,
+            &mut copied_len,
         )
     };
-    if status != CODEC_OK {
-        return throw_for_status(env, status);
+    match validate_output_copy(status, copied_len, output.len()) {
+        Ok(()) => Ok(NativeOutput { bytes: output }),
+        Err(CopyFailure::Status(status)) => throw_for_status(env, status),
+        Err(CopyFailure::LengthMismatch) => throw_provider_failure(env),
     }
-    if produced_len != output.len() {
-        return throw_provider_failure(env);
-    }
-    Ok(NativeOutput { bytes: output })
 }
 
 /// Runs a codec predicate for `me.really:codec`.

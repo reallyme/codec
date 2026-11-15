@@ -281,3 +281,7 @@ impl Budget {
         Ok(next)
     }
 }
+
+#[cfg(kani)]
+#[path = "budget_proof_tests.rs"]
+mod proofs;

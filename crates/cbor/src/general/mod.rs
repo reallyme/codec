@@ -76,6 +76,9 @@ mod receipt;
 mod scan;
 mod unique;
 
+#[cfg(kani)]
+mod binary16_key_proof_tests;
+
 pub use contract::{encode_value, float_equivalent, float_properties};
 pub use cursor::Cursor;
 pub use encode::{encode, EncodedCbor, MapEntry, ValueRef};

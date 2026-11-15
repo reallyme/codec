@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use cid::multibase::{decode as multibase_decode, Base};
-use cid::{Cid, Version};
+use cid::Cid;
 use multihash::Multihash;
 use multihash_codetable::{Code, MultihashDigest};
 use sha2::{Digest, Sha256};
@@ -22,16 +22,23 @@ pub const DAG_CBOR_CODEC: u64 = 0x71;
 pub const MAX_CID_STRING_LEN: usize = 1024;
 
 const CID_V0_STRING_LEN: usize = 46;
+const CID_MAX_DIGEST_BYTES: usize = 64;
+const CID_V0_DIGEST_BYTES: usize = 32;
+const CID_V0_PREFIX: [u8; 2] = [0x12, 0x20];
+const CID_V1_VERSION: u8 = 1;
+const VARINT_GROUP_BITS: usize = 7;
+const VARINT_CONTINUATION: u8 = 0x80;
+const VARINT_PAYLOAD: u8 = VARINT_CONTINUATION - 1;
 
 /// Hash output for sha2-256
-pub type ContentHash = [u8; 32];
+pub type ContentHash = [u8; CID_V0_DIGEST_BYTES];
 
 /// SHA-256 multihash for a DAG-CBOR block.
 ///
 /// The wrapper keeps the upstream multihash representation out of the public
 /// API while preserving the canonical wire bytes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct DagCborMultihash(Multihash<64>);
+pub struct DagCborMultihash(Multihash<CID_MAX_DIGEST_BYTES>);
 
 impl DagCborMultihash {
     /// Return the multihash algorithm code.
@@ -88,9 +95,11 @@ pub fn dag_cbor_multihash(bytes: &[u8]) -> DagCborMultihash {
 /// Hashes the supplied bytes as-is, without parsing CBOR or applying the
 /// encoder/decoder size limit. Encode a value first to obtain a canonical block.
 pub fn compute_cid_dag_cbor(bytes: &[u8]) -> String {
-    let hash = dag_cbor_multihash(bytes);
-    let cid = Cid::new_v1(DAG_CBOR_CODEC, hash.0);
-    cid.to_string()
+    dag_cbor_cid(dag_cbor_multihash(bytes)).to_string()
+}
+
+fn dag_cbor_cid(hash: DagCborMultihash) -> Cid {
+    Cid::new_v1(DAG_CBOR_CODEC, hash.0)
 }
 
 /// Outcome of comparing a canonical DAG-CBOR block with a CID string.
@@ -148,8 +157,7 @@ pub fn verify_dag_cbor_cid(
     bytes: &[u8],
 ) -> Result<DagCborCidVerification, CborError> {
     let _validated = Zeroizing::new(decode_dag_cbor(bytes)?);
-    let expected_hash = dag_cbor_multihash(bytes);
-    let expected_cid = Cid::new_v1(DAG_CBOR_CODEC, expected_hash.0);
+    let expected_cid = dag_cbor_cid(dag_cbor_multihash(bytes));
     let expected = expected_cid.to_string();
     let Some((actual_cid, _base)) = parse_cid_string(cid_str) else {
         return Ok(DagCborCidVerification {
@@ -159,18 +167,28 @@ pub fn verify_dag_cbor_cid(
         });
     };
     let actual = actual_cid.to_string();
-    let status = if cid_str != actual {
-        CidVerificationStatus::NonCanonical
-    } else if expected_cid == actual_cid {
-        CidVerificationStatus::Match
-    } else {
-        CidVerificationStatus::Mismatch
-    };
     Ok(DagCborCidVerification {
-        status,
+        status: classify_parsed_cid(cid_str, &actual, &expected_cid, &actual_cid),
         expected_cid: expected,
         actual_cid: actual,
     })
+}
+
+fn classify_parsed_cid(
+    supplied: &str,
+    canonical: &str,
+    expected: &Cid,
+    actual: &Cid,
+) -> CidVerificationStatus {
+    // Textual canonicality is checked first so alternate representations
+    // produce the same diagnostic whether or not the digest matches.
+    if supplied != canonical {
+        CidVerificationStatus::NonCanonical
+    } else if expected == actual {
+        CidVerificationStatus::Match
+    } else {
+        CidVerificationStatus::Mismatch
+    }
 }
 
 /// Returns whether `s` parses as a valid CID string.
@@ -198,16 +216,53 @@ fn parse_cid_string(s: &str) -> Option<(Cid, Option<Base>)> {
         let (base, bytes) = multibase_decode(s).ok()?;
         (Some(base), bytes)
     };
-    let mut remaining = decoded.as_slice();
-    let cid = Cid::read_bytes(&mut remaining).ok()?;
-    // CIDv0 has exactly one canonical textual representation: bare base58btc.
-    if base.is_some() && cid.version() == Version::V0 {
-        return None;
-    }
-    // read_bytes is a stream parser. Exhaustion is essential for validating
-    // an identifier, and byte equality also enforces minimal varint forms.
-    if !remaining.is_empty() || cid.to_bytes() != decoded {
-        return None;
-    }
+    let cid = parse_cid_wire(&decoded, base.is_some())?;
     Some((cid, base))
 }
+
+fn parse_cid_wire(bytes: &[u8], has_multibase_prefix: bool) -> Option<Cid> {
+    if let Some(digest) = bytes.strip_prefix(&CID_V0_PREFIX) {
+        // CIDv0 is exactly one full SHA-256 multihash with no multibase prefix.
+        if has_multibase_prefix || digest.len() != CID_V0_DIGEST_BYTES {
+            return None;
+        }
+        let hash = Multihash::wrap(u64::from(Code::Sha2_256), digest).ok()?;
+        return Cid::new_v0(hash).ok();
+    }
+
+    // The only admitted explicit version has a one-octet wire encoding.
+    let fields = bytes.strip_prefix(&[CID_V1_VERSION])?;
+    let (codec, fields) = take_varint(fields)?;
+    let (algorithm, fields) = take_varint(fields)?;
+    let (declared, digest) = take_varint(fields)?;
+    // The digest occupies the entire suffix. Check the received extent before
+    // constructing a multihash, which enforces the storage capacity.
+    if usize::try_from(declared).ok()? != digest.len() {
+        return None;
+    }
+    let hash = Multihash::wrap(algorithm, digest).ok()?;
+    Some(Cid::new_v1(codec, hash))
+}
+
+fn take_varint(mut input: &[u8]) -> Option<(u64, &[u8])> {
+    let mut value = 0;
+    for shift in (0..u64::BITS).step_by(VARINT_GROUP_BITS) {
+        let (&octet, remaining) = input.split_first()?;
+        let payload = u64::from(octet & VARINT_PAYLOAD);
+        // A shift by 63 is valid for u64 but silently discards all except the
+        // lowest payload bit. Reject both overflow and continuation there.
+        if shift == u64::BITS - 1 && octet > 1 {
+            return None;
+        }
+        value |= payload << shift;
+        if octet & VARINT_CONTINUATION == 0 {
+            return (shift == 0 || payload != 0).then_some((value, remaining));
+        }
+        input = remaining;
+    }
+    None
+}
+
+#[cfg(kani)]
+#[path = "cid_proof_tests.rs"]
+mod proofs;

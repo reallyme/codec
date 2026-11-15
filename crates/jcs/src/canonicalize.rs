@@ -11,7 +11,6 @@ use crate::error::JcsError;
 use crate::parse_json::{parse_json_text, SensitiveJsonValue, SensitiveNumber};
 
 const MAX_INTEROPERABLE_INTEGER: u64 = 9_007_199_254_740_991;
-const MIN_INTEROPERABLE_INTEGER: i64 = -9_007_199_254_740_991;
 const MAX_INTEROPERABLE_INTEGER_F64: f64 = 9_007_199_254_740_991.0;
 const MIN_INTEROPERABLE_INTEGER_F64: f64 = -9_007_199_254_740_991.0;
 
@@ -103,27 +102,20 @@ fn utf16_cmp(left: &str, right: &str) -> Ordering {
 
 fn write_canonical_number(value: &serde_json::Number, output: &mut String) -> Result<(), JcsError> {
     if let Some(unsigned) = value.as_u64() {
-        if unsigned > MAX_INTEROPERABLE_INTEGER {
-            return Err(JcsError::IntegerOutsideInteroperableRange);
-        }
+        validate_unsigned_integer(unsigned)?;
         let mut buffer = itoa::Buffer::new();
         output.push_str(buffer.format(unsigned));
         return Ok(());
     }
     if let Some(signed) = value.as_i64() {
-        if signed < MIN_INTEROPERABLE_INTEGER {
-            return Err(JcsError::IntegerOutsideInteroperableRange);
-        }
+        validate_signed_integer(signed)?;
         let mut buffer = itoa::Buffer::new();
         output.push_str(buffer.format(signed));
         return Ok(());
     }
 
     let float = value.as_f64().ok_or(JcsError::SerializationError)?;
-    if !float.is_finite() {
-        return Err(JcsError::NonFiniteNumber);
-    }
-    validate_interoperable_float_integer(float)?;
+    validate_float(float)?;
 
     // RFC 8785 §3.2.2.3 mandates the ECMAScript `Number.prototype.toString`
     // algorithm (exponent thresholds, exponent signs, shortest round-trip
@@ -138,24 +130,17 @@ fn write_canonical_number(value: &serde_json::Number, output: &mut String) -> Re
 fn write_sensitive_number(value: &SensitiveNumber, output: &mut String) -> Result<(), JcsError> {
     match value {
         SensitiveNumber::Unsigned(unsigned) => {
-            if *unsigned > MAX_INTEROPERABLE_INTEGER {
-                return Err(JcsError::IntegerOutsideInteroperableRange);
-            }
+            validate_unsigned_integer(*unsigned)?;
             let mut buffer = itoa::Buffer::new();
             output.push_str(buffer.format(*unsigned));
         }
         SensitiveNumber::Signed(signed) => {
-            if *signed < MIN_INTEROPERABLE_INTEGER {
-                return Err(JcsError::IntegerOutsideInteroperableRange);
-            }
+            validate_signed_integer(*signed)?;
             let mut buffer = itoa::Buffer::new();
             output.push_str(buffer.format(*signed));
         }
         SensitiveNumber::Float(float) => {
-            if !float.is_finite() {
-                return Err(JcsError::NonFiniteNumber);
-            }
-            validate_interoperable_float_integer(*float)?;
+            validate_float(*float)?;
             let mut buffer = ryu_js::Buffer::new();
             output.push_str(buffer.format_finite(*float));
         }
@@ -360,25 +345,18 @@ fn canonical_object_len(
 
 fn canonical_number_len(value: &serde_json::Number) -> Result<usize, JcsError> {
     if let Some(unsigned) = value.as_u64() {
-        if unsigned > MAX_INTEROPERABLE_INTEGER {
-            return Err(JcsError::IntegerOutsideInteroperableRange);
-        }
+        validate_unsigned_integer(unsigned)?;
         let mut buffer = itoa::Buffer::new();
         return Ok(buffer.format(unsigned).len());
     }
     if let Some(signed) = value.as_i64() {
-        if signed < MIN_INTEROPERABLE_INTEGER {
-            return Err(JcsError::IntegerOutsideInteroperableRange);
-        }
+        validate_signed_integer(signed)?;
         let mut buffer = itoa::Buffer::new();
         return Ok(buffer.format(signed).len());
     }
 
     let float = value.as_f64().ok_or(JcsError::SerializationError)?;
-    if !float.is_finite() {
-        return Err(JcsError::NonFiniteNumber);
-    }
-    validate_interoperable_float_integer(float)?;
+    validate_float(float)?;
 
     let mut buffer = ryu_js::Buffer::new();
     Ok(buffer.format_finite(float).len())
@@ -387,28 +365,40 @@ fn canonical_number_len(value: &serde_json::Number) -> Result<usize, JcsError> {
 fn canonical_sensitive_number_len(value: &SensitiveNumber) -> Result<usize, JcsError> {
     match value {
         SensitiveNumber::Unsigned(unsigned) => {
-            if *unsigned > MAX_INTEROPERABLE_INTEGER {
-                return Err(JcsError::IntegerOutsideInteroperableRange);
-            }
+            validate_unsigned_integer(*unsigned)?;
             let mut buffer = itoa::Buffer::new();
             Ok(buffer.format(*unsigned).len())
         }
         SensitiveNumber::Signed(signed) => {
-            if *signed < MIN_INTEROPERABLE_INTEGER {
-                return Err(JcsError::IntegerOutsideInteroperableRange);
-            }
+            validate_signed_integer(*signed)?;
             let mut buffer = itoa::Buffer::new();
             Ok(buffer.format(*signed).len())
         }
         SensitiveNumber::Float(float) => {
-            if !float.is_finite() {
-                return Err(JcsError::NonFiniteNumber);
-            }
-            validate_interoperable_float_integer(*float)?;
+            validate_float(*float)?;
             let mut buffer = ryu_js::Buffer::new();
             Ok(buffer.format_finite(*float).len())
         }
     }
+}
+
+fn validate_unsigned_integer(value: u64) -> Result<(), JcsError> {
+    if value > MAX_INTEROPERABLE_INTEGER {
+        return Err(JcsError::IntegerOutsideInteroperableRange);
+    }
+    Ok(())
+}
+
+fn validate_signed_integer(value: i64) -> Result<(), JcsError> {
+    // An unsigned magnitude also represents i64::MIN without overflow.
+    validate_unsigned_integer(value.unsigned_abs())
+}
+
+fn validate_float(value: f64) -> Result<(), JcsError> {
+    if !value.is_finite() {
+        return Err(JcsError::NonFiniteNumber);
+    }
+    validate_interoperable_float_integer(value)
 }
 
 fn validate_interoperable_float_integer(value: f64) -> Result<(), JcsError> {
@@ -469,3 +459,7 @@ fn write_escaped_string(value: &str, output: &mut String) {
     }
     output.push('"');
 }
+
+#[cfg(kani)]
+#[path = "canonicalize_proof_tests.rs"]
+mod proofs;

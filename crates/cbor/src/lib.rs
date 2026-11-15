@@ -17,6 +17,7 @@
 //! unsorted unique maps, complete integer arguments, and IEEE floats. Its framing,
 //! basic-validity, and preferred-encoding operations have distinct guarantees.
 
+mod check_map_key_order;
 mod cid;
 mod decode_dag_cbor;
 mod decode_deterministic_cbor;
@@ -25,6 +26,9 @@ mod encode_dag_cbor;
 mod encode_deterministic_cbor;
 mod error;
 mod value;
+
+#[cfg(kani)]
+mod nested_map_proof_tests;
 
 /// Borrowed general CBOR with independently selected framing and validity policies.
 pub mod general;

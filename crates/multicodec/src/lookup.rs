@@ -77,3 +77,7 @@ pub fn strip_codec_prefix(bytes: &[u8]) -> Result<&[u8], CodecPrefixError> {
     }
     Ok(remainder)
 }
+
+#[cfg(kani)]
+#[path = "lookup_proof_tests.rs"]
+mod proofs;

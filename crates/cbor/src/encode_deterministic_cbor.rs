@@ -107,7 +107,7 @@ fn preflight_value(
     depth: usize,
 ) -> Result<Preflight, DeterministicCborError> {
     match value {
-        DeterministicCborValue::Null | DeterministicCborValue::Bool(_) => Preflight::node(1),
+        DeterministicCborValue::Null | DeterministicCborValue::Bool(_) => preflight_simple(),
         DeterministicCborValue::Integer(integer) => preflight_integer(integer),
         DeterministicCborValue::Text(text) => {
             let byte_len = text.len();
@@ -132,26 +132,38 @@ fn preflight_value(
             }
             Ok(stats)
         }
-        DeterministicCborValue::Map(entries) => {
-            let child_depth = descend(depth)?;
-            ensure_container_entries(entries.len())?;
-            let mut stats = Preflight::node(header_len(len_as_u64(entries.len())?)?)?;
-            for entry in entries {
-                stats.add(preflight_key(entry.key())?)?;
-                stats.add(preflight_value(entry.value(), child_depth)?)?;
-            }
-
-            // Establish the aggregate tree budgets before copying any map key
-            // into a sortable owner. Bounding each key independently is not
-            // enough: a caller can otherwise supply many individually valid,
-            // large keys and force substantial temporary allocation before
-            // the aggregate text/output limit rejects the map.
-            let mut decorated = decorated_map_entries(entries)?;
-            decorated.sort_by(compare_decorated_keys);
-            reject_duplicate_decorated_keys(&decorated)?;
-            Ok(stats)
-        }
+        DeterministicCborValue::Map(entries) => preflight_map(entries, depth, preflight_value),
     }
+}
+
+fn preflight_simple() -> Result<Preflight, DeterministicCborError> {
+    Preflight::node(1)
+}
+
+fn preflight_map(
+    entries: &[DeterministicCborMapEntry],
+    depth: usize,
+    mut preflight_child: impl FnMut(
+        &DeterministicCborValue,
+        usize,
+    ) -> Result<Preflight, DeterministicCborError>,
+) -> Result<Preflight, DeterministicCborError> {
+    let child_depth = descend(depth)?;
+    ensure_container_entries(entries.len())?;
+    let mut stats = Preflight::node(header_len(len_as_u64(entries.len())?)?)?;
+    for entry in entries {
+        stats.add(preflight_key(entry.key())?)?;
+        stats.add(preflight_child(entry.value(), child_depth)?)?;
+    }
+
+    // Establish the aggregate tree budgets before copying any map key
+    // into a sortable owner. Bounding each key independently is not
+    // enough: a caller can otherwise supply many individually valid,
+    // large keys and force substantial temporary allocation before
+    // the aggregate text/output limit rejects the map.
+    let mut decorated = decorated_map_entries(entries)?;
+    sort_map_entries(&mut decorated)?;
+    Ok(stats)
 }
 
 fn preflight_key(key: &DeterministicCborMapKey) -> Result<Preflight, DeterministicCborError> {
@@ -187,20 +199,36 @@ struct DecoratedMapEntry<'a> {
 fn decorated_map_entries(
     entries: &[DeterministicCborMapEntry],
 ) -> Result<Vec<DecoratedMapEntry<'_>>, DeterministicCborError> {
+    collect_map_entries(entries, |key| encode_map_key(key, encode_key))
+}
+
+fn collect_map_entries<'a>(
+    entries: &'a [DeterministicCborMapEntry],
+    mut prepare_key: impl FnMut(
+        &DeterministicCborMapKey,
+    ) -> Result<Zeroizing<Vec<u8>>, DeterministicCborError>,
+) -> Result<Vec<DecoratedMapEntry<'a>>, DeterministicCborError> {
     let mut decorated = try_vec_with_capacity(entries.len())?;
     for entry in entries {
-        // Pre-size every sensitive temporary from the same semantic preflight
-        // used by the encoder. A growing Vec can leave superseded key bytes in
-        // freed allocator blocks that the final Zeroizing owner cannot wipe.
-        let key_stats = preflight_key(entry.key())?;
-        let mut encoded_key = Zeroizing::new(try_vec_with_capacity(key_stats.encoded_len)?);
-        encode_key(entry.key(), &mut encoded_key)?;
-        if encoded_key.len() != key_stats.encoded_len {
-            return Err(DeterministicCborError::PreflightLengthMismatch);
-        }
+        let encoded_key = prepare_key(entry.key())?;
         decorated.push(DecoratedMapEntry { encoded_key, entry });
     }
     Ok(decorated)
+}
+
+fn encode_map_key(
+    key: &DeterministicCborMapKey,
+    write_key: impl FnOnce(&DeterministicCborMapKey, &mut Vec<u8>) -> Result<(), DeterministicCborError>,
+) -> Result<Zeroizing<Vec<u8>>, DeterministicCborError> {
+    // Pre-size the key buffer so a reallocation cannot leave earlier key
+    // bytes in a freed block that the final owner cannot wipe.
+    let key_stats = preflight_key(key)?;
+    let mut encoded_key = Zeroizing::new(try_vec_with_capacity(key_stats.encoded_len)?);
+    write_key(key, &mut encoded_key)?;
+    if encoded_key.len() != key_stats.encoded_len {
+        return Err(DeterministicCborError::PreflightLengthMismatch);
+    }
+    Ok(encoded_key)
 }
 
 fn compare_decorated_keys(left: &DecoratedMapEntry<'_>, right: &DecoratedMapEntry<'_>) -> Ordering {
@@ -225,6 +253,11 @@ fn reject_duplicate_decorated_keys(
     Ok(())
 }
 
+fn sort_map_entries(decorated: &mut [DecoratedMapEntry<'_>]) -> Result<(), DeterministicCborError> {
+    decorated.sort_by(compare_decorated_keys);
+    reject_duplicate_decorated_keys(decorated)
+}
+
 fn encode_value(
     value: &DeterministicCborValue,
     output: &mut Vec<u8>,
@@ -232,8 +265,7 @@ fn encode_value(
 ) -> Result<(), DeterministicCborError> {
     match value {
         DeterministicCborValue::Null => push_byte(output, 0xf6),
-        DeterministicCborValue::Bool(false) => push_byte(output, 0xf4),
-        DeterministicCborValue::Bool(true) => push_byte(output, 0xf5),
+        DeterministicCborValue::Bool(bit) => encode_bool(*bit, output),
         DeterministicCborValue::Integer(integer) => encode_integer(integer, output),
         DeterministicCborValue::Text(text) => encode_text(text, output),
         DeterministicCborValue::Bytes(bytes) => encode_bytes(bytes, output),
@@ -246,21 +278,49 @@ fn encode_value(
             }
             Ok(())
         }
-        DeterministicCborValue::Map(entries) => {
-            let child_depth = descend(depth)?;
-            ensure_container_entries(entries.len())?;
-            let mut decorated = decorated_map_entries(entries)?;
-            decorated.sort_by(compare_decorated_keys);
-            reject_duplicate_decorated_keys(&decorated)?;
-
-            write_header(MT_MAP, len_as_u64(decorated.len())?, output)?;
-            for decorated_entry in decorated {
-                extend_bytes(output, &decorated_entry.encoded_key)?;
-                encode_value(decorated_entry.entry.value(), output, child_depth)?;
-            }
-            Ok(())
-        }
+        DeterministicCborValue::Map(entries) => encode_map(entries, output, depth, encode_value),
     }
+}
+
+fn encode_map(
+    entries: &[DeterministicCborMapEntry],
+    output: &mut Vec<u8>,
+    depth: usize,
+    encode_child: impl FnMut(
+        &DeterministicCborValue,
+        &mut Vec<u8>,
+        usize,
+    ) -> Result<(), DeterministicCborError>,
+) -> Result<(), DeterministicCborError> {
+    let child_depth = descend(depth)?;
+    ensure_container_entries(entries.len())?;
+    let mut decorated = decorated_map_entries(entries)?;
+    sort_map_entries(&mut decorated)?;
+    write_map_entries(decorated, output, child_depth, encode_child)
+}
+
+fn write_map_entries(
+    decorated: Vec<DecoratedMapEntry<'_>>,
+    output: &mut Vec<u8>,
+    child_depth: usize,
+    mut encode_child: impl FnMut(
+        &DeterministicCborValue,
+        &mut Vec<u8>,
+        usize,
+    ) -> Result<(), DeterministicCborError>,
+) -> Result<(), DeterministicCborError> {
+    write_header(MT_MAP, len_as_u64(decorated.len())?, output)?;
+    for decorated_entry in decorated {
+        // Write each key from the sorted entry, then visit that same entry's
+        // value. The child shares the output and its preflighted capacity.
+        extend_bytes(output, &decorated_entry.encoded_key)?;
+        encode_child(decorated_entry.entry.value(), output, child_depth)?;
+    }
+    Ok(())
+}
+
+fn encode_bool(bit: bool, output: &mut Vec<u8>) -> Result<(), DeterministicCborError> {
+    push_byte(output, if bit { 0xf5 } else { 0xf4 })
 }
 
 fn encode_key(
@@ -388,6 +448,10 @@ impl Drop for DecoratedMapEntry<'_> {
         self.encoded_key.zeroize();
     }
 }
+
+#[cfg(kani)]
+#[path = "encode_deterministic_cbor_proof_tests.rs"]
+mod proofs;
 
 #[cfg(test)]
 #[path = "encode_deterministic_cbor_tests.rs"]

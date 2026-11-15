@@ -6,8 +6,8 @@
 #![allow(clippy::unwrap_used, reason = "fixed conformance fixtures")]
 
 use codec_cbor::general::{
-    encode, frame_exact, validate_exact, validate_prefix, CborError, ErrorReason, Float,
-    LengthPolicy, Limits, MapKeyEquality, MapOrdering, NanPolicy, Profile, ValueRef,
+    encode, frame_exact, validate_exact, validate_prefix, CborError, ErrorReason, Float, Item,
+    LengthPolicy, Limits, MapEntry, MapKeyEquality, MapOrdering, NanPolicy, Profile, ValueRef,
 };
 
 fn cose() -> Profile {
@@ -20,6 +20,186 @@ fn cose() -> Profile {
 
 fn assert_reason<T>(result: Result<T, CborError>, reason: ErrorReason) {
     assert_eq!(result.err().map(CborError::reason), Some(reason));
+}
+
+#[test]
+fn binary16_signed_zero_keys_follow_selected_equality() {
+    let preferred = Profile::preferred();
+    let encoded_scalars = cose();
+    for first in [0x0000_u16, 0x8000] {
+        for second in [0x0000_u16, 0x8000] {
+            assert_binary16_map_policy(first, second, preferred, true);
+            assert_binary16_map_policy(first, second, encoded_scalars, first == second);
+        }
+    }
+}
+
+#[test]
+fn binary16_nan_keys_follow_selected_equality() {
+    const NAN_BITS: [u16; 3] = [0x7e01, 0xfe01, 0x7e02];
+    // The first two encodings share a significand despite opposite signs.
+    const BASIC_DUPLICATES: [[bool; 3]; 3] = [
+        [true, true, false],
+        [true, true, false],
+        [false, false, true],
+    ];
+    let preferred = Profile::preferred();
+    let encoded_scalars = cose();
+    for (first_index, first) in NAN_BITS.into_iter().enumerate() {
+        for (second_index, second) in NAN_BITS.into_iter().enumerate() {
+            assert_binary16_map_policy(
+                first,
+                second,
+                preferred,
+                BASIC_DUPLICATES[first_index][second_index],
+            );
+            assert_binary16_map_policy(first, second, encoded_scalars, first_index == second_index);
+        }
+    }
+}
+
+#[test]
+fn mixed_width_nan_keys_follow_received_and_preferred_admission() {
+    const HALF: [u8; 3] = [0xf9, 0x7e, 0x01];
+    const EXACT_WIDENING: [u8; 5] = [0xfa, 0x7f, 0xc0, 0x20, 0x00];
+    const EXTRA_FRACTION_BIT: [u8; 5] = [0xfa, 0x7f, 0xc0, 0x20, 0x01];
+    const WIRE_LENGTH: usize = 11;
+
+    let limits = Limits::default();
+    let received = Profile::received();
+    let preferred = Profile::preferred();
+    let encoded_scalars = cose();
+    for (wide, equivalent) in [(EXACT_WIDENING, true), (EXTRA_FRACTION_BIT, false)] {
+        for [first, second] in [
+            [HALF.as_slice(), wide.as_slice()],
+            [wide.as_slice(), HALF.as_slice()],
+        ] {
+            let mut wire = Vec::with_capacity(WIRE_LENGTH);
+            wire.push(0xa2);
+            wire.extend_from_slice(first);
+            wire.push(1);
+            wire.extend_from_slice(second);
+            wire.push(2);
+            assert_eq!(wire.len(), WIRE_LENGTH);
+
+            let received_item = validate_exact(&wire, received, limits);
+            let preferred_item = validate_exact(&wire, preferred, limits);
+            if equivalent {
+                assert_reason(received_item, ErrorReason::DuplicateMapKey);
+                assert_reason(preferred_item, ErrorReason::NonPreferredFloat);
+            } else {
+                assert_float_map_round_trip(
+                    &wire,
+                    [first, second],
+                    &received_item.unwrap(),
+                    received,
+                );
+                assert_float_map_round_trip(
+                    &wire,
+                    [first, second],
+                    &preferred_item.unwrap(),
+                    preferred,
+                );
+            }
+            assert_reason(
+                validate_exact(&wire, encoded_scalars, limits),
+                ErrorReason::NonPreferredFloat,
+            );
+        }
+    }
+}
+
+fn assert_binary16_map_policy(first: u16, second: u16, profile: Profile, duplicate: bool) {
+    let limits = Limits::default();
+    let wire = binary16_map(first, second);
+    let first_key = Float::binary16(first);
+    let second_key = Float::binary16(second);
+    let entries = [
+        MapEntry::new(ValueRef::Float(&first_key), ValueRef::Unsigned(1)),
+        MapEntry::new(ValueRef::Float(&second_key), ValueRef::Unsigned(2)),
+    ];
+    let validated = validate_exact(&wire, profile, limits);
+    let encoded = encode(&ValueRef::Map(&entries), profile, limits);
+    if duplicate {
+        assert_reason(validated, ErrorReason::DuplicateMapKey);
+        assert_reason(encoded, ErrorReason::DuplicateMapKey);
+        return;
+    }
+
+    assert_float_map_round_trip(
+        &wire,
+        [&wire[1..4], &wire[5..8]],
+        &validated.unwrap(),
+        profile,
+    );
+    assert_eq!(encoded.unwrap().as_bytes(), wire);
+}
+
+fn assert_float_map_round_trip(wire: &[u8], keys: [&[u8]; 2], item: &Item<'_>, profile: Profile) {
+    assert_eq!(item.frame().received_bytes(), wire);
+    assert!(core::ptr::eq(item.frame().received_bytes(), wire));
+    let children = item
+        .children()
+        .unwrap()
+        .collect::<Result<Vec<_>, _>>()
+        .unwrap();
+    assert_eq!(children.len(), 4);
+    assert_eq!(children[0].frame().received_bytes(), keys[0]);
+    assert_eq!(children[2].frame().received_bytes(), keys[1]);
+
+    // Rebuild the entries from the validated children to observe any change
+    // to a NaN's decoded bits or its association with the corresponding value.
+    let first_key = children[0].frame().float().unwrap();
+    let second_key = children[2].frame().float().unwrap();
+    let first_value = children[1].frame().integer().unwrap().argument();
+    let second_value = children[3].frame().integer().unwrap().argument();
+    assert_eq!((first_value, second_value), (1, 2));
+    let decoded_entries = [
+        MapEntry::new(ValueRef::Float(&first_key), ValueRef::Unsigned(first_value)),
+        MapEntry::new(
+            ValueRef::Float(&second_key),
+            ValueRef::Unsigned(second_value),
+        ),
+    ];
+    let reencoded = encode(&ValueRef::Map(&decoded_entries), profile, Limits::default()).unwrap();
+    assert_eq!(reencoded.as_bytes(), wire);
+}
+
+#[test]
+fn encoded_scalar_duplicate_precedes_a_truncated_second_value() {
+    for first in [0x0000_u16, 0x8000] {
+        for second in [0x0000_u16, 0x8000] {
+            let mut wire = binary16_map(first, second);
+            // An extended simple-value head requires an argument byte.
+            wire[8] = 0xf8;
+            assert_reason(
+                validate_exact(&wire, Profile::preferred(), Limits::default()),
+                ErrorReason::Truncated,
+            );
+            let expected = if first == second {
+                ErrorReason::DuplicateMapKey
+            } else {
+                ErrorReason::Truncated
+            };
+            assert_reason(validate_exact(&wire, cose(), Limits::default()), expected);
+        }
+    }
+}
+
+fn binary16_map(first: u16, second: u16) -> [u8; 9] {
+    let [first_high, first_low] = first.to_be_bytes();
+    let [second_high, second_low] = second.to_be_bytes();
+    [
+        0xa2,
+        0xf9,
+        first_high,
+        first_low,
+        1,
+        0xf9,
+        second_high,
+        second_low,
+        2,
+    ]
 }
 
 #[test]

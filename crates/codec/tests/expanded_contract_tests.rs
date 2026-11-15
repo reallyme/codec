@@ -11,6 +11,7 @@
 )]
 
 use codec_proto::generated::proto::reallyme::codec::v1 as proto;
+use codec_proto::generated::wire_policy::OPERATION_FIELD_NUMBERS;
 use codec_proto::{decode_protobuf, encode_protobuf};
 use proto::codec_api_operation_request::Operation;
 use proto::codec_api_operation_result::Result as Output;
@@ -146,6 +147,58 @@ fn scalar_invalid_input_has_a_caller_error_and_the_correct_family() {
         );
         assert!(error.error.is_some());
     }
+}
+
+#[test]
+fn every_registered_default_operation_preserves_its_selector_across_transports() {
+    use proto::codec_api_error::Error;
+    use proto::codec_api_operation_response::Outcome;
+
+    let mut accepted = 0_usize;
+    let mut rejected = 0_usize;
+    for &field in OPERATION_FIELD_NUMBERS {
+        let mut tag = Vec::new();
+        buffa::encoding::encode_varint(field.checked_mul(8).unwrap() | 2, &mut tag);
+        let mut wire = tag.clone();
+        wire.push(0); // The empty nested message selects its generated default operation.
+
+        let request = decode_protobuf::<proto::CodecApiOperationRequest>(&wire).unwrap();
+        assert!(
+            request.operation.is_some(),
+            "missing generated selector {field}"
+        );
+        let binary = process_operation_response(&wire);
+        let json = serde_json::to_vec(&request).unwrap();
+        assert_eq!(
+            binary.as_slice(),
+            process_operation_response_json(&json).as_slice()
+        );
+        let response = decode_protobuf::<proto::CodecApiOperationResponse>(&binary).unwrap();
+        match response.outcome.as_ref().unwrap() {
+            Outcome::Result(result) => {
+                let encoded = encode_protobuf(result.as_ref()).unwrap();
+                assert!(
+                    encoded.starts_with(&tag),
+                    "wrong result selector for field {field}"
+                );
+                accepted = accepted.checked_add(1).unwrap();
+            }
+            Outcome::Error(error) => {
+                assert_eq!(
+                    error.origin.as_known(),
+                    Some(proto::CodecErrorOrigin::CODEC_ERROR_ORIGIN_CALLER),
+                    "wrong origin for field {field}"
+                );
+                assert!(!matches!(
+                    error.error.as_ref().unwrap(),
+                    Error::Boundary(boundary)
+                        if boundary.reason.as_known() == Some(proto::CodecErrorReason::CODEC_ERROR_REASON_BOUNDARY_MISSING_OPERATION)
+                ));
+                rejected = rejected.checked_add(1).unwrap();
+            }
+        }
+    }
+    assert!(accepted > 0 && rejected > 0);
 }
 
 #[test]

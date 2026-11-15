@@ -139,39 +139,53 @@ pub(super) fn equivalent(
         }
         MajorType::Map => {
             let depth = budget.enter(depth)?;
-            let mut left_count = 0_usize;
-            let mut right_count = 0_usize;
-            let mut a = 0;
-            while a < left.body.len() {
-                let key = next(left.body, &mut a, budget)?;
-                let value = next(left.body, &mut a, budget)?;
-                left_count = add(left_count, 1)?;
-                let mut b = 0;
-                let mut found = false;
-                while b < right.body.len() {
-                    let other_key = next(right.body, &mut b, budget)?;
-                    let other_value = next(right.body, &mut b, budget)?;
-                    if equivalent(&key, &other_key, budget, depth)?
-                        && equivalent(&value, &other_value, budget, depth)?
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-                if !found {
-                    return Ok(false);
-                }
-            }
-            let mut b = 0;
-            while b < right.body.len() {
-                next(right.body, &mut b, budget)?;
-                next(right.body, &mut b, budget)?;
-                right_count = add(right_count, 1)?;
-            }
-            Ok(left_count == right_count)
+            maps_equivalent_by(
+                left.body,
+                right.body,
+                budget,
+                next,
+                |first, second, budget| equivalent(first, second, budget, depth),
+            )
         }
         _ => Err(error(ErrorReason::WrongType)),
     }
+}
+
+pub(super) fn maps_equivalent_by<'a, T>(
+    left: &'a [u8],
+    right: &'a [u8],
+    budget: &mut Budget,
+    mut read: impl FnMut(&'a [u8], &mut usize, &mut Budget) -> Result<T, CborError>,
+    mut equal: impl FnMut(&T, &T, &mut Budget) -> Result<bool, CborError>,
+) -> Result<bool, CborError> {
+    let mut left_count = 0_usize;
+    let mut right_count = 0_usize;
+    let mut a = 0;
+    while a < left.len() {
+        let key = read(left, &mut a, budget)?;
+        let value = read(left, &mut a, budget)?;
+        left_count = add(left_count, 1)?;
+        let mut b = 0;
+        let mut found = false;
+        while b < right.len() {
+            let other_key = read(right, &mut b, budget)?;
+            let other_value = read(right, &mut b, budget)?;
+            if equal(&key, &other_key, budget)? && equal(&value, &other_value, budget)? {
+                found = true;
+                break;
+            }
+        }
+        if !found {
+            return Ok(false);
+        }
+    }
+    let mut b = 0;
+    while b < right.len() {
+        read(right, &mut b, budget)?;
+        read(right, &mut b, budget)?;
+        right_count = add(right_count, 1)?;
+    }
+    Ok(left_count == right_count)
 }
 
 pub(super) fn require_type(actual: MajorType, wanted: MajorType) -> Result<(), CborError> {

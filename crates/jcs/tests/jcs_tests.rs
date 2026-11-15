@@ -121,6 +121,34 @@ fn canonicalizes_numbers() -> Result<(), JcsError> {
 }
 
 #[test]
+fn both_jcs_entry_points_preserve_exact_integer_boundaries() -> Result<(), JcsError> {
+    for (text, value) in [
+        ("0", json!(0_u64)),
+        ("9007199254740991", json!(9_007_199_254_740_991_u64)),
+        ("-9007199254740991", json!(-9_007_199_254_740_991_i64)),
+    ] {
+        assert_eq!(canonicalize_json_text(text)?, text);
+        assert_eq!(canonicalize_trusted_json_value(&value)?, text);
+    }
+    for (text, value) in [
+        ("9007199254740992", json!(9_007_199_254_740_992_u64)),
+        ("-9007199254740992", json!(-9_007_199_254_740_992_i64)),
+        ("18446744073709551615", json!(u64::MAX)),
+        ("-9223372036854775808", json!(i64::MIN)),
+    ] {
+        assert_eq!(
+            canonicalize_json_text(text),
+            Err(JcsError::IntegerOutsideInteroperableRange)
+        );
+        assert_eq!(
+            canonicalize_trusted_json_value(&value),
+            Err(JcsError::IntegerOutsideInteroperableRange)
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn canonicalizes_strings() -> Result<(), JcsError> {
     assert_eq!(
         canonicalize_trusted_json_value(&json!("hello"))?,
@@ -199,6 +227,30 @@ fn integer_valued_binary64_numbers_outside_interoperable_range_are_rejected() {
         canonicalize_trusted_json_value(&serde_json::json!(1e19)),
         Err(JcsError::IntegerOutsideInteroperableRange)
     );
+}
+
+#[test]
+fn both_jcs_entry_points_admit_binary64_integer_endpoints_and_subnormals() {
+    for (text, value, canonical) in [
+        (
+            "9007199254740991.0",
+            9_007_199_254_740_991.0,
+            "9007199254740991",
+        ),
+        (
+            "-9007199254740991.0",
+            -9_007_199_254_740_991.0,
+            "-9007199254740991",
+        ),
+        ("5e-324", f64::from_bits(1), "5e-324"),
+        ("-0.0", -0.0, "0"),
+    ] {
+        assert_eq!(canonicalize_json_text(text).as_deref(), Ok(canonical));
+        assert_eq!(
+            canonicalize_trusted_json_value(&serde_json::json!(value)).as_deref(),
+            Ok(canonical)
+        );
+    }
 }
 
 #[test]

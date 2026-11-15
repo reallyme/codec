@@ -129,6 +129,59 @@ fn detect_cid_mismatch() {
 }
 
 #[test]
+fn verification_binds_the_version_codec_algorithm_length_and_full_digest() {
+    const DAG_PB: u64 = 0x70;
+    const DAG_CBOR: u64 = 0x71;
+    const SHA2_256: u64 = 0x12;
+    const SHA2_512: u64 = 0x13;
+    const NULL_BLOCK_CID: &str = "bafyreifqwkmiw256ojf2zws6tzjeonw6bpd5vza4i22ccpcq4hjv2ts7cm";
+
+    // The null block is a complete canonical DAG-CBOR value. Keep its digest
+    // fixed while varying the CID metadata to isolate the rejection reason.
+    let block = [0xf6];
+    let digest = sha2_256_content_hash(&block);
+    let hash = multihash::Multihash::wrap(SHA2_256, &digest).unwrap();
+    // Independent vector from the four CID header bytes and SHA-256 of f6.
+    assert_eq!(compute_cid_dag_cbor(&block), NULL_BLOCK_CID);
+    let verified = verify_dag_cbor_cid(NULL_BLOCK_CID, &block).unwrap();
+    assert_eq!(verified.status(), CidVerificationStatus::Match);
+    assert_eq!(verified.expected_cid(), NULL_BLOCK_CID);
+    assert_eq!(verified.actual_cid(), NULL_BLOCK_CID);
+
+    let mut different_digest = digest;
+    different_digest[31] ^= 1;
+    let mut longer_digest = [0; 33];
+    longer_digest[..32].copy_from_slice(&digest);
+    let mismatches = [
+        Cid::new_v0(hash).unwrap(),
+        Cid::new_v1(DAG_PB, hash),
+        Cid::new_v1(
+            DAG_CBOR,
+            multihash::Multihash::wrap(SHA2_512, &digest).unwrap(),
+        ),
+        Cid::new_v1(
+            DAG_CBOR,
+            multihash::Multihash::wrap(SHA2_256, &digest[..31]).unwrap(),
+        ),
+        Cid::new_v1(
+            DAG_CBOR,
+            multihash::Multihash::wrap(SHA2_256, &longer_digest).unwrap(),
+        ),
+        Cid::new_v1(
+            DAG_CBOR,
+            multihash::Multihash::wrap(SHA2_256, &different_digest).unwrap(),
+        ),
+    ];
+    for cid in mismatches {
+        let supplied = cid.to_string();
+        let verified = verify_dag_cbor_cid(&supplied, &block).unwrap();
+        assert_eq!(verified.status(), CidVerificationStatus::Mismatch);
+        assert_eq!(verified.expected_cid(), NULL_BLOCK_CID);
+        assert_eq!(verified.actual_cid(), supplied);
+    }
+}
+
+#[test]
 fn cid_syntax_validation() {
     let v = enc(&CborValue::Int(123));
     let cid = compute_cid_dag_cbor(&v);
@@ -265,4 +318,66 @@ fn cid_parsers_reject_nonminimal_varints_and_oversized_text() {
         try_parse_cid(&base2).map(|cid| cid.to_string()),
         Some(largest.to_string())
     );
+}
+
+#[test]
+fn cid_text_admission_checks_varint_overflow_and_digest_extent() {
+    const MAX_DIGEST_BYTES: usize = 64;
+    const MAX_U64_VARINT: [u8; 10] = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 1];
+
+    // A canonical CIDv1 can use the full uint64 range for codec and hash
+    // codes. Overflow in the tenth octet must not alias the same value.
+    let mut wire = vec![1];
+    wire.extend_from_slice(&MAX_U64_VARINT);
+    wire.extend_from_slice(&MAX_U64_VARINT);
+    let length_offset = wire.len();
+    wire.push(u8::try_from(MAX_DIGEST_BYTES).unwrap());
+    wire.extend_from_slice(&[0xa5; MAX_DIGEST_BYTES]);
+    let text = cid::multibase::encode(Base::Base32Lower, &wire);
+    assert_eq!(try_parse_cid(&text).unwrap().to_bytes(), wire);
+
+    let mut codec_overflow = wire.clone();
+    codec_overflow[10] = 3;
+    let mut hash_overflow = wire.clone();
+    hash_overflow[20] = 3;
+    let mut truncated = wire.clone();
+    truncated.pop().unwrap();
+    let mut trailing = wire.clone();
+    trailing.push(0);
+    let mut oversized = trailing.clone();
+    oversized[length_offset] = u8::try_from(MAX_DIGEST_BYTES + 1).unwrap();
+    for invalid in [
+        &codec_overflow,
+        &hash_overflow,
+        &truncated,
+        &trailing,
+        &oversized,
+    ] {
+        let text = cid::multibase::encode(Base::Base32Lower, invalid);
+        assert!(try_parse_cid(&text).is_none());
+        assert_eq!(
+            verify_dag_cbor_cid(&text, &[0xf6]).unwrap().status(),
+            CidVerificationStatus::InvalidCid
+        );
+    }
+}
+
+#[test]
+fn cid_wire_admission_preserves_upstream_canonical_encodings() {
+    let code_width_edges = [0, 0x7f, 0x80, 0x3fff, 0x4000, 1 << 35, 1 << 63, u64::MAX];
+    let digest = [0xa5; 64];
+    for codec in code_width_edges {
+        for algorithm in code_width_edges {
+            for length in [0, 1, 31, 32, 63, digest.len()] {
+                let cid = Cid::new_v1(
+                    codec,
+                    multihash::Multihash::wrap(algorithm, &digest[..length]).unwrap(),
+                );
+                assert_eq!(
+                    try_parse_cid(&cid.to_string()).unwrap().to_bytes(),
+                    cid.to_bytes()
+                );
+            }
+        }
+    }
 }
