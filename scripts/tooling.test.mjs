@@ -44,6 +44,15 @@ const environment = (root) => ({
   TMPDIR: root,
 });
 
+function localPublisherEnvironment(root) {
+  const env = environment(root);
+  // These retry and checksum fixtures exercise local publishing with fake Cargo.
+  delete env.GITHUB_ACTIONS;
+  delete env.CRATE_ARCHIVE_DIR;
+  delete env.CARGO_REGISTRY_TOKEN;
+  return env;
+}
+
 for (const scenario of ["success", "package-unavailable", "mount-unavailable", "activity-failure"]) {
   test(`Android runtime gate handles ${scenario}`, { skip: !posixHost }, (t) => {
     const root = fixture(t);
@@ -205,7 +214,7 @@ for (const succeeds of [false, true]) {
       }
     `);
     const result = spawnSync(process.execPath, ["--import", pathToFileURL(preload).href, script, "publish"], {
-      cwd: dirname(root), env: environment(root), encoding: "utf8", timeout: toolFixtureTimeoutMs,
+      cwd: dirname(root), env: localPublisherEnvironment(root), encoding: "utf8", timeout: toolFixtureTimeoutMs,
     });
     assert.equal(result.error, undefined);
     assert.equal(result.status, succeeds ? 0 : 1, result.stderr);
@@ -251,7 +260,7 @@ test("crate packaging waits for the preceding workspace release to reach the ind
     }
   `);
   const result = spawnSync(process.execPath, ["--import", pathToFileURL(preload).href, script, "publish"], {
-    cwd: root, env: environment(root), encoding: "utf8", timeout: toolFixtureTimeoutMs,
+    cwd: root, env: localPublisherEnvironment(root), encoding: "utf8", timeout: toolFixtureTimeoutMs,
   });
   assert.equal(result.error, undefined);
   assert.equal(result.status, 0, result.stderr);
@@ -282,7 +291,7 @@ for (const matches of [false, true]) {
       }
     `);
     const result = spawnSync(process.execPath, ["--import", pathToFileURL(preload).href, script, "publish"], {
-      cwd: root, env: environment(root), encoding: "utf8", timeout: toolFixtureTimeoutMs,
+      cwd: root, env: localPublisherEnvironment(root), encoding: "utf8", timeout: toolFixtureTimeoutMs,
     });
     assert.equal(result.error, undefined);
     assert.equal(result.status, matches ? 0 : 1, result.stderr);
@@ -334,7 +343,7 @@ for (const scenario of [
       }
     `);
     const result = spawnSync(process.execPath, ["--import", pathToFileURL(preload).href, script, "publish"], {
-      cwd: root, env: environment(root), encoding: "utf8", timeout: toolFixtureTimeoutMs,
+      cwd: root, env: localPublisherEnvironment(root), encoding: "utf8", timeout: toolFixtureTimeoutMs,
     });
     assert.equal(result.error, undefined);
     assert.equal(result.status, scenario.status, result.stderr);

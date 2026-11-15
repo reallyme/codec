@@ -115,7 +115,11 @@ function fixture(t) {
     };
   `);
   const env = { ...process.env, RELEASE_READINESS_PUBLIC_REPO: "false" };
+  // The fixture is a private scratch checkout, even on a public CI runner.
   delete env.CI;
+  delete env.GITHUB_ACTIONS;
+  delete env.GITHUB_EVENT_PATH;
+  delete env.GITHUB_REPOSITORY;
   delete env.REALLYME_RELEASE_READINESS_ROOT;
   delete env.RELEASE_READINESS_CORE_URL;
   delete env.RELEASE_READINESS_ENFORCED_VERSION;
