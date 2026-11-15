@@ -38,7 +38,7 @@ strict DER reader or the borrowed `tlv` framing surface separately and select
 only the families they use:
 
 ```toml
-reallyme-codec = { version = "0.4.2", default-features = false, features = [
+reallyme-codec = { version = "0.4.3", default-features = false, features = [
   "base64url",
   "multikey",
 ] }
@@ -61,7 +61,7 @@ reader.
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.4.2"
+    from: "0.4.3"
 )
 ```
 
@@ -73,7 +73,7 @@ reader.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.4.2")
+    implementation("me.really:codec:0.4.3")
 }
 ```
 
@@ -81,7 +81,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.4.2")
+    implementation("me.really:codec-android:0.4.3")
 }
 ```
 

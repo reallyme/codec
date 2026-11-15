@@ -487,7 +487,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "der",
  "reallyme-buffa",
@@ -507,7 +507,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-base64"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "base64",
  "thiserror",
@@ -516,7 +516,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-base64url"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "base64",
  "thiserror",
@@ -525,7 +525,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-cbor"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "cid",
  "half",
@@ -540,7 +540,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-hex"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "thiserror",
  "zeroize",
@@ -548,7 +548,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-jcs"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "itoa",
  "ryu-js",
@@ -560,7 +560,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-multibase"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "base64",
  "bs58",
@@ -571,14 +571,14 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-multicodec"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "thiserror",
 ]
 
 [[package]]
 name = "reallyme-codec-multikey"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "reallyme-codec-multibase",
  "reallyme-codec-multicodec",
@@ -588,7 +588,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-pem"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "base64",
  "thiserror",
@@ -597,7 +597,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-proto"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "base64",
  "reallyme-buffa",

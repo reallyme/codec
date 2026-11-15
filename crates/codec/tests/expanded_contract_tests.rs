@@ -119,7 +119,7 @@ fn scalar_contract_matches_independent_literals() {
             result.package_minor,
             result.package_patch
         ),
-        (0, 4, 2)
+        (0, 4, 3)
     );
 }
 

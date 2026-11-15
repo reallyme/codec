@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.4.2 (unreleased)
+## 0.4.3 (unreleased)
+
+- Reject malformed CID wire fields and inconsistent declared digest extents.
+- Reject incomplete JNI results instead of returning partially filled buffers.
+
+## 0.4.2
 
 - Package the Swift XCFramework's module map and C header under
   `Headers/ReallyMeCodecFFI/` in every slice so Swift Build can load Codec

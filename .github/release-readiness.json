@@ -20,6 +20,12 @@
     },
     "android": {
       "workflow": "android-runtime-gate.yml"
+    },
+    "formal": {
+      "workflow": "formal-verification.yml",
+      "paths": [
+        "crates/"
+      ]
     }
   },
   "release": {
