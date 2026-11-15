@@ -12,20 +12,20 @@ import { resolve, sep } from "node:path";
 // Verify the immutable official package before executing its runner. Local
 // checker/module digests remain review tripwires; the package runner supplies
 // the core and enforces proof that every applicable source policy was invoked.
-const RELEASE_READINESS_COMMIT = "7dffa0366a43fe9cc7b98a8040d37dd701d7955e";
+const RELEASE_READINESS_COMMIT = "45b52cf353b0b85694a96c6addc985221274ff37";
 const RELEASE_READINESS_CORE_SHA256 =
-  "5ca52b57e61be8d2d944109f15b11f0d9ff7f77642664db6f9169ece0c6df349";
+  "bd2732ab4af4193ab8f8a2bdde637d7445b1ec93d3b8d5b84b5de7146bdf543a";
 const LOCAL_CHECKER_SHA256 =
-  "a938bc4df9b7d50b5bca651ad3c3a1c0f477685d5371bc7e42479f5e1e0817ff";
+  "d08f799d816f5dd77596dc963d59ec1fe1a34e659f5c06639b111d0a975d52c9";
 const RELEASE_READINESS_CORE_URL =
   `https://raw.githubusercontent.com/reallyme/release-readiness/${RELEASE_READINESS_COMMIT}/core.mjs`;
 const RELEASE_READINESS_RUNNER_SHA256 =
-  "e9f10b51669ac68d338eaa727ecb43bccedc2d02af57c59519dc6789fee85875";
+  "8b37649ae7da7d60a00ac442c3c5e49e7d6bc2491831ba07039c64c054f9904c";
 const RELEASE_READINESS_PACKAGE_SHA256 =
-  "65b755c7c6cbdfad94bcdc9e6260785ef55c0130f54c6b73d2b3c7582a3c91b4";
+  "2ccbb0aedc1e7aac2476efafdfb183f2e12ec42280913c5f1d224894d15676b1";
 const RELEASE_READINESS_SUPPORT_FILES = [
   ["scripts/public-ci.mjs", "d6b13476c11589ca22cbb114deb3d2a3fb75f7ef86b4fdff2d8111be4ba03be7"],
-  ["scripts/public-release.mjs", "8fcf217716380185c7bbb4653da1e58acc27a5e1823ed539ca5ccda9f7f9a8e6"],
+  ["scripts/public-release.mjs", "d9eab592cba289d77ab78085606b5ec87b6e7c02c8b637f1f5051b4db333ffdd"],
   ["scripts/public-repo-policy.mjs", "fdad8fe9c0e85043b764a0321558af7a85324bceb7724c693a2824d955b0a204"],
   ["scripts/android-runtime.mjs", "5e80d5dee4a1ac225dfe155dd6d5477e1c52bc18be103f7b6fef181a0d4cb3c9"],
   ["scripts/android-publication.mjs", "539660a91b7b9150a9d85cafff35c5bbefd97a57541d2343f55f1d1243e3be7b"],
@@ -93,6 +93,7 @@ const readBoundedRegularFile = (path, maximumBytes, label) => {
 
 const supportedArguments = new Set([
   "--check-pins",
+  "--print-commit",
   "--refresh-checker-pin",
   "--verify-upstream",
   "--generated-freshness",
@@ -104,6 +105,13 @@ for (const argument of process.argv.slice(2)) {
     fail("unsupported or duplicate argument");
   }
   arguments_.add(argument);
+}
+if (arguments_.has("--print-commit")) {
+  if (arguments_.size !== 1) {
+    fail("printing the package commit cannot be combined with checks");
+  }
+  console.log(RELEASE_READINESS_COMMIT);
+  process.exit(0);
 }
 const refreshCheckerPin = arguments_.has("--refresh-checker-pin");
 if (refreshCheckerPin && arguments_.size !== 1) {

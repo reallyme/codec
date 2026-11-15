@@ -323,7 +323,7 @@ const assertTypescriptProtoFacadeCompleteness = ({ facadePath, generatedPath }) 
   });
 };
 
-assertReallyMeReleasePackagePolicy({ version: "0.9.0" });
+assertReallyMeReleasePackagePolicy({ version: "0.9.2" });
 const rustChecks = ".github/workflows/code-checks.yml";
 assertRustReleasePolicy({
   release: { workflow: rustChecks, job: "rust", step: "Test on the release toolchain" },
@@ -878,11 +878,11 @@ assertContains(
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  'const RELEASE_READINESS_COMMIT = "7dffa0366a43fe9cc7b98a8040d37dd701d7955e"',
+  'const RELEASE_READINESS_COMMIT = "45b52cf353b0b85694a96c6addc985221274ff37"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  '"5ca52b57e61be8d2d944109f15b11f0d9ff7f77642664db6f9169ece0c6df349"',
+  '"bd2732ab4af4193ab8f8a2bdde637d7445b1ec93d3b8d5b84b5de7146bdf543a"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
@@ -1937,7 +1937,7 @@ for (const path of packagePreflightWorkflows) {
 }
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "Write native checksum manifest");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "Test host native loader");
-assertContains("scripts/maven_central_bundle_local.sh", "verify_linux_glibc_floor.sh");
+assertContains("scripts/stage_maven_central_bundle.mjs", "verify_linux_glibc_floor.sh");
 assertWorkflowPermissionsPolicy({
   path: ".github/workflows/swift-package-release.yml",
   workflow: { contents: "read" },
@@ -2062,9 +2062,9 @@ assertContains("crates/ffi/src/codec.rs", "rm_codec_package_version_minor");
 assertContains("crates/ffi/src/codec.rs", "rm_codec_package_version_patch");
 assertContains("packages/swift/Sources/ReallyMeCodec/CallCodecWithRustCAbi.swift", "requireCompatiblePackageVersion");
 assertContains("scripts/publish_crates_in_order.mjs", "published-crate-checksum-mismatch");
-assertContains("scripts/maven_central_bundle_local.sh", "release checkout must have a clean working tree");
-assertContains("scripts/maven_central_bundle_local.sh", "validate_successful_workflow_run");
-assertContains("scripts/maven_central_bundle_local.sh", "Preflight maven ${VERSION} ${RELEASE_SHA}");
+assertContains("scripts/maven-central-bundle.local.sh", "git diff --quiet --no-ext-diff HEAD --");
+assertContains("scripts/stage_maven_central_bundle.mjs", "assertPublicPreflightRun");
+assertContains("scripts/stage_maven_central_bundle.mjs", "downloaded Maven artifact digest does not match preflight");
 assertContains(".github/workflows/crates-release.yml", "node scripts/publish_crates_in_order.mjs publish");
 for (const workflowPath of [".github/workflows/fuzz.yml", ...packagePreflightWorkflows, ...packageReleaseWorkflows]) {
   assertNotContains(workflowPath, "actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4");
@@ -2919,7 +2919,7 @@ assertContains("scripts/build_android_native_resources.sh", "i686-linux-android"
 assertContains("scripts/build_kotlin_native_resource.sh", "-C panic=unwind");
 assertContains("scripts/build_kotlin_native_resource.sh", "cargo build --locked");
 assertContains("packages/kotlin/build.gradle.kts", "-C panic=unwind");
-assertContains("scripts/maven_central_bundle_local.sh", "validate_bundle_files");
+assertContains("scripts/stage_maven_central_bundle.mjs", "verifyNativeArchives");
 assertContains(".github/workflows/kotlin-android-package-release.yml", "RELEASE_VERSION");
 assertContains(".github/workflows/swift-package-release.yml", "needs: [verify-release-sha, swift-verify]");
 assertNotContains(".github/workflows/swift-package-release.yml", "if: inputs.publish == true");

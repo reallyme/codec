@@ -139,6 +139,16 @@ function fixture(t) {
   return { root, runner, checker, core, preload, run };
 }
 
+test("the package commit can be read before fetching the policy package", (t) => {
+  const f = fixture(t);
+  rmSync(join(f.root, ".release-readiness"), { recursive: true });
+  const result = f.run(["--print-commit"]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /^[0-9a-f]{40}\n$/u);
+  assert.equal(existsSync(join(f.root, "checker-executed")), false);
+  assert.equal(f.run(["--print-commit", "--check-pins"]).status, 1);
+});
+
 test("the checkout has matching pins without accessing the network or running policy", (t) => {
   const f = fixture(t);
   const result = spawnSync(process.execPath, [
