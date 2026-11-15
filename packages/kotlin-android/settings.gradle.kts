@@ -15,6 +15,14 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        providers.gradleProperty("reallyme.codec.androidPublicationRepository").orNull?.let { path ->
+            exclusiveContent {
+                forRepository {
+                    maven { url = uri(path) }
+                }
+                filter { includeModule("me.really", "codec-android") }
+            }
+        }
     }
 }
 

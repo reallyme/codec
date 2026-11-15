@@ -177,11 +177,10 @@ download_kotlin_native_resources_from_run() {
 ensure_kotlin_native_resources() {
   local run_id="${NATIVE_RESOURCE_RUN_ID}"
   local latest_run_id
-  local runtime_gate_run_id
 
   require_tool gh
   latest_run_id="$(find_latest_workflow_run "$NATIVE_RESOURCE_WORKFLOW" \
-    "Kotlin Android package preflight ${VERSION}" "$RELEASE_SHA")"
+    "Preflight maven ${VERSION} ${RELEASE_SHA}" "$RELEASE_SHA")"
   if [ -z "$run_id" ]; then
     run_id="$latest_run_id"
   fi
@@ -189,11 +188,7 @@ ensure_kotlin_native_resources() {
     fail "selected native-resource run is not the latest preflight for the current main commit"
   fi
   validate_successful_workflow_run "$run_id" "$NATIVE_RESOURCE_WORKFLOW" \
-    "Kotlin Android package preflight ${VERSION}"
-  runtime_gate_run_id="$(find_latest_workflow_run "android-runtime-gate.yml" \
-    "Android Runtime Gate" "$RELEASE_SHA")"
-  validate_successful_workflow_run "$runtime_gate_run_id" "android-runtime-gate.yml" \
-    "Android Runtime Gate"
+    "Preflight maven ${VERSION} ${RELEASE_SHA}"
 
   case "$KOTLIN_NATIVE_RESOURCES_DIR" in
     "${ROOT_DIR}"/build/*) ;;

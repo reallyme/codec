@@ -5,20 +5,13 @@
 name: Code Checks
 
 on:
-  workflow_dispatch:
-  pull_request:
-  push:
-    branches:
-      - main
+  workflow_call:
+    outputs:
+      verified_sha:
+        value: ${{ jobs.verified.outputs.verified_sha }}
 
 permissions:
   contents: read
-
-# Separate event types and push commits so fresh checks do not wait for an
-# obsolete commit while a manual run cannot cancel a required push check.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   repository-policy:
@@ -41,7 +34,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: reallyme/release-readiness
-          ref: 01fe1556413f86e6f8fcf3c4d09a6778fa0805da
+          ref: 7dffa0366a43fe9cc7b98a8040d37dd701d7955e
           path: .release-readiness
           persist-credentials: false
 
@@ -325,3 +318,23 @@ jobs:
         run: ./gradlew test "-Preallyme.codec.nativeResourcesDir=${{ github.workspace }}/build/sdk-native-resources"
         env:
           REALLYME_CODEC_FFI_LIBRARY_PATH: ${{ github.workspace }}/target/release/libreallyme_codec_ffi.so
+  verified:
+    name: Record verified code checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    needs:
+      - repository-policy
+      - rust
+      - rust-msrv
+      - native-sanitizers
+      - ffi-abi-artifact
+      - ffi-miri
+      - kotlin
+    outputs:
+      verified_sha: ${{ steps.verified.outputs.sha }}
+    steps:
+      - name: Record verified source
+        id: verified
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: printf 'sha=%s\n' "$SOURCE_SHA" >>"$GITHUB_OUTPUT"

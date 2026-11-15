@@ -12,6 +12,10 @@ on:
         required: true
         type: string
         default: 0.4.2
+      source_sha:
+        description: Full commit SHA on main used for this release
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -23,132 +27,78 @@ concurrency:
 jobs:
   verify-release-sha:
     name: Verify reviewed release SHA
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     permissions:
       actions: read
       contents: read
     outputs:
-      release_sha: ${{ steps.resolve-release-sha.outputs.release_sha }}
+      release_sha: ${{ steps.source.outputs.sha }}
+      preflight_run_id: ${{ steps.candidate.outputs.preflight_run_id }}
+      package_artifact_ids: ${{ steps.candidate.outputs.package_artifact_ids }}
     steps:
-      - name: Checkout main for release SHA resolution
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          ref: main
-          fetch-depth: 0
-
-      - name: Resolve current release SHA
-        id: resolve-release-sha
-        run: |
-          git fetch --no-tags origin main
-          release_sha="$(git rev-parse origin/main)"
-          if [ "$(git rev-parse origin/main)" != "${release_sha}" ]; then
-            echo "::error::resolved release SHA is not the current origin/main tip"
-            exit 1
-          fi
-          git checkout --detach "${release_sha}"
-          echo "release_sha=${release_sha}" >> "${GITHUB_OUTPUT}"
-          echo "RELEASE_SHA=${release_sha}" >> "${GITHUB_ENV}"
-          echo "Using release SHA ${release_sha}"
-
-      - name: Install Node
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '26'
-
-      - name: Require current main and successful npm package checks
+      - name: Validate source selection
+        id: source
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          RELEASE_SHA: ${{ steps.resolve-release-sha.outputs.release_sha }}
-          RELEASE_VERSION: ${{ inputs.version }}
-          RELEASE_ATTESTATION_PREFLIGHT_WORKFLOW: npm-package-preflight.yml
-          RELEASE_ATTESTATION_WAIT_SECONDS: "3600"
-          RELEASE_ATTESTATION_POLL_SECONDS: "20"
-        run: node scripts/verify_release_attestation.mjs
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          if [[ "$GITHUB_REF" != refs/heads/main || ! "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Dispatch from main with a full source commit SHA."
+            exit 1
+          fi
+          if [[ "$SOURCE_SHA" != "$GITHUB_SHA" ]]; then
+            # Validate ancestry before checking out or executing candidate code.
+            on_main="$(gh api --hostname github.com \
+              "repos/$GITHUB_REPOSITORY/compare/$SOURCE_SHA...$GITHUB_SHA?per_page=1" \
+              --jq '(.status == "ahead" or .status == "identical") and .behind_by == 0')"
+            if [[ "$on_main" != true ]]; then
+              echo "::error::Selected source SHA is outside the dispatch commit's main history."
+              exit 1
+            fi
+          fi
+          printf 'sha=%s\n' "$SOURCE_SHA" >>"$GITHUB_OUTPUT"
 
-  npm-package:
-    name: npm package
-    needs: verify-release-sha
-    runs-on: ubuntu-latest
-    # Build and test run third-party build scripts and dependencies, so this
-    # job holds no publish token and cannot mint an OIDC token.
-    permissions:
-      actions: read
-      contents: read
-    outputs:
-      tarball_sha256: ${{ steps.pack.outputs.tarball_sha256 }}
-    steps:
-      - name: Checkout
+      - name: Checkout candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ steps.source.outputs.sha }}
           persist-credentials: false
-          ref: ${{ needs.verify-release-sha.outputs.release_sha }}
+
+      - name: Checkout release-readiness runner
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: reallyme/release-readiness
+          ref: 7dffa0366a43fe9cc7b98a8040d37dd701d7955e
+          path: .release-readiness
+          persist-credentials: false
 
       - name: Install Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '26'
-          cache: npm
-          cache-dependency-path: packages/ts/package-lock.json
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
           toolchain: 1.100.0
-          targets: wasm32-unknown-unknown
 
-      - name: Install wasm-pack
-        uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3, wasm-pack
-        with:
-          tool: wasm-pack@0.15.1
+      - name: Authenticate release-readiness package
+        run: node scripts/run_pinned_release_readiness.mjs --check-pins
 
-      - name: Install wasm-bindgen-cli
-        uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3, wasm-bindgen-cli
-        with:
-          tool: wasm-bindgen-cli@0.2.130
-
-      - name: Install TypeScript codec package dependencies
-        run: npm ci
-        working-directory: packages/ts
-
-      - name: Test TypeScript codec package
-        run: npm test
-        working-directory: packages/ts
-
-      - name: Test TypeScript codec package in browser
-        run: npm run test:browser:built
-        working-directory: packages/ts
-
-      # Pack the dist the tests just exercised; skipping lifecycle scripts
-      # prevents prepack from rebuilding untested bytes.
-      - name: Pack tested npm tarball
-        id: pack
-        run: |
-          pack_dir="${RUNNER_TEMP}/npm-package"
-          mkdir -p "${pack_dir}"
-          npm pack --ignore-scripts --pack-destination "${pack_dir}"
-          shopt -s nullglob
-          tarballs=("${pack_dir}"/*.tgz)
-          if [ "${#tarballs[@]}" -ne 1 ]; then
-            echo "::error::expected exactly one packed tarball"
-            exit 1
-          fi
-          tarball_sha256="$(sha256sum "${tarballs[0]}" | cut -d' ' -f1)"
-          echo "tarball_sha256=${tarball_sha256}" >> "${GITHUB_OUTPUT}"
-        working-directory: packages/ts
-
-      - name: Upload tested npm tarball
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: npm-package-tarball
-          path: ${{ runner.temp }}/npm-package/*.tgz
-          if-no-files-found: error
-          retention-days: 1
+      - name: Verify release candidate
+        id: candidate
+        run: node .release-readiness/scripts/run-consumer-check.mjs --check-release npm publish "$RELEASE_VERSION" "$RELEASE_TAG" "$SOURCE_SHA"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_TAG: v${{ inputs.version }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
 
   npm-publish:
     name: npm publish
-    needs: [verify-release-sha, npm-package]
+    needs: verify-release-sha
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -167,11 +117,16 @@ jobs:
           node-version: '26'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Download tested npm tarball
+      - name: Download verified package
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: npm-package-tarball
+          run-id: ${{ needs.verify-release-sha.outputs.preflight_run_id }}
+          artifact-ids: ${{ needs.verify-release-sha.outputs.package_artifact_ids }}
+          github-token: ${{ github.token }}
+          digest-mismatch: error
+          merge-multiple: true
           path: ${{ runner.temp }}/npm-package
+
 
       - name: Publish npm package
         run: |
@@ -185,20 +140,12 @@ jobs:
             echo "::error::expected exactly one tested tarball"
             exit 1
           fi
+          expected_sha256="$(cat "${RUNNER_TEMP}/npm-package/tarball.sha256")"
           actual_sha256="$(sha256sum "${tarballs[0]}" | cut -d' ' -f1)"
-          if [ "${actual_sha256}" != "${EXPECTED_TARBALL_SHA256}" ]; then
+          if [[ ! "$expected_sha256" =~ ^[0-9a-f]{64}$ || "$actual_sha256" != "$expected_sha256" ]]; then
             echo "::error::downloaded tarball does not match the tested tarball"
             exit 1
           fi
-          node scripts/verify_release_attestation.mjs
           npm publish "${tarballs[0]}" --provenance --access public --ignore-scripts
         env:
-          EXPECTED_TARBALL_SHA256: ${{ needs.npm-package.outputs.tarball_sha256 }}
-          GH_TOKEN: ${{ github.token }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          RELEASE_SHA: ${{ needs.verify-release-sha.outputs.release_sha }}
-          RELEASE_VERSION: ${{ inputs.version }}
-          RELEASE_ATTESTATION_PREFLIGHT_WORKFLOW: npm-package-preflight.yml
-          RELEASE_ATTESTATION_WAIT_SECONDS: "3600"
-          RELEASE_ATTESTATION_POLL_SECONDS: "20"
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

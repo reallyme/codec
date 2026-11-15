@@ -4,28 +4,38 @@
 
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { copyFileSync, constants, mkdirSync, readFileSync } from "node:fs";
+import { isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
 const MODE_INSPECT = "inspect";
 const MODE_PUBLISH = "publish";
+const MODE_STAGE = "stage";
+const archiveDirectory = process.env.CRATE_ARCHIVE_DIR;
 const args = process.argv.slice(2);
 const mode = args[0] ?? MODE_INSPECT;
 const PUBLISH_RETRY_ATTEMPTS = 12;
 const allowDirty = args.includes("--allow-dirty");
 const unknownArgs = args.slice(1).filter((arg) => arg !== "--allow-dirty");
 
-if ((mode !== MODE_INSPECT && mode !== MODE_PUBLISH) || unknownArgs.length !== 0) {
+if ((![MODE_INSPECT, MODE_STAGE, MODE_PUBLISH].includes(mode)) || unknownArgs.length !== 0) {
   console.error(
-    `usage: node scripts/publish_crates_in_order.mjs ${MODE_INSPECT}|${MODE_PUBLISH} [--allow-dirty]`,
+    `usage: node scripts/publish_crates_in_order.mjs ${MODE_INSPECT}|${MODE_STAGE}|${MODE_PUBLISH} [--allow-dirty]`,
   );
   process.exit(2);
 }
 
 if (allowDirty && mode !== MODE_INSPECT) {
   console.error("--allow-dirty is only supported for local package inspection");
+  process.exit(2);
+}
+
+if (
+  (mode === MODE_STAGE || (mode === MODE_PUBLISH && process.env.GITHUB_ACTIONS === "true")) &&
+  (typeof archiveDirectory !== "string" || !isAbsolute(archiveDirectory))
+) {
+  console.error("CRATE_ARCHIVE_DIR must be an absolute path when staging or promoting crate archives in CI");
   process.exit(2);
 }
 
@@ -225,6 +235,30 @@ function inspectPackage(pkg) {
   process.exit(dryRunResult.status ?? 1);
 }
 
+function archiveName(pkg) {
+  return `${pkg.name}-${pkg.version}.crate`;
+}
+
+function archiveChecksum(path) {
+  return createHash("sha256").update(readFileSync(path)).digest("hex");
+}
+
+function stageArchives() {
+  mkdirSync(archiveDirectory);
+  // Cargo resolves unpublished workspace members together during staging.
+  // The publisher still checks each archive just before ordered upload.
+  const packages = ordered.flatMap((pkg) => ["-p", pkg.name]);
+  const staged = run("cargo", ["package", "--locked", "--no-verify", ...packages]);
+  if (staged.status !== 0) {
+    process.exit(staged.status ?? 1);
+  }
+  for (const pkg of ordered) {
+    const file = archiveName(pkg);
+    copyFileSync(join(metadata.target_directory, "package", file), join(archiveDirectory, file),
+      constants.COPYFILE_EXCL);
+  }
+}
+
 function packageChecksum(pkg) {
   // No build script or proc macro runs while a publishing token is present.
   for (let attempt = 1; attempt <= PUBLISH_RETRY_ATTEMPTS; attempt += 1) {
@@ -234,8 +268,7 @@ function packageChecksum(pkg) {
     process.stdout.write(result.stdout);
     process.stderr.write(result.stderr);
     if (result.status === 0) {
-      const archive = join(metadata.target_directory, "package", `${pkg.name}-${pkg.version}.crate`);
-      return createHash("sha256").update(readFileSync(archive)).digest("hex");
+      return archiveChecksum(join(metadata.target_directory, "package", archiveName(pkg)));
     }
     const combined = `${result.stdout}\n${result.stderr}`;
     if (!awaitsWorkspaceDependency(pkg, combined) || attempt === PUBLISH_RETRY_ATTEMPTS) {
@@ -298,6 +331,11 @@ async function waitForPublishedChecksum(pkg, localChecksum) {
 
 async function publishPackage(pkg) {
   const localChecksum = packageChecksum(pkg);
+  if (archiveDirectory !== undefined &&
+      archiveChecksum(join(archiveDirectory, archiveName(pkg))) !== localChecksum) {
+    console.error(`repacked crate archive does not match preflight: ${pkg.name}`);
+    process.exit(1);
+  }
   if (await previouslyPublishedMatches(pkg, localChecksum)) {
     return;
   }
@@ -348,6 +386,11 @@ async function publishPackage(pkg) {
   // ordinary failure branch. Never report a partially published release as done.
   console.error(`${pkg.name} publish retry limit exhausted`);
   process.exit(1);
+}
+
+if (mode === MODE_STAGE) {
+  stageArchives();
+  process.exit(0);
 }
 
 for (const pkg of ordered) {

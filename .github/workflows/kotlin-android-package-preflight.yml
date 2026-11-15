@@ -4,21 +4,20 @@
 
 name: Kotlin Android Package Preflight
 
-run-name: Kotlin Android package preflight ${{ inputs.version }}
+run-name: Preflight maven ${{ inputs.version }} ${{ inputs.source_sha }}
 
 on:
   workflow_dispatch:
     inputs:
-      release_sha:
-        description: Optional exact main commit SHA to certify. Leave blank to use current origin/main.
-        required: false
-        type: string
-        default: ""
       version:
         description: Release version without leading v
         required: true
         type: string
         default: 0.4.2
+      source_sha:
+        description: Full commit SHA on main used for this release
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -29,40 +28,88 @@ concurrency:
 
 jobs:
   verify-source-sha:
-    name: verify source SHA
-    runs-on: ubuntu-latest
+    name: Verify reviewed release SHA
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
     outputs:
-      release_sha: ${{ steps.resolve-release-sha.outputs.release_sha }}
+      release_sha: ${{ steps.source.outputs.sha }}
+      ci_run_id: ${{ steps.candidate.outputs.ci_run_id }}
+      android_artifact_id: ${{ steps.candidate.outputs.android_artifact_id }}
     steps:
-      - name: Checkout main for release SHA resolution
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          ref: main
-          fetch-depth: 0
-
-      - name: Resolve release SHA
-        id: resolve-release-sha
+      - name: Validate source selection
+        id: source
+        shell: bash
         env:
-          RELEASE_SHA_INPUT: ${{ inputs.release_sha }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
         run: |
-          git fetch --no-tags origin main
-          if [ -n "${RELEASE_SHA_INPUT}" ]; then
-            if [[ ! "${RELEASE_SHA_INPUT}" =~ ^[0-9a-f]{40}$ ]]; then
-              echo "::error::release_sha must be blank or a lowercase 40-character commit SHA"
-              exit 1
-            fi
-            release_sha="${RELEASE_SHA_INPUT}"
-          else
-            release_sha="$(git rev-parse origin/main)"
-          fi
-          if [ "$(git rev-parse origin/main)" != "${release_sha}" ]; then
-            echo "::error::resolved release SHA is not the current origin/main tip"
+          if [[ "$GITHUB_REF" != refs/heads/main || ! "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Dispatch from main with a full source commit SHA."
             exit 1
           fi
-          git checkout --detach "${release_sha}"
-          echo "release_sha=${release_sha}" >> "${GITHUB_OUTPUT}"
-          echo "Using release SHA ${release_sha}"
+          if [[ "$SOURCE_SHA" != "$GITHUB_SHA" ]]; then
+            echo "::error::Dispatch preflight on the selected source SHA."
+            exit 1
+          fi
+          printf 'sha=%s\n' "$SOURCE_SHA" >>"$GITHUB_OUTPUT"
+
+      - name: Checkout candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.source.outputs.sha }}
+          persist-credentials: false
+
+      - name: Checkout release-readiness runner
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: reallyme/release-readiness
+          ref: 7dffa0366a43fe9cc7b98a8040d37dd701d7955e
+          path: .release-readiness
+          persist-credentials: false
+
+      - name: Install Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '26'
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+        with:
+          toolchain: 1.100.0
+
+      - name: Authenticate release-readiness package
+        run: node scripts/run_pinned_release_readiness.mjs --check-pins
+
+      - name: Verify dependency security for the candidate
+        run: node scripts/verify_release_dependency_security.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ steps.source.outputs.sha }}
+
+      - name: Verify unused release slot across registries
+        run: node scripts/verify_release_availability.mjs "$RELEASE_VERSION"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+
+      - name: Verify release candidate
+        id: candidate
+        run: node .release-readiness/scripts/run-consumer-check.mjs --check-release maven preflight "$RELEASE_VERSION" "$RELEASE_TAG" "$SOURCE_SHA"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_TAG: v${{ inputs.version }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+
+      - name: Record verified CI
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-readiness-ci-${{ github.run_attempt }}-${{ steps.candidate.outputs.ci_run_id }}
+          path: ${{ runner.temp }}/release-readiness-ci.json
+          if-no-files-found: error
+          retention-days: 7
 
   jvm-native:
     name: jvm native preflight ${{ matrix.platform }}
@@ -124,6 +171,8 @@ jobs:
           name: kotlin-native-${{ matrix.platform }}
           path: build/kotlin-native-resources
           if-no-files-found: error
+          overwrite: true
+          retention-days: 7
 
   kotlin-package:
     name: kotlin maven preflight
@@ -157,51 +206,74 @@ jobs:
       - name: Write native checksum manifest
         run: node scripts/write_native_manifest.mjs build/kotlin-native-resources build/kotlin-native-resources/me/really/codec/native/native-manifest.json
 
-      - name: Test codec package and publish to Maven local
+      - name: Test and stage JVM Maven publication
         working-directory: packages/kotlin
-        run: ./gradlew test publishToMavenLocal -Preallyme.codec.nativeResourcesDir=${{ github.workspace }}/build/kotlin-native-resources -Preallyme.codec.requireFullNativeResources=true
+        run: ./gradlew test publishAllPublicationsToLocalReleaseRepository -Preallyme.maven.localReleaseRepositoryDir="$MAVEN_REPOSITORY" -Preallyme.codec.nativeResourcesDir=${{ github.workspace }}/build/kotlin-native-resources -Preallyme.codec.requireFullNativeResources=true
+        env:
+          MAVEN_REPOSITORY: ${{ runner.temp }}/maven-jvm
+
+      - name: Upload verified package
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: maven-jvm-${{ inputs.version }}-${{ needs.verify-source-sha.outputs.release_sha }}
+          path: ${{ runner.temp }}/maven-jvm/
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
 
   android-package:
-    name: android aar preflight
+    name: Retain tested Android Maven publication
     needs: verify-source-sha
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          persist-credentials: false
           ref: ${{ needs.verify-source-sha.outputs.release_sha }}
+          persist-credentials: false
 
-      - name: Install Java
-        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+      - name: Checkout release-readiness runner
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          distribution: temurin
-          java-version: '21'
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
-        with:
-          toolchain: 1.100.0
+          repository: reallyme/release-readiness
+          ref: 7dffa0366a43fe9cc7b98a8040d37dd701d7955e
+          path: .release-readiness
+          persist-credentials: false
 
       - name: Install Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '26'
 
-      - name: Install Android SDK platform and NDK
-        run: |
-          { yes 2>/dev/null || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "ndk;29.0.14206865"
-          echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/29.0.14206865" >> "${GITHUB_ENV}"
+      - name: Authenticate release-readiness package
+        run: node scripts/run_pinned_release_readiness.mjs --check-pins
 
-      - name: Stage Android JNI libraries
-        run: scripts/build_android_native_resources.sh build/android-jniLibs
+      - name: Download tested Android publication
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.verify-source-sha.outputs.android_artifact_id }}
+          run-id: ${{ needs.verify-source-sha.outputs.ci_run_id }}
+          github-token: ${{ github.token }}
+          digest-mismatch: error
+          merge-multiple: true
+          path: ${{ runner.temp }}/android-publication
 
-      - name: Write Android native checksum manifest
-        run: node scripts/write_native_manifest.mjs build/android-jniLibs build/android-native-assets/reallyme-codec/native-manifest.json
+      - name: Verify tested Android publication
+        run: node .release-readiness/scripts/android-runtime.mjs verify-publication "$RUNNER_TEMP/android-publication/repository" "$SOURCE_SHA" "$RELEASE_VERSION"
+        env:
+          SOURCE_SHA: ${{ needs.verify-source-sha.outputs.release_sha }}
+          RELEASE_VERSION: ${{ inputs.version }}
 
-      - name: Build Android AAR
-        run: packages/kotlin/gradlew -p packages/kotlin-android bundleReleaseAar verifyReleaseAarContainsJniLibs -Preallyme.codec.androidJniLibsDir=${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true
-
-      - name: Build Android consumer R8 APK
-        run: packages/kotlin/gradlew -p packages/kotlin-android :consumer-r8-runtime:assembleRelease -Preallyme.codec.androidJniLibsDir=${{ github.workspace }}/build/android-jniLibs -Preallyme.codec.androidNativeAssetsDir=${{ github.workspace }}/build/android-native-assets -Preallyme.codec.requireAndroidJniLibs=true
+      - name: Upload tested Android publication
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: maven-android-${{ inputs.version }}-${{ needs.verify-source-sha.outputs.release_sha }}
+          path: ${{ runner.temp }}/android-publication/
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7

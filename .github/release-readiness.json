@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "lanes": {
+    "policy": {
+      "workflow": "release-readiness.yml"
+    },
+    "code": {
+      "workflow": "code-checks.yml"
+    },
+    "proto": {
+      "workflow": "protobuf-ci.yml"
+    },
+    "fuzz": {
+      "workflow": "fuzz.yml",
+      "paths": [
+        "crates/",
+        "fuzz/",
+        "vectors/"
+      ]
+    },
+    "android": {
+      "workflow": "android-runtime-gate.yml"
+    }
+  },
+  "release": {
+    "tagPrefix": "v",
+    "crates": {
+      "preflight": "crates-package-preflight.yml",
+      "publish": "crates-release.yml",
+      "artifacts": [
+        "crate-archives-{version}-{sha}"
+      ]
+    },
+    "swift": {
+      "preflight": "swift-package-preflight.yml",
+      "publish": "swift-package-release.yml",
+      "artifacts": [
+        "swift-xcframework-{version}-{sha}"
+      ],
+      "tagJob": "swift-release"
+    },
+    "npm": {
+      "preflight": "npm-package-preflight.yml",
+      "publish": "npm-package-release.yml",
+      "artifacts": [
+        "npm-tarball-{version}-{sha}"
+      ],
+      "manifests": [
+        "packages/ts/package.json"
+      ]
+    },
+    "maven": {
+      "preflight": "kotlin-android-package-preflight.yml",
+      "publish": "kotlin-android-package-release.yml",
+      "artifacts": [
+        "maven-jvm-{version}-{sha}",
+        "maven-android-{version}-{sha}"
+      ],
+      "manifests": [
+        "packages/kotlin/build.gradle.kts",
+        "packages/kotlin-android/build.gradle.kts"
+      ]
+    }
+  }
+}

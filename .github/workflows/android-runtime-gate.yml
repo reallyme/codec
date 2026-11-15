@@ -5,58 +5,42 @@
 name: Android Runtime Gate
 
 on:
-  workflow_dispatch:
-    inputs:
-      release_sha:
-        description: Optional expected main tip SHA. Leave blank to use current origin/main.
-        required: false
-        type: string
-        default: ""
+  workflow_call:
+    outputs:
+      verified_sha:
+        value: ${{ jobs.runtime.outputs.verified_sha }}
 
 permissions:
   contents: read
 
-concurrency:
-  group: android-runtime-gate-${{ inputs.release_sha || github.ref_name }}
-  cancel-in-progress: false
-
 jobs:
-  android-runtime:
-    name: Android R8 runtime
-    runs-on: ubuntu-latest
+  runtime:
+    name: Minified Android consumer
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
+    outputs:
+      verified_sha: ${{ steps.runtime.outputs.sha }}
     steps:
-      - name: Checkout main for SHA resolution
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Checkout candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-          ref: main
-          fetch-depth: 0
 
-      - name: Resolve runtime SHA
-        id: resolve-runtime-sha
-        env:
-          RELEASE_SHA_INPUT: ${{ inputs.release_sha }}
-        run: |
-          git fetch --no-tags origin main
-          if [ -n "${RELEASE_SHA_INPUT}" ]; then
-            if [[ ! "${RELEASE_SHA_INPUT}" =~ ^[0-9a-f]{40}$ ]]; then
-              echo "::error::release_sha must be blank or a lowercase 40-character commit SHA"
-              exit 1
-            fi
-            runtime_sha="${RELEASE_SHA_INPUT}"
-          else
-            runtime_sha="$(git rev-parse origin/main)"
-          fi
-          # Release attestation matches this run by its main head SHA, so the
-          # tested commit must be that exact tip, never an older ancestor.
-          if [ "${runtime_sha}" != "$(git rev-parse origin/main)" ]; then
-            echo "::error::runtime SHA must be the current origin/main tip"
-            exit 1
-          fi
-          git checkout --detach "${runtime_sha}"
-          echo "runtime_sha=${runtime_sha}" >> "${GITHUB_OUTPUT}"
-          echo "Using runtime SHA ${runtime_sha}"
+      - name: Checkout release-readiness
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: reallyme/release-readiness
+          ref: 7dffa0366a43fe9cc7b98a8040d37dd701d7955e
+          path: .release-readiness
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "26"
+
+      - name: Authenticate release-readiness package
+        run: node scripts/run_pinned_release_readiness.mjs --check-pins
 
       - name: Install Java
         uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
@@ -69,28 +53,146 @@ jobs:
         with:
           toolchain: 1.100.0
 
-      - name: Install Node
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '26'
-
       - name: Install Android NDK
         run: |
-          { yes 2>/dev/null || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "ndk;29.0.14206865"
-          echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/29.0.14206865" >> "${GITHUB_ENV}"
+          { yes 2>/dev/null || true; } | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "ndk;29.0.14206865"
+          echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/29.0.14206865" >>"$GITHUB_ENV"
 
-      - name: Enable Android emulator KVM access
+      # Save on main so later candidates can reuse the cache and PR code
+      # cannot seed it. Queue-only repositories can refresh it by dispatching
+      # CI on main when the cache key changes or the entry is evicted.
+      - name: Restore Gradle cache
+        id: android-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: android-runtime-${{ runner.os }}-${{ hashFiles('**/*.gradle', '**/*.gradle.kts', '**/gradle-wrapper.properties', '**/libs.versions.toml', 'scripts/prepare-android-runtime.sh') }}
+
+      - name: Enable emulator acceleration
+        shell: bash
         run: |
-          if [ ! -e /dev/kvm ]; then
-            echo "::error::/dev/kvm is required for Android x86_64 emulator runtime tests"
-            exit 1
-          fi
-          sudo chown "${USER}:${USER}" /dev/kvm
+          test -c /dev/kvm
+          sudo chown "$(id -u):$(id -g)" /dev/kvm
           test -r /dev/kvm
           test -w /dev/kvm
 
-      - name: Test Android consumer R8 runtime
-        timeout-minutes: 20
-        run: scripts/test_android_consumer_r8_runtime.sh
+      - name: Stage Android Maven publication
+        shell: bash
         env:
-          REALLYME_CODEC_ANDROID_AVD: reallyme-r8-gate
+          MAVEN_REPOSITORY: ${{ runner.temp }}/android-publication/repository
+        run: |
+          # Package once. The consumer resolves this publication by its Maven
+          # coordinates so the test covers the same AAR that preflight uses.
+          mkdir -p "$MAVEN_REPOSITORY"
+          bash -e -o pipefail scripts/stage-android-publication.sh "$MAVEN_REPOSITORY"
+          node .release-readiness/scripts/android-runtime.mjs seal-publication "$MAVEN_REPOSITORY" "$GITHUB_SHA"
+
+      - name: Prepare Android consumer and emulator
+        shell: bash
+        env:
+          ANDROID_AVD_HOME: ${{ runner.temp }}/android-avd
+          ANDROID_AVD_NAME: reallyme-runtime
+          APK_PATH: ${{ runner.temp }}/android-runtime.apk
+          MAVEN_REPOSITORY: ${{ runner.temp }}/android-publication/repository
+        run: |
+          bash -e -o pipefail scripts/prepare-android-runtime.sh "$APK_PATH" "$ANDROID_AVD_NAME" "$MAVEN_REPOSITORY"
+          test -s "$APK_PATH"
+
+      - name: Verify minified Android consumer
+        id: runtime
+        shell: bash
+        env:
+          ANDROID_AVD_HOME: ${{ runner.temp }}/android-avd
+          ANDROID_AVD_NAME: reallyme-runtime
+          ANDROID_SERIAL: emulator-5554
+          APK_PATH: ${{ runner.temp }}/android-runtime.apk
+          MAVEN_REPOSITORY: ${{ runner.temp }}/android-publication/repository
+        run: |
+          sha=$(git rev-parse --verify HEAD)
+          test "$sha" = "$GITHUB_SHA"
+          export ADB="${ANDROID_HOME:?}/platform-tools/adb"
+          helper=.release-readiness/scripts/android-runtime.mjs
+          emulator_log="$RUNNER_TEMP/android-runtime-emulator.log"
+          emulator_pid=
+
+          stop_emulator() {
+            if [[ -z "$emulator_pid" ]]; then
+              return
+            fi
+            kill -TERM "$emulator_pid" 2>/dev/null || true
+            for ((poll = 0; poll < 5; poll += 1)); do
+              kill -0 "$emulator_pid" 2>/dev/null || break
+              sleep 1
+            done
+            kill -KILL "$emulator_pid" 2>/dev/null || true
+            wait "$emulator_pid" 2>/dev/null || true
+            emulator_pid=
+          }
+
+          collect_diagnostics() {
+            node "$helper" diagnostics "$ANDROID_SERIAL" || true
+            # Prefix host output and neutralize legacy workflow command markers.
+            LC_ALL=C tail -n 200 "$emulator_log" | tr -cd '\11\12\40-\176' | sed 's/##\[/# #[/g; s/^/emulator | /' >&2 || true
+          }
+
+          cleanup() {
+            local result=$?
+            trap - EXIT
+            if [[ -n "$emulator_pid" ]]; then
+              if (( result != 0 )); then
+                collect_diagnostics
+              fi
+              stop_emulator
+            fi
+            exit "$result"
+          }
+          trap cleanup EXIT
+
+          timeout --kill-after=2s 10s "$ADB" start-server
+          for attempt in 1 2; do
+            "$ANDROID_HOME/emulator/emulator" -avd "$ANDROID_AVD_NAME" -port 5554 \
+              -no-window -no-audio -no-boot-anim -no-snapshot -wipe-data -partition-size 4096 -gpu swiftshader_indirect \
+              >"$emulator_log" 2>&1 &
+            emulator_pid=$!
+
+            if node "$helper" wait "$ANDROID_SERIAL" && node "$helper" install "$ANDROID_SERIAL" "$APK_PATH"; then
+              # Preserve system, events and crash buffers for failure diagnostics.
+              timeout --kill-after=2s 10s "$ADB" -s "$ANDROID_SERIAL" logcat -b main -c
+              bash -e -o pipefail scripts/test-android-runtime.sh "$ANDROID_SERIAL"
+              node "$helper" verify-publication "$MAVEN_REPOSITORY" "$sha"
+              printf 'sha=%s\n' "$sha" >>"$GITHUB_OUTPUT"
+              break
+            else
+              result=$?
+              if (( result != 75 || attempt == 2 )); then
+                exit "$result"
+              fi
+              echo "Restarting the Android emulator after a device readiness or package-service failure." >&2
+              collect_diagnostics
+              stop_emulator
+            fi
+          done
+
+      # Release qualification accepts a main run or, with a merge queue, the
+      # queue run that main fast-forwarded to. PR runs never qualify.
+      - name: Upload tested Android publication
+        if: >-
+          (github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')) ||
+          (github.event_name == 'merge_group' && startsWith(github.ref, 'refs/heads/gh-readonly-queue/main/'))
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: android-maven-${{ github.sha }}
+          path: ${{ runner.temp }}/android-publication/
+          if-no-files-found: error
+          overwrite: true
+
+      - name: Save Gradle cache
+        if: github.ref == 'refs/heads/main' && steps.android-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ steps.android-cache.outputs.cache-primary-key }}

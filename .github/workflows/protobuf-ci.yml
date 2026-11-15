@@ -5,62 +5,30 @@
 name: Protobuf Checks
 
 on:
-  workflow_dispatch:
-  pull_request:
-  push:
-    branches:
-      - main
+  workflow_call:
+    outputs:
+      verified_sha:
+        value: ${{ jobs.protobuf.outputs.verified_sha }}
 
 permissions:
   contents: read
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 env:
-  BUFFA_VERSION: 0.1.2
   BUF_VERSION: 1.75.0
 
 jobs:
   protobuf:
-    name: lint, breaking, generated freshness and SDK verification
+    name: Protobuf compatibility
     runs-on: macos-26
-    timeout-minutes: 45
+    timeout-minutes: 15
+    outputs:
+      verified_sha: ${{ steps.verified.outputs.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
-
-      - name: Checkout release-readiness runner
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: reallyme/release-readiness
-          ref: 01fe1556413f86e6f8fcf3c4d09a6778fa0805da
-          path: .release-readiness
-          persist-credentials: false
-
-      - name: Install Node
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '26'
-
-      - name: Verify release readiness pins before installing generators
-        run: node scripts/run_pinned_release_readiness.mjs --check-pins
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
-        with:
-          toolchain: 1.100.0
-          targets: wasm32-unknown-unknown
-          components: rustfmt
-
-      - name: Cache Cargo
-        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
-        with:
-          key: buffa-${{ env.BUFFA_VERSION }}
 
       - name: Install buf
         uses: bufbuild/buf-action@37ac33d8960807670a6e9719080e885197b09cc6 # v1.7.0
@@ -69,11 +37,6 @@ jobs:
           checksum: f71b009ebd8530b12fd85b060c6c245e15d6e5110ccc8da48d8b6fa71e59330b
           github_token: ${{ github.token }}
           setup_only: true
-
-      - name: Install pinned Buffa generators
-        run: |
-          cargo install reallyme-protoc-gen-buffa --version "=$BUFFA_VERSION" --locked
-          cargo install reallyme-protoc-gen-buffa-packaging --version "=$BUFFA_VERSION" --locked
 
       - name: Fetch main and published tags for breaking-change comparison
         run: git fetch origin main:refs/remotes/origin/main --tags
@@ -86,50 +49,14 @@ jobs:
             exit 1
           fi
           buf breaking --against ".git#tag=${release_tag}"
-          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+          if [[ "$GITHUB_EVENT_NAME" == pull_request || "$GITHUB_EVENT_NAME" == merge_group ]]; then
             buf breaking --against '.git#branch=origin/main'
           fi
 
-      - name: Select Xcode 26.4
+      - name: Record verified source
+        id: verified
+        shell: bash
         run: |
-          developer_dir=$(cd /Applications/Xcode_26.4.app/Contents/Developer && pwd -P)
-          sudo xcode-select -s "$developer_dir"
-          printf 'DEVELOPER_DIR=%s\n' "$developer_dir" >> "$GITHUB_ENV"
-          test "$(uname -m)" = arm64
-          xcodebuild -version
-          swift --version
-
-      - name: Install Java
-        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
-        with:
-          distribution: temurin
-          java-version: '21'
-
-      - name: Install wasm-pack
-        uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
-        with:
-          tool: wasm-pack@0.15.1
-
-      - name: Install wasm-bindgen-cli
-        uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
-        with:
-          tool: wasm-bindgen-cli@0.2.130
-
-      - name: Install TypeScript codec package dependencies
-        run: npm ci --prefix packages/ts
-
-      - name: Build and stage native codec for both SDKs
-        run: |
-          scripts/build_kotlin_native_resource.sh build/sdk-native-resources
-          node scripts/write_native_manifest.mjs build/sdk-native-resources build/sdk-native-resources/me/really/codec/native/native-manifest.json
-
-      - name: Check release readiness generated freshness
-        run: node scripts/run_pinned_release_readiness.mjs --generated-freshness
-        env:
-          REALLYME_CODEC_FFI_LIBRARY_PATH: ${{ github.workspace }}/target/release/libreallyme_codec_ffi.dylib
-          REALLYME_CODEC_KOTLIN_NATIVE_RESOURCES_DIR: ${{ github.workspace }}/build/sdk-native-resources
-          REALLYME_CODEC_SWIFTPM_RUNTIME_FFI: "1"
-
-      - name: Test TypeScript codec package in browser
-        # Reuse the WASM artifact already exercised by the shared runner.
-        run: npm --prefix packages/ts run test:browser:built
+          sha=$(git rev-parse --verify HEAD)
+          test "$sha" = "$GITHUB_SHA"
+          printf 'sha=%s\n' "$sha" >>"$GITHUB_OUTPUT"

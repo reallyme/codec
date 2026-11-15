@@ -6,6 +6,16 @@ name: Crates.io Release
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: Release version without leading v
+        required: true
+        type: string
+        default: 0.4.2
+      source_sha:
+        description: Full commit SHA on main used for this release
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -17,90 +27,78 @@ concurrency:
 jobs:
   verify-release-sha:
     name: Verify reviewed release SHA
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     permissions:
       actions: read
       contents: read
     outputs:
-      release_sha: ${{ steps.resolve-release-sha.outputs.release_sha }}
-      release_version: ${{ steps.resolve-release-sha.outputs.release_version }}
+      release_sha: ${{ steps.source.outputs.sha }}
+      preflight_run_id: ${{ steps.candidate.outputs.preflight_run_id }}
+      package_artifact_ids: ${{ steps.candidate.outputs.package_artifact_ids }}
     steps:
-      - name: Checkout main for release SHA resolution
+      - name: Validate source selection
+        id: source
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          if [[ "$GITHUB_REF" != refs/heads/main || ! "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Dispatch from main with a full source commit SHA."
+            exit 1
+          fi
+          if [[ "$SOURCE_SHA" != "$GITHUB_SHA" ]]; then
+            # Validate ancestry before checking out or executing candidate code.
+            on_main="$(gh api --hostname github.com \
+              "repos/$GITHUB_REPOSITORY/compare/$SOURCE_SHA...$GITHUB_SHA?per_page=1" \
+              --jq '(.status == "ahead" or .status == "identical") and .behind_by == 0')"
+            if [[ "$on_main" != true ]]; then
+              echo "::error::Selected source SHA is outside the dispatch commit's main history."
+              exit 1
+            fi
+          fi
+          printf 'sha=%s\n' "$SOURCE_SHA" >>"$GITHUB_OUTPUT"
+
+      - name: Checkout candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ steps.source.outputs.sha }}
           persist-credentials: false
-          ref: main
-          fetch-depth: 0
 
-      - name: Resolve current release SHA
-        id: resolve-release-sha
-        run: |
-          git fetch --no-tags origin main
-          release_sha="$(git rev-parse origin/main)"
-          if [ "$(git rev-parse origin/main)" != "${release_sha}" ]; then
-            echo "::error::resolved release SHA is not the current origin/main tip"
-            exit 1
-          fi
-          git checkout --detach "${release_sha}"
-          release_version="$(sed -n 's/^version = "\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\)"$/\1/p' crates/codec/Cargo.toml | head -n 1)"
-          if [ -z "${release_version}" ]; then
-            echo "::error::could not derive release version from crates/codec/Cargo.toml"
-            exit 1
-          fi
-          echo "release_sha=${release_sha}" >> "${GITHUB_OUTPUT}"
-          echo "release_version=${release_version}" >> "${GITHUB_OUTPUT}"
-          echo "RELEASE_SHA=${release_sha}" >> "${GITHUB_ENV}"
-          echo "RELEASE_VERSION=${release_version}" >> "${GITHUB_ENV}"
-          echo "Using release SHA ${release_sha} for version ${release_version}"
+      - name: Checkout release-readiness runner
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: reallyme/release-readiness
+          ref: 7dffa0366a43fe9cc7b98a8040d37dd701d7955e
+          path: .release-readiness
+          persist-credentials: false
 
       - name: Install Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '26'
-
-      - name: Require current main and successful checks for exact SHA
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          RELEASE_SHA: ${{ steps.resolve-release-sha.outputs.release_sha }}
-          RELEASE_VERSION: ${{ steps.resolve-release-sha.outputs.release_version }}
-          RELEASE_ATTESTATION_PREFLIGHT_WORKFLOW: crates-package-preflight.yml
-          RELEASE_ATTESTATION_WAIT_SECONDS: "3600"
-          RELEASE_ATTESTATION_POLL_SECONDS: "20"
-        run: node scripts/verify_release_attestation.mjs
-
-  dry-run:
-    name: crates.io publish preflight
-    needs: verify-release-sha
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          ref: ${{ needs.verify-release-sha.outputs.release_sha }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
           toolchain: 1.100.0
 
-      - name: Install Node
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '26'
+      - name: Authenticate release-readiness package
+        run: node scripts/run_pinned_release_readiness.mjs --check-pins
 
-      - name: Cache Cargo
-        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
-
-      - name: Inspect publishable crate tarballs
-        run: node scripts/publish_crates_in_order.mjs inspect
+      - name: Verify release candidate
+        id: candidate
+        run: node .release-readiness/scripts/run-consumer-check.mjs --check-release crates publish "$RELEASE_VERSION" "$RELEASE_TAG" "$SOURCE_SHA"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_TAG: v${{ inputs.version }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
 
   publish:
     name: publish crates
-    needs: [verify-release-sha, dry-run]
+    needs: verify-release-sha
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -121,19 +119,22 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '26'
+
+      - name: Download verified package
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          run-id: ${{ needs.verify-release-sha.outputs.preflight_run_id }}
+          artifact-ids: ${{ needs.verify-release-sha.outputs.package_artifact_ids }}
+          github-token: ${{ github.token }}
+          digest-mismatch: error
+          merge-multiple: true
+          path: ${{ runner.temp }}/release-package
 
       # No build cache is restored here: this job holds the registry token, and
       # publishing uses --no-verify, so a cache could only add poisoning risk.
       - name: Publish crates in dependency order
         run: |
-          node scripts/verify_release_attestation.mjs
           node scripts/publish_crates_in_order.mjs publish
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-          GH_TOKEN: ${{ github.token }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          RELEASE_SHA: ${{ needs.verify-release-sha.outputs.release_sha }}
-          RELEASE_VERSION: ${{ needs.verify-release-sha.outputs.release_version }}
-          RELEASE_ATTESTATION_PREFLIGHT_WORKFLOW: crates-package-preflight.yml
-          RELEASE_ATTESTATION_WAIT_SECONDS: "3600"
-          RELEASE_ATTESTATION_POLL_SECONDS: "20"
+          CRATE_ARCHIVE_DIR: ${{ runner.temp }}/release-package

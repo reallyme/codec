@@ -40,8 +40,9 @@ function fixture(t) {
   cpSync(join(repositoryRoot, runnerRelativePath), runner);
   cpSync(join(packageRoot, "core.mjs"), core);
   cpSync(join(packageRoot, "package.json"), join(root, ".release-readiness/package.json"));
-  mkdirSync(join(root, ".release-readiness/scripts"), { recursive: true });
-  cpSync(join(packageRoot, "scripts/run-consumer-check.mjs"), join(root, ".release-readiness/scripts/run-consumer-check.mjs"));
+  for (const directory of ["scripts", "templates"]) {
+    cpSync(join(packageRoot, directory), join(root, ".release-readiness", directory), { recursive: true });
+  }
   const initialized = spawnSync("git", ["init", "--quiet", "--initial-branch=main"], { cwd: root, encoding: "utf8" });
   assert.equal(initialized.status, 0, initialized.stderr);
   // Isolate pin tests from changes to repository policy. A separate baseline
@@ -113,7 +114,7 @@ function fixture(t) {
       }
     };
   `);
-  const env = { ...process.env };
+  const env = { ...process.env, RELEASE_READINESS_PUBLIC_REPO: "false" };
   delete env.CI;
   delete env.REALLYME_RELEASE_READINESS_ROOT;
   delete env.RELEASE_READINESS_CORE_URL;
@@ -223,6 +224,17 @@ for (const [extension, language] of [["rs", "rust"], ["ts", "typescript"], ["swi
     assert.match(result.stderr, new RegExp(`did not enforce the shared ${language} source policy`, "u"));
   });
 }
+
+test("a tampered module imported by the official runner fails authentication before execution", (t) => {
+  const f = fixture(t);
+  const module = "scripts/public-ci.mjs";
+  const path = join(f.root, ".release-readiness", module);
+  writeFileSync(path, `${readFileSync(path, "utf8")}\nprocess.exit(94);\n`);
+  const result = f.run();
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /package scripts\/public-ci\.mjs does not match the reviewed upstream pin/u);
+  assert.equal(existsSync(join(f.root, "checker-executed")), false);
+});
 
 test("pin-only verification does not execute the checker", (t) => {
   const f = fixture(t);

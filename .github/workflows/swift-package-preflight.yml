@@ -4,21 +4,20 @@
 
 name: Swift Package Preflight
 
-run-name: Swift package preflight ${{ inputs.version }}
+run-name: Preflight swift ${{ inputs.version }} ${{ inputs.source_sha }}
 
 on:
   workflow_dispatch:
     inputs:
-      release_sha:
-        description: Optional exact main commit SHA to certify. Leave blank to use current origin/main.
-        required: false
-        type: string
-        default: ""
       version:
         description: Release version without leading v
         required: true
         type: string
         default: 0.4.2
+      source_sha:
+        description: Full commit SHA on main used for this release
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -29,44 +28,86 @@ concurrency:
 
 jobs:
   verify-source-sha:
-    name: verify source SHA
-    runs-on: ubuntu-latest
+    name: Verify reviewed release SHA
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
     outputs:
-      release_sha: ${{ steps.resolve-release-sha.outputs.release_sha }}
+      release_sha: ${{ steps.source.outputs.sha }}
     steps:
-      - name: Checkout main for release SHA resolution
+      - name: Validate source selection
+        id: source
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          if [[ "$GITHUB_REF" != refs/heads/main || ! "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Dispatch from main with a full source commit SHA."
+            exit 1
+          fi
+          if [[ "$SOURCE_SHA" != "$GITHUB_SHA" ]]; then
+            echo "::error::Dispatch preflight on the selected source SHA."
+            exit 1
+          fi
+          printf 'sha=%s\n' "$SOURCE_SHA" >>"$GITHUB_OUTPUT"
+
+      - name: Checkout candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ steps.source.outputs.sha }}
           persist-credentials: false
-          ref: main
-          fetch-depth: 0
 
-      - name: Resolve release SHA
-        id: resolve-release-sha
+      - name: Checkout release-readiness runner
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: reallyme/release-readiness
+          ref: 7dffa0366a43fe9cc7b98a8040d37dd701d7955e
+          path: .release-readiness
+          persist-credentials: false
+
+      - name: Install Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '26'
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+        with:
+          toolchain: 1.100.0
+
+      - name: Authenticate release-readiness package
+        run: node scripts/run_pinned_release_readiness.mjs --check-pins
+
+      - name: Verify dependency security for the candidate
+        run: node scripts/verify_release_dependency_security.mjs
         env:
-          RELEASE_SHA_INPUT: ${{ inputs.release_sha }}
-        run: |
-          git fetch --no-tags origin main
-          if [ -n "${RELEASE_SHA_INPUT}" ]; then
-            if [[ ! "${RELEASE_SHA_INPUT}" =~ ^[0-9a-f]{40}$ ]]; then
-              echo "::error::release_sha must be blank or a lowercase 40-character commit SHA"
-              exit 1
-            fi
-            release_sha="${RELEASE_SHA_INPUT}"
-          else
-            release_sha="$(git rev-parse origin/main)"
-          fi
-          if [ "$(git rev-parse origin/main)" != "${release_sha}" ]; then
-            echo "::error::resolved release SHA is not the current origin/main tip"
-            exit 1
-          fi
-          if [ "${GITHUB_SHA}" != "${release_sha}" ]; then
-            echo "::error::resolved release SHA does not match the workflow run head SHA"
-            exit 1
-          fi
-          git checkout --detach "${release_sha}"
-          echo "release_sha=${release_sha}" >> "${GITHUB_OUTPUT}"
-          echo "Using release SHA ${release_sha}"
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ steps.source.outputs.sha }}
+
+      - name: Verify unused release slot across registries
+        run: node scripts/verify_release_availability.mjs "$RELEASE_VERSION"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+
+      - name: Verify release candidate
+        id: candidate
+        run: node .release-readiness/scripts/run-consumer-check.mjs --check-release swift preflight "$RELEASE_VERSION" "$RELEASE_TAG" "$SOURCE_SHA"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_TAG: v${{ inputs.version }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+
+      - name: Record verified CI
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-readiness-ci-${{ github.run_attempt }}-${{ steps.candidate.outputs.ci_run_id }}
+          path: ${{ runner.temp }}/release-readiness-ci.json
+          if-no-files-found: error
+          retention-days: 7
 
   swift-package:
     name: swift package preflight
@@ -147,4 +188,5 @@ jobs:
             build/swift/ReallyMeCodecFFI.xcframework.zip
             build/swift/ReallyMeCodecFFI.xcframework.checksum
           if-no-files-found: error
+          overwrite: true
           retention-days: 7

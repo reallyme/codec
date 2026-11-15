@@ -37,5 +37,9 @@ android {
 }
 
 dependencies {
-    implementation(project(":"))
+    if (providers.gradleProperty("reallyme.codec.androidPublicationRepository").isPresent) {
+        implementation("me.really:codec-android:${rootProject.version}")
+    } else {
+        implementation(project(":"))
+    }
 }

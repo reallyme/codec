@@ -12,17 +12,25 @@ import { resolve, sep } from "node:path";
 // Verify the immutable official package before executing its runner. Local
 // checker/module digests remain review tripwires; the package runner supplies
 // the core and enforces proof that every applicable source policy was invoked.
-const RELEASE_READINESS_COMMIT = "01fe1556413f86e6f8fcf3c4d09a6778fa0805da";
+const RELEASE_READINESS_COMMIT = "7dffa0366a43fe9cc7b98a8040d37dd701d7955e";
 const RELEASE_READINESS_CORE_SHA256 =
-  "1519b407c89eb2ecc2307f9a402efd8aa3a190dc5911a59b64ecec0e9742d14c";
+  "5ca52b57e61be8d2d944109f15b11f0d9ff7f77642664db6f9169ece0c6df349";
 const LOCAL_CHECKER_SHA256 =
-  "a47ab56026ab0847d9d8147210f0a5d87015377c2f5ccea3cf2456a3f263a93c";
+  "831923a0dabbdaf65da351bad92e6cd7e3c4b16a4adf537b8d24f68f767957d6";
 const RELEASE_READINESS_CORE_URL =
   `https://raw.githubusercontent.com/reallyme/release-readiness/${RELEASE_READINESS_COMMIT}/core.mjs`;
 const RELEASE_READINESS_RUNNER_SHA256 =
-  "11d76baf406d440c22cb9afdd7615ce4003b2200c3e6959d5d48f1bcabd3abca";
+  "e9f10b51669ac68d338eaa727ecb43bccedc2d02af57c59519dc6789fee85875";
 const RELEASE_READINESS_PACKAGE_SHA256 =
-  "796f66652e5227ad6e4fa55a01f7316d3bb2c6ad083aed2790cc3260769591ea";
+  "65b755c7c6cbdfad94bcdc9e6260785ef55c0130f54c6b73d2b3c7582a3c91b4";
+const RELEASE_READINESS_SUPPORT_FILES = [
+  ["scripts/public-ci.mjs", "d6b13476c11589ca22cbb114deb3d2a3fb75f7ef86b4fdff2d8111be4ba03be7"],
+  ["scripts/public-release.mjs", "8fcf217716380185c7bbb4653da1e58acc27a5e1823ed539ca5ccda9f7f9a8e6"],
+  ["scripts/public-repo-policy.mjs", "fdad8fe9c0e85043b764a0321558af7a85324bceb7724c693a2824d955b0a204"],
+  ["scripts/android-runtime.mjs", "5e80d5dee4a1ac225dfe155dd6d5477e1c52bc18be103f7b6fef181a0d4cb3c9"],
+  ["scripts/android-publication.mjs", "539660a91b7b9150a9d85cafff35c5bbefd97a57541d2343f55f1d1243e3be7b"],
+  ["templates/cla.yaml", "3c5e89c5753d128643e5862e6baeb6b97c4f0ce1d6ef158cf46db3deeec6b955"],
+];
 const LOCAL_CHECKER_PATH = "scripts/check_release_readiness.mjs";
 const MAX_CORE_BYTES = 262_144;
 const MAX_CHECKER_BYTES = 524_288;
@@ -129,6 +137,9 @@ try {
   for (const [url, maximum, label, digest] of [
     [officialRunnerUrl, MAX_CORE_BYTES, "package runner", RELEASE_READINESS_RUNNER_SHA256],
     [new URL("package.json", packageUrl), MAX_CORE_BYTES, "package manifest", RELEASE_READINESS_PACKAGE_SHA256],
+    ...RELEASE_READINESS_SUPPORT_FILES.map(([path, digest]) => [
+      new URL(path, packageUrl), MAX_CORE_BYTES, `package ${path}`, digest,
+    ]),
   ]) {
     if (!timingSafeEqual(sha256(readBoundedRegularFile(url, maximum, label)), Buffer.from(digest, "hex"))) {
       fail(`${label} does not match the reviewed upstream pin`);
@@ -255,7 +266,10 @@ const checkerArguments = [...arguments_].filter((argument) =>
 );
 const checker = spawnSync(process.execPath, [fileURLToPath(officialRunnerUrl), ...checkerArguments], {
   cwd: repositoryRoot,
-  env: process.env,
+  env: {
+    ...process.env,
+    RELEASE_READINESS_PUBLIC_REPO: process.env.RELEASE_READINESS_PUBLIC_REPO ?? "true",
+  },
   stdio: "inherit",
 });
 if (checker.error !== undefined) {

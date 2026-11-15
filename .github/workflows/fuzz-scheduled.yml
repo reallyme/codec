@@ -1,0 +1,64 @@
+# SPDX-FileCopyrightText: 2026 ReallyMe Technologies Limited
+#
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+name: Scheduled Fuzz
+
+on:
+  schedule:
+    - cron: "37 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scheduled:
+    name: scheduled fuzz (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - base64url
+          - dag_cbor
+          - deterministic_cbor
+          - general_cbor
+          - der
+          - tlv
+          - multibase
+          - multicodec
+          - multikey
+          - operation_contract
+          - jcs_text
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Rust nightly
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+        with:
+          toolchain: nightly-2026-07-01
+
+      - name: Install cargo-fuzz
+        run: cargo install --git https://github.com/rust-fuzz/cargo-fuzz.git --rev 984c861c8dfea28055254c5f1d2659ab2cd63f76 --locked cargo-fuzz
+
+      - name: Seed general CBOR regressions
+        if: matrix.target == 'general_cbor'
+        run: |
+          mkdir -p fuzz/corpus/general_cbor
+          cp fuzz/seeds/general_cbor/* fuzz/corpus/general_cbor/
+
+      - name: Run time-boxed fuzz target
+        run: cargo +nightly-2026-07-01 fuzz run ${{ matrix.target }} -- -max_total_time=300 -rss_limit_mb=4096
+
+      - name: Upload crash artifacts
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fuzz-artifacts-${{ matrix.target }}
+          path: fuzz/artifacts/${{ matrix.target }}
+          if-no-files-found: ignore
