@@ -9,6 +9,8 @@ cross-language divergence as security-relevant.
 Please report vulnerabilities privately before public disclosure through
 [GitHub private vulnerability reporting](https://github.com/reallyme/codec/security/advisories/new).
 
+The primary security contact is [security@really.me](mailto:security@really.me).
+
 Include the affected package, version, input shape, and the smallest
 reproduction you can share without exposing sensitive data. Do not attach
 private keys, production identity documents, or other secrets.
