@@ -14,7 +14,7 @@ jobs:
   kani:
     name: Kani (${{ matrix.area }})
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: ${{ matrix.timeout_minutes || 30 }}
     strategy:
       fail-fast: false
       matrix:
@@ -22,6 +22,8 @@ jobs:
           - area: cbor-cid
             package: reallyme-codec-cbor
             features: ''
+            jobs: 2
+            timeout_minutes: 60
           - area: jcs
             package: reallyme-codec-jcs
             features: ''
@@ -79,6 +81,7 @@ jobs:
           PROOF_PACKAGE: ${{ matrix.package }}
           PROOF_FEATURES: ${{ matrix.features }}
           PROOF_HARNESS: ${{ matrix.harness }}
+          PROOF_JOBS: ${{ matrix.jobs || 1 }}
         run: |
           cargo fetch --locked
           sha256sum Cargo.lock > "$RUNNER_TEMP/workspace-lock.sha256"
@@ -90,7 +93,7 @@ jobs:
             args+=(--harness "$PROOF_HARNESS")
           fi
           results="$RUNNER_TEMP/verification.json"
-          CARGO_NET_OFFLINE=true cargo kani "${args[@]}" --output-format terse \
+          CARGO_NET_OFFLINE=true cargo kani "${args[@]}" --jobs "$PROOF_JOBS" --output-format terse \
             -Z unstable-options --export-json "$results"
           sha256sum --check --strict "$RUNNER_TEMP/workspace-lock.sha256"
           # Kani reports unmet cover goals separately from assertion failures.
