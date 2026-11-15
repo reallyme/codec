@@ -22,8 +22,9 @@ readonly ANDROID_R8_SYSTEM_IMAGE="system-images;android-37.1;google_apis_ps16k;x
 export ANDROID_AVD_HOME="${ANDROID_AVD_HOME:?isolated Android AVD home is required}"
 mkdir -p "$ANDROID_AVD_HOME"
 
-{ yes 2>/dev/null || true; } | "$SDKMANAGER" "emulator" "platform-tools" "$ANDROID_R8_PLATFORM" "$ANDROID_R8_SYSTEM_IMAGE"
-printf 'no\n' | "$AVDMANAGER" create avd --force -n "$AVD_NAME" -k "$ANDROID_R8_SYSTEM_IMAGE"
+{ yes 2>/dev/null || true; } | "$SDKMANAGER" "emulator" "$ANDROID_R8_PLATFORM" "$ANDROID_R8_SYSTEM_IMAGE"
+# Use the same hardware profile as the Android R8 runtime workflow.
+printf 'no\n' | "$AVDMANAGER" create avd --force -n "$AVD_NAME" -k "$ANDROID_R8_SYSTEM_IMAGE" --device pixel
 
 # The published AAR is a new dependency on every CI candidate. Bind its
 # sealed bytes into an isolated copy of the consumer's strict verification
