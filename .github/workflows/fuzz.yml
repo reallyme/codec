@@ -39,6 +39,9 @@ jobs:
       - name: Build fuzz targets
         run: cargo +nightly-2026-07-01 fuzz build
 
+      - name: Replay operation contract regression
+        run: cargo +nightly-2026-07-01 fuzz run operation_contract fuzz/seeds/operation_contract/provider_info.json
+
       - name: Record verified source
         id: verified
         shell: bash

@@ -6,7 +6,8 @@
 
 #![no_main]
 
-use codec_proto::generated::proto::reallyme::codec::v1::CodecOperationResponse;
+use codec_proto::generated::proto::reallyme::codec::v1::codec_api_operation_response::Outcome;
+use codec_proto::generated::proto::reallyme::codec::v1::CodecApiOperationResponse;
 use codec_proto::{decode_protobuf, MAX_CODEC_PROTO_MESSAGE_BYTES};
 use libfuzzer_sys::fuzz_target;
 use reallyme_codec::operation_contract::{
@@ -15,16 +16,23 @@ use reallyme_codec::operation_contract::{
 
 fuzz_target!(|data: &[u8]| {
     let binary_response = process_operation_response(data);
-    assert!(binary_response.len() <= MAX_CODEC_PROTO_MESSAGE_BYTES);
-    assert!(
-        matches!(decode_protobuf::<CodecOperationResponse>(&binary_response), Ok(response) if response.outcome.is_some())
-    );
+    assert_discriminated_response(&binary_response);
 
     // ProtoJSON accepts bytes directly and must reject invalid UTF-8 and JSON
     // through the same generated response channel without panicking.
     let json_response = process_operation_response_json(data);
-    assert!(json_response.len() <= MAX_CODEC_PROTO_MESSAGE_BYTES);
-    assert!(
-        matches!(decode_protobuf::<CodecOperationResponse>(&json_response), Ok(response) if response.outcome.is_some())
-    );
+    assert_discriminated_response(&json_response);
 });
+
+fn assert_discriminated_response(bytes: &[u8]) {
+    assert!(bytes.len() <= MAX_CODEC_PROTO_MESSAGE_BYTES);
+    // Strict decoding checks the response against all operation and error
+    // branches that the dispatchers can emit, including provider metadata.
+    let response = decode_protobuf::<CodecApiOperationResponse>(bytes)
+        .expect("dispatcher returned an invalid protobuf response");
+    match response.outcome.as_ref() {
+        Some(Outcome::Result(result)) => assert!(result.result.is_some()),
+        Some(Outcome::Error(error)) => assert!(error.error.is_some()),
+        None => panic!("dispatcher returned a response without an outcome"),
+    }
+}
