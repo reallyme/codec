@@ -24,7 +24,7 @@ license = "MIT OR Apache-2.0"
 cargo-fuzz = true
 
 [dependencies]
-libfuzzer-sys = "0.4"
+libfuzzer-sys = "0.4.13"
 stats_alloc = "=0.1.10"
 
 codec-base64url = { package = "reallyme-codec-base64url", path = "../crates/base64url" }

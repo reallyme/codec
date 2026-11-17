@@ -1869,7 +1869,13 @@ assertContains("packages/kotlin/build.gradle.kts", "reallyme.codec.requireFullNa
 assertContains("packages/kotlin/build.gradle.kts", "verifyBundledNativeResources");
 assertContains("packages/kotlin/build.gradle.kts", "verifyHostBundledNativeResource");
 assertContains("packages/kotlin/build.gradle.kts", "verifyJarContainsNativeResources");
-assertContains("packages/kotlin/build.gradle.kts", "ZipFile(jarTask.get().archiveFile.get().asFile)");
+// Ktlint may split this call chain across lines and add a trailing comma.
+// Preserve the artifact-source check without depending on its presentation.
+if (!/ZipFile\s*\(\s*jarTask\s*\.\s*get\(\)\s*\.\s*archiveFile\s*\.\s*get\(\)\s*\.\s*asFile\s*,?\s*\)/u.test(
+  scrubCommentsForAssertion("packages/kotlin/build.gradle.kts", readText("packages/kotlin/build.gradle.kts")),
+)) {
+  fail("packages/kotlin/build.gradle.kts must open the JVM JAR produced by its jar task");
+}
 assertContains("packages/kotlin/build.gradle.kts", "expectedNativeDigestMetadata");
 assertContains("packages/kotlin/build.gradle.kts", "ReallyMe codec native digest does not match");
 assertContains("packages/kotlin/build.gradle.kts", "JVM JAR native digest does not match");
@@ -2477,7 +2483,7 @@ assertContains(
   "ReallyMeCodecMemory.clearOwned(&responseBytes)",
 );
 assertContains("packages/swift/Sources/ReallyMeCodec/CallCodecWithRustCAbi.swift", "throw ReallyMeCodecError.providerFailure");
-assertContains("packages/swift/Sources/ReallyMeCodec/CallCodecWithRustCAbi.swift", ".canonicalInternal");
+assertContains("packages/swift/Sources/ReallyMeCodec/MapCodecError.swift", "expectedOrigin = error.reason == .canonicalInternal ? .provider : .caller");
 assertContains("packages/swift/Tests/ReallyMeCodecTests/ReallyMeCodecTests.swift", 'XCTAssertNil(try codec.tryParseCid("not-a-cid"))');
 assertContains("packages/swift/Tests/ReallyMeCodecTests/ReallyMeCodecTests.swift", "XCTAssertEqual(try codec.dagCborCodecCode(), 0x71)");
 assertContains("packages/swift/Tests/ReallyMeCodecTests/ReallyMeCodecTests.swift", 'codec.base58btcDecode("")');
@@ -2972,7 +2978,11 @@ assertSubstringsInOrder(".github/workflows/kotlin-android-package-preflight.yml"
 assertNotContains(".github/workflows/kotlin-android-package-preflight.yml", ":consumer-r8-runtime:assembleRelease");
 assertNotContains(".github/workflows/kotlin-android-package-release.yml", "gradlew");
 
-assertContains("packages/kotlin/build.gradle.kts", 'val localReleaseRepositoryDir = providers.gradleProperty("reallyme.maven.localReleaseRepositoryDir")');
+if (!/val\s+localReleaseRepositoryDir\s*=\s*providers\s*\.gradleProperty\("reallyme\.maven\.localReleaseRepositoryDir"\)/u.test(
+  scrubCommentsForAssertion("packages/kotlin/build.gradle.kts", readText("packages/kotlin/build.gradle.kts")),
+)) {
+  fail("packages/kotlin/build.gradle.kts must derive its local release repository from the configured property");
+}
 assertContains("packages/kotlin/build.gradle.kts", 'name = "localRelease"');
 assertContains("packages/kotlin/build.gradle.kts", 'if (name.endsWith("ToRemoteReleaseRepository"))');
 assertContains("packages/kotlin-android/build.gradle.kts", 'val localReleaseRepositoryDir = providers.gradleProperty("reallyme.maven.localReleaseRepositoryDir")');

@@ -12,7 +12,7 @@ publish = false
 
 [dependencies]
 reallyme-codec-jcs = { path = "../../crates/jcs" }
-serde_json = { version = "1", features = ["arbitrary_precision", "preserve_order"] }
+serde_json = { version = "1.0.154", features = ["arbitrary_precision", "preserve_order"] }
 
 [lints.rust]
 unsafe_code = "forbid"
