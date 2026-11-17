@@ -2,6 +2,11 @@
 
 The `me.really:codec` JVM package provides codecs for Java and Kotlin.
 
+`ReallyMeCodecException` preserves its existing subtype and exposes nullable
+generated `CodecErrorReason` and `CodecErrorOrigin` values through `reason` and
+`origin`. Validated protobuf failures retain both values; failures without a
+validated envelope leave both absent.
+
 ## Install
 
 ```kotlin

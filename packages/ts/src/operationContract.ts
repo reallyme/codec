@@ -4,7 +4,7 @@
 
 import { MAX_CODEC_PROTO_JSON_BYTES, MAX_CODEC_PROTO_MESSAGE_BYTES } from "./boundary.js";
 import { resourceLimitOperationResponse } from "./boundedOperationResponse.js";
-import { errorCodeForCodecErrorMessage } from "./classifyOperationError.js";
+import { errorForCodecErrorMessage } from "./classifyOperationError.js";
 import { clearGeneratedOperationResult, detachGeneratedOperationResultBytes } from "./clearGeneratedOperation.js";
 import { MAX_DETERMINISTIC_CBOR_PROTO_RECURSION_DEPTH } from "./deterministicCborBoundary.js";
 import { ReallyMeCodecError } from "./errors.js";
@@ -149,9 +149,7 @@ export const processOperationRequestBytes = (
           }
           return response.outcome.value;
         case "error":
-          throw new ReallyMeCodecError(
-            errorCodeForCodecErrorMessage(response.outcome.value),
-          );
+          throw errorForCodecErrorMessage(response.outcome.value);
         case undefined:
           throw new ReallyMeCodecError("provider-failure");
       }

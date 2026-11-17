@@ -2,6 +2,11 @@
 
 The `@reallyme/codec` TypeScript package provides base encodings, multiformats, CBOR, CID, PEM and JCS through WebAssembly.
 
+`ReallyMeCodecError` retains its presentation `code` and exposes the generated
+`reason` and `origin` from validated protobuf error envelopes. Import
+`CodecErrorReason` and `CodecErrorOrigin` from this package to inspect them.
+Failures without a validated envelope leave both fields undefined.
+
 ```sh
 npm install @reallyme/codec
 ```

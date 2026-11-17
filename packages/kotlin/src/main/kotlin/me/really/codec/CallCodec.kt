@@ -102,7 +102,7 @@ internal fun <T> processOperation(
     }
 }
 
-private fun exceptionForCodecError(codecError: CodecError): ReallyMeCodecException {
+internal fun exceptionForCodecError(codecError: CodecError): ReallyMeCodecException {
     if (codecError.reallyMeHasUnknownFieldsForValidation()) {
         return ReallyMeCodecException.ProviderFailure()
     }
@@ -178,23 +178,26 @@ private fun exceptionForCodecError(codecError: CodecError): ReallyMeCodecExcepti
     if (codecError.origin != expectedOrigin) {
         return ReallyMeCodecException.ProviderFailure()
     }
-    if (expectedOrigin != CodecErrorOrigin.CODEC_ERROR_ORIGIN_CALLER) {
-        return ReallyMeCodecException.ProviderFailure()
-    }
     val reason =
         when (codecError.errorCase) {
             CodecError.ErrorCase.BASE_ENCODING -> codecError.baseEncoding.reason
+            CodecError.ErrorCase.PEM -> codecError.pem.reason
             CodecError.ErrorCase.CANONICALIZATION -> codecError.canonicalization.reason
             CodecError.ErrorCase.MULTIFORMAT -> codecError.multiformat.reason
-            else -> null
+            CodecError.ErrorCase.BACKEND -> codecError.backend.reason
+            CodecError.ErrorCase.BOUNDARY -> codecError.boundary.reason
+            else -> return ReallyMeCodecException.ProviderFailure()
         }
+    if (expectedOrigin != CodecErrorOrigin.CODEC_ERROR_ORIGIN_CALLER) {
+        return ReallyMeCodecException.ProviderFailure(reason, codecError.origin)
+    }
     if (reason == CodecErrorReason.CODEC_ERROR_REASON_MULTIFORMAT_UNKNOWN_MULTICODEC ||
         reason == CodecErrorReason.CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTICODEC_PREFIX
     ) {
-        return ReallyMeCodecException.UnsupportedCodec()
+        return ReallyMeCodecException.UnsupportedCodec(reason, codecError.origin)
     }
     if (reason == CodecErrorReason.CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE) {
-        return ReallyMeCodecException.UnsupportedIpldValue()
+        return ReallyMeCodecException.UnsupportedIpldValue(reason, codecError.origin)
     }
     return if (reason in
         setOf(
@@ -207,9 +210,9 @@ private fun exceptionForCodecError(codecError: CodecError): ReallyMeCodecExcepti
             CodecErrorReason.CODEC_ERROR_REASON_CANONICAL_CBOR_TRAILING_BYTES,
         )
     ) {
-        ReallyMeCodecException.NonCanonical()
+        ReallyMeCodecException.NonCanonical(reason, codecError.origin)
     } else {
-        ReallyMeCodecException.InvalidInput()
+        ReallyMeCodecException.InvalidInput(reason, codecError.origin)
     }
 }
 

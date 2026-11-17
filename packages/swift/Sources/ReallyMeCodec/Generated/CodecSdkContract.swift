@@ -16,6 +16,39 @@ public enum ReallyMeCodecError: Error, Equatable, Sendable {
     case unsupportedIpldValue
     case nonCanonical
     case providerFailure
+    case operationFailure(
+        category: ReallyMeProtoCodecSdkErrorCategory,
+        reason: ReallyMeProtoCodecErrorReason,
+        origin: ReallyMeProtoCodecErrorOrigin
+    )
+
+    /// Schema-defined presentation category, including for local platform failures.
+    public var category: ReallyMeProtoCodecSdkErrorCategory {
+        switch self {
+        case .unsupportedPlatform: return .unsupportedPlatform
+        case .dynamicLibraryNotFound: return .dynamicLibraryNotFound
+        case .dynamicLibraryLoadFailed: return .dynamicLibraryLoadFailed
+        case .providerUnavailable: return .providerUnavailable
+        case .symbolNotFound: return .symbolNotFound
+        case .invalidInput: return .invalidInput
+        case .unsupportedCodec: return .unsupportedCodec
+        case .unsupportedIpldValue: return .unsupportedIpldValue
+        case .nonCanonical: return .nonCanonical
+        case .providerFailure: return .providerFailure
+        case .operationFailure(let category, _, _): return category
+        }
+    }
+
+    /// Exact validated protobuf reason; local failures have no wire context.
+    public var reason: ReallyMeProtoCodecErrorReason? {
+        if case .operationFailure(_, let reason, _) = self { return reason }
+        return nil
+    }
+
+    public var origin: ReallyMeProtoCodecErrorOrigin? {
+        if case .operationFailure(_, _, let origin) = self { return origin }
+        return nil
+    }
 }
 
 public enum ReallyMeMulticodecTag: Sendable {

@@ -48,12 +48,12 @@ const POLICY_MODULE_SHA256 = new Map([
   ["packages/ts/scripts/lint-typescript.mjs", "ac3fbad064d2655773cc5c8476eda63e5e1cff0e53cceb6d9cf0faca923df89d"],
   ["scripts/check_swift_source_style.mjs", "24a53cb703ea5763ace64a7c6e43a96ec721235cfe6efec6b0bec134b43d0455"],
   ["scripts/release-readiness/sdk-source-policy.mjs", "9527f3842536ed78e8d4358c4a802f7ecf1669c6537d87d67a4d6ccb6e28011f"],
-  ["scripts/generate_codec_sdk_contract.mjs", "0f0c49b1f3f8185c6599aa4123b8b432224e146760561a2d45d5e37d9dae9cd0"],
+  ["scripts/generate_codec_sdk_contract.mjs", "1512ecb968019c0516d326540947981edafd10a328782fbff483586e0300ee12"],
   ["scripts/codec_proto_schema.mjs", "4ee81a8a3c896d70a871bfb4a0724c007d709891a88580c3eed777bb80ddcbc9"],
   ["scripts/release-readiness/native-proto-policy.mjs", "cd434704f16db0de4e2a80db1a7fbfa1a6e86e7b04df9669da9b53cd18c4cdd9"],
   ["scripts/generate_codec_proto.mjs", "2488376480cec9894b24fcb777a96ee5b062b5b077386112c278d82352ce5719"],
   ["scripts/generate_codec_proto_support.mjs", "6ec4f0c7727003fd2d36e537a51f27a0f20bf5cbdf194de912857d94c0ba462a"],
-  ["scripts/harden_codec_sdk_proto.mjs", "60636ba0bc757c45ec951ca13d79fedba29620f605a1c1d4e6b6d0c8c3c0d0ae"],
+  ["scripts/harden_codec_sdk_proto.mjs", "c736d6c1a443980843e7b35dc072601e29811e4189ed7728d53d41a6ec522ce9"],
   ["scripts/release-readiness/source-policy.mjs", "1bc1368be565bfb972ef68a7b3a532c5b1969f40ef9893cd660fb1c244a4202e"],
   ["scripts/verify_release_version.mjs", "bc858e3f4bd98b808b5557b7c50755b4a0d3595393842d7cd01728f853d86215"],
   ["scripts/codec_proto_sensitivity.mjs", "00f8d4738b480809212adfe026a86563c74a2db5f118d8c804a02fe691dba5d8"],
@@ -1499,6 +1499,16 @@ for (const sdkPath of [
   assertNotContains(sdkPath, "reason <=");
 }
 assertContains("packages/ts/src/classifyOperationError.ts", "const errorCodeForCodecErrorMessage =");
+assertContains("packages/ts/src/errors.ts", "readonly reason: CodecErrorReason | undefined");
+assertContains("packages/ts/src/errors.ts", "readonly origin: CodecErrorOrigin | undefined");
+assertContains("packages/kotlin/src/main/kotlin/me/really/codec/generated/ReallyMeCodecException.kt", "public val reason: CodecErrorReason?");
+assertContains("packages/kotlin/src/main/kotlin/me/really/codec/generated/ReallyMeCodecException.kt", "public val origin: CodecErrorOrigin?");
+assertContains("packages/swift/Sources/ReallyMeCodec/Generated/CodecSdkContract.swift", "case operationFailure(");
+assertContains("packages/swift/Sources/ReallyMeCodec/Generated/CodecSdkContract.swift", "public var reason: ReallyMeProtoCodecErrorReason?");
+for (const errorEnum of ["CodecErrorReason", "CodecErrorOrigin", "CodecSdkErrorCategory"]) {
+  assertContains("gen/swift/reallyme/codec/v1/codec.pb.swift", `nonisolated public enum ReallyMeProto${errorEnum}:`);
+}
+
 for (const reasonRange of [
   "reason < 100 || reason > 199",
   "reason < 200 || reason > 299",
@@ -1519,16 +1529,16 @@ for (const typedSdkResultReaderPath of [
   assertNotContains(typedSdkResultReaderPath, "errorCodeForCodecError(");
 }
 assertContains(
-  "packages/swift/Sources/ReallyMeCodec/CallCodecWithRustCAbi.swift",
+  "packages/swift/Sources/ReallyMeCodec/MapCodecError.swift",
   "static func errorForCodecError(",
 );
 assertContains(
-  "packages/swift/Sources/ReallyMeCodec/CallCodecWithRustCAbi.swift",
+  "packages/swift/Sources/ReallyMeCodec/MapCodecError.swift",
   "Self.isNonCanonicalReason(error.reason)",
 );
 assertContains(
   "packages/kotlin/src/main/kotlin/me/really/codec/CallCodec.kt",
-  "private fun exceptionForCodecError(codecError: CodecError)",
+  "internal fun exceptionForCodecError(codecError: CodecError)",
 );
 assertContains(
   "packages/kotlin/src/main/kotlin/me/really/codec/CallCodec.kt",
@@ -2589,7 +2599,7 @@ assertContains(
 );
 assertContains("packages/ts/src/proto.ts", "CodecOperationResponseSchema");
 assertContains("packages/ts/src/proto.ts", "CodecOperationResultSchema");
-assertContains("packages/ts/src/operationContract.ts", "errorCodeForCodecErrorMessage");
+assertContains("packages/ts/src/operationContract.ts", "errorForCodecErrorMessage");
 assertContains("packages/ts/src/operationContract.ts", "MAX_CODEC_PROTO_MESSAGE_BYTES");
 assertContains("packages/ts/src/classifyOperationError.ts", "CodecErrorReason.CANONICAL_INTERNAL");
 assertContains("packages/ts/src/classifyOperationError.ts", 'case "boundary":');

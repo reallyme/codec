@@ -267,7 +267,7 @@ public struct ReallyMeCodec: Sendable {
                 (encoded) throws(ReallyMeCodecError) in
                 try text(provider.process(operation: CodecOperation.tryParseCid, first: encoded))
             }
-        } catch .invalidInput {
+        } catch let error where error.category == .invalidInput {
             return nil
         }
     }

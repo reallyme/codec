@@ -33,18 +33,18 @@ fileprivate nonisolated struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobu
 /// The oneof keeps base encoding, PEM, multiformat, and canonicalization
 /// failures distinct while the shared CodecErrorReason enum provides stable
 /// cross-language reason codes.
-nonisolated enum ReallyMeProtoCodecErrorOrigin: SwiftProtobuf.Enum, Swift.CaseIterable {
-  typealias RawValue = Int
+nonisolated public enum ReallyMeProtoCodecErrorOrigin: SwiftProtobuf.Enum, Swift.CaseIterable {
+  public typealias RawValue = Int
   case unspecified // = 0
   case caller // = 1
   case provider // = 2
   case UNRECOGNIZED(Int)
 
-  init() {
+  public init() {
     self = .unspecified
   }
 
-  init?(rawValue: Int) {
+  public init?(rawValue: Int) {
     switch rawValue {
     case 0: self = .unspecified
     case 1: self = .caller
@@ -53,7 +53,7 @@ nonisolated enum ReallyMeProtoCodecErrorOrigin: SwiftProtobuf.Enum, Swift.CaseIt
     }
   }
 
-  var rawValue: Int {
+  public var rawValue: Int {
     switch self {
     case .unspecified: return 0
     case .caller: return 1
@@ -63,7 +63,7 @@ nonisolated enum ReallyMeProtoCodecErrorOrigin: SwiftProtobuf.Enum, Swift.CaseIt
   }
 
   // The compiler won't synthesize support with the UNRECOGNIZED case.
-  static let allCases: [ReallyMeProtoCodecErrorOrigin] = [
+  public static let allCases: [ReallyMeProtoCodecErrorOrigin] = [
     .unspecified,
     .caller,
     .provider,
@@ -75,8 +75,8 @@ nonisolated enum ReallyMeProtoCodecErrorOrigin: SwiftProtobuf.Enum, Swift.CaseIt
 /// operations continue to report their more precise CodecErrorReason. SDK view
 /// generation uses the names below; platform-only categories are explicitly
 /// marked so they do not widen the other SDKs' existing error types.
-nonisolated enum ReallyMeProtoCodecSdkErrorCategory: SwiftProtobuf.Enum, Swift.CaseIterable {
-  typealias RawValue = Int
+nonisolated public enum ReallyMeProtoCodecSdkErrorCategory: SwiftProtobuf.Enum, Swift.CaseIterable {
+  public typealias RawValue = Int
   case unspecified // = 0
 
   /// sdk: swift
@@ -110,11 +110,11 @@ nonisolated enum ReallyMeProtoCodecSdkErrorCategory: SwiftProtobuf.Enum, Swift.C
   case providerFailure // = 10
   case UNRECOGNIZED(Int)
 
-  init() {
+  public init() {
     self = .unspecified
   }
 
-  init?(rawValue: Int) {
+  public init?(rawValue: Int) {
     switch rawValue {
     case 0: self = .unspecified
     case 1: self = .unsupportedPlatform
@@ -131,7 +131,7 @@ nonisolated enum ReallyMeProtoCodecSdkErrorCategory: SwiftProtobuf.Enum, Swift.C
     }
   }
 
-  var rawValue: Int {
+  public var rawValue: Int {
     switch self {
     case .unspecified: return 0
     case .unsupportedPlatform: return 1
@@ -149,7 +149,7 @@ nonisolated enum ReallyMeProtoCodecSdkErrorCategory: SwiftProtobuf.Enum, Swift.C
   }
 
   // The compiler won't synthesize support with the UNRECOGNIZED case.
-  static let allCases: [ReallyMeProtoCodecSdkErrorCategory] = [
+  public static let allCases: [ReallyMeProtoCodecSdkErrorCategory] = [
     .unspecified,
     .unsupportedPlatform,
     .dynamicLibraryNotFound,
@@ -455,8 +455,8 @@ nonisolated enum ReallyMeProtoCodecTag: SwiftProtobuf.Enum, Swift.CaseIterable {
 ///   400-499: CBOR/JCS/JSON canonicalization
 ///   500-599: backend and internal failures
 ///   600-699: caller-controlled protobuf and ProtoJSON boundary failures
-nonisolated enum ReallyMeProtoCodecErrorReason: SwiftProtobuf.Enum, Swift.CaseIterable {
-  typealias RawValue = Int
+nonisolated public enum ReallyMeProtoCodecErrorReason: SwiftProtobuf.Enum, Swift.CaseIterable {
+  public typealias RawValue = Int
   case unspecified // = 0
 
   /// Base encodings and generic byte-envelope limits.
@@ -514,11 +514,11 @@ nonisolated enum ReallyMeProtoCodecErrorReason: SwiftProtobuf.Enum, Swift.CaseIt
   case boundaryMissingOperation // = 603
   case UNRECOGNIZED(Int)
 
-  init() {
+  public init() {
     self = .unspecified
   }
 
-  init?(rawValue: Int) {
+  public init?(rawValue: Int) {
     switch rawValue {
     case 0: self = .unspecified
     case 100: self = .baseUnsupportedCodec
@@ -567,7 +567,7 @@ nonisolated enum ReallyMeProtoCodecErrorReason: SwiftProtobuf.Enum, Swift.CaseIt
     }
   }
 
-  var rawValue: Int {
+  public var rawValue: Int {
     switch self {
     case .unspecified: return 0
     case .baseUnsupportedCodec: return 100
@@ -617,7 +617,7 @@ nonisolated enum ReallyMeProtoCodecErrorReason: SwiftProtobuf.Enum, Swift.CaseIt
   }
 
   // The compiler won't synthesize support with the UNRECOGNIZED case.
-  static let allCases: [ReallyMeProtoCodecErrorReason] = [
+  public static let allCases: [ReallyMeProtoCodecErrorReason] = [
     .unspecified,
     .baseUnsupportedCodec,
     .baseInvalidEncoding,
@@ -7774,11 +7774,11 @@ nonisolated struct ReallyMeProtoCodecApiError: Sendable {
 fileprivate nonisolated let _protobuf_package = "reallyme.codec.v1"
 
 nonisolated extension ReallyMeProtoCodecErrorOrigin: SwiftProtobuf._ProtoNameProviding {
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0CODEC_ERROR_ORIGIN_UNSPECIFIED\0\u{1}CODEC_ERROR_ORIGIN_CALLER\0\u{1}CODEC_ERROR_ORIGIN_PROVIDER\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0CODEC_ERROR_ORIGIN_UNSPECIFIED\0\u{1}CODEC_ERROR_ORIGIN_CALLER\0\u{1}CODEC_ERROR_ORIGIN_PROVIDER\0")
 }
 
 nonisolated extension ReallyMeProtoCodecSdkErrorCategory: SwiftProtobuf._ProtoNameProviding {
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0CODEC_SDK_ERROR_CATEGORY_UNSPECIFIED\0\u{1}CODEC_SDK_ERROR_CATEGORY_UNSUPPORTED_PLATFORM\0\u{1}CODEC_SDK_ERROR_CATEGORY_DYNAMIC_LIBRARY_NOT_FOUND\0\u{1}CODEC_SDK_ERROR_CATEGORY_DYNAMIC_LIBRARY_LOAD_FAILED\0\u{1}CODEC_SDK_ERROR_CATEGORY_PROVIDER_UNAVAILABLE\0\u{1}CODEC_SDK_ERROR_CATEGORY_SYMBOL_NOT_FOUND\0\u{1}CODEC_SDK_ERROR_CATEGORY_INVALID_INPUT\0\u{1}CODEC_SDK_ERROR_CATEGORY_UNSUPPORTED_CODEC\0\u{1}CODEC_SDK_ERROR_CATEGORY_UNSUPPORTED_IPLD_VALUE\0\u{1}CODEC_SDK_ERROR_CATEGORY_NON_CANONICAL\0\u{1}CODEC_SDK_ERROR_CATEGORY_PROVIDER_FAILURE\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0CODEC_SDK_ERROR_CATEGORY_UNSPECIFIED\0\u{1}CODEC_SDK_ERROR_CATEGORY_UNSUPPORTED_PLATFORM\0\u{1}CODEC_SDK_ERROR_CATEGORY_DYNAMIC_LIBRARY_NOT_FOUND\0\u{1}CODEC_SDK_ERROR_CATEGORY_DYNAMIC_LIBRARY_LOAD_FAILED\0\u{1}CODEC_SDK_ERROR_CATEGORY_PROVIDER_UNAVAILABLE\0\u{1}CODEC_SDK_ERROR_CATEGORY_SYMBOL_NOT_FOUND\0\u{1}CODEC_SDK_ERROR_CATEGORY_INVALID_INPUT\0\u{1}CODEC_SDK_ERROR_CATEGORY_UNSUPPORTED_CODEC\0\u{1}CODEC_SDK_ERROR_CATEGORY_UNSUPPORTED_IPLD_VALUE\0\u{1}CODEC_SDK_ERROR_CATEGORY_NON_CANONICAL\0\u{1}CODEC_SDK_ERROR_CATEGORY_PROVIDER_FAILURE\0")
 }
 
 nonisolated extension ReallyMeProtoCodecPemLabel: SwiftProtobuf._ProtoNameProviding {
@@ -7806,7 +7806,7 @@ nonisolated extension ReallyMeProtoCodecTag: SwiftProtobuf._ProtoNameProviding {
 }
 
 nonisolated extension ReallyMeProtoCodecErrorReason: SwiftProtobuf._ProtoNameProviding {
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0CODEC_ERROR_REASON_UNSPECIFIED\0\u{2}d\u{1}CODEC_ERROR_REASON_BASE_UNSUPPORTED_CODEC\0\u{1}CODEC_ERROR_REASON_BASE_INVALID_ENCODING\0\u{1}CODEC_ERROR_REASON_BASE_INVALID_LENGTH\0\u{1}CODEC_ERROR_REASON_BASE_INPUT_TOO_LARGE\0\u{1}CODEC_ERROR_REASON_BASE_OUTPUT_TOO_LARGE\0\u{2}\u{6}CODEC_ERROR_REASON_BASE_INVALID_BASE64\0\u{1}CODEC_ERROR_REASON_BASE_INVALID_BASE64URL\0\u{2}\u{9}CODEC_ERROR_REASON_BASE_INVALID_HEX\0\u{1}CODEC_ERROR_REASON_BASE_NON_CANONICAL_HEX\0\u{2}O\u{1}CODEC_ERROR_REASON_PEM_INVALID_BOUNDARY\0\u{1}CODEC_ERROR_REASON_PEM_LABEL_MISMATCH\0\u{1}CODEC_ERROR_REASON_PEM_UNSUPPORTED_LABEL\0\u{1}CODEC_ERROR_REASON_PEM_INVALID_BODY\0\u{1}CODEC_ERROR_REASON_PEM_DER_TOO_LARGE\0\u{1}CODEC_ERROR_REASON_PEM_EMPTY_INPUT\0\u{1}CODEC_ERROR_REASON_PEM_EMPTY_DER\0\u{1}CODEC_ERROR_REASON_PEM_INVALID_OPTIONS\0\u{1}CODEC_ERROR_REASON_PEM_MISSING_BEGIN\0\u{1}CODEC_ERROR_REASON_PEM_MISSING_END\0\u{1}CODEC_ERROR_REASON_PEM_INVALID_BASE64\0\u{1}CODEC_ERROR_REASON_PEM_RESOURCE_LIMIT_EXCEEDED\0\u{2}Y\u{1}CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTIBASE_PREFIX\0\u{1}CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTICODEC_PREFIX\0\u{1}CODEC_ERROR_REASON_MULTIFORMAT_UNKNOWN_MULTICODEC\0\u{1}CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTIKEY\0\u{2}a\u{1}CODEC_ERROR_REASON_CANONICAL_INVALID_CBOR\0\u{1}CODEC_ERROR_REASON_CANONICAL_NON_CANONICAL_CBOR\0\u{1}CODEC_ERROR_REASON_CANONICAL_INVALID_JSON\0\u{1}CODEC_ERROR_REASON_CANONICAL_NON_CANONICAL_JSON\0\u{1}CODEC_ERROR_REASON_CANONICAL_INTERNAL\0\u{1}CODEC_ERROR_REASON_CANONICAL_NON_MINIMAL_CBOR_INTEGER\0\u{1}CODEC_ERROR_REASON_CANONICAL_DUPLICATE_CBOR_MAP_KEY\0\u{1}CODEC_ERROR_REASON_CANONICAL_CBOR_MAP_KEYS_OUT_OF_ORDER\0\u{1}CODEC_ERROR_REASON_CANONICAL_CBOR_TRAILING_BYTES\0\u{1}CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE\0\u{1}CODEC_ERROR_REASON_CANONICAL_INVALID_DER\0\u{1}CODEC_ERROR_REASON_CANONICAL_INVALID_TLV\0\u{2}Y\u{1}CODEC_ERROR_REASON_BACKEND_INTERNAL\0\u{2}d\u{1}CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF\0\u{1}CODEC_ERROR_REASON_BOUNDARY_MALFORMED_JSON\0\u{1}CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED\0\u{1}CODEC_ERROR_REASON_BOUNDARY_MISSING_OPERATION\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0CODEC_ERROR_REASON_UNSPECIFIED\0\u{2}d\u{1}CODEC_ERROR_REASON_BASE_UNSUPPORTED_CODEC\0\u{1}CODEC_ERROR_REASON_BASE_INVALID_ENCODING\0\u{1}CODEC_ERROR_REASON_BASE_INVALID_LENGTH\0\u{1}CODEC_ERROR_REASON_BASE_INPUT_TOO_LARGE\0\u{1}CODEC_ERROR_REASON_BASE_OUTPUT_TOO_LARGE\0\u{2}\u{6}CODEC_ERROR_REASON_BASE_INVALID_BASE64\0\u{1}CODEC_ERROR_REASON_BASE_INVALID_BASE64URL\0\u{2}\u{9}CODEC_ERROR_REASON_BASE_INVALID_HEX\0\u{1}CODEC_ERROR_REASON_BASE_NON_CANONICAL_HEX\0\u{2}O\u{1}CODEC_ERROR_REASON_PEM_INVALID_BOUNDARY\0\u{1}CODEC_ERROR_REASON_PEM_LABEL_MISMATCH\0\u{1}CODEC_ERROR_REASON_PEM_UNSUPPORTED_LABEL\0\u{1}CODEC_ERROR_REASON_PEM_INVALID_BODY\0\u{1}CODEC_ERROR_REASON_PEM_DER_TOO_LARGE\0\u{1}CODEC_ERROR_REASON_PEM_EMPTY_INPUT\0\u{1}CODEC_ERROR_REASON_PEM_EMPTY_DER\0\u{1}CODEC_ERROR_REASON_PEM_INVALID_OPTIONS\0\u{1}CODEC_ERROR_REASON_PEM_MISSING_BEGIN\0\u{1}CODEC_ERROR_REASON_PEM_MISSING_END\0\u{1}CODEC_ERROR_REASON_PEM_INVALID_BASE64\0\u{1}CODEC_ERROR_REASON_PEM_RESOURCE_LIMIT_EXCEEDED\0\u{2}Y\u{1}CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTIBASE_PREFIX\0\u{1}CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTICODEC_PREFIX\0\u{1}CODEC_ERROR_REASON_MULTIFORMAT_UNKNOWN_MULTICODEC\0\u{1}CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTIKEY\0\u{2}a\u{1}CODEC_ERROR_REASON_CANONICAL_INVALID_CBOR\0\u{1}CODEC_ERROR_REASON_CANONICAL_NON_CANONICAL_CBOR\0\u{1}CODEC_ERROR_REASON_CANONICAL_INVALID_JSON\0\u{1}CODEC_ERROR_REASON_CANONICAL_NON_CANONICAL_JSON\0\u{1}CODEC_ERROR_REASON_CANONICAL_INTERNAL\0\u{1}CODEC_ERROR_REASON_CANONICAL_NON_MINIMAL_CBOR_INTEGER\0\u{1}CODEC_ERROR_REASON_CANONICAL_DUPLICATE_CBOR_MAP_KEY\0\u{1}CODEC_ERROR_REASON_CANONICAL_CBOR_MAP_KEYS_OUT_OF_ORDER\0\u{1}CODEC_ERROR_REASON_CANONICAL_CBOR_TRAILING_BYTES\0\u{1}CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE\0\u{1}CODEC_ERROR_REASON_CANONICAL_INVALID_DER\0\u{1}CODEC_ERROR_REASON_CANONICAL_INVALID_TLV\0\u{2}Y\u{1}CODEC_ERROR_REASON_BACKEND_INTERNAL\0\u{2}d\u{1}CODEC_ERROR_REASON_BOUNDARY_MALFORMED_PROTOBUF\0\u{1}CODEC_ERROR_REASON_BOUNDARY_MALFORMED_JSON\0\u{1}CODEC_ERROR_REASON_BOUNDARY_RESOURCE_LIMIT_EXCEEDED\0\u{1}CODEC_ERROR_REASON_BOUNDARY_MISSING_OPERATION\0")
 }
 
 nonisolated extension ReallyMeProtoCodecGeneralCborLengthPolicy: SwiftProtobuf._ProtoNameProviding {

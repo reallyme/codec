@@ -77,6 +77,15 @@ REALLYME_CODEC_FFI_LIBRARY_PATH="$PWD/target/debug/libreallyme_codec_ffi.dylib" 
 swift test
 ```
 
+## Error Context
+
+Shared-operation failures use `ReallyMeCodecError.operationFailure`, retaining
+the generated `ReallyMeProtoCodecErrorReason` and `ReallyMeProtoCodecErrorOrigin`.
+Use `error.category` to classify both operation and platform failures. Existing
+platform cases remain available; failures without a validated protobuf envelope
+have no `reason` or `origin`. Code that previously matched a broad error case for
+an operation should switch on `error.category` to retain that classification.
+
 ## License
 
 Dual-licensed under the MIT License or Apache License, Version 2.0, at your

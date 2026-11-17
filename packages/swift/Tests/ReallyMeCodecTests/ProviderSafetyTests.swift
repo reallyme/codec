@@ -235,7 +235,7 @@ extension ReallyMeCodecTests {
         callerError.boundary = boundary
         callerError.origin = .caller
         XCTAssertEqual(
-            ReallyMeCodecRustCAbiProvider.errorForCodecError(callerError),
+            ReallyMeCodecRustCAbiProvider.errorForCodecError(callerError).category,
             .invalidInput
         )
 
@@ -245,7 +245,7 @@ extension ReallyMeCodecTests {
         providerError.backend = backend
         providerError.origin = .provider
         XCTAssertEqual(
-            ReallyMeCodecRustCAbiProvider.errorForCodecError(providerError),
+            ReallyMeCodecRustCAbiProvider.errorForCodecError(providerError).category,
             .providerFailure
         )
 
