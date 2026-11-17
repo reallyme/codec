@@ -2,283 +2,249 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use core::fmt;
-use std::cell::Cell;
-use std::collections::BTreeMap;
-use std::sync::OnceLock;
+pub(crate) use crate::sensitive_json_value::{SensitiveJsonValue, SensitiveNumber};
+use crate::{read_json_string::read_json_string, JcsError};
+use serde::de::{Deserializer, Visitor};
+use std::{collections::BTreeMap, sync::OnceLock};
 
-use serde::de::{DeserializeSeed, Deserializer, MapAccess, SeqAccess, Visitor};
-use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
-
-use crate::JcsError;
-
-/// Parses one JSON text while retaining duplicate-member information that
-/// would be lost by ordinary `serde_json::Value` deserialization.
+/// Parse one complete document without an unwiped string or number scratch.
 pub(crate) fn parse_json_text(input: &str) -> Result<SensitiveJsonValue, JcsError> {
     static NUMBER_VISITOR_IS_SAFE: OnceLock<bool> = OnceLock::new();
-    if !NUMBER_VISITOR_IS_SAFE.get_or_init(|| {
-        matches!(
-            parse_json_text_unchecked("1.5"),
-            Ok(SensitiveJsonValue::Number(_))
-        )
-    }) {
+    // Retain the published fail-closed feature-unification policy. Serde sees
+    // only this public constant, never identifying text from the caller.
+    if !NUMBER_VISITOR_IS_SAFE.get_or_init(native_number_representation) {
         return Err(JcsError::UnsupportedNumberRepresentation);
     }
-    parse_json_text_unchecked(input)
-}
-
-fn parse_json_text_unchecked(input: &str) -> Result<SensitiveJsonValue, JcsError> {
-    let duplicate_property = Cell::new(false);
-    let depth_exceeded = Cell::new(false);
-    let seed = StrictValueSeed {
-        duplicate_property: &duplicate_property,
-        depth_exceeded: &depth_exceeded,
-        depth: 0,
+    let mut parser = Parser {
+        input,
+        offset: 0,
+        duplicate: false,
     };
-    let mut deserializer = serde_json::Deserializer::from_str(input);
-    deserializer.disable_recursion_limit();
-    let value = seed.deserialize(&mut deserializer).map_err(|_| {
-        if depth_exceeded.get() {
-            JcsError::DepthExceeded
-        } else {
-            JcsError::InvalidJson
-        }
-    })?;
-    deserializer.end().map_err(|_| JcsError::InvalidJson)?;
-
-    if duplicate_property.get() {
+    let value = parser.value(0)?;
+    parser.whitespace()?;
+    if parser.offset != input.len() {
+        return Err(JcsError::InvalidJson);
+    }
+    if parser.duplicate {
         return Err(JcsError::DuplicateProperty);
     }
     Ok(value)
 }
 
-/// Owned JSON value parsed from caller text.
-///
-/// Raw JSON strings, object names, and document structure can carry PII. This
-/// type gives parser output an explicit owner whose drop path scrubs all owned
-/// string buffers before releasing them, including partially parsed values on
-/// serde error paths.
-pub(crate) enum SensitiveJsonValue {
-    Null,
-    Bool(bool),
-    Number(SensitiveNumber),
-    String(String),
-    #[expect(
-        clippy::vec_box,
-        reason = "array growth must not copy sensitive numeric payloads"
-    )]
-    Array(Vec<Box<SensitiveJsonValue>>),
-    /// Tree rotations move nodes. Boxing values keeps numeric payloads at a
-    /// stable address until their drop path wipes them.
-    Object(BTreeMap<String, Box<SensitiveJsonValue>>),
-}
-
-/// Parsed numeric value kept in a primitive that supports volatile wiping.
-/// `serde_json::Number` does not implement `Zeroize`, so retaining it in a
-/// sensitive parse tree would leave numeric identifiers in freed storage.
-pub(crate) enum SensitiveNumber {
-    Signed(i64),
-    Unsigned(u64),
-    Float(f64),
-}
-
-impl Zeroize for SensitiveNumber {
-    fn zeroize(&mut self) {
-        match self {
-            Self::Signed(value) => value.zeroize(),
-            Self::Unsigned(value) => value.zeroize(),
-            Self::Float(value) => value.zeroize(),
+fn native_number_representation() -> bool {
+    struct Probe;
+    impl<'de> Visitor<'de> for Probe {
+        type Value = bool;
+        fn expecting(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            formatter.write_str("native binary64 number visitation")
+        }
+        fn visit_f64<E>(self, value: f64) -> Result<bool, E> {
+            Ok(value == 1.5)
         }
     }
+    let mut probe = serde_json::Deserializer::from_str("1.5");
+    matches!(probe.deserialize_any(Probe), Ok(true))
 }
 
-impl Drop for SensitiveNumber {
-    fn drop(&mut self) {
-        self.zeroize();
+struct Parser<'a> {
+    input: &'a str,
+    offset: usize,
+    duplicate: bool,
+}
+
+impl Parser<'_> {
+    fn peek(&self) -> Option<u8> {
+        self.input.as_bytes().get(self.offset).copied()
     }
-}
 
-impl ZeroizeOnDrop for SensitiveNumber {}
+    fn advance(&mut self) -> Result<(), JcsError> {
+        self.offset = self.offset.checked_add(1).ok_or(JcsError::InvalidJson)?;
+        Ok(())
+    }
 
-impl SensitiveJsonValue {
-    fn zeroize_owned(&mut self) {
-        match self {
-            Self::Null | Self::Bool(_) => {}
-            Self::Number(_) => {}
-            Self::String(text) => text.zeroize(),
-            Self::Array(values) => {
-                // Each child owns its own Drop cleanup. Clearing the array
-                // avoids repeatedly traversing each subtree at every ancestor.
-                values.clear();
+    fn whitespace(&mut self) -> Result<(), JcsError> {
+        while matches!(self.peek(), Some(b' ' | b'\t' | b'\r' | b'\n')) {
+            self.advance()?;
+        }
+        Ok(())
+    }
+
+    fn consume(&mut self, expected: u8) -> Result<(), JcsError> {
+        if self.peek() != Some(expected) {
+            return Err(JcsError::InvalidJson);
+        }
+        self.advance()
+    }
+
+    fn literal(&mut self, literal: &[u8]) -> Result<(), JcsError> {
+        let end = self
+            .offset
+            .checked_add(literal.len())
+            .ok_or(JcsError::InvalidJson)?;
+        if self.input.as_bytes().get(self.offset..end) != Some(literal) {
+            return Err(JcsError::InvalidJson);
+        }
+        self.offset = end;
+        Ok(())
+    }
+
+    fn value(&mut self, depth: usize) -> Result<SensitiveJsonValue, JcsError> {
+        self.whitespace()?;
+        match self.peek() {
+            Some(b'n') => {
+                self.literal(b"null")?;
+                Ok(SensitiveJsonValue::Null)
             }
-            Self::Object(values) => {
-                let owned_entries = core::mem::take(values);
-                for (mut key, value) in owned_entries {
-                    key.zeroize();
-                    drop(value);
-                }
+            Some(b't') => {
+                self.literal(b"true")?;
+                Ok(SensitiveJsonValue::Bool(true))
             }
+            Some(b'f') => {
+                self.literal(b"false")?;
+                Ok(SensitiveJsonValue::Bool(false))
+            }
+            Some(b'"') => {
+                let mut text = read_json_string(self.input, &mut self.offset)?;
+                Ok(SensitiveJsonValue::String(core::mem::take(&mut *text)))
+            }
+            Some(b'[') => self.array(depth),
+            Some(b'{') => self.object(depth),
+            Some(b'-' | b'0'..=b'9') => self.number(),
+            _ => Err(JcsError::InvalidJson),
         }
     }
-}
 
-impl Drop for SensitiveJsonValue {
-    fn drop(&mut self) {
-        self.zeroize_owned();
-    }
-}
-
-impl ZeroizeOnDrop for SensitiveJsonValue {}
-
-#[derive(Clone, Copy)]
-struct StrictValueSeed<'a> {
-    duplicate_property: &'a Cell<bool>,
-    depth_exceeded: &'a Cell<bool>,
-    depth: usize,
-}
-
-impl<'de> DeserializeSeed<'de> for StrictValueSeed<'_> {
-    type Value = SensitiveJsonValue;
-
-    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_any(StrictValueVisitor {
-            duplicate_property: self.duplicate_property,
-            depth_exceeded: self.depth_exceeded,
-            depth: self.depth,
-        })
-    }
-}
-
-struct StrictValueVisitor<'a> {
-    duplicate_property: &'a Cell<bool>,
-    depth_exceeded: &'a Cell<bool>,
-    depth: usize,
-}
-
-impl StrictValueVisitor<'_> {
-    fn child_depth<E: serde::de::Error>(&self) -> Result<usize, E> {
-        let next = self.depth.checked_add(1).ok_or_else(|| {
-            self.depth_exceeded.set(true);
-            E::custom(InvalidDepth)
-        })?;
+    fn descend(depth: usize) -> Result<usize, JcsError> {
+        let next = depth.checked_add(1).ok_or(JcsError::DepthExceeded)?;
         if next > crate::MAX_NESTING_DEPTH {
-            self.depth_exceeded.set(true);
-            return Err(E::custom(InvalidDepth));
+            return Err(JcsError::DepthExceeded);
         }
         Ok(next)
     }
-}
 
-impl<'de> Visitor<'de> for StrictValueVisitor<'_> {
-    type Value = SensitiveJsonValue;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str("one valid JSON value")
-    }
-
-    fn visit_bool<E>(self, value: bool) -> Result<Self::Value, E> {
-        Ok(SensitiveJsonValue::Bool(value))
-    }
-
-    fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E> {
-        Ok(SensitiveJsonValue::Number(SensitiveNumber::Signed(value)))
-    }
-
-    fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E> {
-        Ok(SensitiveJsonValue::Number(SensitiveNumber::Unsigned(value)))
-    }
-
-    fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        if !value.is_finite() {
-            return Err(E::custom(InvalidFiniteNumber));
-        }
-        Ok(SensitiveJsonValue::Number(SensitiveNumber::Float(value)))
-    }
-
-    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E> {
-        Ok(SensitiveJsonValue::String(value.to_owned()))
-    }
-
-    fn visit_string<E>(self, value: String) -> Result<Self::Value, E> {
-        Ok(SensitiveJsonValue::String(value))
-    }
-
-    fn visit_none<E>(self) -> Result<Self::Value, E> {
-        Ok(SensitiveJsonValue::Null)
-    }
-
-    fn visit_unit<E>(self) -> Result<Self::Value, E> {
-        Ok(SensitiveJsonValue::Null)
-    }
-
-    fn visit_seq<A>(self, mut sequence: A) -> Result<Self::Value, A::Error>
-    where
-        A: SeqAccess<'de>,
-    {
-        let child_depth = self.child_depth::<A::Error>()?;
-        // Vec growth moves only box pointers; parsed numbers and strings stay
-        // at stable owned addresses and are wiped when their boxes drop.
+    fn array(&mut self, depth: usize) -> Result<SensitiveJsonValue, JcsError> {
+        let depth = Self::descend(depth)?;
+        self.consume(b'[')?;
+        self.whitespace()?;
         let mut values = Vec::new();
-        let seed = StrictValueSeed {
-            duplicate_property: self.duplicate_property,
-            depth_exceeded: self.depth_exceeded,
-            depth: child_depth,
-        };
-        while let Some(value) = sequence.next_element_seed(seed)? {
-            values.push(Box::new(value));
+        if self.peek() == Some(b']') {
+            self.advance()?;
+            return Ok(SensitiveJsonValue::Array(values));
         }
-        Ok(SensitiveJsonValue::Array(values))
+        loop {
+            let value = self.value(depth)?;
+            values
+                .try_reserve(1)
+                .map_err(|_| JcsError::SerializationError)?;
+            // Only pointers move during growth; each boxed value wipes itself.
+            values.push(Box::new(value));
+            self.whitespace()?;
+            match self.peek() {
+                Some(b']') => {
+                    self.advance()?;
+                    return Ok(SensitiveJsonValue::Array(values));
+                }
+                Some(b',') => self.advance()?,
+                _ => return Err(JcsError::InvalidJson),
+            }
+        }
     }
 
-    fn visit_map<A>(self, mut object: A) -> Result<Self::Value, A::Error>
-    where
-        A: MapAccess<'de>,
-    {
-        // Establish the wiping owner before parsing any members: errors from
-        // next_key or next_value must also clear already accepted object keys.
-        let child_depth = self.child_depth::<A::Error>()?;
-        let mut result = SensitiveJsonValue::Object(BTreeMap::new());
-        let seed = StrictValueSeed {
-            duplicate_property: self.duplicate_property,
-            depth_exceeded: self.depth_exceeded,
-            depth: child_depth,
-        };
-        if let SensitiveJsonValue::Object(values) = &mut result {
-            while let Some(key) = object.next_key::<String>()? {
-                let mut key = Zeroizing::new(key);
-                let is_duplicate = values.contains_key(key.as_str());
-                let value = object.next_value_seed(seed)?;
-                if is_duplicate {
-                    self.duplicate_property.set(true);
+    fn object(&mut self, depth: usize) -> Result<SensitiveJsonValue, JcsError> {
+        let depth = Self::descend(depth)?;
+        self.consume(b'{')?;
+        self.whitespace()?;
+        // Install the wiping owner before a member can fail. In particular,
+        // BTreeMap<String, _> alone would release earlier keys without wiping.
+        let mut owner = SensitiveJsonValue::Object(BTreeMap::new());
+        if self.peek() == Some(b'}') {
+            self.advance()?;
+            return Ok(owner);
+        }
+        if let SensitiveJsonValue::Object(values) = &mut owner {
+            loop {
+                self.whitespace()?;
+                let mut key = read_json_string(self.input, &mut self.offset)?;
+                self.whitespace()?;
+                self.consume(b':')?;
+                let value = self.value(depth)?;
+                if values.contains_key(key.as_str()) {
+                    self.duplicate = true;
                 } else {
                     values.insert(core::mem::take(&mut *key), Box::new(value));
                 }
+                self.whitespace()?;
+                match self.peek() {
+                    Some(b'}') => {
+                        self.advance()?;
+                        break;
+                    }
+                    Some(b',') => self.advance()?,
+                    _ => return Err(JcsError::InvalidJson),
+                }
             }
         }
-        Ok(result)
+        Ok(owner)
     }
-}
 
-#[derive(Clone, Copy)]
-struct InvalidFiniteNumber;
-
-impl fmt::Display for InvalidFiniteNumber {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str("JSON numbers must be finite")
+    fn digits(&mut self) -> Result<bool, JcsError> {
+        let start = self.offset;
+        while matches!(self.peek(), Some(b'0'..=b'9')) {
+            self.advance()?;
+        }
+        Ok(self.offset != start)
     }
-}
 
-#[derive(Clone, Copy)]
-struct InvalidDepth;
-
-impl fmt::Display for InvalidDepth {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str("JSON nesting exceeds the supported limit")
+    fn number(&mut self) -> Result<SensitiveJsonValue, JcsError> {
+        let start = self.offset;
+        let negative = self.peek() == Some(b'-');
+        if negative {
+            self.advance()?;
+        }
+        match self.peek() {
+            Some(b'0') => self.advance()?,
+            Some(b'1'..=b'9') => {
+                self.digits()?;
+            }
+            _ => return Err(JcsError::InvalidJson),
+        }
+        let mut integer = true;
+        if self.peek() == Some(b'.') {
+            integer = false;
+            self.advance()?;
+            if !self.digits()? {
+                return Err(JcsError::InvalidJson);
+            }
+        }
+        if matches!(self.peek(), Some(b'e' | b'E')) {
+            integer = false;
+            self.advance()?;
+            if matches!(self.peek(), Some(b'+' | b'-')) {
+                self.advance()?;
+            }
+            if !self.digits()? {
+                return Err(JcsError::InvalidJson);
+            }
+        }
+        let token = self
+            .input
+            .get(start..self.offset)
+            .ok_or(JcsError::InvalidJson)?;
+        if integer {
+            if negative {
+                if let Ok(value) = token.parse::<i64>() {
+                    return Ok(SensitiveJsonValue::Number(SensitiveNumber::Signed(value)));
+                }
+            } else if let Ok(value) = token.parse::<u64>() {
+                return Ok(SensitiveJsonValue::Number(SensitiveNumber::Unsigned(value)));
+            }
+        }
+        // core's binary64 parser borrows the token and needs no heap scratch.
+        // Validate JSON grammar first: FromStr also accepts non-JSON numbers.
+        let value = token.parse::<f64>().map_err(|_| JcsError::InvalidJson)?;
+        if !value.is_finite() {
+            return Err(JcsError::InvalidJson);
+        }
+        Ok(SensitiveJsonValue::Number(SensitiveNumber::Float(value)))
     }
 }

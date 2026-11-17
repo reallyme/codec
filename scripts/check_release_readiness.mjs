@@ -645,7 +645,10 @@ assertNotContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec
 assertNotContains("packages/ts/src/cbor.ts", "bytesBase64url");
 assertNotContains("packages/ts/src/cbor.ts", "string(value: string)");
 assertContains("crates/jcs/src/canonicalize.rs", "canonicalize_json_text");
-assertContains("crates/jcs/src/parse_json.rs", "serde_json::Deserializer::from_str(input)");
+assertContains("crates/jcs/src/parse_json.rs", "read_json_string(self.input, &mut self.offset)");
+assertNotContains("crates/jcs/src/parse_json.rs", "serde_json::Deserializer::from_str(input)");
+assertContains("crates/jcs/src/read_json_string.rs", "Zeroizing::new(String::new())");
+assertContains("crates/jcs/tests/parse_cleanup_tests.rs", "escaped_keys_and_values_are_wiped_on_success_and_all_failure_paths");
 assertContains("crates/ffi/src/codec.rs", "initialize_output_length(output_ptr");
 assertContains("crates/ffi/src/codec.rs", "write_i32(result_out, 0)");
 assertNotContains("crates/ffi/src/codec.rs", "serde_json::to_vec(&cbor_to_tagged");
