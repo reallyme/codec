@@ -110,6 +110,17 @@ public interface CodecApiOperationResultOrBuilder extends
   me.really.codec.v1.CodecPemEncodeResult getPemEncode();
 
   /**
+   * <code>.reallyme.codec.v1.CodecPemBundleDecodeResult pem_bundle_decode = 4002 [json_name = "pemBundleDecode"];</code>
+   * @return Whether the pemBundleDecode field is set.
+   */
+  boolean hasPemBundleDecode();
+  /**
+   * <code>.reallyme.codec.v1.CodecPemBundleDecodeResult pem_bundle_decode = 4002 [json_name = "pemBundleDecode"];</code>
+   * @return The pemBundleDecode.
+   */
+  me.really.codec.v1.CodecPemBundleDecodeResult getPemBundleDecode();
+
+  /**
    * <code>.reallyme.codec.v1.CodecDeterministicCborEncodeResult deterministic_cbor_encode = 5000 [json_name = "deterministicCborEncode"];</code>
    * @return Whether the deterministicCborEncode field is set.
    */

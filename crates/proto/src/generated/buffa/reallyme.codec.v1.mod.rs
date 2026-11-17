@@ -47,6 +47,10 @@ pub mod __buffa {
         reg.register_json_any(super::__CODEC_DAG_CBOR_DECODE_RESULT_JSON_ANY);
         reg.register_json_any(super::__CODEC_PEM_DECODE_OPTIONS_JSON_ANY);
         reg.register_json_any(super::__CODEC_PEM_DECODE_REQUEST_JSON_ANY);
+        reg.register_json_any(super::__CODEC_PEM_BUNDLE_DECODE_OPTIONS_JSON_ANY);
+        reg.register_json_any(super::__CODEC_PEM_BUNDLE_DECODE_REQUEST_JSON_ANY);
+        reg.register_json_any(super::__CODEC_PEM_BUNDLE_BLOCK_JSON_ANY);
+        reg.register_json_any(super::__CODEC_PEM_BUNDLE_DECODE_RESULT_JSON_ANY);
         reg.register_json_any(super::__CODEC_PEM_ENCODE_OPTIONS_JSON_ANY);
         reg.register_json_any(super::__CODEC_PEM_ENCODE_REQUEST_JSON_ANY);
         reg.register_json_any(super::__CODEC_PEM_ENCODE_RESULT_JSON_ANY);
@@ -194,6 +198,16 @@ pub use self::__buffa::view::CodecPemDecodeOptionsView;
 pub use self::__buffa::view::CodecPemDecodeOptionsOwnedView;
 #[doc(inline)]
 pub use self::__buffa::view::CodecPemDecodeRequestView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecPemBundleDecodeOptionsView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecPemBundleDecodeOptionsOwnedView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecPemBundleDecodeRequestView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecPemBundleBlockView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecPemBundleDecodeResultView;
 #[doc(inline)]
 pub use self::__buffa::view::CodecPemEncodeOptionsView;
 #[doc(inline)]

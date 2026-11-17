@@ -3058,6 +3058,1014 @@ impl<'a> ::buffa::MessageName for CodecPemDecodeRequestView<'a> {
 ::buffa::impl_default_view_instance!(CodecPemDecodeRequestView);
 ::buffa::impl_view_reborrow!(CodecPemDecodeRequestView);
 ::buffa::unsafe_impl_view_lifetime_parametric!(CodecPemDecodeRequestView);
+/// Zero bounds select 1.5 MiB input, 1 MiB DER per block and 64 blocks.
+/// Unspecified profile and scope select STRICT and ALL respectively.
+#[derive(Clone, Default)]
+pub struct CodecPemBundleDecodeOptionsView<'a> {
+    /// Field 1: `max_input_len`
+    pub max_input_len: u32,
+    /// Field 2: `max_der_len`
+    pub max_der_len: u32,
+    /// Field 3: `max_blocks`
+    pub max_blocks: u32,
+    /// Field 4: `syntax_profile`
+    pub syntax_profile: ::buffa::EnumValue<super::super::CodecPemSyntaxProfile>,
+    /// Field 5: `scope`
+    pub scope: ::buffa::EnumValue<super::super::CodecPemDecodeScope>,
+    #[doc(hidden)]
+    pub __buffa_phantom: ::core::marker::PhantomData<&'a ()>,
+}
+impl<'a> ::core::fmt::Debug for CodecPemBundleDecodeOptionsView<'a> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("CodecPemBundleDecodeOptionsView")
+            .field("max_input_len", &::core::format_args!("[REDACTED]"))
+            .field("max_der_len", &::core::format_args!("[REDACTED]"))
+            .field("max_blocks", &::core::format_args!("[REDACTED]"))
+            .field("syntax_profile", &::core::format_args!("[REDACTED]"))
+            .field("scope", &::core::format_args!("[REDACTED]"))
+            .finish()
+    }
+}
+impl<'a> ::buffa::sensitive::Zeroize for CodecPemBundleDecodeOptionsView<'a> {
+    fn zeroize(&mut self) {
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.max_input_len);
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.max_der_len);
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.max_blocks);
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.syntax_profile);
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.scope);
+    }
+}
+impl<'a> ::buffa::sensitive::ZeroizeOnDrop for CodecPemBundleDecodeOptionsView<'a> {}
+impl<'a> ::core::ops::Drop for CodecPemBundleDecodeOptionsView<'a> {
+    fn drop(&mut self) {
+        ::buffa::sensitive::Zeroize::zeroize(self);
+    }
+}
+impl<'a> ::buffa::MessageView<'a> for CodecPemBundleDecodeOptionsView<'a> {
+    type Owned = super::super::CodecPemBundleDecodeOptions;
+    fn decode_view(buf: &'a [u8]) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        let __limit = ::core::cell::Cell::new(::buffa::DEFAULT_UNKNOWN_FIELD_LIMIT);
+        let __elem = ::core::cell::Cell::new(::buffa::DEFAULT_ELEMENT_MEMORY_LIMIT);
+        <Self as ::buffa::MessageView>::decode_view_ctx(
+            buf,
+            ::buffa::DecodeContext::new(::buffa::RECURSION_LIMIT, &__limit)
+                .with_element_memory(&__elem),
+        )
+    }
+    fn decode_view_with_ctx(
+        buf: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        <Self as ::buffa::MessageView>::decode_view_ctx(buf, ctx)
+    }
+    #[inline]
+    fn merge_view_field(
+        &mut self,
+        tag: ::buffa::encoding::Tag,
+        cur: &'a [u8],
+        _before_tag: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<&'a [u8], ::buffa::DecodeError> {
+        let _ = ctx;
+        #[allow(unused_variables)]
+        let view = self;
+        let mut cur = cur;
+        match tag.field_number() {
+            1u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::Varint,
+                )?;
+                view.max_input_len = ::buffa::types::decode_uint32(&mut cur)?;
+            }
+            2u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::Varint,
+                )?;
+                view.max_der_len = ::buffa::types::decode_uint32(&mut cur)?;
+            }
+            3u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::Varint,
+                )?;
+                view.max_blocks = ::buffa::types::decode_uint32(&mut cur)?;
+            }
+            4u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::Varint,
+                )?;
+                view.syntax_profile = ::buffa::EnumValue::from(
+                    ::buffa::types::decode_int32(&mut cur)?,
+                );
+            }
+            5u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::Varint,
+                )?;
+                view.scope = ::buffa::EnumValue::from(
+                    ::buffa::types::decode_int32(&mut cur)?,
+                );
+            }
+            _ => {
+                ::buffa::encoding::skip_unknown_field(tag, &mut cur, ctx)?;
+            }
+        }
+        ::core::result::Result::Ok(cur)
+    }
+    fn to_owned_message(
+        &self,
+    ) -> ::core::result::Result<
+        super::super::CodecPemBundleDecodeOptions,
+        ::buffa::DecodeError,
+    > {
+        self.to_owned_from_source(None)
+    }
+    #[allow(
+        clippy::useless_conversion,
+        clippy::needless_update,
+        clippy::field_reassign_with_default
+    )]
+    fn to_owned_from_source(
+        &self,
+        __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
+    ) -> ::core::result::Result<
+        super::super::CodecPemBundleDecodeOptions,
+        ::buffa::DecodeError,
+    > {
+        #[allow(unused_imports)]
+        use ::buffa::alloc::string::ToString as _;
+        let _ = __buffa_src;
+        let mut __owned = <super::super::CodecPemBundleDecodeOptions as ::core::default::Default>::default();
+        __owned.max_input_len = self.max_input_len;
+        __owned.max_der_len = self.max_der_len;
+        __owned.max_blocks = self.max_blocks;
+        __owned.syntax_profile = self.syntax_profile;
+        __owned.scope = self.scope;
+        ::core::result::Result::Ok(__owned)
+    }
+}
+impl<'a> ::buffa::ViewEncode<'a> for CodecPemBundleDecodeOptionsView<'a> {
+    #[allow(clippy::needless_borrow, clippy::let_and_return)]
+    fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        let mut size = 0u64;
+        if self.max_input_len != 0u32 {
+            size += 1u64 + ::buffa::types::uint32_encoded_len(self.max_input_len) as u64;
+        }
+        if self.max_der_len != 0u32 {
+            size += 1u64 + ::buffa::types::uint32_encoded_len(self.max_der_len) as u64;
+        }
+        if self.max_blocks != 0u32 {
+            size += 1u64 + ::buffa::types::uint32_encoded_len(self.max_blocks) as u64;
+        }
+        {
+            let val = self.syntax_profile.to_i32();
+            if val != 0 {
+                size += 1u64 + ::buffa::types::int32_encoded_len(val) as u64;
+            }
+        }
+        {
+            let val = self.scope.to_i32();
+            if val != 0 {
+                size += 1u64 + ::buffa::types::int32_encoded_len(val) as u64;
+            }
+        }
+        ::buffa::saturate_size(size)
+    }
+    #[allow(clippy::needless_borrow)]
+    fn write_to(
+        &self,
+        _cache: &mut ::buffa::SizeCache,
+        buf: &mut impl ::buffa::EncodeSink,
+    ) {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        if self.max_input_len != 0u32 {
+            ::buffa::types::put_uint32_field(1u32, self.max_input_len, buf);
+        }
+        if self.max_der_len != 0u32 {
+            ::buffa::types::put_uint32_field(2u32, self.max_der_len, buf);
+        }
+        if self.max_blocks != 0u32 {
+            ::buffa::types::put_uint32_field(3u32, self.max_blocks, buf);
+        }
+        {
+            let val = self.syntax_profile.to_i32();
+            if val != 0 {
+                ::buffa::types::put_int32_field(4u32, val, buf);
+            }
+        }
+        {
+            let val = self.scope.to_i32();
+            if val != 0 {
+                ::buffa::types::put_int32_field(5u32, val, buf);
+            }
+        }
+    }
+}
+/// Serializes this view as protobuf JSON.
+///
+/// Implicit-presence fields with default values are omitted, `required`
+/// fields are always emitted, explicit-presence (`optional`) fields are
+/// emitted only when set, bytes fields are base64-encoded, and enum
+/// values are their proto name strings.
+///
+/// This impl uses `serialize_map(None)` because the number of emitted
+/// fields depends on default-omission rules; serializers that require
+/// known map lengths (e.g. `bincode`) will return a runtime error.
+/// Use the owned message type for those formats.
+impl<'__a> ::serde::Serialize for CodecPemBundleDecodeOptionsView<'__a> {
+    fn serialize<__S: ::serde::Serializer>(
+        &self,
+        __s: __S,
+    ) -> ::core::result::Result<__S::Ok, __S::Error> {
+        use ::serde::ser::SerializeMap as _;
+        let mut __map = __s.serialize_map(::core::option::Option::None)?;
+        if !::buffa::json_helpers::skip_if::is_zero_u32(&self.max_input_len) {
+            __map
+                .serialize_entry(
+                    "maxInputLen",
+                    &::buffa::json_helpers::ProtoJson(&self.max_input_len),
+                )?;
+        }
+        if !::buffa::json_helpers::skip_if::is_zero_u32(&self.max_der_len) {
+            __map
+                .serialize_entry(
+                    "maxDerLen",
+                    &::buffa::json_helpers::ProtoJson(&self.max_der_len),
+                )?;
+        }
+        if !::buffa::json_helpers::skip_if::is_zero_u32(&self.max_blocks) {
+            __map
+                .serialize_entry(
+                    "maxBlocks",
+                    &::buffa::json_helpers::ProtoJson(&self.max_blocks),
+                )?;
+        }
+        if !::buffa::json_helpers::skip_if::is_default_enum_value(&self.syntax_profile) {
+            __map.serialize_entry("syntaxProfile", &self.syntax_profile)?;
+        }
+        if !::buffa::json_helpers::skip_if::is_default_enum_value(&self.scope) {
+            __map.serialize_entry("scope", &self.scope)?;
+        }
+        __map.end()
+    }
+}
+impl<'a> ::buffa::MessageName for CodecPemBundleDecodeOptionsView<'a> {
+    const PACKAGE: &'static str = "reallyme.codec.v1";
+    const NAME: &'static str = "CodecPemBundleDecodeOptions";
+    const FULL_NAME: &'static str = "reallyme.codec.v1.CodecPemBundleDecodeOptions";
+    const TYPE_URL: &'static str = "type.googleapis.com/reallyme.codec.v1.CodecPemBundleDecodeOptions";
+}
+::buffa::impl_default_view_instance!(CodecPemBundleDecodeOptionsView);
+::buffa::impl_view_reborrow!(CodecPemBundleDecodeOptionsView);
+::buffa::unsafe_impl_view_lifetime_parametric!(CodecPemBundleDecodeOptionsView);
+/** Self-contained, `'static` owned view of a `CodecPemBundleDecodeOptions` message.
+
+ Wraps [`::buffa::OwnedView`]`<`[`CodecPemBundleDecodeOptionsView`]`<'static>>`: the decoded view and the [`::buffa::bytes::Bytes`] buffer it borrows from travel together, so the handle is `'static` and `Send + Sync` — suitable for async handlers, spawned tasks, and anywhere a `'static` bound is required.
+
+ Field accessors return borrows tied to `&self`. Use [`Self::view`] to get the full [`CodecPemBundleDecodeOptionsView`] when you need struct patterns, iteration helpers, or to pass the view to lifetime-parameterised code.*/
+#[derive(Clone, Debug)]
+pub struct CodecPemBundleDecodeOptionsOwnedView(
+    ::buffa::OwnedView<CodecPemBundleDecodeOptionsView<'static>>,
+);
+impl CodecPemBundleDecodeOptionsOwnedView {
+    /// Decode an owned view from a [`::buffa::bytes::Bytes`] buffer.
+    ///
+    /// The view borrows directly from the buffer's data; the buffer is
+    /// retained inside the returned handle.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`::buffa::DecodeError`] if the buffer contains invalid
+    /// protobuf data.
+    pub fn decode(
+        bytes: ::buffa::bytes::Bytes,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        ::core::result::Result::Ok(
+            CodecPemBundleDecodeOptionsOwnedView(::buffa::OwnedView::decode(bytes)?),
+        )
+    }
+    /// Decode with custom [`::buffa::DecodeOptions`] (recursion limit,
+    /// max message size).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`::buffa::DecodeError`] if the buffer is invalid or
+    /// exceeds the configured limits.
+    pub fn decode_with_options(
+        bytes: ::buffa::bytes::Bytes,
+        opts: &::buffa::DecodeOptions,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        ::core::result::Result::Ok(
+            CodecPemBundleDecodeOptionsOwnedView(
+                ::buffa::OwnedView::decode_with_options(bytes, opts)?,
+            ),
+        )
+    }
+    /// Build from an owned message via an encode → decode round-trip.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`::buffa::DecodeError::MessageTooLarge`] if the
+    /// message's encoded size exceeds the 2 GiB protobuf limit, or
+    /// another [`::buffa::DecodeError`] if the re-encoded bytes are
+    /// somehow invalid (should not happen for well-formed messages).
+    pub fn from_owned(
+        msg: &super::super::CodecPemBundleDecodeOptions,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        ::core::result::Result::Ok(
+            CodecPemBundleDecodeOptionsOwnedView(::buffa::OwnedView::from_owned(msg)?),
+        )
+    }
+    /// Borrow the full [`CodecPemBundleDecodeOptionsView`] with its lifetime tied to `&self`.
+    #[must_use]
+    pub fn view(&self) -> &CodecPemBundleDecodeOptionsView<'_> {
+        self.0.reborrow()
+    }
+    /// Convert to the owned message type.
+    ///
+    /// Infallible: this type's constructors wire-decode their
+    /// buffer, and a view produced by wire decoding always
+    /// converts. Delegates to [`::buffa::OwnedView::to_owned_message`],
+    /// whose contract also governs handles converted from a raw
+    /// [`::buffa::OwnedView`].
+    #[must_use]
+    pub fn to_owned_message(&self) -> super::super::CodecPemBundleDecodeOptions {
+        self.0.to_owned_message()
+    }
+    /// The underlying bytes buffer.
+    #[must_use]
+    pub fn bytes(&self) -> &::buffa::bytes::Bytes {
+        self.0.bytes()
+    }
+    /// Consume the handle, returning the underlying bytes buffer.
+    #[must_use]
+    pub fn into_bytes(self) -> ::buffa::bytes::Bytes {
+        self.0.into_bytes()
+    }
+    /// Field 1: `max_input_len`
+    #[must_use]
+    pub fn max_input_len(&self) -> u32 {
+        self.0.reborrow().max_input_len
+    }
+    /// Field 2: `max_der_len`
+    #[must_use]
+    pub fn max_der_len(&self) -> u32 {
+        self.0.reborrow().max_der_len
+    }
+    /// Field 3: `max_blocks`
+    #[must_use]
+    pub fn max_blocks(&self) -> u32 {
+        self.0.reborrow().max_blocks
+    }
+    /// Field 4: `syntax_profile`
+    #[must_use]
+    pub fn syntax_profile(
+        &self,
+    ) -> ::buffa::EnumValue<super::super::CodecPemSyntaxProfile> {
+        self.0.reborrow().syntax_profile
+    }
+    /// Field 5: `scope`
+    #[must_use]
+    pub fn scope(&self) -> ::buffa::EnumValue<super::super::CodecPemDecodeScope> {
+        self.0.reborrow().scope
+    }
+}
+impl ::core::convert::From<::buffa::OwnedView<CodecPemBundleDecodeOptionsView<'static>>>
+for CodecPemBundleDecodeOptionsOwnedView {
+    fn from(
+        inner: ::buffa::OwnedView<CodecPemBundleDecodeOptionsView<'static>>,
+    ) -> Self {
+        CodecPemBundleDecodeOptionsOwnedView(inner)
+    }
+}
+impl ::core::convert::From<CodecPemBundleDecodeOptionsOwnedView>
+for ::buffa::OwnedView<CodecPemBundleDecodeOptionsView<'static>> {
+    fn from(wrapper: CodecPemBundleDecodeOptionsOwnedView) -> Self {
+        wrapper.0
+    }
+}
+impl ::core::convert::AsRef<::buffa::OwnedView<CodecPemBundleDecodeOptionsView<'static>>>
+for CodecPemBundleDecodeOptionsOwnedView {
+    fn as_ref(&self) -> &::buffa::OwnedView<CodecPemBundleDecodeOptionsView<'static>> {
+        &self.0
+    }
+}
+impl ::buffa::HasMessageView for super::super::CodecPemBundleDecodeOptions {
+    type View<'a> = CodecPemBundleDecodeOptionsView<'a>;
+    type ViewHandle = CodecPemBundleDecodeOptionsOwnedView;
+}
+impl ::serde::Serialize for CodecPemBundleDecodeOptionsOwnedView {
+    fn serialize<__S: ::serde::Serializer>(
+        &self,
+        __s: __S,
+    ) -> ::core::result::Result<__S::Ok, __S::Error> {
+        ::serde::Serialize::serialize(&self.0, __s)
+    }
+}
+#[derive(Clone, Default)]
+pub struct CodecPemBundleDecodeRequestView<'a> {
+    /// SENSITIVE: armor may contain identifying certificates or private keys.
+    ///
+    /// Field 1: `pem`
+    pub pem: &'a [u8],
+    /// Field 2: `options`
+    pub options: ::buffa::MessageFieldView<
+        super::super::__buffa::view::CodecPemBundleDecodeOptionsView<'a>,
+    >,
+}
+impl<'a> ::core::fmt::Debug for CodecPemBundleDecodeRequestView<'a> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("CodecPemBundleDecodeRequestView")
+            .field("pem", &::core::format_args!("[REDACTED]"))
+            .field("options", &::core::format_args!("[REDACTED]"))
+            .finish()
+    }
+}
+impl<'a> ::buffa::sensitive::Zeroize for CodecPemBundleDecodeRequestView<'a> {
+    fn zeroize(&mut self) {
+        fn __requires_view_wipe_owner<
+            T: ::buffa::sensitive::Zeroize + ::buffa::sensitive::ZeroizeOnDrop,
+        >() {}
+        __requires_view_wipe_owner::<
+            super::super::__buffa::view::CodecPemBundleDecodeOptionsView<'a>,
+        >();
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.options);
+    }
+}
+impl<'a> ::buffa::sensitive::ZeroizeOnDrop for CodecPemBundleDecodeRequestView<'a> {}
+impl<'a> ::core::ops::Drop for CodecPemBundleDecodeRequestView<'a> {
+    fn drop(&mut self) {
+        ::buffa::sensitive::Zeroize::zeroize(self);
+    }
+}
+impl<'a> ::buffa::MessageView<'a> for CodecPemBundleDecodeRequestView<'a> {
+    type Owned = super::super::CodecPemBundleDecodeRequest;
+    fn decode_view(buf: &'a [u8]) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        let __limit = ::core::cell::Cell::new(::buffa::DEFAULT_UNKNOWN_FIELD_LIMIT);
+        let __elem = ::core::cell::Cell::new(::buffa::DEFAULT_ELEMENT_MEMORY_LIMIT);
+        <Self as ::buffa::MessageView>::decode_view_ctx(
+            buf,
+            ::buffa::DecodeContext::new(::buffa::RECURSION_LIMIT, &__limit)
+                .with_element_memory(&__elem),
+        )
+    }
+    fn decode_view_with_ctx(
+        buf: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        <Self as ::buffa::MessageView>::decode_view_ctx(buf, ctx)
+    }
+    #[inline]
+    fn merge_view_field(
+        &mut self,
+        tag: ::buffa::encoding::Tag,
+        cur: &'a [u8],
+        _before_tag: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<&'a [u8], ::buffa::DecodeError> {
+        let _ = ctx;
+        #[allow(unused_variables)]
+        let view = self;
+        let mut cur = cur;
+        match tag.field_number() {
+            1u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                view.pem = ::buffa::types::borrow_bytes(&mut cur)?;
+            }
+            2u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                let __sub_ctx = ctx.descend()?;
+                let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                match view.options.as_mut() {
+                    Some(existing) => {
+                        ::buffa::MessageView::merge_into_view(existing, sub, __sub_ctx)?
+                    }
+                    None => {
+                        view.options = ::buffa::MessageFieldView::set(
+                            <super::super::__buffa::view::CodecPemBundleDecodeOptionsView as ::buffa::MessageView>::decode_view_ctx(
+                                sub,
+                                __sub_ctx,
+                            )?,
+                        );
+                    }
+                }
+            }
+            _ => {
+                ::buffa::encoding::skip_unknown_field(tag, &mut cur, ctx)?;
+            }
+        }
+        ::core::result::Result::Ok(cur)
+    }
+    fn to_owned_message(
+        &self,
+    ) -> ::core::result::Result<
+        super::super::CodecPemBundleDecodeRequest,
+        ::buffa::DecodeError,
+    > {
+        self.to_owned_from_source(None)
+    }
+    #[allow(
+        clippy::useless_conversion,
+        clippy::needless_update,
+        clippy::field_reassign_with_default
+    )]
+    fn to_owned_from_source(
+        &self,
+        __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
+    ) -> ::core::result::Result<
+        super::super::CodecPemBundleDecodeRequest,
+        ::buffa::DecodeError,
+    > {
+        #[allow(unused_imports)]
+        use ::buffa::alloc::string::ToString as _;
+        let _ = __buffa_src;
+        let mut __owned = <super::super::CodecPemBundleDecodeRequest as ::core::default::Default>::default();
+        __owned.pem = ::core::convert::Into::into((self.pem).to_vec());
+        __owned.options = match self.options.as_option() {
+            Some(v) => {
+                ::buffa::MessageField::<
+                    super::super::CodecPemBundleDecodeOptions,
+                    ::buffa::Inline<super::super::CodecPemBundleDecodeOptions>,
+                >::some(v.to_owned_from_source(__buffa_src)?)
+            }
+            None => ::buffa::MessageField::none(),
+        };
+        ::core::result::Result::Ok(__owned)
+    }
+}
+impl<'a> ::buffa::ViewEncode<'a> for CodecPemBundleDecodeRequestView<'a> {
+    #[allow(clippy::needless_borrow, clippy::let_and_return)]
+    fn compute_size(&self, __cache: &mut ::buffa::SizeCache) -> u32 {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        let mut size = 0u64;
+        if !self.pem.is_empty() {
+            size += 1u64 + ::buffa::types::bytes_encoded_len(&self.pem) as u64;
+        }
+        if let ::core::option::Option::Some(__v) = self.options.as_option() {
+            let __slot = __cache.reserve();
+            let inner_size = __v.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 1u64 + ::buffa::encoding::varint_len(inner_size as u64) as u64
+                    + inner_size as u64;
+        }
+        ::buffa::saturate_size(size)
+    }
+    #[allow(clippy::needless_borrow)]
+    fn write_to(
+        &self,
+        __cache: &mut ::buffa::SizeCache,
+        buf: &mut impl ::buffa::EncodeSink,
+    ) {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        if !self.pem.is_empty() {
+            ::buffa::types::put_shared_bytes_field(1u32, &self.pem, buf);
+        }
+        if let ::core::option::Option::Some(__v) = self.options.as_option() {
+            ::buffa::types::put_len_delimited_header(
+                2u32,
+                u64::from(__cache.consume_next()),
+                buf,
+            );
+            __v.write_to(__cache, buf);
+        }
+    }
+}
+/// Serializes this view as protobuf JSON.
+///
+/// Implicit-presence fields with default values are omitted, `required`
+/// fields are always emitted, explicit-presence (`optional`) fields are
+/// emitted only when set, bytes fields are base64-encoded, and enum
+/// values are their proto name strings.
+///
+/// This impl uses `serialize_map(None)` because the number of emitted
+/// fields depends on default-omission rules; serializers that require
+/// known map lengths (e.g. `bincode`) will return a runtime error.
+/// Use the owned message type for those formats.
+impl<'__a> ::serde::Serialize for CodecPemBundleDecodeRequestView<'__a> {
+    fn serialize<__S: ::serde::Serializer>(
+        &self,
+        __s: __S,
+    ) -> ::core::result::Result<__S::Ok, __S::Error> {
+        use ::serde::ser::SerializeMap as _;
+        let mut __map = __s.serialize_map(::core::option::Option::None)?;
+        if !::buffa::json_helpers::skip_if::is_empty_bytes(self.pem) {
+            __map
+                .serialize_entry(
+                    "pem",
+                    &::buffa::json_helpers::BytesPolicyJson::<
+                        crate::guarded::SecretBytes,
+                    >::new(self.pem),
+                )?;
+        }
+        {
+            if let ::core::option::Option::Some(__v) = self.options.as_option() {
+                __map.serialize_entry("options", __v)?;
+            }
+        }
+        __map.end()
+    }
+}
+impl<'a> ::buffa::MessageName for CodecPemBundleDecodeRequestView<'a> {
+    const PACKAGE: &'static str = "reallyme.codec.v1";
+    const NAME: &'static str = "CodecPemBundleDecodeRequest";
+    const FULL_NAME: &'static str = "reallyme.codec.v1.CodecPemBundleDecodeRequest";
+    const TYPE_URL: &'static str = "type.googleapis.com/reallyme.codec.v1.CodecPemBundleDecodeRequest";
+}
+::buffa::impl_default_view_instance!(CodecPemBundleDecodeRequestView);
+::buffa::impl_view_reborrow!(CodecPemBundleDecodeRequestView);
+::buffa::unsafe_impl_view_lifetime_parametric!(CodecPemBundleDecodeRequestView);
+/// Labels remain exact external PEM text, including labels unknown to Codec.
+/// No DER interpretation, trust decision, or certificate filtering is performed.
+#[derive(Clone, Default)]
+pub struct CodecPemBundleBlockView<'a> {
+    /// SENSITIVE: compatibility labels are arbitrary received UTF-8 text.
+    ///
+    /// Field 1: `label`
+    pub label: &'a str,
+    /// SENSITIVE: original decoded DER requires guarded ownership.
+    ///
+    /// Field 2: `der`
+    pub der: &'a [u8],
+}
+impl<'a> ::core::fmt::Debug for CodecPemBundleBlockView<'a> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("CodecPemBundleBlockView")
+            .field("label", &::core::format_args!("[REDACTED]"))
+            .field("der", &::core::format_args!("[REDACTED]"))
+            .finish()
+    }
+}
+impl<'a> ::buffa::sensitive::Zeroize for CodecPemBundleBlockView<'a> {
+    fn zeroize(&mut self) {}
+}
+impl<'a> ::buffa::sensitive::ZeroizeOnDrop for CodecPemBundleBlockView<'a> {}
+impl<'a> ::core::ops::Drop for CodecPemBundleBlockView<'a> {
+    fn drop(&mut self) {
+        ::buffa::sensitive::Zeroize::zeroize(self);
+    }
+}
+impl<'a> ::buffa::MessageView<'a> for CodecPemBundleBlockView<'a> {
+    type Owned = super::super::CodecPemBundleBlock;
+    fn decode_view(buf: &'a [u8]) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        let __limit = ::core::cell::Cell::new(::buffa::DEFAULT_UNKNOWN_FIELD_LIMIT);
+        let __elem = ::core::cell::Cell::new(::buffa::DEFAULT_ELEMENT_MEMORY_LIMIT);
+        <Self as ::buffa::MessageView>::decode_view_ctx(
+            buf,
+            ::buffa::DecodeContext::new(::buffa::RECURSION_LIMIT, &__limit)
+                .with_element_memory(&__elem),
+        )
+    }
+    fn decode_view_with_ctx(
+        buf: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        <Self as ::buffa::MessageView>::decode_view_ctx(buf, ctx)
+    }
+    #[inline]
+    fn merge_view_field(
+        &mut self,
+        tag: ::buffa::encoding::Tag,
+        cur: &'a [u8],
+        _before_tag: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<&'a [u8], ::buffa::DecodeError> {
+        let _ = ctx;
+        #[allow(unused_variables)]
+        let view = self;
+        let mut cur = cur;
+        match tag.field_number() {
+            1u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                view.label = ::buffa::types::borrow_str(&mut cur)?;
+            }
+            2u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                view.der = ::buffa::types::borrow_bytes(&mut cur)?;
+            }
+            _ => {
+                ::buffa::encoding::skip_unknown_field(tag, &mut cur, ctx)?;
+            }
+        }
+        ::core::result::Result::Ok(cur)
+    }
+    fn to_owned_message(
+        &self,
+    ) -> ::core::result::Result<
+        super::super::CodecPemBundleBlock,
+        ::buffa::DecodeError,
+    > {
+        self.to_owned_from_source(None)
+    }
+    #[allow(
+        clippy::useless_conversion,
+        clippy::needless_update,
+        clippy::field_reassign_with_default
+    )]
+    fn to_owned_from_source(
+        &self,
+        __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
+    ) -> ::core::result::Result<
+        super::super::CodecPemBundleBlock,
+        ::buffa::DecodeError,
+    > {
+        #[allow(unused_imports)]
+        use ::buffa::alloc::string::ToString as _;
+        let _ = __buffa_src;
+        let mut __owned = <super::super::CodecPemBundleBlock as ::core::default::Default>::default();
+        __owned.label = ::buffa::ProtoString::copy_from_str(self.label);
+        __owned.der = ::core::convert::Into::into((self.der).to_vec());
+        ::core::result::Result::Ok(__owned)
+    }
+}
+impl<'a> ::buffa::ViewEncode<'a> for CodecPemBundleBlockView<'a> {
+    #[allow(clippy::needless_borrow, clippy::let_and_return)]
+    fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        let mut size = 0u64;
+        if !self.label.is_empty() {
+            size += 1u64 + ::buffa::types::string_encoded_len(&self.label) as u64;
+        }
+        if !self.der.is_empty() {
+            size += 1u64 + ::buffa::types::bytes_encoded_len(&self.der) as u64;
+        }
+        ::buffa::saturate_size(size)
+    }
+    #[allow(clippy::needless_borrow)]
+    fn write_to(
+        &self,
+        _cache: &mut ::buffa::SizeCache,
+        buf: &mut impl ::buffa::EncodeSink,
+    ) {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        if !self.label.is_empty() {
+            ::buffa::types::put_string_field(1u32, &self.label, buf);
+        }
+        if !self.der.is_empty() {
+            ::buffa::types::put_shared_bytes_field(2u32, &self.der, buf);
+        }
+    }
+}
+/// Serializes this view as protobuf JSON.
+///
+/// Implicit-presence fields with default values are omitted, `required`
+/// fields are always emitted, explicit-presence (`optional`) fields are
+/// emitted only when set, bytes fields are base64-encoded, and enum
+/// values are their proto name strings.
+///
+/// This impl uses `serialize_map(None)` because the number of emitted
+/// fields depends on default-omission rules; serializers that require
+/// known map lengths (e.g. `bincode`) will return a runtime error.
+/// Use the owned message type for those formats.
+impl<'__a> ::serde::Serialize for CodecPemBundleBlockView<'__a> {
+    fn serialize<__S: ::serde::Serializer>(
+        &self,
+        __s: __S,
+    ) -> ::core::result::Result<__S::Ok, __S::Error> {
+        use ::serde::ser::SerializeMap as _;
+        let mut __map = __s.serialize_map(::core::option::Option::None)?;
+        if !::buffa::json_helpers::skip_if::is_empty_str(self.label) {
+            __map
+                .serialize_entry(
+                    "label",
+                    &::buffa::json_helpers::StringPolicyJson::<
+                        crate::guarded::SecretString,
+                    >::new(self.label),
+                )?;
+        }
+        if !::buffa::json_helpers::skip_if::is_empty_bytes(self.der) {
+            __map
+                .serialize_entry(
+                    "der",
+                    &::buffa::json_helpers::BytesPolicyJson::<
+                        crate::guarded::SecretBytes,
+                    >::new(self.der),
+                )?;
+        }
+        __map.end()
+    }
+}
+impl<'a> ::buffa::MessageName for CodecPemBundleBlockView<'a> {
+    const PACKAGE: &'static str = "reallyme.codec.v1";
+    const NAME: &'static str = "CodecPemBundleBlock";
+    const FULL_NAME: &'static str = "reallyme.codec.v1.CodecPemBundleBlock";
+    const TYPE_URL: &'static str = "type.googleapis.com/reallyme.codec.v1.CodecPemBundleBlock";
+}
+::buffa::impl_default_view_instance!(CodecPemBundleBlockView);
+::buffa::impl_view_reborrow!(CodecPemBundleBlockView);
+::buffa::unsafe_impl_view_lifetime_parametric!(CodecPemBundleBlockView);
+#[derive(Clone, Default)]
+pub struct CodecPemBundleDecodeResultView<'a> {
+    /// SENSITIVE: every returned block retains protected labels and DER.
+    ///
+    /// Field 1: `blocks`
+    pub blocks: ::buffa::sensitive::RepeatedView<
+        'a,
+        super::super::__buffa::view::CodecPemBundleBlockView<'a>,
+    >,
+}
+impl<'a> ::core::fmt::Debug for CodecPemBundleDecodeResultView<'a> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("CodecPemBundleDecodeResultView")
+            .field("blocks", &::core::format_args!("[REDACTED]"))
+            .finish()
+    }
+}
+impl<'a> ::buffa::sensitive::Zeroize for CodecPemBundleDecodeResultView<'a> {
+    fn zeroize(&mut self) {
+        fn __requires_view_wipe_owner<
+            T: ::buffa::sensitive::Zeroize + ::buffa::sensitive::ZeroizeOnDrop,
+        >() {}
+        __requires_view_wipe_owner::<
+            super::super::__buffa::view::CodecPemBundleBlockView<'a>,
+        >();
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.blocks);
+    }
+}
+impl<'a> ::buffa::sensitive::ZeroizeOnDrop for CodecPemBundleDecodeResultView<'a> {}
+impl<'a> ::core::ops::Drop for CodecPemBundleDecodeResultView<'a> {
+    fn drop(&mut self) {
+        ::buffa::sensitive::Zeroize::zeroize(self);
+    }
+}
+impl<'a> ::buffa::MessageView<'a> for CodecPemBundleDecodeResultView<'a> {
+    type Owned = super::super::CodecPemBundleDecodeResult;
+    fn decode_view(buf: &'a [u8]) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        let __limit = ::core::cell::Cell::new(::buffa::DEFAULT_UNKNOWN_FIELD_LIMIT);
+        let __elem = ::core::cell::Cell::new(::buffa::DEFAULT_ELEMENT_MEMORY_LIMIT);
+        <Self as ::buffa::MessageView>::decode_view_ctx(
+            buf,
+            ::buffa::DecodeContext::new(::buffa::RECURSION_LIMIT, &__limit)
+                .with_element_memory(&__elem),
+        )
+    }
+    fn decode_view_with_ctx(
+        buf: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        <Self as ::buffa::MessageView>::decode_view_ctx(buf, ctx)
+    }
+    #[inline]
+    fn merge_view_field(
+        &mut self,
+        tag: ::buffa::encoding::Tag,
+        cur: &'a [u8],
+        _before_tag: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<&'a [u8], ::buffa::DecodeError> {
+        let _ = ctx;
+        #[allow(unused_variables)]
+        let view = self;
+        let mut cur = cur;
+        match tag.field_number() {
+            1u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                let __sub_ctx = ctx.descend()?;
+                let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                ctx.register_element_memory(
+                    ::core::mem::size_of::<
+                        super::super::__buffa::view::CodecPemBundleBlockView,
+                    >(),
+                )?;
+                view.blocks
+                    .push(
+                        <super::super::__buffa::view::CodecPemBundleBlockView as ::buffa::MessageView>::decode_view_ctx(
+                            sub,
+                            __sub_ctx,
+                        )?,
+                    );
+            }
+            _ => {
+                ::buffa::encoding::skip_unknown_field(tag, &mut cur, ctx)?;
+            }
+        }
+        ::core::result::Result::Ok(cur)
+    }
+    fn to_owned_message(
+        &self,
+    ) -> ::core::result::Result<
+        super::super::CodecPemBundleDecodeResult,
+        ::buffa::DecodeError,
+    > {
+        self.to_owned_from_source(None)
+    }
+    #[allow(
+        clippy::useless_conversion,
+        clippy::needless_update,
+        clippy::field_reassign_with_default
+    )]
+    fn to_owned_from_source(
+        &self,
+        __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
+    ) -> ::core::result::Result<
+        super::super::CodecPemBundleDecodeResult,
+        ::buffa::DecodeError,
+    > {
+        #[allow(unused_imports)]
+        use ::buffa::alloc::string::ToString as _;
+        let _ = __buffa_src;
+        let mut __owned = <super::super::CodecPemBundleDecodeResult as ::core::default::Default>::default();
+        __owned.blocks = self
+            .blocks
+            .iter()
+            .map(|v| v.to_owned_from_source(__buffa_src))
+            .collect::<::core::result::Result<_, ::buffa::DecodeError>>()?;
+        ::core::result::Result::Ok(__owned)
+    }
+}
+impl<'a> ::buffa::ViewEncode<'a> for CodecPemBundleDecodeResultView<'a> {
+    #[allow(clippy::needless_borrow, clippy::let_and_return)]
+    fn compute_size(&self, __cache: &mut ::buffa::SizeCache) -> u32 {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        let mut size = 0u64;
+        for v in &self.blocks {
+            let __slot = __cache.reserve();
+            let inner_size = v.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 1u64 + ::buffa::encoding::varint_len(inner_size as u64) as u64
+                    + inner_size as u64;
+        }
+        ::buffa::saturate_size(size)
+    }
+    #[allow(clippy::needless_borrow)]
+    fn write_to(
+        &self,
+        __cache: &mut ::buffa::SizeCache,
+        buf: &mut impl ::buffa::EncodeSink,
+    ) {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        for v in &self.blocks {
+            ::buffa::types::put_len_delimited_header(
+                1u32,
+                u64::from(__cache.consume_next()),
+                buf,
+            );
+            v.write_to(__cache, buf);
+        }
+    }
+}
+/// Serializes this view as protobuf JSON.
+///
+/// Implicit-presence fields with default values are omitted, `required`
+/// fields are always emitted, explicit-presence (`optional`) fields are
+/// emitted only when set, bytes fields are base64-encoded, and enum
+/// values are their proto name strings.
+///
+/// This impl uses `serialize_map(None)` because the number of emitted
+/// fields depends on default-omission rules; serializers that require
+/// known map lengths (e.g. `bincode`) will return a runtime error.
+/// Use the owned message type for those formats.
+impl<'__a> ::serde::Serialize for CodecPemBundleDecodeResultView<'__a> {
+    fn serialize<__S: ::serde::Serializer>(
+        &self,
+        __s: __S,
+    ) -> ::core::result::Result<__S::Ok, __S::Error> {
+        use ::serde::ser::SerializeMap as _;
+        let mut __map = __s.serialize_map(::core::option::Option::None)?;
+        if !self.blocks.is_empty() {
+            __map.serialize_entry("blocks", &*self.blocks)?;
+        }
+        __map.end()
+    }
+}
+impl<'a> ::buffa::MessageName for CodecPemBundleDecodeResultView<'a> {
+    const PACKAGE: &'static str = "reallyme.codec.v1";
+    const NAME: &'static str = "CodecPemBundleDecodeResult";
+    const FULL_NAME: &'static str = "reallyme.codec.v1.CodecPemBundleDecodeResult";
+    const TYPE_URL: &'static str = "type.googleapis.com/reallyme.codec.v1.CodecPemBundleDecodeResult";
+}
+::buffa::impl_default_view_instance!(CodecPemBundleDecodeResultView);
+::buffa::impl_view_reborrow!(CodecPemBundleDecodeResultView);
+::buffa::unsafe_impl_view_lifetime_parametric!(CodecPemBundleDecodeResultView);
 /// Zero values select the documented codec defaults.
 #[derive(Clone, Default)]
 pub struct CodecPemEncodeOptionsView<'a> {
@@ -31754,6 +32762,9 @@ impl<'a> ::buffa::sensitive::Zeroize for CodecApiOperationRequestView<'a> {
             super::super::__buffa::view::CodecPemEncodeRequestView<'a>,
         >();
         __requires_view_wipe_owner::<
+            super::super::__buffa::view::CodecPemBundleDecodeRequestView<'a>,
+        >();
+        __requires_view_wipe_owner::<
             super::super::__buffa::view::CodecDeterministicCborEncodeRequestView<'a>,
         >();
         __requires_view_wipe_owner::<
@@ -32201,6 +33212,37 @@ impl<'a> ::buffa::MessageView<'a> for CodecApiOperationRequestView<'a> {
                         super::super::__buffa::view::oneof::codec_api_operation_request::Operation::PemEncode(
                             ::buffa::alloc::boxed::Box::new(
                                 <super::super::__buffa::view::CodecPemEncodeRequestView as ::buffa::MessageView>::decode_view_ctx(
+                                    sub,
+                                    __sub_ctx,
+                                )?,
+                            ),
+                        ),
+                    );
+                }
+            }
+            4002u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                let __sub_ctx = ctx.descend()?;
+                let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                if let Some(
+                    super::super::__buffa::view::oneof::codec_api_operation_request::Operation::PemBundleDecode(
+                        ref mut existing,
+                    ),
+                ) = view.operation
+                {
+                    ::buffa::MessageView::merge_into_view(
+                        &mut **existing,
+                        sub,
+                        __sub_ctx,
+                    )?;
+                } else {
+                    view.operation = Some(
+                        super::super::__buffa::view::oneof::codec_api_operation_request::Operation::PemBundleDecode(
+                            ::buffa::alloc::boxed::Box::new(
+                                <super::super::__buffa::view::CodecPemBundleDecodeRequestView as ::buffa::MessageView>::decode_view_ctx(
                                     sub,
                                     __sub_ctx,
                                 )?,
@@ -33750,6 +34792,15 @@ impl<'a> ::buffa::MessageView<'a> for CodecApiOperationRequestView<'a> {
                                 ),
                             )
                         }
+                        super::super::__buffa::view::oneof::codec_api_operation_request::Operation::PemBundleDecode(
+                            v,
+                        ) => {
+                            super::super::__buffa::oneof::codec_api_operation_request::Operation::PemBundleDecode(
+                                ::buffa::alloc::boxed::Box::new(
+                                    v.to_owned_from_source(__buffa_src)?,
+                                ),
+                            )
+                        }
                         super::super::__buffa::view::oneof::codec_api_operation_request::Operation::DeterministicCborEncode(
                             v,
                         ) => {
@@ -34261,6 +35312,16 @@ impl<'a> ::buffa::ViewEncode<'a> for CodecApiOperationRequestView<'a> {
                             + inner as u64;
                 }
                 super::super::__buffa::view::oneof::codec_api_operation_request::Operation::PemEncode(
+                    x,
+                ) => {
+                    let __slot = __cache.reserve();
+                    let inner = x.compute_size(__cache);
+                    __cache.set(__slot, inner);
+                    size
+                        += 3u64 + ::buffa::encoding::varint_len(inner as u64) as u64
+                            + inner as u64;
+                }
+                super::super::__buffa::view::oneof::codec_api_operation_request::Operation::PemBundleDecode(
                     x,
                 ) => {
                     let __slot = __cache.reserve();
@@ -34834,6 +35895,16 @@ impl<'a> ::buffa::ViewEncode<'a> for CodecApiOperationRequestView<'a> {
                     );
                     x.write_to(__cache, buf);
                 }
+                super::super::__buffa::view::oneof::codec_api_operation_request::Operation::PemBundleDecode(
+                    x,
+                ) => {
+                    ::buffa::types::put_len_delimited_header(
+                        4002u32,
+                        u64::from(__cache.consume_next()),
+                        buf,
+                    );
+                    x.write_to(__cache, buf);
+                }
                 super::super::__buffa::view::oneof::codec_api_operation_request::Operation::DeterministicCborEncode(
                     x,
                 ) => {
@@ -35363,6 +36434,11 @@ impl<'__a> ::serde::Serialize for CodecApiOperationRequestView<'__a> {
                 ) => {
                     __map.serialize_entry("pemEncode", v)?;
                 }
+                super::super::__buffa::view::oneof::codec_api_operation_request::Operation::PemBundleDecode(
+                    v,
+                ) => {
+                    __map.serialize_entry("pemBundleDecode", v)?;
+                }
                 super::super::__buffa::view::oneof::codec_api_operation_request::Operation::DeterministicCborEncode(
                     v,
                 ) => {
@@ -35653,6 +36729,9 @@ impl<'a> ::buffa::sensitive::Zeroize for CodecApiOperationResultView<'a> {
         >();
         __requires_view_wipe_owner::<
             super::super::__buffa::view::CodecPemEncodeResultView<'a>,
+        >();
+        __requires_view_wipe_owner::<
+            super::super::__buffa::view::CodecPemBundleDecodeResultView<'a>,
         >();
         __requires_view_wipe_owner::<
             super::super::__buffa::view::CodecDeterministicCborEncodeResultView<'a>,
@@ -36102,6 +37181,37 @@ impl<'a> ::buffa::MessageView<'a> for CodecApiOperationResultView<'a> {
                         super::super::__buffa::view::oneof::codec_api_operation_result::Result::PemEncode(
                             ::buffa::alloc::boxed::Box::new(
                                 <super::super::__buffa::view::CodecPemEncodeResultView as ::buffa::MessageView>::decode_view_ctx(
+                                    sub,
+                                    __sub_ctx,
+                                )?,
+                            ),
+                        ),
+                    );
+                }
+            }
+            4002u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                let __sub_ctx = ctx.descend()?;
+                let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                if let Some(
+                    super::super::__buffa::view::oneof::codec_api_operation_result::Result::PemBundleDecode(
+                        ref mut existing,
+                    ),
+                ) = view.result
+                {
+                    ::buffa::MessageView::merge_into_view(
+                        &mut **existing,
+                        sub,
+                        __sub_ctx,
+                    )?;
+                } else {
+                    view.result = Some(
+                        super::super::__buffa::view::oneof::codec_api_operation_result::Result::PemBundleDecode(
+                            ::buffa::alloc::boxed::Box::new(
+                                <super::super::__buffa::view::CodecPemBundleDecodeResultView as ::buffa::MessageView>::decode_view_ctx(
                                     sub,
                                     __sub_ctx,
                                 )?,
@@ -37651,6 +38761,15 @@ impl<'a> ::buffa::MessageView<'a> for CodecApiOperationResultView<'a> {
                                 ),
                             )
                         }
+                        super::super::__buffa::view::oneof::codec_api_operation_result::Result::PemBundleDecode(
+                            v,
+                        ) => {
+                            super::super::__buffa::oneof::codec_api_operation_result::Result::PemBundleDecode(
+                                ::buffa::alloc::boxed::Box::new(
+                                    v.to_owned_from_source(__buffa_src)?,
+                                ),
+                            )
+                        }
                         super::super::__buffa::view::oneof::codec_api_operation_result::Result::DeterministicCborEncode(
                             v,
                         ) => {
@@ -38162,6 +39281,16 @@ impl<'a> ::buffa::ViewEncode<'a> for CodecApiOperationResultView<'a> {
                             + inner as u64;
                 }
                 super::super::__buffa::view::oneof::codec_api_operation_result::Result::PemEncode(
+                    x,
+                ) => {
+                    let __slot = __cache.reserve();
+                    let inner = x.compute_size(__cache);
+                    __cache.set(__slot, inner);
+                    size
+                        += 3u64 + ::buffa::encoding::varint_len(inner as u64) as u64
+                            + inner as u64;
+                }
+                super::super::__buffa::view::oneof::codec_api_operation_result::Result::PemBundleDecode(
                     x,
                 ) => {
                     let __slot = __cache.reserve();
@@ -38735,6 +39864,16 @@ impl<'a> ::buffa::ViewEncode<'a> for CodecApiOperationResultView<'a> {
                     );
                     x.write_to(__cache, buf);
                 }
+                super::super::__buffa::view::oneof::codec_api_operation_result::Result::PemBundleDecode(
+                    x,
+                ) => {
+                    ::buffa::types::put_len_delimited_header(
+                        4002u32,
+                        u64::from(__cache.consume_next()),
+                        buf,
+                    );
+                    x.write_to(__cache, buf);
+                }
                 super::super::__buffa::view::oneof::codec_api_operation_result::Result::DeterministicCborEncode(
                     x,
                 ) => {
@@ -39263,6 +40402,11 @@ impl<'__a> ::serde::Serialize for CodecApiOperationResultView<'__a> {
                     v,
                 ) => {
                     __map.serialize_entry("pemEncode", v)?;
+                }
+                super::super::__buffa::view::oneof::codec_api_operation_result::Result::PemBundleDecode(
+                    v,
+                ) => {
+                    __map.serialize_entry("pemBundleDecode", v)?;
                 }
                 super::super::__buffa::view::oneof::codec_api_operation_result::Result::DeterministicCborEncode(
                     v,

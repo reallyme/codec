@@ -137,6 +137,52 @@ message CodecPemDecodeRequest {
   CodecPemDecodeOptions options = 2;
 }
 
+// A separate compatibility mode retains established PEM bundle admission.
+// Strict mode rejects surrounding text, legacy headers, and inline armor.
+enum CodecPemSyntaxProfile {
+  CODEC_PEM_SYNTAX_PROFILE_UNSPECIFIED = 0;
+  CODEC_PEM_SYNTAX_PROFILE_STRICT = 100;
+  CODEC_PEM_SYNTAX_PROFILE_COMPATIBLE = 110;
+}
+
+// FIRST stops after the first complete block, including on malformed trailing
+// armor. ALL validates every complete block before returning any of them.
+enum CodecPemDecodeScope {
+  CODEC_PEM_DECODE_SCOPE_UNSPECIFIED = 0;
+  CODEC_PEM_DECODE_SCOPE_ALL = 100;
+  CODEC_PEM_DECODE_SCOPE_FIRST = 110;
+}
+
+// Zero bounds select 1.5 MiB input, 1 MiB DER per block and 64 blocks.
+// Unspecified profile and scope select STRICT and ALL respectively.
+message CodecPemBundleDecodeOptions {
+  uint32 max_input_len = 1;
+  uint32 max_der_len = 2;
+  uint32 max_blocks = 3;
+  CodecPemSyntaxProfile syntax_profile = 4;
+  CodecPemDecodeScope scope = 5;
+}
+
+message CodecPemBundleDecodeRequest {
+  // SENSITIVE: armor may contain identifying certificates or private keys.
+  bytes pem = 1;
+  CodecPemBundleDecodeOptions options = 2;
+}
+
+// Labels remain exact external PEM text, including labels unknown to Codec.
+// No DER interpretation, trust decision, or certificate filtering is performed.
+message CodecPemBundleBlock {
+  // SENSITIVE: compatibility labels are arbitrary received UTF-8 text.
+  string label = 1;
+  // SENSITIVE: original decoded DER requires guarded ownership.
+  bytes der = 2;
+}
+
+message CodecPemBundleDecodeResult {
+  // SENSITIVE: every returned block retains protected labels and DER.
+  repeated CodecPemBundleBlock blocks = 1;
+}
+
 enum CodecPemLineEnding {
   CODEC_PEM_LINE_ENDING_UNSPECIFIED = 0;
   CODEC_PEM_LINE_ENDING_LF = 100;
@@ -514,6 +560,7 @@ enum CodecErrorReason {
   CODEC_ERROR_REASON_PEM_MISSING_BEGIN = 208;
   CODEC_ERROR_REASON_PEM_MISSING_END = 209;
   CODEC_ERROR_REASON_PEM_INVALID_BASE64 = 210;
+  CODEC_ERROR_REASON_PEM_RESOURCE_LIMIT_EXCEEDED = 211;
 
   // Multiformats and key envelopes.
   CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTIBASE_PREFIX = 300;
@@ -1344,6 +1391,7 @@ message CodecApiOperationRequest {
     // 4000-4999: PEM armor and DER envelope helpers.
     CodecPemDecodeRequest pem_decode = 4000;
     CodecPemEncodeRequest pem_encode = 4001;
+    CodecPemBundleDecodeRequest pem_bundle_decode = 4002;
 
     // 5000-5999: deterministic generic-CBOR encode/decode.
     CodecDeterministicCborEncodeRequest deterministic_cbor_encode = 5000;
@@ -1414,6 +1462,7 @@ message CodecApiOperationResult {
     CodecDagCborDecodeResult dag_cbor_decode = 3002;
     CodecPemDecodeResult pem_decode = 4000;
     CodecPemEncodeResult pem_encode = 4001;
+    CodecPemBundleDecodeResult pem_bundle_decode = 4002;
     CodecDeterministicCborEncodeResult deterministic_cbor_encode = 5000;
     CodecDeterministicCborDecodeResult deterministic_cbor_decode = 5001;
 

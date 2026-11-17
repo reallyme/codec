@@ -951,6 +951,9 @@ pub mod codec_api_operation_request {
                 Self::PemEncode(value) => {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
+                Self::PemBundleDecode(value) => {
+                    ::buffa::sensitive::Zeroize::zeroize(&mut **value)
+                }
                 Self::DeterministicCborEncode(value) => {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
@@ -1157,6 +1160,13 @@ pub mod codec_api_operation_request {
         PemEncode(
             ::buffa::alloc::boxed::Box<
                 super::super::super::super::__buffa::view::CodecPemEncodeRequestView<'a>,
+            >,
+        ),
+        PemBundleDecode(
+            ::buffa::alloc::boxed::Box<
+                super::super::super::super::__buffa::view::CodecPemBundleDecodeRequestView<
+                    'a,
+                >,
             >,
         ),
         DeterministicCborEncode(
@@ -1463,6 +1473,9 @@ pub mod codec_api_operation_result {
                 Self::PemEncode(value) => {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
+                Self::PemBundleDecode(value) => {
+                    ::buffa::sensitive::Zeroize::zeroize(&mut **value)
+                }
                 Self::DeterministicCborEncode(value) => {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
@@ -1667,6 +1680,13 @@ pub mod codec_api_operation_result {
         PemEncode(
             ::buffa::alloc::boxed::Box<
                 super::super::super::super::__buffa::view::CodecPemEncodeResultView<'a>,
+            >,
+        ),
+        PemBundleDecode(
+            ::buffa::alloc::boxed::Box<
+                super::super::super::super::__buffa::view::CodecPemBundleDecodeResultView<
+                    'a,
+                >,
             >,
         ),
         DeterministicCborEncode(

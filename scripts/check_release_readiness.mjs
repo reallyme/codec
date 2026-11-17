@@ -56,7 +56,7 @@ const POLICY_MODULE_SHA256 = new Map([
   ["scripts/harden_codec_sdk_proto.mjs", "60636ba0bc757c45ec951ca13d79fedba29620f605a1c1d4e6b6d0c8c3c0d0ae"],
   ["scripts/release-readiness/source-policy.mjs", "1bc1368be565bfb972ef68a7b3a532c5b1969f40ef9893cd660fb1c244a4202e"],
   ["scripts/verify_release_version.mjs", "bc858e3f4bd98b808b5557b7c50755b4a0d3595393842d7cd01728f853d86215"],
-  ["scripts/codec_proto_sensitivity.mjs", "e74e8459712b1091f4dc413fe32d9c6a4b160d90d110d22f9cb52601d5c3ca77"],
+  ["scripts/codec_proto_sensitivity.mjs", "00f8d4738b480809212adfe026a86563c74a2db5f118d8c804a02fe691dba5d8"],
   ["scripts/validate_codec_vectors.mjs", "2441249555b41a4dddc20096ae56521a165058284f933bf418b074dd76420fb9"],
   ["scripts/generate_codec_limits.mjs", "9f566d26749206dffcabf2795b4ce5cd7f20d51ce6d863e0527b91b64d143256"],
 ]);

@@ -591,6 +591,7 @@ name = "reallyme-codec-pem"
 version = "0.4.3"
 dependencies = [
  "base64",
+ "reallyme-codec-proto",
  "thiserror",
  "zeroize",
 ]

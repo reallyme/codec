@@ -46,6 +46,9 @@ export const codecProtoScalarFieldClassifications = Object.freeze([
   classifiedField("CodecDagCborVerifyCidRequest", "payload", "bytes", "sensitive"),
   classifiedField("CodecDagCborEncodeResult", "encoded", "bytes", "sensitive"),
   classifiedField("CodecDagCborDecodeRequest", "encoded", "bytes", "sensitive"),
+  classifiedField("CodecPemBundleDecodeRequest", "pem", "bytes", "sensitive"),
+  classifiedField("CodecPemBundleBlock", "label", "string", "sensitive"),
+  classifiedField("CodecPemBundleBlock", "der", "bytes", "sensitive"),
   classifiedField("CodecPemDecodeRequest", "pem", "bytes", "sensitive"),
   classifiedField("CodecPemEncodeRequest", "der", "bytes", "sensitive"),
   classifiedField("CodecPemEncodeResult", "pem", "bytes", "sensitive"),
@@ -72,6 +75,7 @@ export const codecProtoScalarFieldClassifications = Object.freeze([
 // these classifications explicit makes generated clear and Drop hardening
 // fail closed when the deterministic-CBOR schema evolves.
 export const codecProtoSensitiveNonTextFieldClassifications = Object.freeze([
+  classifiedField("CodecPemBundleDecodeResult", "blocks", "repeated-message", "sensitive"),
   classifiedField("CodecGeneralCborHeader", "argument", "uint64", "sensitive"),
   classifiedField("CodecTlvHeader", "declared_value_length", "uint64", "sensitive"),
   classifiedField("CodecTlvLength", "declared_value_length", "uint64", "sensitive"),
@@ -273,6 +277,9 @@ export const codecProtoProviderOutputMessages = Object.freeze([
   "CodecMulticodecTableResult",
   "CodecMultikeyParseResult",
   "CodecDagCborVerifyCidResult",
+  "CodecPemBundleBlock",
+  "CodecPemBundleDecodeRequest",
+  "CodecPemBundleDecodeResult",
   "CodecPemDecodeResult",
   "CodecPemEncodeResult",
   "CodecDeterministicCborEncodeResult",

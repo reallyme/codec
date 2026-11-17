@@ -117,6 +117,10 @@ public enum CodecErrorReason
    */
   CODEC_ERROR_REASON_PEM_INVALID_BASE64(210),
   /**
+   * <code>CODEC_ERROR_REASON_PEM_RESOURCE_LIMIT_EXCEEDED = 211;</code>
+   */
+  CODEC_ERROR_REASON_PEM_RESOURCE_LIMIT_EXCEEDED(211),
+  /**
    * <pre>
    * Multiformats and key envelopes.
    * </pre>
@@ -312,6 +316,10 @@ public enum CodecErrorReason
    */
   public static final int CODEC_ERROR_REASON_PEM_INVALID_BASE64_VALUE = 210;
   /**
+   * <code>CODEC_ERROR_REASON_PEM_RESOURCE_LIMIT_EXCEEDED = 211;</code>
+   */
+  public static final int CODEC_ERROR_REASON_PEM_RESOURCE_LIMIT_EXCEEDED_VALUE = 211;
+  /**
    * <pre>
    * Multiformats and key envelopes.
    * </pre>
@@ -454,6 +462,7 @@ public enum CodecErrorReason
       case 208: return CODEC_ERROR_REASON_PEM_MISSING_BEGIN;
       case 209: return CODEC_ERROR_REASON_PEM_MISSING_END;
       case 210: return CODEC_ERROR_REASON_PEM_INVALID_BASE64;
+      case 211: return CODEC_ERROR_REASON_PEM_RESOURCE_LIMIT_EXCEEDED;
       case 300: return CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTIBASE_PREFIX;
       case 301: return CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTICODEC_PREFIX;
       case 302: return CODEC_ERROR_REASON_MULTIFORMAT_UNKNOWN_MULTICODEC;

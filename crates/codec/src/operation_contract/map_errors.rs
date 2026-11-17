@@ -75,6 +75,7 @@ fn dag_cbor_cbor_wire_error(error: CborError) -> CodecWireError {
 
 fn pem_boundary_error(error: PemOperationError) -> CodecWireError {
     match error {
+        PemOperationError::ResourceLimitExceeded => wire_error(CodecWireErrorBranch::Pem, CodecErrorReason::CODEC_ERROR_REASON_PEM_RESOURCE_LIMIT_EXCEEDED),
         PemOperationError::EmptyInput => wire_error(
             CodecWireErrorBranch::Pem,
             CodecErrorReason::CODEC_ERROR_REASON_PEM_EMPTY_INPUT,

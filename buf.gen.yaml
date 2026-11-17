@@ -88,6 +88,9 @@ plugins:
       - borrowed_views_only_in=.reallyme.codec.v1.CodecOperationResponse
       - borrowed_views_only_in=.reallyme.codec.v1.CodecOperationResult
       - borrowed_views_only_in=.reallyme.codec.v1.CodecOptionalTextResult
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecPemBundleBlock
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecPemBundleDecodeRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecPemBundleDecodeResult
       - borrowed_views_only_in=.reallyme.codec.v1.CodecPemDecodeRequest
       - borrowed_views_only_in=.reallyme.codec.v1.CodecPemDecodeResult
       - borrowed_views_only_in=.reallyme.codec.v1.CodecPemEncodeRequest

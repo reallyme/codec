@@ -9,10 +9,13 @@ import me.really.codec.v1.CodecApiOperationRequest
 import me.really.codec.v1.CodecApiOperationResponse
 import me.really.codec.v1.CodecApiOperationResult
 import me.really.codec.v1.CodecBytesRequest
+import me.really.codec.v1.CodecErrorReason
 import me.really.codec.v1.CodecGeneralCborEncodeRequest
 import me.really.codec.v1.CodecGeneralCborFloat
 import me.really.codec.v1.CodecGeneralCborFloatWidth
 import me.really.codec.v1.CodecGeneralCborValue
+import me.really.codec.v1.CodecPemBundleDecodeOptions
+import me.really.codec.v1.CodecPemBundleDecodeRequest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -55,5 +58,38 @@ class ExpandedContractTest {
             cborResult.result.generalCborEncode.value
                 .toByteArray(),
         )
+    }
+
+    @Test
+    fun generatedPemBundlePreservesBytesAndTypedResourceFailure() {
+        System
+            .getProperty("reallyme.codec.testLibraryPath")
+            ?.takeIf { it.isNotBlank() }
+            ?.let { ReallyMeCodecRustNativeProvider.loadLibrary(it) }
+        val block = "-----BEGIN CERTIFICATE-----\rAQID\r-----END CERTIFICATE-----\r"
+        val pem = CodecPemBundleDecodeRequest.newBuilder().setPem(ByteString.copyFromUtf8(block + block))
+        val request = CodecApiOperationRequest.newBuilder().setPemBundleDecode(pem)
+        val response = CodecApiOperationResponse.parseFrom(ReallyMeCodec.processOperation(request.build().toByteArray()))
+        assertEquals(CodecApiOperationResponse.OutcomeCase.RESULT, response.outcomeCase)
+        assertEquals(CodecApiOperationResult.ResultCase.PEM_BUNDLE_DECODE, response.result.resultCase)
+        assertEquals(2, response.result.pemBundleDecode.blocksCount)
+        assertEquals(
+            "CERTIFICATE",
+            response.result.pemBundleDecode
+                .getBlocks(0)
+                .label,
+        )
+        assertContentEquals(
+            byteArrayOf(1, 2, 3),
+            response.result.pemBundleDecode
+                .getBlocks(0)
+                .der
+                .toByteArray(),
+        )
+        pem.setOptions(CodecPemBundleDecodeOptions.newBuilder().setMaxBlocks(1))
+        request.setPemBundleDecode(pem)
+        val rejected = CodecApiOperationResponse.parseFrom(ReallyMeCodec.processOperation(request.build().toByteArray()))
+        assertEquals(CodecApiOperationResponse.OutcomeCase.ERROR, rejected.outcomeCase)
+        assertEquals(CodecErrorReason.CODEC_ERROR_REASON_PEM_RESOURCE_LIMIT_EXCEEDED, rejected.error.pem.reason)
     }
 }

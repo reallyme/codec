@@ -1849,6 +1849,9 @@ pub mod codec_api_operation_request {
         PemEncode(
             ::buffa::alloc::boxed::Box<super::super::super::CodecPemEncodeRequest>,
         ),
+        PemBundleDecode(
+            ::buffa::alloc::boxed::Box<super::super::super::CodecPemBundleDecodeRequest>,
+        ),
         DeterministicCborEncode(
             ::buffa::alloc::boxed::Box<
                 super::super::super::CodecDeterministicCborEncodeRequest,
@@ -2043,6 +2046,9 @@ pub mod codec_api_operation_request {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
                 Self::PemEncode(value) => {
+                    ::buffa::sensitive::Zeroize::zeroize(&mut **value)
+                }
+                Self::PemBundleDecode(value) => {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
                 Self::DeterministicCborEncode(value) => {
@@ -2301,6 +2307,18 @@ pub mod codec_api_operation_request {
             Self::Some(Operation::from(v))
         }
     }
+    impl ::core::convert::From<super::super::super::CodecPemBundleDecodeRequest>
+    for Operation {
+        fn from(v: super::super::super::CodecPemBundleDecodeRequest) -> Self {
+            Self::PemBundleDecode(::buffa::alloc::boxed::Box::new(v))
+        }
+    }
+    impl ::core::convert::From<super::super::super::CodecPemBundleDecodeRequest>
+    for ::core::option::Option<Operation> {
+        fn from(v: super::super::super::CodecPemBundleDecodeRequest) -> Self {
+            Self::Some(Operation::from(v))
+        }
+    }
     impl ::core::convert::From<super::super::super::CodecDeterministicCborEncodeRequest>
     for Operation {
         fn from(v: super::super::super::CodecDeterministicCborEncodeRequest) -> Self {
@@ -2515,6 +2533,9 @@ pub mod codec_api_operation_request {
                 Self::PemEncode(v) => {
                     map.serialize_entry("pemEncode", &**v)?;
                 }
+                Self::PemBundleDecode(v) => {
+                    map.serialize_entry("pemBundleDecode", &**v)?;
+                }
                 Self::DeterministicCborEncode(v) => {
                     map.serialize_entry("deterministicCborEncode", &**v)?;
                 }
@@ -2686,6 +2707,9 @@ pub mod codec_api_operation_result {
         ),
         PemDecode(::buffa::alloc::boxed::Box<super::super::super::CodecPemDecodeResult>),
         PemEncode(::buffa::alloc::boxed::Box<super::super::super::CodecPemEncodeResult>),
+        PemBundleDecode(
+            ::buffa::alloc::boxed::Box<super::super::super::CodecPemBundleDecodeResult>,
+        ),
         DeterministicCborEncode(
             ::buffa::alloc::boxed::Box<
                 super::super::super::CodecDeterministicCborEncodeResult,
@@ -2844,6 +2868,9 @@ pub mod codec_api_operation_result {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
                 Self::PemEncode(value) => {
+                    ::buffa::sensitive::Zeroize::zeroize(&mut **value)
+                }
+                Self::PemBundleDecode(value) => {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
                 Self::DeterministicCborEncode(value) => {
@@ -3099,6 +3126,18 @@ pub mod codec_api_operation_result {
             Self::Some(Result::from(v))
         }
     }
+    impl ::core::convert::From<super::super::super::CodecPemBundleDecodeResult>
+    for Result {
+        fn from(v: super::super::super::CodecPemBundleDecodeResult) -> Self {
+            Self::PemBundleDecode(::buffa::alloc::boxed::Box::new(v))
+        }
+    }
+    impl ::core::convert::From<super::super::super::CodecPemBundleDecodeResult>
+    for ::core::option::Option<Result> {
+        fn from(v: super::super::super::CodecPemBundleDecodeResult) -> Self {
+            Self::Some(Result::from(v))
+        }
+    }
     impl ::core::convert::From<super::super::super::CodecDeterministicCborEncodeResult>
     for Result {
         fn from(v: super::super::super::CodecDeterministicCborEncodeResult) -> Self {
@@ -3314,6 +3353,9 @@ pub mod codec_api_operation_result {
                 }
                 Self::PemEncode(v) => {
                     map.serialize_entry("pemEncode", &**v)?;
+                }
+                Self::PemBundleDecode(v) => {
+                    map.serialize_entry("pemBundleDecode", &**v)?;
                 }
                 Self::DeterministicCborEncode(v) => {
                     map.serialize_entry("deterministicCborEncode", &**v)?;

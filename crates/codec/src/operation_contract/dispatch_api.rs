@@ -64,6 +64,15 @@ pub(super) fn execute_api_request(
                 Box::new(core::mem::take(request.as_mut())),
             ));
         }
+        Operation::PemBundleDecode(request) => {
+            let defaults = proto::CodecPemBundleDecodeOptions::default();
+            let options = request.options.as_option().unwrap_or(&defaults);
+            let decoded =
+                codec_pem::decode_pem_bundle(request.pem.as_ref(), options).map_err(|error| {
+                    super::pem_boundary_error(super::PemOperationError::from(error))
+                })?;
+            ApiResult::PemBundleDecode(Box::new(decoded))
+        }
         Operation::PemDecode(request) => {
             return legacy_request(proto::codec_operation_request::Operation::PemDecode(
                 Box::new(core::mem::take(request.as_mut())),

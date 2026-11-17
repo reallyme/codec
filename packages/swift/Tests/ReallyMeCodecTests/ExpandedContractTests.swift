@@ -62,4 +62,33 @@ final class ExpandedContractTests: XCTestCase {
         }
         XCTAssertEqual(encoded.value, Data([0xf9, 0xfe, 1]))
     }
+    func testGeneratedPEMBundlePreservesBytesAndResourceFailure() throws {
+        let codec = try self.codec()
+        let block = "-----BEGIN CERTIFICATE-----\rAQID\r-----END CERTIFICATE-----\r"
+        var pem = ReallyMeProtoCodecPemBundleDecodeRequest()
+        pem.pem = Data((block + block).utf8)
+        var request = ReallyMeProtoCodecApiOperationRequest()
+        request.operation = .pemBundleDecode(pem)
+        let response = try ReallyMeProtoCodecApiOperationResponse(
+            serializedBytes: codec.processOperation(Array(request.serializedData()))
+        )
+        guard case .result(let result)? = response.outcome,
+            case .pemBundleDecode(let bundle)? = result.result
+        else { XCTFail("expected PEM bundle result"); return }
+        XCTAssertEqual(bundle.blocks.count, 2)
+        XCTAssertEqual(bundle.blocks[0].label, "CERTIFICATE")
+        XCTAssertEqual(bundle.blocks[0].der, Data([1, 2, 3]))
+        var options = ReallyMeProtoCodecPemBundleDecodeOptions()
+        options.maxBlocks = 1
+        pem.options = options
+        request.operation = .pemBundleDecode(pem)
+        let rejected = try ReallyMeProtoCodecApiOperationResponse(
+            serializedBytes: codec.processOperation(Array(request.serializedData()))
+        )
+        guard case .error(let error)? = rejected.outcome,
+            case .pem(let reason)? = error.error
+        else { XCTFail("expected typed PEM resource failure"); return }
+        XCTAssertEqual(reason.reason, .pemResourceLimitExceeded)
+    }
+
 }

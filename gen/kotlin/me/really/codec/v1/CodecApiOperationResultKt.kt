@@ -246,6 +246,30 @@ public object CodecApiOperationResultKt {
     }
 
     /**
+     * `.reallyme.codec.v1.CodecPemBundleDecodeResult pem_bundle_decode = 4002 [json_name = "pemBundleDecode"];`
+     */
+    public var pemBundleDecode: me.really.codec.v1.CodecPemBundleDecodeResult
+      @kotlin.jvm.JvmName("getPemBundleDecode")
+        get() = _builder.pemBundleDecode
+      @kotlin.jvm.JvmName("setPemBundleDecode")
+        set(value) {
+        _builder.pemBundleDecode = value
+      }
+    /**
+     * `.reallyme.codec.v1.CodecPemBundleDecodeResult pem_bundle_decode = 4002 [json_name = "pemBundleDecode"];`
+     */
+    public fun clearPemBundleDecode() {
+      _builder.clearPemBundleDecode()
+    }
+    /**
+     * `.reallyme.codec.v1.CodecPemBundleDecodeResult pem_bundle_decode = 4002 [json_name = "pemBundleDecode"];`
+     * @return Whether the pemBundleDecode field is set.
+     */
+    public fun hasPemBundleDecode(): kotlin.Boolean {
+      return _builder.hasPemBundleDecode()
+    }
+
+    /**
      * `.reallyme.codec.v1.CodecDeterministicCborEncodeResult deterministic_cbor_encode = 5000 [json_name = "deterministicCborEncode"];`
      */
     public var deterministicCborEncode: me.really.codec.v1.CodecDeterministicCborEncodeResult
@@ -1398,6 +1422,9 @@ public val me.really.codec.v1.CodecApiOperationResultOrBuilder.pemDecodeOrNull: 
 
 public val me.really.codec.v1.CodecApiOperationResultOrBuilder.pemEncodeOrNull: me.really.codec.v1.CodecPemEncodeResult?
   get() = if (hasPemEncode()) getPemEncode() else null
+
+public val me.really.codec.v1.CodecApiOperationResultOrBuilder.pemBundleDecodeOrNull: me.really.codec.v1.CodecPemBundleDecodeResult?
+  get() = if (hasPemBundleDecode()) getPemBundleDecode() else null
 
 public val me.really.codec.v1.CodecApiOperationResultOrBuilder.deterministicCborEncodeOrNull: me.really.codec.v1.CodecDeterministicCborEncodeResult?
   get() = if (hasDeterministicCborEncode()) getDeterministicCborEncode() else null

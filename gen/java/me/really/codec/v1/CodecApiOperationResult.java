@@ -47,6 +47,7 @@ public  final class CodecApiOperationResult extends
     DAG_CBOR_DECODE(3002),
     PEM_DECODE(4000),
     PEM_ENCODE(4001),
+    PEM_BUNDLE_DECODE(4002),
     DETERMINISTIC_CBOR_ENCODE(5000),
     DETERMINISTIC_CBOR_DECODE(5001),
     MULTICODEC_STRIP_PREFIX(1003),
@@ -117,6 +118,7 @@ public  final class CodecApiOperationResult extends
         case 3002: return DAG_CBOR_DECODE;
         case 4000: return PEM_DECODE;
         case 4001: return PEM_ENCODE;
+        case 4002: return PEM_BUNDLE_DECODE;
         case 5000: return DETERMINISTIC_CBOR_ENCODE;
         case 5001: return DETERMINISTIC_CBOR_DECODE;
         case 1003: return MULTICODEC_STRIP_PREFIX;
@@ -629,6 +631,56 @@ public  final class CodecApiOperationResult extends
    */
   private void clearPemEncode() {
     if (resultCase_ == 4001) {
+      resultCase_ = 0;
+      result_ = null;
+    }
+  }
+
+  public static final int PEM_BUNDLE_DECODE_FIELD_NUMBER = 4002;
+  /**
+   * <code>.reallyme.codec.v1.CodecPemBundleDecodeResult pem_bundle_decode = 4002 [json_name = "pemBundleDecode"];</code>
+   */
+  @java.lang.Override
+  public boolean hasPemBundleDecode() {
+    return resultCase_ == 4002;
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecPemBundleDecodeResult pem_bundle_decode = 4002 [json_name = "pemBundleDecode"];</code>
+   */
+  @java.lang.Override
+  public me.really.codec.v1.CodecPemBundleDecodeResult getPemBundleDecode() {
+    if (resultCase_ == 4002) {
+       return (me.really.codec.v1.CodecPemBundleDecodeResult) result_;
+    }
+    return me.really.codec.v1.CodecPemBundleDecodeResult.getDefaultInstance();
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecPemBundleDecodeResult pem_bundle_decode = 4002 [json_name = "pemBundleDecode"];</code>
+   */
+  private void setPemBundleDecode(me.really.codec.v1.CodecPemBundleDecodeResult value) {
+    java.util.Objects.requireNonNull(value);
+    result_ = value;
+    resultCase_ = 4002;
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecPemBundleDecodeResult pem_bundle_decode = 4002 [json_name = "pemBundleDecode"];</code>
+   */
+  private void mergePemBundleDecode(me.really.codec.v1.CodecPemBundleDecodeResult value) {
+    java.util.Objects.requireNonNull(value);
+    if (resultCase_ == 4002 &&
+        result_ != me.really.codec.v1.CodecPemBundleDecodeResult.getDefaultInstance()) {
+      result_ = me.really.codec.v1.CodecPemBundleDecodeResult.newBuilder((me.really.codec.v1.CodecPemBundleDecodeResult) result_)
+          .mergeFrom(value).buildPartial();
+    } else {
+      result_ = value;
+    }
+    resultCase_ = 4002;
+  }
+  /**
+   * <code>.reallyme.codec.v1.CodecPemBundleDecodeResult pem_bundle_decode = 4002 [json_name = "pemBundleDecode"];</code>
+   */
+  private void clearPemBundleDecode() {
+    if (resultCase_ == 4002) {
       resultCase_ = 0;
       result_ = null;
     }
@@ -3496,6 +3548,54 @@ public  final class CodecApiOperationResult extends
     }
 
     /**
+     * <code>.reallyme.codec.v1.CodecPemBundleDecodeResult pem_bundle_decode = 4002 [json_name = "pemBundleDecode"];</code>
+     */
+    @java.lang.Override
+    public boolean hasPemBundleDecode() {
+      return instance.hasPemBundleDecode();
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecPemBundleDecodeResult pem_bundle_decode = 4002 [json_name = "pemBundleDecode"];</code>
+     */
+    @java.lang.Override
+    public me.really.codec.v1.CodecPemBundleDecodeResult getPemBundleDecode() {
+      return instance.getPemBundleDecode();
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecPemBundleDecodeResult pem_bundle_decode = 4002 [json_name = "pemBundleDecode"];</code>
+     */
+    public Builder setPemBundleDecode(me.really.codec.v1.CodecPemBundleDecodeResult value) {
+      copyOnWrite();
+      instance.setPemBundleDecode(value);
+      return this;
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecPemBundleDecodeResult pem_bundle_decode = 4002 [json_name = "pemBundleDecode"];</code>
+     */
+    public Builder setPemBundleDecode(
+        me.really.codec.v1.CodecPemBundleDecodeResult.Builder builderForValue) {
+      copyOnWrite();
+      instance.setPemBundleDecode(builderForValue.build());
+      return this;
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecPemBundleDecodeResult pem_bundle_decode = 4002 [json_name = "pemBundleDecode"];</code>
+     */
+    public Builder mergePemBundleDecode(me.really.codec.v1.CodecPemBundleDecodeResult value) {
+      copyOnWrite();
+      instance.mergePemBundleDecode(value);
+      return this;
+    }
+    /**
+     * <code>.reallyme.codec.v1.CodecPemBundleDecodeResult pem_bundle_decode = 4002 [json_name = "pemBundleDecode"];</code>
+     */
+    public Builder clearPemBundleDecode() {
+      copyOnWrite();
+      instance.clearPemBundleDecode();
+      return this;
+    }
+
+    /**
      * <code>.reallyme.codec.v1.CodecDeterministicCborEncodeResult deterministic_cbor_encode = 5000 [json_name = "deterministicCborEncode"];</code>
      */
     @java.lang.Override
@@ -5765,6 +5865,7 @@ public  final class CodecApiOperationResult extends
             me.really.codec.v1.CodecUint32Result.class,
             me.really.codec.v1.CodecPemDecodeResult.class,
             me.really.codec.v1.CodecPemEncodeResult.class,
+            me.really.codec.v1.CodecPemBundleDecodeResult.class,
             me.really.codec.v1.CodecDeterministicCborEncodeResult.class,
             me.really.codec.v1.CodecDeterministicCborDecodeResult.class,
             me.really.codec.v1.CodecGeneralCborHeader.class,
@@ -5802,16 +5903,16 @@ public  final class CodecApiOperationResult extends
             me.really.codec.v1.CodecTlvLength.class,
           };
           java.lang.String info =
-              "\u00007\u0001\u0000\u03e8\u2afc7\u0000\u0000\u0000\u03e8<\u0000\u03e9<\u0000\u03ea" +
+              "\u00008\u0001\u0000\u03e8\u2afc8\u0000\u0000\u0000\u03e8<\u0000\u03e9<\u0000\u03ea" +
               "<\u0000\u03eb<\u0000\u07d0<\u0000\u07d1<\u0000\u07d2<\u0000\u07d3<\u0000\u07d4<\u0000" +
               "\u0bb8<\u0000\u0bb9<\u0000\u0bba<\u0000\u0bbb<\u0000\u0bbc<\u0000\u0bbd<\u0000\u0bbe" +
-              "<\u0000\u0bbf<\u0000\u0bc0<\u0000\u0fa0<\u0000\u0fa1<\u0000\u1388<\u0000\u1389<\u0000" +
-              "\u1770<\u0000\u1771<\u0000\u1772<\u0000\u1773<\u0000\u1774<\u0000\u1775<\u0000\u1776" +
-              "<\u0000\u1777<\u0000\u1778<\u0000\u1779<\u0000\u177a<\u0000\u1b58<\u0000\u1b59<\u0000" +
-              "\u1b5a<\u0000\u1f40<\u0000\u1f41<\u0000\u1f4a<\u0000\u1f4b<\u0000\u1f4c<\u0000\u1f54" +
-              "<\u0000\u1f55<\u0000\u1f5e<\u0000\u1f5f<\u0000\u1f68<\u0000\u1f69<\u0000\u1f6a<\u0000" +
-              "\u2328<\u0000\u2710<\u0000\u2af8<\u0000\u2af9<\u0000\u2afa<\u0000\u2afb<\u0000\u2afc" +
-              "<\u0000";
+              "<\u0000\u0bbf<\u0000\u0bc0<\u0000\u0fa0<\u0000\u0fa1<\u0000\u0fa2<\u0000\u1388<\u0000" +
+              "\u1389<\u0000\u1770<\u0000\u1771<\u0000\u1772<\u0000\u1773<\u0000\u1774<\u0000\u1775" +
+              "<\u0000\u1776<\u0000\u1777<\u0000\u1778<\u0000\u1779<\u0000\u177a<\u0000\u1b58<\u0000" +
+              "\u1b59<\u0000\u1b5a<\u0000\u1f40<\u0000\u1f41<\u0000\u1f4a<\u0000\u1f4b<\u0000\u1f4c" +
+              "<\u0000\u1f54<\u0000\u1f55<\u0000\u1f5e<\u0000\u1f5f<\u0000\u1f68<\u0000\u1f69<\u0000" +
+              "\u1f6a<\u0000\u2328<\u0000\u2710<\u0000\u2af8<\u0000\u2af9<\u0000\u2afa<\u0000\u2afb" +
+              "<\u0000\u2afc<\u0000";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {
