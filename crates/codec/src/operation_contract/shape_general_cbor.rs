@@ -91,13 +91,25 @@ pub(super) fn frame(
     profile: Profile,
     limits: Limits,
 ) -> Result<proto::CodecGeneralCborFrame, CodecWireError> {
+    let mut result = collection_frame(source, value, validated)?;
+    result.options = Some(options(profile, limits)?).into();
+    Ok(result)
+}
+
+// Collection policy is serialized once by the owning Frames response. Avoid
+// constructing per-frame options, including their boxed allocation, at all.
+pub(super) fn collection_frame(
+    source: &[u8],
+    value: &Frame<'_>,
+    validated: bool,
+) -> Result<proto::CodecGeneralCborFrame, CodecWireError> {
     Ok(proto::CodecGeneralCborFrame {
         received: Some(span(source, value.received_bytes())?).into(),
         header_bytes: Some(span(source, value.header().received_bytes())?).into(),
         body: Some(span(source, body(value)?)?).into(),
         header: Some(header(value.header())?).into(),
         validated,
-        options: Some(options(profile, limits)?).into(),
+        options: None.into(),
     })
 }
 

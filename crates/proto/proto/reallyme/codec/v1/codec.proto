@@ -804,6 +804,8 @@ message CodecGeneralCborFrame {
   CodecByteSpan body = 3;
   CodecGeneralCborHeader header = 4;
   bool validated = 5;
+  // Standalone frames carry options here. Collection frames inherit their
+  // containing CodecGeneralCborFrames.options when this field is absent.
   CodecGeneralCborOptions options = 6;
 }
 
@@ -811,6 +813,8 @@ message CodecGeneralCborFrames {
   // SENSITIVE: payload ownership requires redaction and zeroization.
   repeated CodecGeneralCborFrame values = 1;
   uint64 consumed_bytes = 2;
+  // Shared by every frame in this collection, including an empty collection.
+  CodecGeneralCborOptions options = 3;
 }
 
 message CodecGeneralCborChunks {

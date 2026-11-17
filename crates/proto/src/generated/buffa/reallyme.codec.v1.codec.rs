@@ -26156,6 +26156,9 @@ pub struct CodecGeneralCborFrame {
     )]
     #[serde(default)]
     pub validated: bool,
+    /// Standalone frames carry options here. Collection frames inherit their
+    /// containing CodecGeneralCborFrames.options when this field is absent.
+    ///
     /// Field 6: `options`
     #[serde(
         rename = "options",
@@ -26701,12 +26704,25 @@ pub struct CodecGeneralCborFrames {
     )]
     #[serde(default)]
     pub consumed_bytes: u64,
+    /// Shared by every frame in this collection, including an empty collection.
+    ///
+    /// Field 3: `options`
+    #[serde(
+        rename = "options",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
+    )]
+    #[serde(default)]
+    pub options: ::buffa::MessageField<
+        CodecGeneralCborOptions,
+        ::buffa::Inline<CodecGeneralCborOptions>,
+    >,
 }
 impl ::core::fmt::Debug for CodecGeneralCborFrames {
     fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
         f.debug_struct("CodecGeneralCborFrames")
             .field("values", &::core::format_args!("[REDACTED]"))
             .field("consumed_bytes", &::core::format_args!("[REDACTED]"))
+            .field("options", &::core::format_args!("[REDACTED]"))
             .finish()
     }
 }
@@ -26739,6 +26755,22 @@ impl CodecGeneralCborFrames {
         self.consumed_bytes = value;
         self
     }
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::options`] to `value`, consuming and returning `self`.
+    pub fn with_options(
+        mut self,
+        value: impl ::core::convert::Into<
+            ::buffa::MessageField<
+                CodecGeneralCborOptions,
+                ::buffa::Inline<CodecGeneralCborOptions>,
+            >,
+        >,
+    ) -> Self {
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.options);
+        self.options = value.into();
+        self
+    }
 }
 const _: fn() = || {
     fn __requires_wipe_owner<
@@ -26746,11 +26778,13 @@ const _: fn() = || {
     >() {}
     __requires_wipe_owner::<CodecGeneralCborFrame>();
     __requires_wipe_owner::<::buffa::sensitive::List<CodecGeneralCborFrame>>();
+    __requires_wipe_owner::<CodecGeneralCborOptions>();
 };
 impl ::buffa::sensitive::Zeroize for CodecGeneralCborFrames {
     fn zeroize(&mut self) {
         ::buffa::sensitive::Zeroize::zeroize(&mut self.values);
         ::buffa::sensitive::Zeroize::zeroize(&mut self.consumed_bytes);
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.options);
     }
 }
 impl ::buffa::sensitive::ZeroizeOnDrop for CodecGeneralCborFrames {}
@@ -26791,6 +26825,14 @@ impl ::buffa::Message for CodecGeneralCborFrames {
             size
                 += 1u64 + ::buffa::types::uint64_encoded_len(self.consumed_bytes) as u64;
         }
+        if let ::core::option::Option::Some(__v) = self.options.as_option() {
+            let __slot = __cache.reserve();
+            let inner_size = __v.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 1u64 + ::buffa::encoding::varint_len(inner_size as u64) as u64
+                    + inner_size as u64;
+        }
         ::buffa::saturate_size(size)
     }
     fn write_to(
@@ -26810,6 +26852,14 @@ impl ::buffa::Message for CodecGeneralCborFrames {
         }
         if self.consumed_bytes != 0u64 {
             ::buffa::types::put_uint64_field(2u32, self.consumed_bytes, buf);
+        }
+        if let ::core::option::Option::Some(__v) = self.options.as_option() {
+            ::buffa::types::put_len_delimited_header(
+                3u32,
+                u64::from(__cache.consume_next()),
+                buf,
+            );
+            __v.write_to(__cache, buf);
         }
     }
     fn merge_field(
@@ -26844,6 +26894,17 @@ impl ::buffa::Message for CodecGeneralCborFrames {
                 )?;
                 self.consumed_bytes = ::buffa::types::decode_uint64(buf)?;
             }
+            3u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                ::buffa::Message::merge_length_delimited(
+                    self.options.get_or_insert_default(),
+                    buf,
+                    ctx,
+                )?;
+            }
             _ => {
                 ::buffa::encoding::skip_unknown_field(tag, buf, ctx)?;
             }
@@ -26854,6 +26915,7 @@ impl ::buffa::Message for CodecGeneralCborFrames {
         ::buffa::sensitive::Zeroize::zeroize(self);
         ::buffa::ProtoList::clear(&mut self.values);
         self.consumed_bytes = 0u64;
+        self.options = ::buffa::MessageField::none();
     }
 }
 impl<'de> ::serde::Deserialize<'de> for CodecGeneralCborFrames {
@@ -26877,6 +26939,7 @@ impl<'de> ::serde::Deserialize<'de> for CodecGeneralCborFrames {
                 let mut __r = <CodecGeneralCborFrames as ::core::default::Default>::default();
                 let mut __f_values = false;
                 let mut __f_consumed_bytes = false;
+                let mut __f_options = false;
                 while let Some(key) = map.next_key::<::buffa::alloc::string::String>()? {
                     let key = ::buffa::sensitive::Zeroizing::new(key);
                     match key.as_str() {
@@ -26936,6 +26999,25 @@ impl<'de> ::serde::Deserialize<'de> for CodecGeneralCborFrames {
                                 &mut __r.consumed_bytes,
                             );
                             __r.consumed_bytes = value;
+                        }
+                        "options" => {
+                            if __f_options {
+                                return Err(
+                                    <__A::Error as ::serde::de::Error>::duplicate_field(
+                                        "options",
+                                    ),
+                                );
+                            }
+                            __f_options = true;
+                            let value = map
+                                .next_value::<
+                                    ::buffa::MessageField<
+                                        CodecGeneralCborOptions,
+                                        ::buffa::Inline<CodecGeneralCborOptions>,
+                                    >,
+                                >()?;
+                            ::buffa::sensitive::Zeroize::zeroize(&mut __r.options);
+                            __r.options = value;
                         }
                         __unknown => {
                             return ::core::result::Result::Err(

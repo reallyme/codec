@@ -18185,6 +18185,9 @@ pub struct CodecGeneralCborFrameView<'a> {
     >,
     /// Field 5: `validated`
     pub validated: bool,
+    /// Standalone frames carry options here. Collection frames inherit their
+    /// containing CodecGeneralCborFrames.options when this field is absent.
+    ///
     /// Field 6: `options`
     pub options: ::buffa::MessageFieldView<
         super::super::__buffa::view::CodecGeneralCborOptionsView<'a>,
@@ -18632,12 +18635,19 @@ pub struct CodecGeneralCborFramesView<'a> {
     >,
     /// Field 2: `consumed_bytes`
     pub consumed_bytes: u64,
+    /// Shared by every frame in this collection, including an empty collection.
+    ///
+    /// Field 3: `options`
+    pub options: ::buffa::MessageFieldView<
+        super::super::__buffa::view::CodecGeneralCborOptionsView<'a>,
+    >,
 }
 impl<'a> ::core::fmt::Debug for CodecGeneralCborFramesView<'a> {
     fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
         f.debug_struct("CodecGeneralCborFramesView")
             .field("values", &::core::format_args!("[REDACTED]"))
             .field("consumed_bytes", &::core::format_args!("[REDACTED]"))
+            .field("options", &::core::format_args!("[REDACTED]"))
             .finish()
     }
 }
@@ -18649,8 +18659,12 @@ impl<'a> ::buffa::sensitive::Zeroize for CodecGeneralCborFramesView<'a> {
         __requires_view_wipe_owner::<
             super::super::__buffa::view::CodecGeneralCborFrameView<'a>,
         >();
+        __requires_view_wipe_owner::<
+            super::super::__buffa::view::CodecGeneralCborOptionsView<'a>,
+        >();
         ::buffa::sensitive::Zeroize::zeroize(&mut self.values);
         ::buffa::sensitive::Zeroize::zeroize(&mut self.consumed_bytes);
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.options);
     }
 }
 impl<'a> ::buffa::sensitive::ZeroizeOnDrop for CodecGeneralCborFramesView<'a> {}
@@ -18695,6 +18709,27 @@ impl<'a> ::buffa::MessageView<'a> for CodecGeneralCborFramesView<'a> {
                     ::buffa::encoding::WireType::Varint,
                 )?;
                 view.consumed_bytes = ::buffa::types::decode_uint64(&mut cur)?;
+            }
+            3u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                let __sub_ctx = ctx.descend()?;
+                let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                match view.options.as_mut() {
+                    Some(existing) => {
+                        ::buffa::MessageView::merge_into_view(existing, sub, __sub_ctx)?
+                    }
+                    None => {
+                        view.options = ::buffa::MessageFieldView::set(
+                            <super::super::__buffa::view::CodecGeneralCborOptionsView as ::buffa::MessageView>::decode_view_ctx(
+                                sub,
+                                __sub_ctx,
+                            )?,
+                        );
+                    }
+                }
             }
             1u32 => {
                 ::buffa::encoding::check_wire_type(
@@ -18752,6 +18787,15 @@ impl<'a> ::buffa::MessageView<'a> for CodecGeneralCborFramesView<'a> {
             .map(|v| v.to_owned_from_source(__buffa_src))
             .collect::<::core::result::Result<_, ::buffa::DecodeError>>()?;
         __owned.consumed_bytes = self.consumed_bytes;
+        __owned.options = match self.options.as_option() {
+            Some(v) => {
+                ::buffa::MessageField::<
+                    super::super::CodecGeneralCborOptions,
+                    ::buffa::Inline<super::super::CodecGeneralCborOptions>,
+                >::some(v.to_owned_from_source(__buffa_src)?)
+            }
+            None => ::buffa::MessageField::none(),
+        };
         ::core::result::Result::Ok(__owned)
     }
 }
@@ -18773,6 +18817,14 @@ impl<'a> ::buffa::ViewEncode<'a> for CodecGeneralCborFramesView<'a> {
             size
                 += 1u64 + ::buffa::types::uint64_encoded_len(self.consumed_bytes) as u64;
         }
+        if let ::core::option::Option::Some(__v) = self.options.as_option() {
+            let __slot = __cache.reserve();
+            let inner_size = __v.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 1u64 + ::buffa::encoding::varint_len(inner_size as u64) as u64
+                    + inner_size as u64;
+        }
         ::buffa::saturate_size(size)
     }
     #[allow(clippy::needless_borrow)]
@@ -18793,6 +18845,14 @@ impl<'a> ::buffa::ViewEncode<'a> for CodecGeneralCborFramesView<'a> {
         }
         if self.consumed_bytes != 0u64 {
             ::buffa::types::put_uint64_field(2u32, self.consumed_bytes, buf);
+        }
+        if let ::core::option::Option::Some(__v) = self.options.as_option() {
+            ::buffa::types::put_len_delimited_header(
+                3u32,
+                u64::from(__cache.consume_next()),
+                buf,
+            );
+            __v.write_to(__cache, buf);
         }
     }
 }
@@ -18823,6 +18883,11 @@ impl<'__a> ::serde::Serialize for CodecGeneralCborFramesView<'__a> {
                     "consumedBytes",
                     &::buffa::json_helpers::ProtoJson(&self.consumed_bytes),
                 )?;
+        }
+        {
+            if let ::core::option::Option::Some(__v) = self.options.as_option() {
+                __map.serialize_entry("options", __v)?;
+            }
         }
         __map.end()
     }

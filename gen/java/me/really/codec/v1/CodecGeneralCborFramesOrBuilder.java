@@ -41,4 +41,23 @@ public interface CodecGeneralCborFramesOrBuilder extends
    * @return The consumedBytes.
    */
   long getConsumedBytes();
+
+  /**
+   * <pre>
+   * Shared by every frame in this collection, including an empty collection.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 3 [json_name = "options"];</code>
+   * @return Whether the options field is set.
+   */
+  boolean hasOptions();
+  /**
+   * <pre>
+   * Shared by every frame in this collection, including an empty collection.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 3 [json_name = "options"];</code>
+   * @return The options.
+   */
+  me.really.codec.v1.CodecGeneralCborOptions getOptions();
 }

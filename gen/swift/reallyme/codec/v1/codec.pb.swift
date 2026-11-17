@@ -4501,6 +4501,8 @@ nonisolated struct ReallyMeProtoCodecGeneralCborFrame: @unchecked Sendable, Cust
     set {_uniqueStorage()._validated = newValue}
   }
 
+  /// Standalone frames carry options here. Collection frames inherit their
+  /// containing CodecGeneralCborFrames.options when this field is absent.
   var options: ReallyMeProtoCodecGeneralCborOptions {
     get {_storage._options ?? ReallyMeProtoCodecGeneralCborOptions()}
     set {_uniqueStorage()._options = newValue}
@@ -4544,9 +4546,21 @@ nonisolated struct ReallyMeProtoCodecGeneralCborFrames: Sendable, CustomReflecta
 
   var consumedBytes: UInt64 = 0
 
+  /// Shared by every frame in this collection, including an empty collection.
+  var options: ReallyMeProtoCodecGeneralCborOptions {
+    get {_options ?? ReallyMeProtoCodecGeneralCborOptions()}
+    set {_options = newValue}
+  }
+  /// Returns true if `options` has been explicitly set.
+  var hasOptions: Bool {self._options != nil}
+  /// Clears the value of `options`. Subsequent reads from it will return its default value.
+  mutating func clearOptions() {self._options = nil}
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
+
+  fileprivate var _options: ReallyMeProtoCodecGeneralCborOptions? = nil
 }
 
 nonisolated struct ReallyMeProtoCodecGeneralCborChunks: Sendable, CustomReflectable {
@@ -11014,7 +11028,7 @@ nonisolated extension ReallyMeProtoCodecGeneralCborFrame: SwiftProtobuf.Message,
 
 nonisolated extension ReallyMeProtoCodecGeneralCborFrames: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".CodecGeneralCborFrames"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}values\0\u{3}consumed_bytes\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}values\0\u{3}consumed_bytes\0\u{1}options\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -11024,24 +11038,33 @@ nonisolated extension ReallyMeProtoCodecGeneralCborFrames: SwiftProtobuf.Message
       switch fieldNumber {
       case 1: try { try decoder.decodeRepeatedMessageField(value: &self.values) }()
       case 2: try { try decoder.decodeSingularUInt64Field(value: &self.consumedBytes) }()
+      case 3: try { try decoder.decodeSingularMessageField(value: &self._options) }()
       default: break
       }
     }
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
     if !self.values.isEmpty {
       try visitor.visitRepeatedMessageField(value: self.values, fieldNumber: 1)
     }
     if self.consumedBytes != 0 {
       try visitor.visitSingularUInt64Field(value: self.consumedBytes, fieldNumber: 2)
     }
+    try { if let v = self._options {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   static func ==(lhs: ReallyMeProtoCodecGeneralCborFrames, rhs: ReallyMeProtoCodecGeneralCborFrames) -> Bool {
     if lhs.values != rhs.values {return false}
     if lhs.consumedBytes != rhs.consumedBytes {return false}
+    if lhs._options != rhs._options {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
