@@ -14,6 +14,8 @@ private let expectedCodecAbiVersion: UInt32 = 6
 private let expectedCodecPackageMajor: UInt32 = 0
 private let expectedCodecPackageMinor: UInt32 = 4
 private let expectedCodecPackagePatch: UInt32 = 4
+// Shared transport cap includes JSON expansion and operation framing. Its value
+// is derived and checked by scripts/generate_codec_limits.mjs.
 private let maxProtoJsonRequestLength = 22_373_720
 
 private typealias CodecAbiVersionFunction = @convention(c) () -> UInt32
