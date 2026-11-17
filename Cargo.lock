@@ -649,6 +649,7 @@ dependencies = [
  "reallyme-codec-pem",
  "reallyme-codec-proto",
  "serde_json",
+ "stats_alloc",
  "thiserror",
  "zeroize",
 ]
