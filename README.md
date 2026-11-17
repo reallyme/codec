@@ -207,10 +207,14 @@ storage requires a caller-owned zeroizing buffer for sensitive input.
 
 General map keys use RFC 8949 section 5.6.1 basic-model equality. Integer and float types are distinct; float zero signs are equivalent. Registered-tag and application-specific equivalence require additional caller checks. Encoding preserves map order and received items; incompatible profiles return an error.
 
-`Limits` lets callers lower input/output bytes, depth, nodes, container entries,
-aggregate byte/text contents, and work. Hard ceilings are 1 MiB per input/output,
-64 open containers/tags, 65,536 nodes, 4,096 entries per container, 1 MiB per
-aggregate string category, and 64 Mi work credits (16 Mi by default). Complex keys can exhaust the work budget before other limits.
+`Limits` lets callers configure input/output bytes, depth, nodes, container entries,
+aggregate byte/text contents, and work. Entries default to 4,096 per container;
+`Limits::with_entries(65_536)` explicitly permits larger arrays, maps, or chunked
+strings. Hard ceilings are 1 MiB per input/output, 64 open containers/tags,
+65,536 total nodes, 65,536 entries per container, 1 MiB per aggregate string
+category, and 64 Mi work credits (16 Mi by default). Every container and child
+counts toward the node budget, so a flat array can contain at most 65,535 scalar
+elements. Raising the entry limit leaves all other budgets unchanged. Complex keys can exhaust the work budget before other limits.
 
 Deterministic-CBOR encode canonicalizes map ordering. Decode rejects duplicate
 semantic map keys, non-canonical map order, non-minimal integer or length

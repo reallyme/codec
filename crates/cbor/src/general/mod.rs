@@ -84,7 +84,7 @@ pub use cursor::Cursor;
 pub use encode::{encode, EncodedCbor, MapEntry, ValueRef};
 pub use error::{CborError, ErrorReason};
 pub use float::{Float, FloatWidth};
-pub use limits::{Limits, MAX_BYTES, MAX_DEPTH, MAX_ENTRIES, MAX_NODES, MAX_WORK};
+pub use limits::{Limits, DEFAULT_ENTRIES, MAX_BYTES, MAX_DEPTH, MAX_ENTRIES, MAX_NODES, MAX_WORK};
 pub use profile::{
     FloatPolicy, LengthPolicy, MapKeyEquality, MapOrdering, NanPolicy, Profile, Serialization,
 };

@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-//! Map-key uniqueness at scale: valid maps up to the entry ceiling are
+//! Map-key uniqueness at scale: valid maps up to the default entry limit are
 //! accepted within default limits, duplicates are found regardless of their
 //! distance, and adversarial keys stay bounded by the work budget.
 
 #![allow(missing_docs, clippy::unwrap_used)]
 
 use codec_cbor::general::{
-    validate_exact, CborError, ErrorReason, Limits, MapOrdering, Profile, MAX_ENTRIES,
+    validate_exact, CborError, ErrorReason, Limits, MapOrdering, Profile, DEFAULT_ENTRIES,
 };
 use std::collections::BTreeSet;
 
@@ -44,17 +44,17 @@ fn integer_map(keys: impl Iterator<Item = u16>, count: usize) -> Vec<u8> {
 }
 
 #[test]
-fn maps_at_the_entry_ceiling_validate_within_default_limits() {
-    let count = u16::try_from(MAX_ENTRIES).unwrap();
+fn maps_at_the_default_entry_limit_validate_within_default_limits() {
+    let count = u16::try_from(DEFAULT_ENTRIES).unwrap();
     for keys in [
-        integer_map(0..count, MAX_ENTRIES),
-        integer_map((0..count).rev(), MAX_ENTRIES),
+        integer_map(0..count, DEFAULT_ENTRIES),
+        integer_map((0..count).rev(), DEFAULT_ENTRIES),
     ] {
         validate_exact(&keys, Profile::preferred(), Limits::default()).unwrap();
     }
 
     // A large value early in the map must not be rescanned for each later key.
-    let entries = MAX_ENTRIES - 96;
+    let entries = DEFAULT_ENTRIES - 96;
     let mut input = map_header(entries);
     input.push(0x00);
     input.extend_from_slice(&[0x99, 0x0f, 0xa0]);
@@ -68,10 +68,10 @@ fn maps_at_the_entry_ceiling_validate_within_default_limits() {
 
 #[test]
 fn distant_and_width_equivalent_duplicates_are_found_in_large_maps() {
-    let count = u16::try_from(MAX_ENTRIES).unwrap();
+    let count = u16::try_from(DEFAULT_ENTRIES).unwrap();
     let mut keys: Vec<u16> = (0..count).collect();
     *keys.last_mut().unwrap() = 0;
-    let input = integer_map(keys.into_iter(), MAX_ENTRIES);
+    let input = integer_map(keys.into_iter(), DEFAULT_ENTRIES);
     assert_eq!(
         reason(validate_exact(
             &input,
