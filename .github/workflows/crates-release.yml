@@ -65,6 +65,7 @@ jobs:
         with:
           ref: ${{ steps.source.outputs.sha }}
           persist-credentials: false
+          fetch-depth: 0
 
       - name: Checkout release-readiness runner
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -86,6 +87,9 @@ jobs:
 
       - name: Authenticate release-readiness package
         run: node scripts/run_pinned_release_readiness.mjs --check-pins
+
+      - name: Reject private files in release source history
+        run: node scripts/check_ignored_files.mjs --history
 
       - name: Verify release candidate
         id: candidate
@@ -132,6 +136,9 @@ jobs:
 
       # No build cache is restored here: this job holds the registry token, and
       # publishing uses --no-verify, so a cache could only add poisoning risk.
+      - name: Check package contents for private local files
+        run: python3 scripts/check_release_privacy.py "$RUNNER_TEMP/release-package"
+
       - name: Publish crates in dependency order
         run: |
           node scripts/publish_crates_in_order.mjs publish

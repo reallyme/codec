@@ -65,6 +65,7 @@ jobs:
         with:
           ref: ${{ steps.source.outputs.sha }}
           persist-credentials: false
+          fetch-depth: 0
 
       - name: Checkout release-readiness runner
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -86,6 +87,9 @@ jobs:
 
       - name: Authenticate release-readiness package
         run: node scripts/run_pinned_release_readiness.mjs --check-pins
+
+      - name: Reject private files in release source history
+        run: node scripts/check_ignored_files.mjs --history
 
       - name: Verify release candidate
         id: candidate
@@ -130,6 +134,9 @@ jobs:
         run: |
           sudo xcode-select -s /Applications/Xcode_26.4.app
           swift --version
+
+      - name: Check package contents for private local files
+        run: python3 scripts/check_release_privacy.py build/swift/ReallyMeCodecFFI.xcframework.zip build/swift/ReallyMeCodecFFI.xcframework.checksum
 
       - name: Bind manifest to attested Swift artifact
         run: |
@@ -179,6 +186,9 @@ jobs:
         run: |
           sudo xcode-select -s /Applications/Xcode_26.4.app
           swift --version
+
+      - name: Check package contents for private local files
+        run: python3 scripts/check_release_privacy.py build/swift/ReallyMeCodecFFI.xcframework.zip build/swift/ReallyMeCodecFFI.xcframework.checksum
 
       - name: Bind release manifest to verified Swift artifact
         run: |

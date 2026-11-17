@@ -60,6 +60,7 @@ jobs:
         with:
           ref: ${{ steps.source.outputs.sha }}
           persist-credentials: false
+          fetch-depth: 0
 
       - name: Checkout release-readiness runner
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -81,6 +82,9 @@ jobs:
 
       - name: Authenticate release-readiness package
         run: node scripts/run_pinned_release_readiness.mjs --check-pins
+
+      - name: Reject private files in release source history
+        run: node scripts/check_ignored_files.mjs --history
 
       - name: Verify dependency security for the candidate
         run: node scripts/verify_release_dependency_security.mjs
@@ -165,6 +169,9 @@ jobs:
         run: ./gradlew test -Preallyme.codec.nativeResourcesDir=../../build/kotlin-native-resources
         shell: bash
 
+      - name: Check package contents for private local files
+        run: python3 scripts/check_release_privacy.py build/kotlin-native-resources
+
       - name: Upload codec JNI resource
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -211,6 +218,9 @@ jobs:
         run: ./gradlew test publishAllPublicationsToLocalReleaseRepository -Preallyme.maven.localReleaseRepositoryDir="$MAVEN_REPOSITORY" -Preallyme.codec.nativeResourcesDir=${{ github.workspace }}/build/kotlin-native-resources -Preallyme.codec.requireFullNativeResources=true
         env:
           MAVEN_REPOSITORY: ${{ runner.temp }}/maven-jvm
+
+      - name: Check package contents for private local files
+        run: python3 scripts/check_release_privacy.py "$RUNNER_TEMP/maven-jvm"
 
       - name: Upload verified package
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -293,6 +303,9 @@ jobs:
         env:
           SOURCE_SHA: ${{ needs.verify-source-sha.outputs.release_sha }}
           RELEASE_VERSION: ${{ inputs.version }}
+
+      - name: Check package contents for private local files
+        run: python3 scripts/check_release_privacy.py "$RUNNER_TEMP/android-publication"
 
       - name: Upload tested Android publication
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

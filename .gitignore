@@ -33,6 +33,10 @@ AGENTS.md
 .secrets/
 **/.secrets/
 
+# Python tooling
+__pycache__/
+*.py[cod]
+
 # Generated artifacts
 /coverage/
 /tarpaulin-report.html
