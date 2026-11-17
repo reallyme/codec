@@ -33,7 +33,48 @@ impl ProtoStringJson for SecretString {
                 // The parser's own scratch storage remains a transport boundary.
                 Ok(value.into())
             }
+            fn visit_bool<E: serde::de::Error>(self, value: bool) -> Result<Self::Value, E> {
+                let _value = zeroize::Zeroizing::new(value);
+                Err(E::custom(StorageErrorReason::InvalidJsonType))
+            }
+            fn visit_i64<E: serde::de::Error>(self, value: i64) -> Result<Self::Value, E> {
+                let _value = zeroize::Zeroizing::new(value);
+                Err(E::custom(StorageErrorReason::InvalidJsonType))
+            }
+            fn visit_u64<E: serde::de::Error>(self, value: u64) -> Result<Self::Value, E> {
+                let _value = zeroize::Zeroizing::new(value);
+                Err(E::custom(StorageErrorReason::InvalidJsonType))
+            }
+            fn visit_f64<E: serde::de::Error>(self, value: f64) -> Result<Self::Value, E> {
+                let _value = zeroize::Zeroizing::new(value);
+                Err(E::custom(StorageErrorReason::InvalidJsonType))
+            }
+            fn visit_unit<E: serde::de::Error>(self) -> Result<Self::Value, E> {
+                Err(E::custom(StorageErrorReason::InvalidJsonType))
+            }
+            fn visit_seq<A: serde::de::SeqAccess<'de>>(
+                self,
+                _: A,
+            ) -> Result<Self::Value, A::Error> {
+                Err(serde::de::Error::custom(
+                    StorageErrorReason::InvalidJsonType,
+                ))
+            }
+            fn visit_map<M: serde::de::MapAccess<'de>>(
+                self,
+                _: M,
+            ) -> Result<Self::Value, M::Error> {
+                Err(serde::de::Error::custom(
+                    StorageErrorReason::InvalidJsonType,
+                ))
+            }
+            fn visit_byte_buf<E: serde::de::Error>(self, value: Vec<u8>) -> Result<Self::Value, E> {
+                let _value = Zeroizing::new(value);
+                Err(E::custom(StorageErrorReason::InvalidJsonType))
+            }
         }
-        deserializer.deserialize_string(Visitor)
+        // Visit wrong JSON scalar types before Serde can copy their received
+        // values into an owned invalid-type diagnostic.
+        deserializer.deserialize_any(Visitor)
     }
 }
