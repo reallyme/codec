@@ -57,7 +57,7 @@ const POLICY_MODULE_SHA256 = new Map([
   ["scripts/release-readiness/source-policy.mjs", "1bc1368be565bfb972ef68a7b3a532c5b1969f40ef9893cd660fb1c244a4202e"],
   ["scripts/verify_release_version.mjs", "bc858e3f4bd98b808b5557b7c50755b4a0d3595393842d7cd01728f853d86215"],
   ["scripts/codec_proto_sensitivity.mjs", "00f8d4738b480809212adfe026a86563c74a2db5f118d8c804a02fe691dba5d8"],
-  ["scripts/validate_codec_vectors.mjs", "2441249555b41a4dddc20096ae56521a165058284f933bf418b074dd76420fb9"],
+  ["scripts/validate_codec_vectors.mjs", "186876266ef657bda5a450b00f1b8adab188d65ae8483ecb86bb9862ed864763"],
   ["scripts/generate_codec_limits.mjs", "9f566d26749206dffcabf2795b4ce5cd7f20d51ce6d863e0527b91b64d143256"],
 ]);
 for (const [path, expected] of POLICY_MODULE_SHA256) {
@@ -2282,7 +2282,7 @@ assertContains(
 // Keep the fixture set anchored outside the manifest itself. A checksum field
 // beside its own bytes cannot detect a coordinated golden-vector edit.
 const EXPECTED_CODEC_VECTORS_SHA256 =
-  "36e558e2cc8cd1ec50171ff3fb5478ebcde03d6eacd5df7192b13e05d70905d8";
+  "c0013dc61c0c9346adad3bf6f98a476408582b60cc9c20a7eb14069228497724";
 const codecVectorDigest = createHash("sha256")
   .update(readText("vectors/codec-vectors.json"), "utf8")
   .digest("hex");
@@ -2292,6 +2292,16 @@ if (codecVectorDigest !== EXPECTED_CODEC_VECTORS_SHA256) {
 const codecVectorManifest = readJson("vectors/codec-vectors.json");
 if (codecVectorManifest.schemaVersion !== 2) {
   fail("vectors/codec-vectors.json must use schemaVersion 2");
+}
+for (const [path, marker] of [
+  ["crates/codec/tests/pem_bundle_vector_tests.rs", "shared_pem_bundle_vectors_pin_wire_bytes_and_typed_outcomes"],
+  ["packages/swift/Tests/ReallyMeCodecTests/PemBundleVectorTests.swift", "testSharedPemBundleWireBytesAndTypedOutcomes"],
+  ["packages/kotlin/src/test/kotlin/me/really/codec/PemBundleVectorTest.kt", "sharedPemBundleWireBytesAndTypedOutcomes"],
+  ["packages/ts/test/pem-bundle-vectors.test.mjs", "shared PEM bundle vector:"],
+]) {
+  assertContains(path, marker);
+  assertContains(path, "responseHex");
+  assertContains(path, "codec-vectors.json");
 }
 for (const key of [
   "base64MissingPadding",

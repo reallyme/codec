@@ -128,4 +128,55 @@ for (const [index, fixture] of interoperability.entries()) {
   }
 }
 
-process.stdout.write(`validated ${interoperability.length} deterministic-CBOR provenance fixtures\n`);
+const pemBundle = manifest.pemBundleDecode;
+if (pemBundle?.fixtureClass !== "golden-operation" || !Array.isArray(pemBundle.cases)) {
+  fail("pemBundleDecode must declare golden-operation cases");
+}
+const pemNames = new Set();
+for (const [index, fixture] of pemBundle.cases.entries()) {
+  const path = `pemBundleDecode.cases[${index}]`;
+  const name = requireString(fixture?.name, `${path}.name`);
+  if (pemNames.has(name)) fail(`duplicate PEM bundle fixture ${name}`);
+  pemNames.add(name);
+  for (const field of ["requestHex", "responseHex"]) {
+    if (!/^(?:[0-9a-f]{2})+$/u.test(requireString(fixture[field], `${path}.${field}`))) {
+      fail(`${path}.${field} must contain lowercase complete bytes`);
+    }
+  }
+  if (Object.keys(fixture.request ?? {}).join() !== "pemBundleDecode" ||
+      typeof fixture.request.pemBundleDecode?.pem !== "string") {
+    fail(`${path}.request must be a generated PEM bundle request`);
+  }
+  const response = fixture.response;
+  if (Object.keys(response ?? {}).join() === "result") {
+    const blocks = response.result?.pemBundleDecode?.blocks;
+    if (Object.keys(response.result).join() !== "pemBundleDecode" || !Array.isArray(blocks) ||
+        blocks.some((block) => typeof block.label !== "string" || typeof block.der !== "string")) {
+      fail(`${path}.response must contain PEM bundle blocks`);
+    }
+  } else if (Object.keys(response ?? {}).join() === "error") {
+    const error = response.error;
+    const detail = error?.pem ?? error?.baseEncoding;
+    if (error?.origin !== "CODEC_ERROR_ORIGIN_CALLER" ||
+        !/^CODEC_ERROR_REASON_(?:PEM_[A-Z_]+|BASE_INPUT_TOO_LARGE)$/u.test(detail?.reason)) {
+      fail(`${path}.response must carry a typed PEM failure and caller origin`);
+    }
+  } else {
+    fail(`${path}.response must have exactly one generated outcome`);
+  }
+}
+// Require contrasting scope/profile pairs as well as allocation-budget failures.
+// All lanes compare the exact same binary envelopes, not locally built outputs.
+for (const name of [
+  "default-strict-all-mixed-labels", "explicit-strict-all-crlf", "strict-cr-only",
+  "first-stops-before-malformed-tail", "all-rejects-malformed-tail",
+  "strict-rejects-inline-armor", "compatible-accepts-inline-armor",
+  "compatible-preserves-label-case-and-headers", "strict-rejects-form-feed-prefix",
+  "strict-rejects-empty-input", "compatible-accepts-empty-input",
+  "block-limit-exceeded", "exact-block-and-der-limits", "der-limit-exceeded",
+  "input-limit-exceeded", "invalid-scope", "invalid-syntax-profile",
+]) {
+  if (!pemNames.has(name)) fail(`missing PEM bundle fixture ${name}`);
+}
+
+process.stdout.write(`validated ${interoperability.length} deterministic-CBOR provenance fixtures and ${pemNames.size} PEM bundle fixtures\n`);

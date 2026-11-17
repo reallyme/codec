@@ -108,6 +108,405 @@
     "protoMulticodecTableRequestHex": "d23e00",
     "protoMulticodecTableRequestJson": "{\"multicodecTable\":{}}"
   },
+  "pemBundleDecode": {
+    "fixtureClass": "golden-operation",
+    "cases": [
+      {
+        "name": "default-strict-all-mixed-labels",
+        "request": {
+          "pemBundleDecode": {
+            "pem": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCkFRSUQKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQotLS0tLUJFR0lOIFVOS05PV04tLS0tLQpBQUVDKy84PQotLS0tLUVORCBVTktOT1dOLS0tLS0K"
+          }
+        },
+        "response": {
+          "result": {
+            "pemBundleDecode": {
+              "blocks": [
+                {
+                  "label": "CERTIFICATE",
+                  "der": "AQID"
+                },
+                {
+                  "label": "UNKNOWN",
+                  "der": "AAEC+/8="
+                }
+              ]
+            }
+          }
+        },
+        "requestHex": "92fa01740a722d2d2d2d2d424547494e2043455254494649434154452d2d2d2d2d0a415149440a2d2d2d2d2d454e442043455254494649434154452d2d2d2d2d0a2d2d2d2d2d424547494e20554e4b4e4f574e2d2d2d2d2d0a414145432b2f383d0a2d2d2d2d2d454e4420554e4b4e4f574e2d2d2d2d2d0a",
+        "responseHex": "0a2a92fa01260a120a0b434552544946494341544512030102030a100a07554e4b4e4f574e1205000102fbff"
+      },
+      {
+        "name": "explicit-strict-all-crlf",
+        "request": {
+          "pemBundleDecode": {
+            "pem": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tDQpBUUlEDQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tDQotLS0tLUJFR0lOIFVOS05PV04tLS0tLQ0KQUFFQysvOD0NCi0tLS0tRU5EIFVOS05PV04tLS0tLQ0K",
+            "options": {
+              "syntaxProfile": "CODEC_PEM_SYNTAX_PROFILE_STRICT",
+              "scope": "CODEC_PEM_DECODE_SCOPE_ALL"
+            }
+          }
+        },
+        "response": {
+          "result": {
+            "pemBundleDecode": {
+              "blocks": [
+                {
+                  "label": "CERTIFICATE",
+                  "der": "AQID"
+                },
+                {
+                  "label": "UNKNOWN",
+                  "der": "AAEC+/8="
+                }
+              ]
+            }
+          }
+        },
+        "requestHex": "92fa0180010a782d2d2d2d2d424547494e2043455254494649434154452d2d2d2d2d0d0a415149440d0a2d2d2d2d2d454e442043455254494649434154452d2d2d2d2d0d0a2d2d2d2d2d424547494e20554e4b4e4f574e2d2d2d2d2d0d0a414145432b2f383d0d0a2d2d2d2d2d454e4420554e4b4e4f574e2d2d2d2d2d0d0a120420642864",
+        "responseHex": "0a2a92fa01260a120a0b434552544946494341544512030102030a100a07554e4b4e4f574e1205000102fbff"
+      },
+      {
+        "name": "strict-cr-only",
+        "request": {
+          "pemBundleDecode": {
+            "pem": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tDUFRSUQNLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQ0=",
+            "options": {}
+          }
+        },
+        "response": {
+          "result": {
+            "pemBundleDecode": {
+              "blocks": [
+                {
+                  "label": "CERTIFICATE",
+                  "der": "AQID"
+                }
+              ]
+            }
+          }
+        },
+        "requestHex": "92fa013f0a3b2d2d2d2d2d424547494e2043455254494649434154452d2d2d2d2d0d415149440d2d2d2d2d2d454e442043455254494649434154452d2d2d2d2d0d1200",
+        "responseHex": "0a1892fa01140a120a0b43455254494649434154451203010203"
+      },
+      {
+        "name": "first-stops-before-malformed-tail",
+        "request": {
+          "pemBundleDecode": {
+            "pem": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCkFRSUQKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQotLS0tLUJFR0lOIFVOS05PV04tLS0tLQpBQUVDKy84PQo=",
+            "options": {
+              "scope": "CODEC_PEM_DECODE_SCOPE_FIRST",
+              "maxBlocks": 1
+            }
+          }
+        },
+        "response": {
+          "result": {
+            "pemBundleDecode": {
+              "blocks": [
+                {
+                  "label": "CERTIFICATE",
+                  "der": "AQID"
+                }
+              ]
+            }
+          }
+        },
+        "requestHex": "92fa01640a5c2d2d2d2d2d424547494e2043455254494649434154452d2d2d2d2d0a415149440a2d2d2d2d2d454e442043455254494649434154452d2d2d2d2d0a2d2d2d2d2d424547494e20554e4b4e4f574e2d2d2d2d2d0a414145432b2f383d0a12041801286e",
+        "responseHex": "0a1892fa01140a120a0b43455254494649434154451203010203"
+      },
+      {
+        "name": "all-rejects-malformed-tail",
+        "request": {
+          "pemBundleDecode": {
+            "pem": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCkFRSUQKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQotLS0tLUJFR0lOIFVOS05PV04tLS0tLQpBQUVDKy84PQo=",
+            "options": {
+              "scope": "CODEC_PEM_DECODE_SCOPE_ALL"
+            }
+          }
+        },
+        "response": {
+          "error": {
+            "pem": {
+              "reason": "CODEC_ERROR_REASON_PEM_MISSING_END"
+            },
+            "origin": "CODEC_ERROR_ORIGIN_CALLER"
+          }
+        },
+        "requestHex": "92fa01620a5c2d2d2d2d2d424547494e2043455254494649434154452d2d2d2d2d0a415149440a2d2d2d2d2d454e442043455254494649434154452d2d2d2d2d0a2d2d2d2d2d424547494e20554e4b4e4f574e2d2d2d2d2d0a414145432b2f383d0a12022864",
+        "responseHex": "1208120308d101a00601"
+      },
+      {
+        "name": "strict-rejects-inline-armor",
+        "request": {
+          "pemBundleDecode": {
+            "pem": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCkFRSUQKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLSAJLS0tLS1CRUdJTiBVTktOT1dOLS0tLS0KQUFFQysvOD0KLS0tLS1FTkQgVU5LTk9XTi0tLS0tCg==",
+            "options": {
+              "syntaxProfile": "CODEC_PEM_SYNTAX_PROFILE_STRICT"
+            }
+          }
+        },
+        "response": {
+          "error": {
+            "pem": {
+              "reason": "CODEC_ERROR_REASON_PEM_INVALID_BOUNDARY"
+            },
+            "origin": "CODEC_ERROR_ORIGIN_CALLER"
+          }
+        },
+        "requestHex": "92fa01790a732d2d2d2d2d424547494e2043455254494649434154452d2d2d2d2d0a415149440a2d2d2d2d2d454e442043455254494649434154452d2d2d2d2d20092d2d2d2d2d424547494e20554e4b4e4f574e2d2d2d2d2d0a414145432b2f383d0a2d2d2d2d2d454e4420554e4b4e4f574e2d2d2d2d2d0a12022064",
+        "responseHex": "1208120308c801a00601"
+      },
+      {
+        "name": "compatible-accepts-inline-armor",
+        "request": {
+          "pemBundleDecode": {
+            "pem": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCkFRSUQKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLSAJLS0tLS1CRUdJTiBVTktOT1dOLS0tLS0KQUFFQysvOD0KLS0tLS1FTkQgVU5LTk9XTi0tLS0tCg==",
+            "options": {
+              "syntaxProfile": "CODEC_PEM_SYNTAX_PROFILE_COMPATIBLE"
+            }
+          }
+        },
+        "response": {
+          "result": {
+            "pemBundleDecode": {
+              "blocks": [
+                {
+                  "label": "CERTIFICATE",
+                  "der": "AQID"
+                },
+                {
+                  "label": "UNKNOWN",
+                  "der": "AAEC+/8="
+                }
+              ]
+            }
+          }
+        },
+        "requestHex": "92fa01790a732d2d2d2d2d424547494e2043455254494649434154452d2d2d2d2d0a415149440a2d2d2d2d2d454e442043455254494649434154452d2d2d2d2d20092d2d2d2d2d424547494e20554e4b4e4f574e2d2d2d2d2d0a414145432b2f383d0a2d2d2d2d2d454e4420554e4b4e4f574e2d2d2d2d2d0a1202206e",
+        "responseHex": "0a2a92fa01260a120a0b434552544946494341544512030102030a100a07554e4b4e4f574e1205000102fbff"
+      },
+      {
+        "name": "compatible-preserves-label-case-and-headers",
+        "request": {
+          "pemBundleDecode": {
+            "pem": "cHJvc2UgLS0tLS1CRUdJTiBjdXN0b20gbGFiZWwtLS0tLQpDb21tZW50OiBzeW50aGV0aWMKCkFRSUQKLS0tLS1FTkQgY3VzdG9tIGxhYmVsLS0tLS0gdHJhaWxpbmcgcHJvc2U=",
+            "options": {
+              "syntaxProfile": "CODEC_PEM_SYNTAX_PROFILE_COMPATIBLE"
+            }
+          }
+        },
+        "response": {
+          "result": {
+            "pemBundleDecode": {
+              "blocks": [
+                {
+                  "label": "custom label",
+                  "der": "AQID"
+                }
+              ]
+            }
+          }
+        },
+        "requestHex": "92fa016b0a6570726f7365202d2d2d2d2d424547494e20637573746f6d206c6162656c2d2d2d2d2d0a436f6d6d656e743a2073796e7468657469630a0a415149440a2d2d2d2d2d454e4420637573746f6d206c6162656c2d2d2d2d2d20747261696c696e672070726f73651202206e",
+        "responseHex": "0a1992fa01150a130a0c637573746f6d206c6162656c1203010203"
+      },
+      {
+        "name": "strict-rejects-form-feed-prefix",
+        "request": {
+          "pemBundleDecode": {
+            "pem": "DAotLS0tLUJFR0lOIENFUlRJRklDQVRFLS0tLS0KQVFJRAotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==",
+            "options": {}
+          }
+        },
+        "response": {
+          "error": {
+            "pem": {
+              "reason": "CODEC_ERROR_REASON_PEM_INVALID_BOUNDARY"
+            },
+            "origin": "CODEC_ERROR_ORIGIN_CALLER"
+          }
+        },
+        "requestHex": "92fa01410a3d0c0a2d2d2d2d2d424547494e2043455254494649434154452d2d2d2d2d0a415149440a2d2d2d2d2d454e442043455254494649434154452d2d2d2d2d0a1200",
+        "responseHex": "1208120308c801a00601"
+      },
+      {
+        "name": "strict-rejects-empty-input",
+        "request": {
+          "pemBundleDecode": {
+            "pem": ""
+          }
+        },
+        "response": {
+          "error": {
+            "pem": {
+              "reason": "CODEC_ERROR_REASON_PEM_MISSING_BEGIN"
+            },
+            "origin": "CODEC_ERROR_ORIGIN_CALLER"
+          }
+        },
+        "requestHex": "92fa0100",
+        "responseHex": "1208120308d001a00601"
+      },
+      {
+        "name": "compatible-accepts-empty-input",
+        "request": {
+          "pemBundleDecode": {
+            "pem": "",
+            "options": {
+              "syntaxProfile": "CODEC_PEM_SYNTAX_PROFILE_COMPATIBLE"
+            }
+          }
+        },
+        "response": {
+          "result": {
+            "pemBundleDecode": {
+              "blocks": []
+            }
+          }
+        },
+        "requestHex": "92fa01041202206e",
+        "responseHex": "0a0492fa0100"
+      },
+      {
+        "name": "block-limit-exceeded",
+        "request": {
+          "pemBundleDecode": {
+            "pem": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCkFRSUQKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQotLS0tLUJFR0lOIFVOS05PV04tLS0tLQpBQUVDKy84PQotLS0tLUVORCBVTktOT1dOLS0tLS0K",
+            "options": {
+              "maxBlocks": 1
+            }
+          }
+        },
+        "response": {
+          "error": {
+            "pem": {
+              "reason": "CODEC_ERROR_REASON_PEM_RESOURCE_LIMIT_EXCEEDED"
+            },
+            "origin": "CODEC_ERROR_ORIGIN_CALLER"
+          }
+        },
+        "requestHex": "92fa01780a722d2d2d2d2d424547494e2043455254494649434154452d2d2d2d2d0a415149440a2d2d2d2d2d454e442043455254494649434154452d2d2d2d2d0a2d2d2d2d2d424547494e20554e4b4e4f574e2d2d2d2d2d0a414145432b2f383d0a2d2d2d2d2d454e4420554e4b4e4f574e2d2d2d2d2d0a12021801",
+        "responseHex": "1208120308d301a00601"
+      },
+      {
+        "name": "exact-block-and-der-limits",
+        "request": {
+          "pemBundleDecode": {
+            "pem": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCkFRSUQKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQotLS0tLUJFR0lOIFVOS05PV04tLS0tLQpBQUVDKy84PQotLS0tLUVORCBVTktOT1dOLS0tLS0K",
+            "options": {
+              "maxInputLen": 114,
+              "maxBlocks": 2,
+              "maxDerLen": 5
+            }
+          }
+        },
+        "response": {
+          "result": {
+            "pemBundleDecode": {
+              "blocks": [
+                {
+                  "label": "CERTIFICATE",
+                  "der": "AQID"
+                },
+                {
+                  "label": "UNKNOWN",
+                  "der": "AAEC+/8="
+                }
+              ]
+            }
+          }
+        },
+        "requestHex": "92fa017c0a722d2d2d2d2d424547494e2043455254494649434154452d2d2d2d2d0a415149440a2d2d2d2d2d454e442043455254494649434154452d2d2d2d2d0a2d2d2d2d2d424547494e20554e4b4e4f574e2d2d2d2d2d0a414145432b2f383d0a2d2d2d2d2d454e4420554e4b4e4f574e2d2d2d2d2d0a1206087210051802",
+        "responseHex": "0a2a92fa01260a120a0b434552544946494341544512030102030a100a07554e4b4e4f574e1205000102fbff"
+      },
+      {
+        "name": "der-limit-exceeded",
+        "request": {
+          "pemBundleDecode": {
+            "pem": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCkFRSUQKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=",
+            "options": {
+              "maxDerLen": 2
+            }
+          }
+        },
+        "response": {
+          "error": {
+            "pem": {
+              "reason": "CODEC_ERROR_REASON_PEM_DER_TOO_LARGE"
+            },
+            "origin": "CODEC_ERROR_ORIGIN_CALLER"
+          }
+        },
+        "requestHex": "92fa01410a3b2d2d2d2d2d424547494e2043455254494649434154452d2d2d2d2d0a415149440a2d2d2d2d2d454e442043455254494649434154452d2d2d2d2d0a12021002",
+        "responseHex": "1208120308cc01a00601"
+      },
+      {
+        "name": "input-limit-exceeded",
+        "request": {
+          "pemBundleDecode": {
+            "pem": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCkFRSUQKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=",
+            "options": {
+              "maxInputLen": 58
+            }
+          }
+        },
+        "response": {
+          "error": {
+            "baseEncoding": {
+              "reason": "CODEC_ERROR_REASON_BASE_INPUT_TOO_LARGE"
+            },
+            "origin": "CODEC_ERROR_ORIGIN_CALLER"
+          }
+        },
+        "requestHex": "92fa01410a3b2d2d2d2d2d424547494e2043455254494649434154452d2d2d2d2d0a415149440a2d2d2d2d2d454e442043455254494649434154452d2d2d2d2d0a1202083a",
+        "responseHex": "12070a020867a00601"
+      },
+      {
+        "name": "invalid-scope",
+        "request": {
+          "pemBundleDecode": {
+            "pem": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCkFRSUQKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=",
+            "options": {
+              "scope": 777
+            }
+          }
+        },
+        "response": {
+          "error": {
+            "pem": {
+              "reason": "CODEC_ERROR_REASON_PEM_INVALID_OPTIONS"
+            },
+            "origin": "CODEC_ERROR_ORIGIN_CALLER"
+          }
+        },
+        "requestHex": "92fa01420a3b2d2d2d2d2d424547494e2043455254494649434154452d2d2d2d2d0a415149440a2d2d2d2d2d454e442043455254494649434154452d2d2d2d2d0a1203288906",
+        "responseHex": "1208120308cf01a00601"
+      },
+      {
+        "name": "invalid-syntax-profile",
+        "request": {
+          "pemBundleDecode": {
+            "pem": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCkFRSUQKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=",
+            "options": {
+              "syntaxProfile": 777
+            }
+          }
+        },
+        "response": {
+          "error": {
+            "pem": {
+              "reason": "CODEC_ERROR_REASON_PEM_INVALID_OPTIONS"
+            },
+            "origin": "CODEC_ERROR_ORIGIN_CALLER"
+          }
+        },
+        "requestHex": "92fa01420a3b2d2d2d2d2d424547494e2043455254494649434154452d2d2d2d2d0a415149440a2d2d2d2d2d454e442043455254494649434154452d2d2d2d2d0a1203208906",
+        "responseHex": "1208120308cf01a00601"
+      }
+    ]
+  },
   "deterministicCbor": {
     "profile": "rfc8949-length-first-deterministic-reallyme-0.2.0",
     "fixtureClasses": {
