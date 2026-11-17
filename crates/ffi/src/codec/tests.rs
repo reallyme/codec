@@ -29,6 +29,7 @@ use codec_runtime::multicodec::MulticodecOperationError;
 use zeroize::Zeroizing;
 
 mod operation;
+mod public_key_payload;
 
 const RETIRED_CODEC_DAG_CBOR_ENCODE: u32 = 19;
 const RETIRED_CODEC_DAG_CBOR_DECODE: u32 = 20;
