@@ -135,7 +135,7 @@ test("Maven bundle template preserves prior archives when staging, signing, or Z
 function publicationFixture(t) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "codec-maven-publication-")));
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const version = "0.4.3";
+  const version = "0.4.4";
   const sha = "a".repeat(40);
   const packages = join(root, "packages");
   const destination = join(root, "destination");
@@ -162,11 +162,11 @@ test("Maven staging copies the exact unsigned JVM and Android packages", { skip:
       assert.equal(existsSync(`${join(destination, target)}.sha256`), false);
     }
   }
-  assert.deepEqual(readdirSync(join(destination, "me/really/codec/0.4.3")).sort(), [
-    "codec-0.4.3-javadoc.jar", "codec-0.4.3-sources.jar", "codec-0.4.3.jar", "codec-0.4.3.module", "codec-0.4.3.pom",
+  assert.deepEqual(readdirSync(join(destination, "me/really/codec/0.4.4")).sort(), [
+    "codec-0.4.4-javadoc.jar", "codec-0.4.4-sources.jar", "codec-0.4.4.jar", "codec-0.4.4.module", "codec-0.4.4.pom",
   ]);
-  assert.deepEqual(readdirSync(join(destination, "me/really/codec-android/0.4.3")).sort(), [
-    "codec-android-0.4.3-sources.jar", "codec-android-0.4.3.aar", "codec-android-0.4.3.module", "codec-android-0.4.3.pom",
+  assert.deepEqual(readdirSync(join(destination, "me/really/codec-android/0.4.4")).sort(), [
+    "codec-android-0.4.4-sources.jar", "codec-android-0.4.4.aar", "codec-android-0.4.4.module", "codec-android-0.4.4.pom",
   ]);
   assert.throws(() => stageMavenPublications(packages, version, sha, destination), { code: "EEXIST" });
 });

@@ -1,7 +1,15 @@
 # Changelog
 
-## 0.4.3 (unreleased)
+## 0.4.4 (unreleased)
 
+- Parse JCS strings into wiping owners and numbers without heap scratch, so
+  escaped keys and values are cleared on successful and failed canonicalization.
+- Compare Swift runtime library size and modification/change timestamps as well
+  as device and inode before hashing, before loading, and after loading.
+- Count DER SET OF children before reserving guarded result storage, preventing
+  nested and sibling sets from amplifying memory use under the document limits.
+- Add bounded, schema-defined PEM bundle decoding with strict standalone armor
+  and a compatibility profile that preserves established parser admission.
 - Reject malformed CID wire fields and inconsistent declared digest extents.
 - Reject incomplete JNI results instead of returning partially filled buffers.
 

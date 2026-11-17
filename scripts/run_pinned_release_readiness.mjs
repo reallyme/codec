@@ -12,19 +12,19 @@ import { resolve, sep } from "node:path";
 // Verify the immutable official package before executing its runner. Local
 // checker/module digests remain review tripwires; the package runner supplies
 // the core and enforces proof that every applicable source policy was invoked.
-const RELEASE_READINESS_COMMIT = "55115f21d5bf9a3fbc1bb8d10484aecba6e7bd8f";
+const RELEASE_READINESS_COMMIT = "a89da82a662e02ecb3b7cfc6756c450aff64417a";
 const RELEASE_READINESS_CORE_SHA256 =
-  "3f351bd201ed2f1068cbdd87884fb07759a7ae1f1f0148099df046d9580cecb6";
+  "edabd3b86b812ff821517d0adf4d383f066d95a65bb9b4b364809eacdb6ec639";
 const LOCAL_CHECKER_SHA256 =
-  "b33266e5cb077b252e797661eeb7838c0fa59f6a9cbd2ccfe6f4a9ede8e69ebb";
+  "66c81c3fa5f92a4e77ae6e1fa219c740c8d483d3bbb1b6c4cab4f00d5dcb2014";
 const RELEASE_READINESS_CORE_URL =
   `https://raw.githubusercontent.com/reallyme/release-readiness/${RELEASE_READINESS_COMMIT}/core.mjs`;
 const RELEASE_READINESS_RUNNER_SHA256 =
   "81ef5c47a24bd6a3d44f6ad8278541b9f9d61a781845775d5eb629b4c94ecd1b";
 const RELEASE_READINESS_PACKAGE_SHA256 =
-  "bf0309c5b50066d278036b49a37b245cfd948b89fbaf1e43f1d3a03d668c77be";
+  "b27364c8d42ece60a98df125fa1d759deb765e25f3ed6ceed2be3a88adeafac0";
 const RELEASE_READINESS_SUPPORT_FILES = [
-  ["scripts/public-ci.mjs", "6f958c4a6aa03f0ff2860979232fa51d5ea5d4d124db33895328d7cd33d91b53"],
+  ["scripts/public-ci.mjs", "9b64390152f9b440f2045a6f2bd91965ce7c09c12b5b0eb41e20298bbab22686"],
   ["scripts/public-release.mjs", "3aa9f122b627231a69deb18f98f582bd52b3bd8139108ab91241d027fc3f28af"],
   ["scripts/public-repo-policy.mjs", "fdad8fe9c0e85043b764a0321558af7a85324bceb7724c693a2824d955b0a204"],
   ["scripts/android-runtime.mjs", "5e80d5dee4a1ac225dfe155dd6d5477e1c52bc18be103f7b6fef181a0d4cb3c9"],

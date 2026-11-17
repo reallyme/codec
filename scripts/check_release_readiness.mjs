@@ -323,7 +323,7 @@ const assertTypescriptProtoFacadeCompleteness = ({ facadePath, generatedPath }) 
   });
 };
 
-assertReallyMeReleasePackagePolicy({ version: "0.9.5" });
+assertReallyMeReleasePackagePolicy({ version: "0.9.6" });
 const rustChecks = ".github/workflows/code-checks.yml";
 assertRustReleasePolicy({
   release: { workflow: rustChecks, job: "rust", step: "Test on the release toolchain" },
@@ -375,8 +375,8 @@ for (const workflow of [".github/workflows/fuzz.yml", ".github/workflows/fuzz-sc
   });
 }
 
-const codecPackageVersion = "0.4.3";
-const codecProtoPackageVersion = "0.4.3";
+const codecPackageVersion = "0.4.4";
+const codecProtoPackageVersion = "0.4.4";
 assertContains("Package.swift", `let ffiArtifactVersion = "${codecPackageVersion}"`);
 // The probes are separate Cargo workspaces. Root workspace metadata cannot
 // detect a release bump that leaves their own lockfile package entries stale.
@@ -881,11 +881,11 @@ assertContains(
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  'const RELEASE_READINESS_COMMIT = "55115f21d5bf9a3fbc1bb8d10484aecba6e7bd8f"',
+  'const RELEASE_READINESS_COMMIT = "a89da82a662e02ecb3b7cfc6756c450aff64417a"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  '"3f351bd201ed2f1068cbdd87884fb07759a7ae1f1f0148099df046d9580cecb6"',
+  '"edabd3b86b812ff821517d0adf4d383f066d95a65bb9b4b364809eacdb6ec639"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
@@ -2153,7 +2153,7 @@ assertContains(".github/workflows/kotlin-android-package-release.yml", "Sign and
 assertNotContains(".github/workflows/kotlin-android-package-release.yml", "bundleReleaseAar");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "requireFullNativeResources=true");
 assertContains("packages/kotlin/settings.gradle.kts", 'rootProject.name = "reallyme-codec"');
-assertContains("packages/kotlin/README.md", "me.really:codec:0.4.3");
+assertContains("packages/kotlin/README.md", "me.really:codec:0.4.4");
 assertContains("packages/kotlin/README.md", "ships Rust JNI libraries as platform resources");
 assertContains(
   "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodecRustNativeProvider.kt",
@@ -2907,7 +2907,7 @@ assertContains("scripts/test_android_consumer_r8_runtime.sh", "$SDKMANAGER\" \"e
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android AVD was not available after creation");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "$AVDMANAGER\" create avd --force");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android consumer R8 runtime gate passed");
-assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.4.3");
+assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.4.4");
 assertContains("packages/kotlin-android/README.md", "never sourced from the Git worktree");
 assertContains(
   "packages/kotlin-android/gradle.properties",
@@ -2987,7 +2987,7 @@ assertContains(".github/workflows/npm-package-preflight.yml", "Test TypeScript c
 
 assertContains("README.md", "https://github.com/reallyme/codec");
 assertContains("README.md", "https://www.npmjs.com/package/@reallyme/codec");
-assertContains("README.md", "me.really:codec:0.4.3");
+assertContains("README.md", "me.really:codec:0.4.4");
 assertContains("README.md", "reallyme-codec-proto");
 assertContains("README.md", "## Published Surfaces");
 assertContains("README.md", "`me.really:codec-android` AAR");

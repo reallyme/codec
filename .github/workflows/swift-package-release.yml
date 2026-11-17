@@ -11,7 +11,7 @@ on:
         description: Release version without leading v
         required: true
         type: string
-        default: 0.4.3
+        default: 0.4.4
       source_sha:
         description: Copy the full source SHA from the successful Swift Package Preflight summary
         required: true
@@ -71,7 +71,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: reallyme/release-readiness
-          ref: 55115f21d5bf9a3fbc1bb8d10484aecba6e7bd8f
+          ref: a89da82a662e02ecb3b7cfc6756c450aff64417a
           path: .release-readiness
           persist-credentials: false
 

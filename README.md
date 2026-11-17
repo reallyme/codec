@@ -38,7 +38,7 @@ strict DER reader or the borrowed `tlv` framing surface separately and select
 only the families they use:
 
 ```toml
-reallyme-codec = { version = "0.4.3", default-features = false, features = [
+reallyme-codec = { version = "0.4.4", default-features = false, features = [
   "base64url",
   "multikey",
 ] }
@@ -61,7 +61,7 @@ reader.
 ```swift
 .package(
     url: "https://github.com/reallyme/codec",
-    from: "0.4.3"
+    from: "0.4.4"
 )
 ```
 
@@ -73,7 +73,7 @@ reader.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.4.3")
+    implementation("me.really:codec:0.4.4")
 }
 ```
 
@@ -81,7 +81,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.4.3")
+    implementation("me.really:codec-android:0.4.4")
 }
 ```
 
@@ -100,7 +100,12 @@ an unbound manifest and make `ReallyMeCodec()` unavailable.
 
 This package is pre-1.0. Review compatibility notes before upgrading.
 
-Cargo version requirements use caret compatibility by default. Use exact constraints or lockfiles when deployment requires a fixed package version.
+For Rust consumers, pin to the minor line you have reviewed, for example
+`reallyme-codec = "0.4"`. A full version written by `cargo add`, such as
+`reallyme-codec = "0.4.4"`, uses Cargo caret semantics and remains on the same
+`0.4.x` compatibility line. For npm, Maven, SwiftPM, and release artifacts used
+in production, prefer exact versions or locked dependency files so every
+language lane runs the same reviewed codec release.
 
 ## Quick Start
 
