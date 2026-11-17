@@ -52,6 +52,13 @@ let dagCbor = try codec.dagCborEncodeData(ReallyMeDagCbor.mapText([
 
 Encoding canonicalizes map ordering. Decoding rejects duplicate keys, non-canonical input, unsupported types and exceeded limits. DAG-CBOR accepts text map keys only. Positive DAG-CBOR integers must not exceed `Int64.max`. CID verification rejects types outside the supported DAG-CBOR profile.
 
+`isValidCidString` and `tryParseCid` check bounded CID syntax. CIDv0 requires
+the full 32-byte SHA-256 multihash. CIDv1 preserves opaque hash codes and 0–64
+digest bytes when the declared length matches, including unknown codes,
+truncated SHA-256 digests, and identity hashes. Parsing makes no hash-support
+or content-integrity claim. `dagCborVerifyCid` validates canonical DAG-CBOR
+and matches only its CIDv1 DAG-CBOR/full-SHA-256 identity in lowercase base32.
+
 PEM input, output, and decoded DER use `[UInt8]` rather than `String` so
 callers can clear private-key material promptly with their own memory policy.
 Swift-only `Data` overloads are available for common byte boundaries, but

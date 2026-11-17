@@ -88,9 +88,13 @@ remain enforced by Rust. Private-key labels require an explicit allowlist.
 JCS is a strict RFC 8785 subset. It rejects duplicate properties, unpaired
 UTF-16 surrogates, Unicode noncharacters, and integer-valued numbers outside
 the exact JavaScript integer range; this includes the RFC example `1e19`.
-CID validation accepts
-CIDv0 and supported multibase CIDv1 strings up to 1024 UTF-8 bytes; paths and
-trailing decoded bytes are rejected. CID computation uses DAG-CBOR/SHA-256
+`isValidCidString` and `tryParseCid` check bounded CID syntax. They accept
+CIDv0 and supported multibase CIDv1 strings up to 1024 UTF-8 bytes; paths,
+non-minimal varints, and trailing decoded bytes are rejected. CIDv0 requires
+the full 32-byte SHA-256 multihash. CIDv1 accepts opaque hash codes and 0–64
+digest bytes when the declared length matches: unknown codes, truncated
+SHA-256 digests, and identity hashes can pass. A successful parse makes no
+hash-support or content-integrity claim. CID computation uses DAG-CBOR/SHA-256
 CIDv1 in lowercase base32 and hashes the supplied bytes without parsing CBOR.
 CID verification validates one canonical DAG-CBOR block before comparing the
 CID and requires the supplied CID text to use that canonical lowercase base32

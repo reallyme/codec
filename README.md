@@ -231,6 +231,17 @@ outside the interoperable ±(2⁵³−1) range are rejected, including `1e19`.
 
 DAG-CBOR uses text map keys and signed 64-bit integers; floats and tags are outside the supported profile.
 
+`is_valid_cid_string` / `isValidCidString` and `try_parse_cid` / `tryParseCid`
+check bounded CID syntax. CIDv0 requires the full 32-byte SHA-256 multihash;
+CIDv1 preserves opaque hash codes and 0–64 digest bytes when the declared length
+matches. Unknown hash codes, truncated SHA-256 digests, and identity hashes can
+pass these checks. Parsing establishes framing and resource bounds; hash
+support and content integrity require verification. This separation preserves
+the variable digest lengths carried by [multihash](https://multiformats.io/multihash/).
+`verify_dag_cbor_cid` / `dagCborVerifyCid` validates a canonical DAG-CBOR block
+and matches only CIDv1 DAG-CBOR with its complete 32-byte SHA-256 digest and
+canonical lowercase base32 text.
+
 Swift and JVM packages include native libraries. See their package READMEs for installation and local-library loading.
 
 ## Protobuf

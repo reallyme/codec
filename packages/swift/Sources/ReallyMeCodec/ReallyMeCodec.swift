@@ -255,12 +255,16 @@ public struct ReallyMeCodec: Sendable {
         try provider.process(operation: CodecOperation.dagCborMultihash, first: bytes)
     }
 
+    /// Checks bounded CID syntax. CIDv1 hash codes and digest lengths remain opaque;
+    /// use `dagCborVerifyCid` for DAG-CBOR/SHA-256 content verification.
     public func isValidCidString(_ cid: String) throws(ReallyMeCodecError) -> Bool {
         try withTextBytes(cid, maxFfiInputLength: provider.ffiInputLimit) { (encoded) throws(ReallyMeCodecError) in
             try provider.processBool(operation: CodecBoolOperation.isValidCidString, first: encoded)
         }
     }
 
+    /// Returns canonical text for bounded CID syntax, including opaque CIDv1 hash
+    /// codes and digest lengths. Successful parsing makes no content-integrity claim.
     public func tryParseCid(_ cid: String) throws(ReallyMeCodecError) -> String? {
         do {
             return try withTextBytes(cid, maxFfiInputLength: provider.ffiInputLimit) {

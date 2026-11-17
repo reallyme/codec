@@ -35,6 +35,13 @@ fn round_trip() -> Result<(), reallyme_codec::base64url::Base64UrlError> {
 
 Multikey decoding does not perform algorithm-specific cryptographic key validation.
 
+`cbor::is_valid_cid_string` and `cbor::try_parse_cid` check bounded CID syntax.
+CIDv0 requires a complete 32-byte SHA-256 multihash. CIDv1 preserves opaque hash
+codes and 0–64 digest bytes when the declared length matches, including unknown
+codes, truncated hashes, and identity hashes. Parsing makes no hash-support or
+content-integrity claim. `cbor::verify_dag_cbor_cid` validates canonical DAG-CBOR
+and matches only its CIDv1 DAG-CBOR/full-SHA-256 identity in lowercase base32.
+
 DTOs that carry byte fields as unpadded base64url strings can enable the
 `serde` feature and use `reallyme_codec::base64url::serde_bytes` or
 `reallyme_codec::base64url::serde_option_bytes`.

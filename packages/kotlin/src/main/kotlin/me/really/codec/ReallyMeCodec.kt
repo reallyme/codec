@@ -237,12 +237,20 @@ public object ReallyMeCodec {
     @JvmStatic
     public fun dagCborMultihash(bytes: ByteArray): ByteArray = process(CodecOperation.DAG_CBOR_MULTIHASH, bytes)
 
+    /**
+     * Checks bounded CID syntax, including opaque CIDv1 hash codes and digest
+     * lengths. Use [dagCborVerifyCid] for DAG-CBOR/SHA-256 content verification.
+     */
     @JvmStatic
     public fun isValidCidString(cid: String): Boolean =
         withTextBytes(cid) { encoded ->
             processBool(CodecBoolOperation.IS_VALID_CID_STRING, encoded, emptyBytes)
         }
 
+    /**
+     * Returns canonical text for bounded CID syntax, including opaque CIDv1 hash
+     * codes and digest lengths. Successful parsing makes no content-integrity claim.
+     */
     @JvmStatic
     public fun tryParseCid(cid: String): String? =
         try {

@@ -71,6 +71,13 @@ value type, DAG-CBOR rejects integer map keys and positive integers above
 CID verification rejects tags and floating-point encodings outside this
 SDK's closed DAG-CBOR model as `InvalidInput`.
 
+`isValidCidString` and `tryParseCid` check bounded CID syntax. CIDv0 requires
+the full 32-byte SHA-256 multihash. CIDv1 preserves opaque hash codes and 0–64
+digest bytes when the declared length matches, including unknown codes,
+truncated SHA-256 digests, and identity hashes. Parsing makes no hash-support
+or content-integrity claim. `dagCborVerifyCid` validates canonical DAG-CBOR
+and matches only its CIDv1 DAG-CBOR/full-SHA-256 identity in lowercase base32.
+
 PEM input, output, and decoded DER use `ByteArray` rather than `String` so
 callers can overwrite private-key material promptly after use.
 
