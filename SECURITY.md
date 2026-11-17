@@ -34,5 +34,6 @@ Out of scope:
 
 ## Supported Versions
 
-The current `0.3.x` line receives security fixes while the public API remains in
-early release. Pin exact versions in production deployments.
+The latest published minor release line receives security fixes while the
+public API remains in early release. Pin exact versions in production
+deployments.

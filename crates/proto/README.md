@@ -25,11 +25,11 @@ wire shapes. Their field numbers and payload types are shared with the
 expanded envelope, so existing requests and responses keep the same wire bytes.
 Both envelopes use the same runtime entry points and semantic implementations.
 
+## Generated runtime compatibility
+
+Generated types implement Buffa traits. Keep the matching runtime version. When a message implements `Drop`, borrow its fields or use builders and `mem::take` to transfer ownership.
+
 ## License
 
 Dual-licensed under the MIT License or Apache License, Version 2.0, at your
 option. See [LICENSE](LICENSE) for both license texts.
-
-## Generated runtime compatibility
-
-Generated types implement Buffa traits. Keep the matching runtime version. When a message implements `Drop`, borrow its fields or use builders and `mem::take` to transfer ownership.

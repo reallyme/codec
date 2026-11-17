@@ -74,11 +74,6 @@ the supported ASN.1 types and resource ceilings. Curve-specific scalar widths,
 subgroup-order checks, and signature high-S policy remain in the crypto layer.
 The DER reader does not expose a Swift, Kotlin, or TypeScript facade.
 
-## License
-
-Dual-licensed under the MIT License or Apache License, Version 2.0, at your
-option. See the crate's `LICENSE` file for both license texts.
-
 ### Borrowed TLV framing
 
 The `tlv` feature provides `tlv::read_identifier`, `tlv::read_length`,
@@ -120,3 +115,8 @@ are independent, and checked before reserving output. Standard padded Base64
 and canonical pad bits are required. The original decoder retains its
 2,097,152-byte encoded-input default. See the [protobuf contract](../../docs/protobuf.md#bounded-base64-decoding)
 for limits, typed failures, and the shared native/SDK operation.
+
+## License
+
+Dual-licensed under the MIT License or Apache License, Version 2.0, at your
+option. See the crate's `LICENSE` file for both license texts.
