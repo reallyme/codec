@@ -3,6 +3,9 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -31,18 +34,33 @@ if (arguments_[0] === "--check-tools") {
   process.exit(0);
 }
 
-for (const [command, arguments_] of [
-  ["buf", ["lint"]],
-  ["buf", ["generate"]],
-  [process.execPath, ["scripts/generate_codec_proto_support.mjs"]],
-  [process.execPath, ["scripts/generate_codec_sdk_contract.mjs"]],
-  [process.execPath, ["scripts/generate_codec_sdk_contract.mjs", "--check"]],
-  [process.execPath, ["scripts/harden_codec_sdk_proto.mjs"]],
-  [process.execPath, ["scripts/harden_codec_sdk_proto.mjs", "--check-idempotent"]],
-  ["cargo", ["fmt", "--package", "reallyme-codec-proto"]],
-]) {
-  const result = spawnSync(command, arguments_, { cwd: root, stdio: "inherit" });
-  if (result.error !== undefined || result.status !== 0) {
-    fail("generation step failed");
+const toolsCheck = spawnSync(process.execPath, ["scripts/check_local_proto_tools.mjs"], {
+  cwd: root, stdio: "inherit",
+});
+if (toolsCheck.error !== undefined || toolsCheck.status !== 0) fail("local tool checks failed");
+
+const directory = mkdtempSync(join(tmpdir(), "codec-protobuf-"));
+const descriptor = join(directory, "codec.binpb");
+let failed = false;
+try {
+  for (const [command, arguments_] of [
+    ["buf", ["lint"]],
+    ["buf", ["build", "--output", descriptor]],
+    ["buf", ["generate", descriptor]],
+    [process.execPath, ["scripts/generate_codec_proto_support.mjs"]],
+    [process.execPath, ["scripts/generate_codec_sdk_contract.mjs"]],
+    [process.execPath, ["scripts/generate_codec_sdk_contract.mjs", "--check"]],
+    [process.execPath, ["scripts/harden_codec_sdk_proto.mjs"]],
+    [process.execPath, ["scripts/harden_codec_sdk_proto.mjs", "--check-idempotent"]],
+    ["cargo", ["fmt", "--package", "reallyme-codec-proto"]],
+  ]) {
+    const result = spawnSync(command, arguments_, { cwd: root, stdio: "inherit" });
+    if (result.error !== undefined || result.status !== 0) {
+      failed = true;
+      break;
+    }
   }
+} finally {
+  rmSync(directory, { recursive: true, force: true });
 }
+if (failed) fail("generation step failed");

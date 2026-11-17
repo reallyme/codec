@@ -99,6 +99,12 @@ jobs:
       - name: Install TypeScript codec package dependencies
         run: npm ci --prefix packages/ts
 
+      - name: Install pinned local protobuf tools
+        run: |
+          scripts/install_local_proto_tools.sh
+          printf '%s\n' "$PWD/.build/codec-proto-tools/bin" >> "$GITHUB_PATH"
+
+
       - name: Build and stage native codec for both SDKs
         run: |
           scripts/build_kotlin_native_resource.sh build/sdk-native-resources

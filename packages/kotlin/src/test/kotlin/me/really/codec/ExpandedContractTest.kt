@@ -14,6 +14,7 @@ import me.really.codec.v1.CodecGeneralCborEncodeRequest
 import me.really.codec.v1.CodecGeneralCborFloat
 import me.really.codec.v1.CodecGeneralCborFloatWidth
 import me.really.codec.v1.CodecGeneralCborValue
+import me.really.codec.v1.CodecJsonDecodeRequest
 import me.really.codec.v1.CodecPemBundleDecodeOptions
 import me.really.codec.v1.CodecPemBundleDecodeRequest
 import kotlin.test.Test
@@ -91,5 +92,31 @@ class ExpandedContractTest {
         val rejected = CodecApiOperationResponse.parseFrom(ReallyMeCodec.processOperation(request.build().toByteArray()))
         assertEquals(CodecApiOperationResponse.OutcomeCase.ERROR, rejected.outcomeCase)
         assertEquals(CodecErrorReason.CODEC_ERROR_REASON_PEM_RESOURCE_LIMIT_EXCEEDED, rejected.error.pem.reason)
+    }
+
+    @Test
+    fun generatedGuardedJsonPreservesUnicodeAndDuplicateReason() {
+        System
+            .getProperty("reallyme.codec.testLibraryPath")
+            ?.takeIf { it.isNotBlank() }
+            ?.let { ReallyMeCodecRustNativeProvider.loadLibrary(it) }
+        val json =
+            CodecJsonDecodeRequest
+                .newBuilder()
+                .setEncoded(ByteString.copyFromUtf8("""{"hello":"world\u0021"}"""))
+        val request = CodecApiOperationRequest.newBuilder().setJsonDecode(json)
+        val response = CodecApiOperationResponse.parseFrom(ReallyMeCodec.processOperation(request.build().toByteArray()))
+        assertEquals(CodecApiOperationResponse.OutcomeCase.RESULT, response.outcomeCase)
+        assertEquals(CodecApiOperationResult.ResultCase.JSON_DECODE, response.result.resultCase)
+        val member =
+            response.result.jsonDecode.value.objectValue
+                .getMembers(0)
+        assertEquals("hello", member.name)
+        assertEquals("world!", member.value.stringValue)
+        json.setEncoded(ByteString.copyFromUtf8("""{"x":1,"\u0078":2}"""))
+        request.setJsonDecode(json)
+        val rejected = CodecApiOperationResponse.parseFrom(ReallyMeCodec.processOperation(request.build().toByteArray()))
+        assertEquals(CodecApiOperationResponse.OutcomeCase.ERROR, rejected.outcomeCase)
+        assertEquals(CodecErrorReason.CODEC_ERROR_REASON_CANONICAL_JSON_DUPLICATE_PROPERTY, rejected.error.canonicalization.reason)
     }
 }

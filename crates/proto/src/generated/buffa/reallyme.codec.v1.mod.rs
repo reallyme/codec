@@ -91,6 +91,8 @@ pub mod __buffa {
         reg.register_json_any(super::__CODEC_BOUNDARY_ERROR_JSON_ANY);
         reg.register_json_any(super::__CODEC_BYTES_REQUEST_JSON_ANY);
         reg.register_json_any(super::__CODEC_TEXT_REQUEST_JSON_ANY);
+        reg.register_json_any(super::__CODEC_BASE64DECODE_LIMITS_JSON_ANY);
+        reg.register_json_any(super::__CODEC_BASE64DECODE_REQUEST_JSON_ANY);
         reg.register_json_any(super::__CODEC_EMPTY_REQUEST_JSON_ANY);
         reg.register_json_any(super::__CODEC_BYTES_RESULT_JSON_ANY);
         reg.register_json_any(super::__CODEC_TEXT_RESULT_JSON_ANY);
@@ -143,6 +145,14 @@ pub mod __buffa {
         reg.register_json_any(super::__CODEC_TLV_HEADER_JSON_ANY);
         reg.register_json_any(super::__CODEC_TLV_FRAME_JSON_ANY);
         reg.register_json_any(super::__CODEC_TLV_ERROR_JSON_ANY);
+        reg.register_json_any(super::__CODEC_JSON_LIMITS_JSON_ANY);
+        reg.register_json_any(super::__CODEC_JSON_DECODE_REQUEST_JSON_ANY);
+        reg.register_json_any(super::__CODEC_JSON_NULL_JSON_ANY);
+        reg.register_json_any(super::__CODEC_JSON_ARRAY_JSON_ANY);
+        reg.register_json_any(super::__CODEC_JSON_MEMBER_JSON_ANY);
+        reg.register_json_any(super::__CODEC_JSON_OBJECT_JSON_ANY);
+        reg.register_json_any(super::__CODEC_JSON_VALUE_JSON_ANY);
+        reg.register_json_any(super::__CODEC_JSON_DECODE_RESULT_JSON_ANY);
         reg.register_json_any(super::__CODEC_PROVIDER_INFO_REQUEST_JSON_ANY);
         reg.register_json_any(super::__CODEC_PROVIDER_INFO_JSON_ANY);
         reg.register_json_any(super::__CODEC_VERIFIED_LIBRARY_REQUEST_JSON_ANY);
@@ -303,6 +313,12 @@ pub use self::__buffa::view::CodecBytesRequestView;
 #[doc(inline)]
 pub use self::__buffa::view::CodecTextRequestView;
 #[doc(inline)]
+pub use self::__buffa::view::CodecBase64DecodeLimitsView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecBase64DecodeLimitsOwnedView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecBase64DecodeRequestView;
+#[doc(inline)]
 pub use self::__buffa::view::CodecEmptyRequestView;
 #[doc(inline)]
 pub use self::__buffa::view::CodecEmptyRequestOwnedView;
@@ -426,6 +442,24 @@ pub use self::__buffa::view::CodecTlvFrameView;
 pub use self::__buffa::view::CodecTlvErrorView;
 #[doc(inline)]
 pub use self::__buffa::view::CodecTlvErrorOwnedView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecJsonLimitsView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecJsonLimitsOwnedView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecJsonDecodeRequestView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecJsonNullView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecJsonArrayView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecJsonMemberView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecJsonObjectView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecJsonValueView;
+#[doc(inline)]
+pub use self::__buffa::view::CodecJsonDecodeResultView;
 #[doc(inline)]
 pub use self::__buffa::view::CodecProviderInfoRequestView;
 #[doc(inline)]

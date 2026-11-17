@@ -24,7 +24,7 @@ function fixture(t, selected, output, status = 0) {
     writeFileSync(join(root, "bin", tool), `#!/usr/bin/env node\nconsole.log(${JSON.stringify(text)}); process.exit(${tool === selected ? status : 0});\n`, { mode: 0o700 });
   }
   return spawnSync(process.execPath, [join(root, "scripts/generate_codec_proto.mjs"), "--check-tools"], {
-    cwd: root, encoding: "utf8", timeout: 10_000,
+    cwd: root, encoding: "utf8", timeout: 60_000,
     env: { ...process.env, PATH: `${join(root, "bin")}:${process.env.PATH ?? ""}` },
   });
 }

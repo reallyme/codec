@@ -96,3 +96,27 @@ contents remain opaque. The existing `der` schema reader remains strict and
 provides recursive value and canonicality checks. See
 [the protobuf contract](../../docs/protobuf.md#definite-tlv-framing) for limits,
 receipts, and typed failures.
+
+### Guarded JSON decoding
+
+With the `json` feature, `reallyme_codec::json::decode` executes the
+protobuf-defined `CodecJsonDecodeRequest` contract and returns a guarded
+`CodecJsonDecodeResult`. `json::from_slice` projects that same admitted document
+into an owned Serde target, including generated protocol messages. The target
+must retain wiping ownership for its sensitive fields.
+
+Decoded strings, escaped member names, number text, and partial output have
+cleanup owners. Duplicate decoded names, invalid Unicode, non-finite numbers,
+trailing data, and exhausted byte/depth/entry/node/string/work budgets are
+rejected with canonical `CodecErrorReason` values. Input buffers remain owned
+by the caller. JSON number text retains its original spelling in the generated
+result; native projections use integer and finite floating-point visitors.
+
+### Bounded Base64 decoding
+
+`base64::base64_to_bytes_with_limits` takes schema-generated `Base64DecodeLimits`
+and returns `Zeroizing<Vec<u8>>`. Encoded-input and decoded-output byte budgets
+are independent, and checked before reserving output. Standard padded Base64
+and canonical pad bits are required. The original decoder retains its
+2,097,152-byte encoded-input default. See the [protobuf contract](../../docs/protobuf.md#bounded-base64-decoding)
+for limits, typed failures, and the shared native/SDK operation.

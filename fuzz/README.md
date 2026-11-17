@@ -20,6 +20,7 @@ libFuzzer targets for the codec parsers.
 | `der` | fixed borrowed DER reader shapes and integer-pair round trips | `reallyme_codec::der::{decode_der, decode_unsigned_integer_pair}` |
 | `der_schema` | caller-supplied DER schemas, documents, limits, allocation bounds, and result spans | generated `CodecDerDecodeRequest` through `process_operation_response` |
 | `operation_contract` | executable protobuf + generated ProtoJSON dispatch | `reallyme_codec::operation_contract::{process_operation_response, process_operation_response_json}` |
+| `guarded_json` | guarded JSON trees, typed projection, Unicode, duplicate names, and resource limits | `reallyme_codec::json::{decode, from_slice}` |
 | `jcs_text` | strict JSON parsing and canonicalization idempotence | `codec_jcs::canonicalize_json_text` |
 
 ## Running

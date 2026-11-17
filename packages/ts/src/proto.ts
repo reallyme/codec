@@ -3,6 +3,16 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 export {
+  CodecBase64DecodeLimitsSchema,
+  CodecBase64DecodeRequestSchema,
+  CodecJsonArraySchema,
+  CodecJsonDecodeRequestSchema,
+  CodecJsonDecodeResultSchema,
+  CodecJsonLimitsSchema,
+  CodecJsonMemberSchema,
+  CodecJsonNullSchema,
+  CodecJsonObjectSchema,
+  CodecJsonValueSchema,
   file_reallyme_codec_v1_codec,
   CodecErrorSchema,
   CodecSdkErrorCategorySchema,
@@ -179,6 +189,16 @@ export {
   CodecLegacyAbiStatusSchema,
 } from "./proto/generated/reallyme/codec/v1/codec_pb.js";
 export type {
+  CodecBase64DecodeLimits,
+  CodecBase64DecodeRequest,
+  CodecJsonArray,
+  CodecJsonDecodeRequest,
+  CodecJsonDecodeResult,
+  CodecJsonLimits,
+  CodecJsonMember,
+  CodecJsonNull,
+  CodecJsonObject,
+  CodecJsonValue,
   CodecError,
   CodecMulticodecPrefixForNameRequest,
   CodecMulticodecLookupPrefixRequest,

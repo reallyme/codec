@@ -33,6 +33,21 @@ pub(super) fn execute(operation: &mut Operation) -> Result<OperationResult, Code
                 },
             )))
         }
+        Operation::Base64DecodeWithLimits(request) => {
+            // This structured operation uses its explicit schema budgets and
+            // the outer protobuf cap, rather than the legacy scalar ABI cap.
+            let defaults = proto::CodecBase64DecodeLimits::default();
+            let mut decoded = crate::base64::base64_to_bytes_with_limits(
+                &request.value,
+                request.limits.as_option().unwrap_or(&defaults),
+            )
+            .map_err(base64_error)?;
+            Ok(OperationResult::Base64DecodeWithLimits(Box::new(
+                proto::CodecBytesResult {
+                    value: core::mem::take(&mut *decoded).into(),
+                },
+            )))
+        }
         Operation::Base64urlEncode(request) => {
             check_lengths(&[request.value.len()])?;
             Ok(OperationResult::Base64urlEncode(Box::new(
@@ -304,13 +319,7 @@ fn base_error(reason: Reason) -> CodecWireError {
     wire_error(CodecWireErrorBranch::BaseEncoding, reason)
 }
 fn base64_error(error: codec_base64::Base64Error) -> CodecWireError {
-    match error {
-        codec_base64::Base64Error::InputTooLarge => input_limit(),
-        codec_base64::Base64Error::Invalid => {
-            base_error(Reason::CODEC_ERROR_REASON_BASE_INVALID_BASE64)
-        }
-        _ => internal_wire_error(),
-    }
+    base_error(error.reason())
 }
 fn base64url_error(error: codec_base64url::Base64UrlError) -> CodecWireError {
     match error {

@@ -780,6 +780,60 @@ pub mod codec_general_cbor_value {
         }
     }
 }
+pub mod codec_json_value {
+    #[allow(unused_imports)]
+    use super::*;
+    impl<'a> ::buffa::sensitive::Zeroize for Kind<'a> {
+        fn zeroize(&mut self) {
+            match self {
+                Self::NullValue(value) => {
+                    ::buffa::sensitive::Zeroize::zeroize(&mut **value)
+                }
+                Self::BoolValue(value) => ::buffa::sensitive::Zeroize::zeroize(value),
+                Self::NumberText(_) => {}
+                Self::StringValue(_) => {}
+                Self::ArrayValue(value) => {
+                    ::buffa::sensitive::Zeroize::zeroize(&mut **value)
+                }
+                Self::ObjectValue(value) => {
+                    ::buffa::sensitive::Zeroize::zeroize(&mut **value)
+                }
+            }
+        }
+    }
+    impl<'a> ::buffa::sensitive::ZeroizeOnDrop for Kind<'a> {}
+    impl<'a> ::core::ops::Drop for Kind<'a> {
+        fn drop(&mut self) {
+            ::buffa::sensitive::Zeroize::zeroize(self);
+        }
+    }
+    #[derive(Clone)]
+    pub enum Kind<'a> {
+        NullValue(
+            ::buffa::alloc::boxed::Box<
+                super::super::super::super::__buffa::view::CodecJsonNullView<'a>,
+            >,
+        ),
+        BoolValue(bool),
+        NumberText(&'a str),
+        StringValue(&'a str),
+        ArrayValue(
+            ::buffa::alloc::boxed::Box<
+                super::super::super::super::__buffa::view::CodecJsonArrayView<'a>,
+            >,
+        ),
+        ObjectValue(
+            ::buffa::alloc::boxed::Box<
+                super::super::super::super::__buffa::view::CodecJsonObjectView<'a>,
+            >,
+        ),
+    }
+    impl<'a> ::core::fmt::Debug for Kind<'a> {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+            f.write_str("Kind([REDACTED])")
+        }
+    }
+}
 pub mod codec_provider_operation_request {
     #[allow(unused_imports)]
     use super::*;
@@ -1035,6 +1089,9 @@ pub mod codec_api_operation_request {
                 Self::Base64Decode(value) => {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
+                Self::Base64DecodeWithLimits(value) => {
+                    ::buffa::sensitive::Zeroize::zeroize(&mut **value)
+                }
                 Self::Base64urlEncode(value) => {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
@@ -1090,6 +1147,9 @@ pub mod codec_api_operation_request {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
                 Self::TlvReadLength(value) => {
+                    ::buffa::sensitive::Zeroize::zeroize(&mut **value)
+                }
+                Self::JsonDecode(value) => {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
             }
@@ -1332,6 +1392,13 @@ pub mod codec_api_operation_request {
                 super::super::super::super::__buffa::view::CodecTextRequestView<'a>,
             >,
         ),
+        Base64DecodeWithLimits(
+            ::buffa::alloc::boxed::Box<
+                super::super::super::super::__buffa::view::CodecBase64DecodeRequestView<
+                    'a,
+                >,
+            >,
+        ),
         Base64urlEncode(
             ::buffa::alloc::boxed::Box<
                 super::super::super::super::__buffa::view::CodecBytesRequestView<'a>,
@@ -1431,6 +1498,11 @@ pub mod codec_api_operation_request {
         TlvReadLength(
             ::buffa::alloc::boxed::Box<
                 super::super::super::super::__buffa::view::CodecTlvSourceRequestView<'a>,
+            >,
+        ),
+        JsonDecode(
+            ::buffa::alloc::boxed::Box<
+                super::super::super::super::__buffa::view::CodecJsonDecodeRequestView<'a>,
             >,
         ),
     }
@@ -1557,6 +1629,9 @@ pub mod codec_api_operation_result {
                 Self::Base64Decode(value) => {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
+                Self::Base64DecodeWithLimits(value) => {
+                    ::buffa::sensitive::Zeroize::zeroize(&mut **value)
+                }
                 Self::Base64urlEncode(value) => {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
@@ -1612,6 +1687,9 @@ pub mod codec_api_operation_result {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
                 Self::TlvReadLength(value) => {
+                    ::buffa::sensitive::Zeroize::zeroize(&mut **value)
+                }
+                Self::JsonDecode(value) => {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
             }
@@ -1834,6 +1912,11 @@ pub mod codec_api_operation_result {
                 super::super::super::super::__buffa::view::CodecBytesResultView<'a>,
             >,
         ),
+        Base64DecodeWithLimits(
+            ::buffa::alloc::boxed::Box<
+                super::super::super::super::__buffa::view::CodecBytesResultView<'a>,
+            >,
+        ),
         Base64urlEncode(
             ::buffa::alloc::boxed::Box<
                 super::super::super::super::__buffa::view::CodecTextResultView<'a>,
@@ -1929,6 +2012,11 @@ pub mod codec_api_operation_result {
         TlvReadLength(
             ::buffa::alloc::boxed::Box<
                 super::super::super::super::__buffa::view::CodecTlvLengthView<'a>,
+            >,
+        ),
+        JsonDecode(
+            ::buffa::alloc::boxed::Box<
+                super::super::super::super::__buffa::view::CodecJsonDecodeResultView<'a>,
             >,
         ),
     }

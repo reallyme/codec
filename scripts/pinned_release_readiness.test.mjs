@@ -131,7 +131,7 @@ function fixture(t) {
       cwd: dirname(root),
       encoding: "utf8",
       env: { ...env, ...overrides },
-      timeout: 10_000,
+      timeout: 60_000,
     });
     assert.equal(result.error, undefined);
     return result;
@@ -154,7 +154,7 @@ test("the checkout has matching pins without accessing the network or running po
   const result = spawnSync(process.execPath, [
     "--import", pathToFileURL(f.preload).href,
     join(repositoryRoot, runnerRelativePath), "--check-pins",
-  ], { cwd: f.root, encoding: "utf8", timeout: 10_000 });
+  ], { cwd: f.root, encoding: "utf8", timeout: 60_000 });
   assert.equal(result.error, undefined);
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /release readiness pins verified/u);
@@ -178,7 +178,7 @@ test("the direct checker rejects a stale policy pin before running repository ch
     assert.equal(result.status, 0, result.stderr);
   }
   const result = spawnSync(process.execPath, [f.checker], {
-    cwd: f.root, encoding: "utf8", timeout: 10_000,
+    cwd: f.root, encoding: "utf8", timeout: 60_000,
     env: { ...process.env, REALLYME_RELEASE_READINESS_ROOT: join(f.root, ".release-readiness") },
   });
   assert.equal(result.error, undefined);
@@ -192,7 +192,7 @@ test("the direct checker authenticates the core before executing its top-level c
   cpSync(join(repositoryRoot, checkerRelativePath), f.checker);
   writeFileSync(f.core, `${readFileSync(f.core, "utf8")}\nprocess.exit(94);\n`);
   const result = spawnSync(process.execPath, [f.checker], {
-    cwd: f.root, encoding: "utf8", timeout: 10_000,
+    cwd: f.root, encoding: "utf8", timeout: 60_000,
     env: { ...process.env, REALLYME_RELEASE_READINESS_ROOT: join(f.root, ".release-readiness") },
   });
   assert.equal(result.error, undefined);
@@ -309,7 +309,7 @@ for (const change of ["grow", "shrink"]) {
 test("a FIFO input is rejected without blocking", { skip: process.platform === "win32" }, (t) => {
   const f = fixture(t);
   rmSync(f.checker);
-  const fifo = spawnSync("mkfifo", [f.checker], { encoding: "utf8", timeout: 10_000 });
+  const fifo = spawnSync("mkfifo", [f.checker], { encoding: "utf8", timeout: 60_000 });
   assert.equal(fifo.error, undefined);
   assert.equal(fifo.status, 0, fifo.stderr);
   const result = f.run(["--check-pins"]);

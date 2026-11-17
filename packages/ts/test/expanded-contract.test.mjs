@@ -60,3 +60,27 @@ test("generated PEM bundle operation preserves bytes and typed bounds through WA
     });
   } finally { pem.fill(0); }
 });
+
+
+test("guarded JSON operation preserves escaped Unicode and typed duplicate rejection through WASM", () => {
+  const encoded = new TextEncoder().encode('{"hello":"world\\u0021"}');
+  try {
+    inspectResponse({ case: "jsonDecode", value: { encoded } }, (response) => {
+      assert.equal(response.outcome.case, "result");
+      assert.equal(response.outcome.value.result.case, "jsonDecode");
+      const kind = response.outcome.value.result.value.value.kind;
+      assert.equal(kind.case, "objectValue");
+      assert.equal(kind.value.members[0].name, "hello");
+      assert.equal(kind.value.members[0].value.kind.case, "stringValue");
+      assert.equal(kind.value.members[0].value.kind.value, "world!");
+    });
+  } finally { encoded.fill(0); }
+  const duplicate = new TextEncoder().encode('{"x":1,"\\u0078":2}');
+  try {
+    inspectResponse({ case: "jsonDecode", value: { encoded: duplicate } }, (response) => {
+      assert.equal(response.outcome.case, "error");
+      assert.equal(response.outcome.value.error.case, "canonicalization");
+      assert.equal(response.outcome.value.error.value.reason, CodecErrorReason.CANONICAL_JSON_DUPLICATE_PROPERTY);
+    });
+  } finally { duplicate.fill(0); }
+});

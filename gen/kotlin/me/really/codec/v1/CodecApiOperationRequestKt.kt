@@ -1001,6 +1001,30 @@ public object CodecApiOperationRequestKt {
     }
 
     /**
+     * `.reallyme.codec.v1.CodecBase64DecodeRequest base64_decode_with_limits = 8002 [json_name = "base64DecodeWithLimits"];`
+     */
+    public var base64DecodeWithLimits: me.really.codec.v1.CodecBase64DecodeRequest
+      @kotlin.jvm.JvmName("getBase64DecodeWithLimits")
+        get() = _builder.base64DecodeWithLimits
+      @kotlin.jvm.JvmName("setBase64DecodeWithLimits")
+        set(value) {
+        _builder.base64DecodeWithLimits = value
+      }
+    /**
+     * `.reallyme.codec.v1.CodecBase64DecodeRequest base64_decode_with_limits = 8002 [json_name = "base64DecodeWithLimits"];`
+     */
+    public fun clearBase64DecodeWithLimits() {
+      _builder.clearBase64DecodeWithLimits()
+    }
+    /**
+     * `.reallyme.codec.v1.CodecBase64DecodeRequest base64_decode_with_limits = 8002 [json_name = "base64DecodeWithLimits"];`
+     * @return Whether the base64DecodeWithLimits field is set.
+     */
+    public fun hasBase64DecodeWithLimits(): kotlin.Boolean {
+      return _builder.hasBase64DecodeWithLimits()
+    }
+
+    /**
      * `.reallyme.codec.v1.CodecBytesRequest base64url_encode = 8010 [json_name = "base64urlEncode"];`
      */
     public var base64UrlEncode: me.really.codec.v1.CodecBytesRequest
@@ -1467,6 +1491,42 @@ public object CodecApiOperationRequestKt {
     public fun hasTlvReadLength(): kotlin.Boolean {
       return _builder.hasTlvReadLength()
     }
+
+    /**
+     * ```
+     * 12000-12999: guarded JSON document decoding.
+     * ```
+     *
+     * `.reallyme.codec.v1.CodecJsonDecodeRequest json_decode = 12000 [json_name = "jsonDecode"];`
+     */
+    public var jsonDecode: me.really.codec.v1.CodecJsonDecodeRequest
+      @kotlin.jvm.JvmName("getJsonDecode")
+        get() = _builder.jsonDecode
+      @kotlin.jvm.JvmName("setJsonDecode")
+        set(value) {
+        _builder.jsonDecode = value
+      }
+    /**
+     * ```
+     * 12000-12999: guarded JSON document decoding.
+     * ```
+     *
+     * `.reallyme.codec.v1.CodecJsonDecodeRequest json_decode = 12000 [json_name = "jsonDecode"];`
+     */
+    public fun clearJsonDecode() {
+      _builder.clearJsonDecode()
+    }
+    /**
+     * ```
+     * 12000-12999: guarded JSON document decoding.
+     * ```
+     *
+     * `.reallyme.codec.v1.CodecJsonDecodeRequest json_decode = 12000 [json_name = "jsonDecode"];`
+     * @return Whether the jsonDecode field is set.
+     */
+    public fun hasJsonDecode(): kotlin.Boolean {
+      return _builder.hasJsonDecode()
+    }
     public val operationCase: me.really.codec.v1.CodecApiOperationRequest.OperationCase
     @kotlin.jvm.JvmName("getOperationCase")
       get() = _builder.operationCase
@@ -1590,6 +1650,9 @@ public val me.really.codec.v1.CodecApiOperationRequestOrBuilder.base64EncodeOrNu
 public val me.really.codec.v1.CodecApiOperationRequestOrBuilder.base64DecodeOrNull: me.really.codec.v1.CodecTextRequest?
   get() = if (hasBase64Decode()) getBase64Decode() else null
 
+public val me.really.codec.v1.CodecApiOperationRequestOrBuilder.base64DecodeWithLimitsOrNull: me.really.codec.v1.CodecBase64DecodeRequest?
+  get() = if (hasBase64DecodeWithLimits()) getBase64DecodeWithLimits() else null
+
 public val me.really.codec.v1.CodecApiOperationRequestOrBuilder.base64UrlEncodeOrNull: me.really.codec.v1.CodecBytesRequest?
   get() = if (hasBase64UrlEncode()) getBase64UrlEncode() else null
 
@@ -1646,3 +1709,6 @@ public val me.really.codec.v1.CodecApiOperationRequestOrBuilder.tlvReadIdentifie
 
 public val me.really.codec.v1.CodecApiOperationRequestOrBuilder.tlvReadLengthOrNull: me.really.codec.v1.CodecTlvSourceRequest?
   get() = if (hasTlvReadLength()) getTlvReadLength() else null
+
+public val me.really.codec.v1.CodecApiOperationRequestOrBuilder.jsonDecodeOrNull: me.really.codec.v1.CodecJsonDecodeRequest?
+  get() = if (hasJsonDecode()) getJsonDecode() else null

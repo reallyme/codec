@@ -16,11 +16,15 @@ const wireError = (family, reason, origin) => create(CodecErrorSchema, {
 test("SDK errors retain the exact generated reason and origin in every legacy error family", () => {
   for (const [family, reason, origin, code] of [
     ["baseEncoding", CodecErrorReason.BASE_INVALID_BASE64, CodecErrorOrigin.CALLER, "invalid-input"],
+    ["baseEncoding", CodecErrorReason.BASE_ALLOCATION_FAILURE, CodecErrorOrigin.PROVIDER, "provider-failure"],
+    ["baseEncoding", CodecErrorReason.BASE_LENGTH_OVERFLOW, CodecErrorOrigin.PROVIDER, "provider-failure"],
     ["pem", CodecErrorReason.PEM_RESOURCE_LIMIT_EXCEEDED, CodecErrorOrigin.CALLER, "invalid-input"],
     ["multiformat", CodecErrorReason.MULTIFORMAT_UNKNOWN_MULTICODEC, CodecErrorOrigin.CALLER, "unsupported-codec"],
     ["canonicalization", CodecErrorReason.CANONICAL_NON_CANONICAL_JSON, CodecErrorOrigin.CALLER, "non-canonical"],
     ["canonicalization", CodecErrorReason.CANONICAL_UNSUPPORTED_IPLD_VALUE, CodecErrorOrigin.CALLER, "unsupported-ipld-value"],
     ["canonicalization", CodecErrorReason.CANONICAL_INTERNAL, CodecErrorOrigin.PROVIDER, "provider-failure"],
+    ["canonicalization", CodecErrorReason.CANONICAL_JSON_ALLOCATION_FAILURE, CodecErrorOrigin.PROVIDER, "provider-failure"],
+    ["canonicalization", CodecErrorReason.CANONICAL_JSON_ARITHMETIC_OVERFLOW, CodecErrorOrigin.PROVIDER, "provider-failure"],
     ["backend", CodecErrorReason.BACKEND_INTERNAL, CodecErrorOrigin.PROVIDER, "provider-failure"],
     ["boundary", CodecErrorReason.BOUNDARY_RESOURCE_LIMIT_EXCEEDED, CodecErrorOrigin.CALLER, "invalid-input"],
   ]) {
@@ -35,9 +39,13 @@ test("SDK errors retain the exact generated reason and origin in every legacy er
 
 test("malformed error envelopes retain no untrusted protobuf context", () => {
   for (const error of [
+    wireError("baseEncoding", CodecErrorReason.BASE_ALLOCATION_FAILURE, CodecErrorOrigin.CALLER),
+    wireError("baseEncoding", CodecErrorReason.BASE_LENGTH_OVERFLOW, CodecErrorOrigin.CALLER),
     wireError("boundary", 699, CodecErrorOrigin.CALLER),
     wireError("boundary", CodecErrorReason.BASE_INVALID_ENCODING, CodecErrorOrigin.CALLER),
     wireError("boundary", CodecErrorReason.BOUNDARY_MALFORMED_JSON, CodecErrorOrigin.PROVIDER),
+    wireError("canonicalization", CodecErrorReason.CANONICAL_JSON_ALLOCATION_FAILURE, CodecErrorOrigin.CALLER),
+    wireError("canonicalization", CodecErrorReason.CANONICAL_JSON_ARITHMETIC_OVERFLOW, CodecErrorOrigin.CALLER),
     wireError("boundary", CodecErrorReason.BOUNDARY_MALFORMED_JSON, 99),
     create(CodecErrorSchema),
   ]) {

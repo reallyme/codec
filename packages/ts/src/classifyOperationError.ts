@@ -32,7 +32,10 @@ export const errorForCodecErrorMessage = (
   switch (error.error.case) {
     case "baseEncoding":
       if (reason < 100 || reason > 199) return new ReallyMeCodecError("provider-failure");
-      expectedOrigin = CodecErrorOrigin.CALLER;
+      expectedOrigin = reason === CodecErrorReason.BASE_ALLOCATION_FAILURE ||
+        reason === CodecErrorReason.BASE_LENGTH_OVERFLOW
+        ? CodecErrorOrigin.PROVIDER
+        : CodecErrorOrigin.CALLER;
       break;
     case "pem":
       if (reason < 200 || reason > 299) return new ReallyMeCodecError("provider-failure");
@@ -44,7 +47,9 @@ export const errorForCodecErrorMessage = (
       break;
     case "canonicalization":
       if (reason < 400 || reason > 499) return new ReallyMeCodecError("provider-failure");
-      expectedOrigin = reason === CodecErrorReason.CANONICAL_INTERNAL
+      expectedOrigin = reason === CodecErrorReason.CANONICAL_INTERNAL ||
+        reason === CodecErrorReason.CANONICAL_JSON_ALLOCATION_FAILURE ||
+        reason === CodecErrorReason.CANONICAL_JSON_ARITHMETIC_OVERFLOW
         ? CodecErrorOrigin.PROVIDER
         : CodecErrorOrigin.CALLER;
       break;

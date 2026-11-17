@@ -20,6 +20,14 @@ plugins:
       - string_type_custom_in=.reallyme.codec.v1=crate::guarded::SecretString
       - json_policy_type=crate::guarded::SecretBytes
       - json_policy_type=crate::guarded::SecretString
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecJsonDecodeRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecBase64DecodeRequest
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecJsonDecodeResult
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecJsonNull
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecJsonArray
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecJsonObject
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecJsonMember
+      - borrowed_views_only_in=.reallyme.codec.v1.CodecJsonValue
       # Keep classified messages and their containers on caller-owned backing.
       # Release readiness checks this list against the sensitivity inventory.
       - borrowed_views_only_in=.reallyme.codec.v1.CodecApiOperationRequest
@@ -121,31 +129,33 @@ plugins:
     strategy: all
 
   # TypeScript package output.
-  - remote: buf.build/bufbuild/es:v2.17.0
+  - local: [node, packages/ts/node_modules/@bufbuild/protoc-gen-es/bin/protoc-gen-es]
     out: packages/ts/src/proto/generated
     opt:
       - target=ts
 
   # Repository-level generated artifacts for consumers that vendor generated
   # protocol types directly.
-  - remote: buf.build/bufbuild/es:v2.17.0
+  - local: [node, packages/ts/node_modules/@bufbuild/protoc-gen-es/bin/protoc-gen-es]
     out: gen/es
     opt:
       - target=ts
-  - remote: buf.build/bufbuild/es:v2.17.0
+  - local: [node, packages/ts/node_modules/@bufbuild/protoc-gen-es/bin/protoc-gen-es]
     out: gen/es
     opt:
       - target=js
-  # Pin the published BSR generator independently of the compatible Swift runtime.
-  - remote: buf.build/apple/swift:v1.39.0
+  # Pin the local Swift generator independently of the compatible Swift runtime.
+  - local: protoc-gen-swift
     out: gen/swift
     opt:
       - Visibility=Internal
-  - remote: buf.build/protocolbuffers/java:v36.2
+  - protoc_builtin: java
+    protoc_path: protoc
     out: gen/java
     opt:
       - lite
-  - remote: buf.build/protocolbuffers/kotlin:v36.2
+  - protoc_builtin: kotlin
+    protoc_path: protoc
     out: gen/kotlin
     opt:
       - lite

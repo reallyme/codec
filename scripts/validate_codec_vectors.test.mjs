@@ -58,3 +58,34 @@ test("shared vector validator rejects incomplete golden bytes", () => {
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /responseHex must contain lowercase complete bytes/u);
 });
+
+
+test("shared vector validator requires JSON limits, decoded-name and scalar presence coverage", () => {
+  for (const name of ["false-presence", "duplicate-decoded-name", "work-limit"]) {
+    const result = validate((manifest) => {
+      manifest.jsonDecode.cases = manifest.jsonDecode.cases.filter((fixture) => fixture.name !== name);
+    });
+    assert.notEqual(result.status, 0);
+    assert.ok(result.stderr.includes(`missing JSON decode fixture ${name}`));
+  }
+});
+
+test("shared vector validator rejects JSON failures without a canonical reason and origin", () => {
+  const result = validate((manifest) => {
+    const fixture = manifest.jsonDecode.cases.find((fixture) => fixture.name === "node-limit");
+    delete fixture.response.error.origin;
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /typed JSON failure and caller origin/u);
+});
+
+
+test("shared vector validator requires Base64 overflow, pad-bit and exact-budget coverage", () => {
+  for (const name of ["one-byte-exact", "nonzero-pad-bits", "output-limit-overflow"]) {
+    const result = validate((manifest) => {
+      manifest.base64DecodeWithLimits.cases = manifest.base64DecodeWithLimits.cases.filter((fixture) => fixture.name !== name);
+    });
+    assert.notEqual(result.status, 0);
+    assert.ok(result.stderr.includes(`missing bounded Base64 fixture ${name}`));
+  }
+});

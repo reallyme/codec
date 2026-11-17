@@ -45,6 +45,9 @@ jobs:
       - name: Replay caller-supplied DER schema regressions
         run: cargo +nightly-2026-07-01 fuzz run der_schema fuzz/seeds/der_schema -- -runs=0 -max_len=2097152
 
+      - name: Replay guarded JSON regressions
+        run: cargo +nightly-2026-07-01 fuzz run guarded_json fuzz/seeds/guarded_json -- -runs=0
+
       - name: Record verified source
         id: verified
         shell: bash

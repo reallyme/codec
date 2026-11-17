@@ -1560,6 +1560,122 @@ pub mod codec_general_cbor_value {
         }
     }
 }
+pub mod codec_json_value {
+    #[allow(unused_imports)]
+    use super::*;
+    #[derive(Clone, PartialEq)]
+    pub enum Kind {
+        NullValue(::buffa::alloc::boxed::Box<super::super::super::CodecJsonNull>),
+        BoolValue(bool),
+        NumberText(crate::guarded::SecretString),
+        StringValue(crate::guarded::SecretString),
+        ArrayValue(::buffa::alloc::boxed::Box<super::super::super::CodecJsonArray>),
+        ObjectValue(::buffa::alloc::boxed::Box<super::super::super::CodecJsonObject>),
+    }
+    impl ::core::fmt::Debug for Kind {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+            f.write_str("Kind([REDACTED])")
+        }
+    }
+    impl ::buffa::sensitive::Zeroize for Kind {
+        fn zeroize(&mut self) {
+            match self {
+                Self::NullValue(value) => {
+                    ::buffa::sensitive::Zeroize::zeroize(&mut **value)
+                }
+                Self::BoolValue(value) => ::buffa::sensitive::Zeroize::zeroize(value),
+                Self::NumberText(value) => ::buffa::sensitive::Zeroize::zeroize(value),
+                Self::StringValue(value) => ::buffa::sensitive::Zeroize::zeroize(value),
+                Self::ArrayValue(value) => {
+                    ::buffa::sensitive::Zeroize::zeroize(&mut **value)
+                }
+                Self::ObjectValue(value) => {
+                    ::buffa::sensitive::Zeroize::zeroize(&mut **value)
+                }
+            }
+        }
+    }
+    impl ::buffa::sensitive::ZeroizeOnDrop for Kind {}
+    impl ::core::ops::Drop for Kind {
+        fn drop(&mut self) {
+            ::buffa::sensitive::Zeroize::zeroize(self);
+        }
+    }
+    impl ::buffa::Oneof for Kind {}
+    impl ::core::convert::From<super::super::super::CodecJsonNull> for Kind {
+        fn from(v: super::super::super::CodecJsonNull) -> Self {
+            Self::NullValue(::buffa::alloc::boxed::Box::new(v))
+        }
+    }
+    impl ::core::convert::From<super::super::super::CodecJsonNull>
+    for ::core::option::Option<Kind> {
+        fn from(v: super::super::super::CodecJsonNull) -> Self {
+            Self::Some(Kind::from(v))
+        }
+    }
+    impl ::core::convert::From<super::super::super::CodecJsonArray> for Kind {
+        fn from(v: super::super::super::CodecJsonArray) -> Self {
+            Self::ArrayValue(::buffa::alloc::boxed::Box::new(v))
+        }
+    }
+    impl ::core::convert::From<super::super::super::CodecJsonArray>
+    for ::core::option::Option<Kind> {
+        fn from(v: super::super::super::CodecJsonArray) -> Self {
+            Self::Some(Kind::from(v))
+        }
+    }
+    impl ::core::convert::From<super::super::super::CodecJsonObject> for Kind {
+        fn from(v: super::super::super::CodecJsonObject) -> Self {
+            Self::ObjectValue(::buffa::alloc::boxed::Box::new(v))
+        }
+    }
+    impl ::core::convert::From<super::super::super::CodecJsonObject>
+    for ::core::option::Option<Kind> {
+        fn from(v: super::super::super::CodecJsonObject) -> Self {
+            Self::Some(Kind::from(v))
+        }
+    }
+    impl ::serde::Serialize for Kind {
+        fn serialize<__S: ::serde::Serializer>(
+            &self,
+            s: __S,
+        ) -> ::core::result::Result<__S::Ok, __S::Error> {
+            use ::serde::ser::SerializeMap;
+            let mut map = s.serialize_map(Some(1))?;
+            match self {
+                Self::NullValue(v) => {
+                    map.serialize_entry("nullValue", &**v)?;
+                }
+                Self::BoolValue(v) => {
+                    map.serialize_entry("boolValue", v)?;
+                }
+                Self::NumberText(v) => {
+                    map.serialize_entry(
+                        "numberText",
+                        &::buffa::json_helpers::StringPolicyJson::<
+                            crate::guarded::SecretString,
+                        >::new(::core::convert::AsRef::<str>::as_ref(v)),
+                    )?;
+                }
+                Self::StringValue(v) => {
+                    map.serialize_entry(
+                        "stringValue",
+                        &::buffa::json_helpers::StringPolicyJson::<
+                            crate::guarded::SecretString,
+                        >::new(::core::convert::AsRef::<str>::as_ref(v)),
+                    )?;
+                }
+                Self::ArrayValue(v) => {
+                    map.serialize_entry("arrayValue", &**v)?;
+                }
+                Self::ObjectValue(v) => {
+                    map.serialize_entry("objectValue", &**v)?;
+                }
+            }
+            map.end()
+        }
+    }
+}
 pub mod codec_provider_operation_request {
     #[allow(unused_imports)]
     use super::*;
@@ -1951,6 +2067,9 @@ pub mod codec_api_operation_request {
         DerRead(::buffa::alloc::boxed::Box<super::super::super::CodecDerReadRequest>),
         Base64Encode(::buffa::alloc::boxed::Box<super::super::super::CodecBytesRequest>),
         Base64Decode(::buffa::alloc::boxed::Box<super::super::super::CodecTextRequest>),
+        Base64DecodeWithLimits(
+            ::buffa::alloc::boxed::Box<super::super::super::CodecBase64DecodeRequest>,
+        ),
         Base64urlEncode(
             ::buffa::alloc::boxed::Box<super::super::super::CodecBytesRequest>,
         ),
@@ -2011,6 +2130,9 @@ pub mod codec_api_operation_request {
         ),
         TlvReadLength(
             ::buffa::alloc::boxed::Box<super::super::super::CodecTlvSourceRequest>,
+        ),
+        JsonDecode(
+            ::buffa::alloc::boxed::Box<super::super::super::CodecJsonDecodeRequest>,
         ),
     }
     impl ::core::fmt::Debug for Operation {
@@ -2132,6 +2254,9 @@ pub mod codec_api_operation_request {
                 Self::Base64Decode(value) => {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
+                Self::Base64DecodeWithLimits(value) => {
+                    ::buffa::sensitive::Zeroize::zeroize(&mut **value)
+                }
                 Self::Base64urlEncode(value) => {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
@@ -2187,6 +2312,9 @@ pub mod codec_api_operation_request {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
                 Self::TlvReadLength(value) => {
+                    ::buffa::sensitive::Zeroize::zeroize(&mut **value)
+                }
+                Self::JsonDecode(value) => {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
             }
@@ -2460,6 +2588,18 @@ pub mod codec_api_operation_request {
             Self::Some(Operation::from(v))
         }
     }
+    impl ::core::convert::From<super::super::super::CodecBase64DecodeRequest>
+    for Operation {
+        fn from(v: super::super::super::CodecBase64DecodeRequest) -> Self {
+            Self::Base64DecodeWithLimits(::buffa::alloc::boxed::Box::new(v))
+        }
+    }
+    impl ::core::convert::From<super::super::super::CodecBase64DecodeRequest>
+    for ::core::option::Option<Operation> {
+        fn from(v: super::super::super::CodecBase64DecodeRequest) -> Self {
+            Self::Some(Operation::from(v))
+        }
+    }
     impl ::core::convert::From<super::super::super::CodecProviderInfoRequest>
     for Operation {
         fn from(v: super::super::super::CodecProviderInfoRequest) -> Self {
@@ -2495,6 +2635,18 @@ pub mod codec_api_operation_request {
     impl ::core::convert::From<super::super::super::CodecGeneralCborFloatCompareRequest>
     for ::core::option::Option<Operation> {
         fn from(v: super::super::super::CodecGeneralCborFloatCompareRequest) -> Self {
+            Self::Some(Operation::from(v))
+        }
+    }
+    impl ::core::convert::From<super::super::super::CodecJsonDecodeRequest>
+    for Operation {
+        fn from(v: super::super::super::CodecJsonDecodeRequest) -> Self {
+            Self::JsonDecode(::buffa::alloc::boxed::Box::new(v))
+        }
+    }
+    impl ::core::convert::From<super::super::super::CodecJsonDecodeRequest>
+    for ::core::option::Option<Operation> {
+        fn from(v: super::super::super::CodecJsonDecodeRequest) -> Self {
             Self::Some(Operation::from(v))
         }
     }
@@ -2617,6 +2769,9 @@ pub mod codec_api_operation_request {
                 Self::Base64Decode(v) => {
                     map.serialize_entry("base64Decode", &**v)?;
                 }
+                Self::Base64DecodeWithLimits(v) => {
+                    map.serialize_entry("base64DecodeWithLimits", &**v)?;
+                }
                 Self::Base64urlEncode(v) => {
                     map.serialize_entry("base64urlEncode", &**v)?;
                 }
@@ -2673,6 +2828,9 @@ pub mod codec_api_operation_request {
                 }
                 Self::TlvReadLength(v) => {
                     map.serialize_entry("tlvReadLength", &**v)?;
+                }
+                Self::JsonDecode(v) => {
+                    map.serialize_entry("jsonDecode", &**v)?;
                 }
             }
             map.end()
@@ -2787,6 +2945,9 @@ pub mod codec_api_operation_result {
         DerRead(::buffa::alloc::boxed::Box<super::super::super::CodecDerReadResult>),
         Base64Encode(::buffa::alloc::boxed::Box<super::super::super::CodecTextResult>),
         Base64Decode(::buffa::alloc::boxed::Box<super::super::super::CodecBytesResult>),
+        Base64DecodeWithLimits(
+            ::buffa::alloc::boxed::Box<super::super::super::CodecBytesResult>,
+        ),
         Base64urlEncode(
             ::buffa::alloc::boxed::Box<super::super::super::CodecTextResult>,
         ),
@@ -2834,6 +2995,9 @@ pub mod codec_api_operation_result {
             ::buffa::alloc::boxed::Box<super::super::super::CodecTlvIdentifier>,
         ),
         TlvReadLength(::buffa::alloc::boxed::Box<super::super::super::CodecTlvLength>),
+        JsonDecode(
+            ::buffa::alloc::boxed::Box<super::super::super::CodecJsonDecodeResult>,
+        ),
     }
     impl ::core::fmt::Debug for Result {
         fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
@@ -2954,6 +3118,9 @@ pub mod codec_api_operation_result {
                 Self::Base64Decode(value) => {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
+                Self::Base64DecodeWithLimits(value) => {
+                    ::buffa::sensitive::Zeroize::zeroize(&mut **value)
+                }
                 Self::Base64urlEncode(value) => {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
@@ -3009,6 +3176,9 @@ pub mod codec_api_operation_result {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
                 Self::TlvReadLength(value) => {
+                    ::buffa::sensitive::Zeroize::zeroize(&mut **value)
+                }
+                Self::JsonDecode(value) => {
                     ::buffa::sensitive::Zeroize::zeroize(&mut **value)
                 }
             }
@@ -3319,6 +3489,17 @@ pub mod codec_api_operation_result {
             Self::Some(Result::from(v))
         }
     }
+    impl ::core::convert::From<super::super::super::CodecJsonDecodeResult> for Result {
+        fn from(v: super::super::super::CodecJsonDecodeResult) -> Self {
+            Self::JsonDecode(::buffa::alloc::boxed::Box::new(v))
+        }
+    }
+    impl ::core::convert::From<super::super::super::CodecJsonDecodeResult>
+    for ::core::option::Option<Result> {
+        fn from(v: super::super::super::CodecJsonDecodeResult) -> Self {
+            Self::Some(Result::from(v))
+        }
+    }
     impl ::serde::Serialize for Result {
         fn serialize<__S: ::serde::Serializer>(
             &self,
@@ -3438,6 +3619,9 @@ pub mod codec_api_operation_result {
                 Self::Base64Decode(v) => {
                     map.serialize_entry("base64Decode", &**v)?;
                 }
+                Self::Base64DecodeWithLimits(v) => {
+                    map.serialize_entry("base64DecodeWithLimits", &**v)?;
+                }
                 Self::Base64urlEncode(v) => {
                     map.serialize_entry("base64urlEncode", &**v)?;
                 }
@@ -3494,6 +3678,9 @@ pub mod codec_api_operation_result {
                 }
                 Self::TlvReadLength(v) => {
                     map.serialize_entry("tlvReadLength", &**v)?;
+                }
+                Self::JsonDecode(v) => {
+                    map.serialize_entry("jsonDecode", &**v)?;
                 }
             }
             map.end()

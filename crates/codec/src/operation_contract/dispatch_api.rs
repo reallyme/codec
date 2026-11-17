@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use super::{execute_der, execute_general_cbor, execute_scalars, execute_tlv};
+use super::{execute_der, execute_general_cbor, execute_json, execute_scalars, execute_tlv};
 use codec_proto::generated::proto::reallyme::codec::v1 as proto;
 use codec_proto::{codec_api_error, CodecWireError};
 use proto::codec_api_operation_request::Operation;
@@ -112,6 +112,7 @@ pub(super) fn execute_api_request(
             Operation::DerDecode(_)
             | Operation::DerRead(_)
             | Operation::DerDecodeUnsignedIntegerPair(_) => execute_der::execute(operation)?,
+            Operation::JsonDecode(_) => execute_json::execute(operation)?,
             Operation::TlvReadHeader(_)
             | Operation::TlvFramePrefix(_)
             | Operation::TlvFrameExact(_)

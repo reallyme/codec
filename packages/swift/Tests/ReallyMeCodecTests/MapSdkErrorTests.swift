@@ -30,6 +30,10 @@ extension ReallyMeCodecTests {
         canonical.canonicalization.reason = .canonicalNonCanonicalJson
         var internalCanonical = ReallyMeProtoCodecError()
         internalCanonical.canonicalization.reason = .canonicalInternal
+        var allocation = ReallyMeProtoCodecError()
+        allocation.canonicalization.reason = .canonicalJsonAllocationFailure
+        var overflow = ReallyMeProtoCodecError()
+        overflow.canonicalization.reason = .canonicalJsonArithmeticOverflow
         var backend = ReallyMeProtoCodecError()
         backend.backend.reason = .backendInternal
         var boundary = ReallyMeProtoCodecError()
@@ -44,6 +48,8 @@ extension ReallyMeCodecTests {
                 (multiformat, .multiformatUnknownMulticodec, .unsupportedCodec, .caller),
                 (canonical, .canonicalNonCanonicalJson, .nonCanonical, .caller),
                 (internalCanonical, .canonicalInternal, .providerFailure, .provider),
+                (allocation, .canonicalJsonAllocationFailure, .providerFailure, .provider),
+                (overflow, .canonicalJsonArithmeticOverflow, .providerFailure, .provider),
                 (backend, .backendInternal, .providerFailure, .provider),
                 (boundary, .boundaryMalformedJson, .invalidInput, .caller),
             ]
@@ -63,11 +69,31 @@ extension ReallyMeCodecTests {
         var unknown = ReallyMeProtoCodecError()
         unknown.boundary.reason = .UNRECOGNIZED(699)
         unknown.origin = .caller
-        for invalid in [error, unknown, ReallyMeProtoCodecError()] {
+        var allocation = ReallyMeProtoCodecError()
+        allocation.canonicalization.reason = .canonicalJsonAllocationFailure
+        allocation.origin = .caller
+        var overflow = ReallyMeProtoCodecError()
+        overflow.canonicalization.reason = .canonicalJsonArithmeticOverflow
+        overflow.origin = .caller
+        for invalid in [error, unknown, allocation, overflow, ReallyMeProtoCodecError()] {
             let mapped = ReallyMeCodecRustCAbiProvider.errorForCodecError(invalid)
             XCTAssertEqual(mapped, .providerFailure)
             XCTAssertNil(mapped.reason)
             XCTAssertNil(mapped.origin)
         }
     }
+    func testBase64ProviderFailuresPreserveContextAndRejectForgedCallerOrigin() {
+        for reason: ReallyMeProtoCodecErrorReason in [.baseAllocationFailure, .baseLengthOverflow] {
+            var error = ReallyMeProtoCodecError()
+            error.baseEncoding.reason = reason
+            error.origin = .provider
+            let mapped = ReallyMeCodecRustCAbiProvider.errorForCodecError(error)
+            XCTAssertEqual(mapped.category, .providerFailure)
+            XCTAssertEqual(mapped.reason, reason)
+            XCTAssertEqual(mapped.origin, .provider)
+            error.origin = .caller
+            XCTAssertNil(ReallyMeCodecRustCAbiProvider.errorForCodecError(error).reason)
+        }
+    }
+
 }

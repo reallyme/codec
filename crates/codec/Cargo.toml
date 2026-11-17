@@ -29,6 +29,8 @@ buffa = { workspace = true, optional = true }
 der-core = { workspace = true, optional = true }
 thiserror = { workspace = true, optional = true }
 zeroize = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
 
 [features]
 default = [
@@ -47,6 +49,7 @@ base64url = ["dep:codec-base64url"]
 cbor = ["dep:codec-cbor"]
 der = ["dep:der-core", "dep:thiserror", "dep:codec-proto"]
 tlv = ["dep:codec-proto", "dep:thiserror", "dep:zeroize"]
+json = ["dep:codec-proto", "dep:thiserror", "dep:zeroize", "dep:buffa", "dep:serde", "dep:serde_json", "serde_json/raw_value"]
 hex = ["dep:codec-hex"]
 jcs = ["dep:codec-jcs"]
 multibase = ["dep:codec-multibase", "base64url"]
@@ -54,6 +57,7 @@ multicodec = ["dep:codec-multicodec", "dep:thiserror"]
 multikey = ["dep:codec-multikey", "multibase", "multicodec"]
 pem = ["dep:codec-pem"]
 operation-contract = [
+    "json",
     "der",
     "tlv",
     "base64",

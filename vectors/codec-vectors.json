@@ -685,5 +685,685 @@
         "sha256": "430354b83471df3531b60501767d57b0db99fac4aadb0eeb022127b0a9a02a44"
       }
     ]
+  },
+  "jsonDecode": {
+    "fixtureClass": "golden-operation",
+    "cases": [
+      {
+        "name": "null",
+        "request": {
+          "jsonDecode": {
+            "encoded": "bnVsbA=="
+          }
+        },
+        "response": {
+          "result": {
+            "jsonDecode": {
+              "value": {
+                "nullValue": {}
+              }
+            }
+          }
+        },
+        "requestHex": "82ee05060a046e756c6c",
+        "responseHex": "0a0882ee05040a020a00"
+      },
+      {
+        "name": "false-presence",
+        "request": {
+          "jsonDecode": {
+            "encoded": "ZmFsc2U="
+          }
+        },
+        "response": {
+          "result": {
+            "jsonDecode": {
+              "value": {
+                "boolValue": false
+              }
+            }
+          }
+        },
+        "requestHex": "82ee05070a0566616c7365",
+        "responseHex": "0a0882ee05040a021000"
+      },
+      {
+        "name": "unicode-number-spelling-and-order",
+        "request": {
+          "jsonDecode": {
+            "encoded": "eyJ6IjoiYVx1MDAwMFx1ZDgzZFx1ZGUwMCIsImEiOlstMCwxLjIzMDBlKzIsdHJ1ZSxudWxsXX0="
+          }
+        },
+        "response": {
+          "result": {
+            "jsonDecode": {
+              "value": {
+                "objectValue": {
+                  "members": [
+                    {
+                      "name": "z",
+                      "value": {
+                        "stringValue": "a\u0000😀"
+                      }
+                    },
+                    {
+                      "name": "a",
+                      "value": {
+                        "arrayValue": {
+                          "values": [
+                            {
+                              "numberText": "-0"
+                            },
+                            {
+                              "numberText": "1.2300e+2"
+                            },
+                            {
+                              "boolValue": true
+                            },
+                            {
+                              "nullValue": {}
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestHex": "82ee053a0a387b227a223a22615c75303030305c75643833645c7564653030222c2261223a5b2d302c312e32333030652b322c747275652c6e756c6c5d7d",
+        "responseHex": "0a3b82ee05370a3532330a0d0a017a120822066100f09f98800a220a0161121d2a1b0a041a022d300a0b1a09312e32333030652b320a0210010a020a00"
+      },
+      {
+        "name": "exact-string-and-work-limits",
+        "request": {
+          "jsonDecode": {
+            "encoded": "ImFiYyI=",
+            "limits": {
+              "stringBytes": "3",
+              "totalStringBytes": "3",
+              "workBytes": "10"
+            }
+          }
+        },
+        "response": {
+          "result": {
+            "jsonDecode": {
+              "value": {
+                "stringValue": "abc"
+              }
+            }
+          }
+        },
+        "requestHex": "82ee050f0a052261626322120628033003380a",
+        "responseHex": "0a0b82ee05070a052203616263"
+      },
+      {
+        "name": "duplicate-decoded-name",
+        "request": {
+          "jsonDecode": {
+            "encoded": "eyJ4IjoxLCJcdTAwNzgiOjJ9"
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "canonicalization": {
+              "reason": "CODEC_ERROR_REASON_CANONICAL_JSON_DUPLICATE_PROPERTY"
+            }
+          }
+        },
+        "requestHex": "82ee05140a127b2278223a312c225c7530303738223a327d",
+        "responseHex": "1208220308a403a00601"
+      },
+      {
+        "name": "invalid-surrogate",
+        "request": {
+          "jsonDecode": {
+            "encoded": "Ilx1ZDgwMCI="
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "canonicalization": {
+              "reason": "CODEC_ERROR_REASON_CANONICAL_JSON_INVALID_UNICODE"
+            }
+          }
+        },
+        "requestHex": "82ee050a0a08225c756438303022",
+        "responseHex": "1208220308a503a00601"
+      },
+      {
+        "name": "non-finite-number",
+        "request": {
+          "jsonDecode": {
+            "encoded": "MWU0MDA="
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "canonicalization": {
+              "reason": "CODEC_ERROR_REASON_CANONICAL_JSON_NUMBER_OUT_OF_RANGE"
+            }
+          }
+        },
+        "requestHex": "82ee05070a053165343030",
+        "responseHex": "1208220308a603a00601"
+      },
+      {
+        "name": "trailing-document",
+        "request": {
+          "jsonDecode": {
+            "encoded": "bnVsbCB0cnVl"
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "canonicalization": {
+              "reason": "CODEC_ERROR_REASON_CANONICAL_INVALID_JSON"
+            }
+          }
+        },
+        "requestHex": "82ee050b0a096e756c6c2074727565",
+        "responseHex": "12082203089203a00601"
+      },
+      {
+        "name": "explicit-zero-limit",
+        "request": {
+          "jsonDecode": {
+            "encoded": "bnVsbA==",
+            "limits": {
+              "nodes": "0"
+            }
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "canonicalization": {
+              "reason": "CODEC_ERROR_REASON_CANONICAL_JSON_INVALID_LIMITS"
+            }
+          }
+        },
+        "requestHex": "82ee050a0a046e756c6c12022000",
+        "responseHex": "12082203089c03a00601"
+      },
+      {
+        "name": "input-limit",
+        "request": {
+          "jsonDecode": {
+            "encoded": "bnVsbA==",
+            "limits": {
+              "inputBytes": "3"
+            }
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "canonicalization": {
+              "reason": "CODEC_ERROR_REASON_CANONICAL_JSON_INPUT_LIMIT"
+            }
+          }
+        },
+        "requestHex": "82ee050a0a046e756c6c12020803",
+        "responseHex": "12082203089d03a00601"
+      },
+      {
+        "name": "depth-limit",
+        "request": {
+          "jsonDecode": {
+            "encoded": "W1tdXQ==",
+            "limits": {
+              "nestingDepth": "1"
+            }
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "canonicalization": {
+              "reason": "CODEC_ERROR_REASON_CANONICAL_JSON_DEPTH_LIMIT"
+            }
+          }
+        },
+        "requestHex": "82ee050a0a045b5b5d5d12021001",
+        "responseHex": "12082203089e03a00601"
+      },
+      {
+        "name": "entry-limit",
+        "request": {
+          "jsonDecode": {
+            "encoded": "WzAsMV0=",
+            "limits": {
+              "containerEntries": "1"
+            }
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "canonicalization": {
+              "reason": "CODEC_ERROR_REASON_CANONICAL_JSON_ENTRY_LIMIT"
+            }
+          }
+        },
+        "requestHex": "82ee050b0a055b302c315d12021801",
+        "responseHex": "12082203089f03a00601"
+      },
+      {
+        "name": "node-limit",
+        "request": {
+          "jsonDecode": {
+            "encoded": "W251bGxd",
+            "limits": {
+              "nodes": "1"
+            }
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "canonicalization": {
+              "reason": "CODEC_ERROR_REASON_CANONICAL_JSON_NODE_LIMIT"
+            }
+          }
+        },
+        "requestHex": "82ee050c0a065b6e756c6c5d12022001",
+        "responseHex": "1208220308a003a00601"
+      },
+      {
+        "name": "string-limit",
+        "request": {
+          "jsonDecode": {
+            "encoded": "ImFiY2Qi",
+            "limits": {
+              "stringBytes": "3"
+            }
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "canonicalization": {
+              "reason": "CODEC_ERROR_REASON_CANONICAL_JSON_STRING_LIMIT"
+            }
+          }
+        },
+        "requestHex": "82ee050c0a0622616263642212022803",
+        "responseHex": "1208220308a103a00601"
+      },
+      {
+        "name": "total-string-limit",
+        "request": {
+          "jsonDecode": {
+            "encoded": "eyJhYiI6ImNkIn0=",
+            "limits": {
+              "totalStringBytes": "3"
+            }
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "canonicalization": {
+              "reason": "CODEC_ERROR_REASON_CANONICAL_JSON_TOTAL_STRING_LIMIT"
+            }
+          }
+        },
+        "requestHex": "82ee05110a0b7b226162223a226364227d12023003",
+        "responseHex": "1208220308a203a00601"
+      },
+      {
+        "name": "work-limit",
+        "request": {
+          "jsonDecode": {
+            "encoded": "ImFiYyI=",
+            "limits": {
+              "workBytes": "9"
+            }
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "canonicalization": {
+              "reason": "CODEC_ERROR_REASON_CANONICAL_JSON_WORK_LIMIT"
+            }
+          }
+        },
+        "requestHex": "82ee050b0a05226162632212023809",
+        "responseHex": "1208220308a303a00601"
+      }
+    ]
+  },
+  "base64DecodeWithLimits": {
+    "fixtureClass": "golden-operation",
+    "cases": [
+      {
+        "name": "empty-defaults",
+        "request": {
+          "base64DecodeWithLimits": {
+            "value": ""
+          }
+        },
+        "response": {
+          "result": {
+            "base64DecodeWithLimits": {
+              "value": ""
+            }
+          }
+        },
+        "requestHex": "92f40300",
+        "responseHex": "0a0492f40300"
+      },
+      {
+        "name": "one-byte-exact",
+        "request": {
+          "base64DecodeWithLimits": {
+            "value": "Zg==",
+            "limits": {
+              "encodedInputBytes": "4",
+              "decodedOutputBytes": "1"
+            }
+          }
+        },
+        "response": {
+          "result": {
+            "base64DecodeWithLimits": {
+              "value": "Zg=="
+            }
+          }
+        },
+        "requestHex": "92f4030c0a045a673d3d120408041001",
+        "responseHex": "0a0792f403030a0166"
+      },
+      {
+        "name": "two-byte-exact",
+        "request": {
+          "base64DecodeWithLimits": {
+            "value": "Zm8=",
+            "limits": {
+              "encodedInputBytes": "4",
+              "decodedOutputBytes": "2"
+            }
+          }
+        },
+        "response": {
+          "result": {
+            "base64DecodeWithLimits": {
+              "value": "Zm8="
+            }
+          }
+        },
+        "requestHex": "92f4030c0a045a6d383d120408041002",
+        "responseHex": "0a0892f403040a02666f"
+      },
+      {
+        "name": "full-quantum-exact",
+        "request": {
+          "base64DecodeWithLimits": {
+            "value": "Zm9v",
+            "limits": {
+              "encodedInputBytes": "4",
+              "decodedOutputBytes": "3"
+            }
+          }
+        },
+        "response": {
+          "result": {
+            "base64DecodeWithLimits": {
+              "value": "Zm9v"
+            }
+          }
+        },
+        "requestHex": "92f4030c0a045a6d3976120408041003",
+        "responseHex": "0a0992f403050a03666f6f"
+      },
+      {
+        "name": "zero-output-limit",
+        "request": {
+          "base64DecodeWithLimits": {
+            "value": "Zg==",
+            "limits": {
+              "encodedInputBytes": "4",
+              "decodedOutputBytes": "0"
+            }
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "baseEncoding": {
+              "reason": "CODEC_ERROR_REASON_BASE_OUTPUT_TOO_LARGE"
+            }
+          }
+        },
+        "requestHex": "92f4030c0a045a673d3d120408041000",
+        "responseHex": "12070a020868a00601"
+      },
+      {
+        "name": "input-limit",
+        "request": {
+          "base64DecodeWithLimits": {
+            "value": "Zg==",
+            "limits": {
+              "encodedInputBytes": "3",
+              "decodedOutputBytes": "1"
+            }
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "baseEncoding": {
+              "reason": "CODEC_ERROR_REASON_BASE_INPUT_TOO_LARGE"
+            }
+          }
+        },
+        "requestHex": "92f4030c0a045a673d3d120408031001",
+        "responseHex": "12070a020867a00601"
+      },
+      {
+        "name": "explicit-zero-limits",
+        "request": {
+          "base64DecodeWithLimits": {
+            "value": "",
+            "limits": {
+              "encodedInputBytes": "0",
+              "decodedOutputBytes": "0"
+            }
+          }
+        },
+        "response": {
+          "result": {
+            "base64DecodeWithLimits": {
+              "value": ""
+            }
+          }
+        },
+        "requestHex": "92f40306120408001000",
+        "responseHex": "0a0492f40300"
+      },
+      {
+        "name": "malformed-alphabet",
+        "request": {
+          "base64DecodeWithLimits": {
+            "value": "!!!!"
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "baseEncoding": {
+              "reason": "CODEC_ERROR_REASON_BASE_INVALID_BASE64"
+            }
+          }
+        },
+        "requestHex": "92f403060a0421212121",
+        "responseHex": "12070a02086ea00601"
+      },
+      {
+        "name": "missing-padding",
+        "request": {
+          "base64DecodeWithLimits": {
+            "value": "Zg="
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "baseEncoding": {
+              "reason": "CODEC_ERROR_REASON_BASE_INVALID_BASE64"
+            }
+          }
+        },
+        "requestHex": "92f403050a035a673d",
+        "responseHex": "12070a02086ea00601"
+      },
+      {
+        "name": "nonzero-pad-bits",
+        "request": {
+          "base64DecodeWithLimits": {
+            "value": "Zh=="
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "baseEncoding": {
+              "reason": "CODEC_ERROR_REASON_BASE_INVALID_BASE64"
+            }
+          }
+        },
+        "requestHex": "92f403060a045a683d3d",
+        "responseHex": "12070a02086ea00601"
+      },
+      {
+        "name": "url-alphabet",
+        "request": {
+          "base64DecodeWithLimits": {
+            "value": "_w=="
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "baseEncoding": {
+              "reason": "CODEC_ERROR_REASON_BASE_INVALID_BASE64"
+            }
+          }
+        },
+        "requestHex": "92f403060a045f773d3d",
+        "responseHex": "12070a02086ea00601"
+      },
+      {
+        "name": "whitespace",
+        "request": {
+          "base64DecodeWithLimits": {
+            "value": "Zg==\n"
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "baseEncoding": {
+              "reason": "CODEC_ERROR_REASON_BASE_INVALID_BASE64"
+            }
+          }
+        },
+        "requestHex": "92f403070a055a673d3d0a",
+        "responseHex": "12070a02086ea00601"
+      },
+      {
+        "name": "late-invalid-alphabet",
+        "request": {
+          "base64DecodeWithLimits": {
+            "value": "Zm9v!!!!"
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "baseEncoding": {
+              "reason": "CODEC_ERROR_REASON_BASE_INVALID_BASE64"
+            }
+          }
+        },
+        "requestHex": "92f4030a0a085a6d397621212121",
+        "responseHex": "12070a02086ea00601"
+      },
+      {
+        "name": "input-limit-overflow",
+        "request": {
+          "base64DecodeWithLimits": {
+            "value": "Zg==",
+            "limits": {
+              "encodedInputBytes": "18446744073709551615",
+              "decodedOutputBytes": "1"
+            }
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "baseEncoding": {
+              "reason": "CODEC_ERROR_REASON_BASE_INVALID_LIMITS"
+            }
+          }
+        },
+        "requestHex": "92f403150a045a673d3d120d08ffffffffffffffffff011001",
+        "responseHex": "12070a020869a00601"
+      },
+      {
+        "name": "output-limit-overflow",
+        "request": {
+          "base64DecodeWithLimits": {
+            "value": "Zg==",
+            "limits": {
+              "encodedInputBytes": "4",
+              "decodedOutputBytes": "18446744073709551615"
+            }
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "baseEncoding": {
+              "reason": "CODEC_ERROR_REASON_BASE_INVALID_LIMITS"
+            }
+          }
+        },
+        "requestHex": "92f403150a045a673d3d120d080410ffffffffffffffffff01",
+        "responseHex": "12070a020869a00601"
+      },
+      {
+        "name": "output-limit-plus-one",
+        "request": {
+          "base64DecodeWithLimits": {
+            "value": "Zm8=",
+            "limits": {
+              "encodedInputBytes": "4",
+              "decodedOutputBytes": "1"
+            }
+          }
+        },
+        "response": {
+          "error": {
+            "origin": "CODEC_ERROR_ORIGIN_CALLER",
+            "baseEncoding": {
+              "reason": "CODEC_ERROR_REASON_BASE_OUTPUT_TOO_LARGE"
+            }
+          }
+        },
+        "requestHex": "92f4030c0a045a6d383d120408041001",
+        "responseHex": "12070a020868a00601"
+      }
+    ]
   }
 }

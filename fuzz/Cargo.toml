@@ -147,3 +147,10 @@ bench = false
 # Standalone workspace: keep this crate out of the parent workspace so the
 # parent's lint denies and toolchain pin do not apply to the fuzz targets.
 [workspace]
+
+[[bin]]
+name = "guarded_json"
+path = "tests/targets/guarded_json.rs"
+test = false
+doc = false
+bench = false

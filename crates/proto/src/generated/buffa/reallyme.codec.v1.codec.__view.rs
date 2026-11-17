@@ -14482,6 +14482,545 @@ impl<'a> ::buffa::MessageName for CodecTextRequestView<'a> {
 ::buffa::impl_default_view_instance!(CodecTextRequestView);
 ::buffa::impl_view_reborrow!(CodecTextRequestView);
 ::buffa::unsafe_impl_view_lifetime_parametric!(CodecTextRequestView);
+/// Independent budgets for strict padded-standard Base64 decoding. Omitted
+/// fields select defaults of 2,097,152 encoded bytes and 1,572,864 decoded bytes.
+/// Explicit zero permits only empty input/output. Limits must fit the platform's
+/// addressable buffer size. Encoded bytes exclude any caller-removed data-URL
+/// prefix; alphabet, padding and unused pad bits must be canonical RFC 4648.
+/// The native API may raise either budget; transport envelopes retain their
+/// existing independent hard limits.
+#[derive(Clone, Default)]
+pub struct CodecBase64DecodeLimitsView<'a> {
+    /// Field 1: `encoded_input_bytes`
+    pub encoded_input_bytes: ::core::option::Option<u64>,
+    /// Field 2: `decoded_output_bytes`
+    pub decoded_output_bytes: ::core::option::Option<u64>,
+    #[doc(hidden)]
+    pub __buffa_phantom: ::core::marker::PhantomData<&'a ()>,
+}
+impl<'a> ::core::fmt::Debug for CodecBase64DecodeLimitsView<'a> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("CodecBase64DecodeLimitsView")
+            .field("encoded_input_bytes", &::core::format_args!("[REDACTED]"))
+            .field("decoded_output_bytes", &::core::format_args!("[REDACTED]"))
+            .finish()
+    }
+}
+impl<'a> ::buffa::sensitive::Zeroize for CodecBase64DecodeLimitsView<'a> {
+    fn zeroize(&mut self) {
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.encoded_input_bytes);
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.decoded_output_bytes);
+    }
+}
+impl<'a> ::buffa::sensitive::ZeroizeOnDrop for CodecBase64DecodeLimitsView<'a> {}
+impl<'a> ::core::ops::Drop for CodecBase64DecodeLimitsView<'a> {
+    fn drop(&mut self) {
+        ::buffa::sensitive::Zeroize::zeroize(self);
+    }
+}
+impl<'a> ::buffa::MessageView<'a> for CodecBase64DecodeLimitsView<'a> {
+    type Owned = super::super::CodecBase64DecodeLimits;
+    fn decode_view(buf: &'a [u8]) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        let __limit = ::core::cell::Cell::new(::buffa::DEFAULT_UNKNOWN_FIELD_LIMIT);
+        let __elem = ::core::cell::Cell::new(::buffa::DEFAULT_ELEMENT_MEMORY_LIMIT);
+        <Self as ::buffa::MessageView>::decode_view_ctx(
+            buf,
+            ::buffa::DecodeContext::new(::buffa::RECURSION_LIMIT, &__limit)
+                .with_element_memory(&__elem),
+        )
+    }
+    fn decode_view_with_ctx(
+        buf: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        <Self as ::buffa::MessageView>::decode_view_ctx(buf, ctx)
+    }
+    #[inline]
+    fn merge_view_field(
+        &mut self,
+        tag: ::buffa::encoding::Tag,
+        cur: &'a [u8],
+        _before_tag: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<&'a [u8], ::buffa::DecodeError> {
+        let _ = ctx;
+        #[allow(unused_variables)]
+        let view = self;
+        let mut cur = cur;
+        match tag.field_number() {
+            1u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::Varint,
+                )?;
+                view.encoded_input_bytes = Some(
+                    ::buffa::types::decode_uint64(&mut cur)?,
+                );
+            }
+            2u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::Varint,
+                )?;
+                view.decoded_output_bytes = Some(
+                    ::buffa::types::decode_uint64(&mut cur)?,
+                );
+            }
+            _ => {
+                ::buffa::encoding::skip_unknown_field(tag, &mut cur, ctx)?;
+            }
+        }
+        ::core::result::Result::Ok(cur)
+    }
+    fn to_owned_message(
+        &self,
+    ) -> ::core::result::Result<
+        super::super::CodecBase64DecodeLimits,
+        ::buffa::DecodeError,
+    > {
+        self.to_owned_from_source(None)
+    }
+    #[allow(
+        clippy::useless_conversion,
+        clippy::needless_update,
+        clippy::field_reassign_with_default
+    )]
+    fn to_owned_from_source(
+        &self,
+        __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
+    ) -> ::core::result::Result<
+        super::super::CodecBase64DecodeLimits,
+        ::buffa::DecodeError,
+    > {
+        #[allow(unused_imports)]
+        use ::buffa::alloc::string::ToString as _;
+        let _ = __buffa_src;
+        let mut __owned = <super::super::CodecBase64DecodeLimits as ::core::default::Default>::default();
+        __owned.encoded_input_bytes = self.encoded_input_bytes;
+        __owned.decoded_output_bytes = self.decoded_output_bytes;
+        ::core::result::Result::Ok(__owned)
+    }
+}
+impl<'a> ::buffa::ViewEncode<'a> for CodecBase64DecodeLimitsView<'a> {
+    #[allow(clippy::needless_borrow, clippy::let_and_return)]
+    fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        let mut size = 0u64;
+        if let Some(v) = self.encoded_input_bytes {
+            size += 1u64 + ::buffa::types::uint64_encoded_len(v) as u64;
+        }
+        if let Some(v) = self.decoded_output_bytes {
+            size += 1u64 + ::buffa::types::uint64_encoded_len(v) as u64;
+        }
+        ::buffa::saturate_size(size)
+    }
+    #[allow(clippy::needless_borrow)]
+    fn write_to(
+        &self,
+        _cache: &mut ::buffa::SizeCache,
+        buf: &mut impl ::buffa::EncodeSink,
+    ) {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        if let Some(v) = self.encoded_input_bytes {
+            ::buffa::types::put_uint64_field(1u32, v, buf);
+        }
+        if let Some(v) = self.decoded_output_bytes {
+            ::buffa::types::put_uint64_field(2u32, v, buf);
+        }
+    }
+}
+/// Serializes this view as protobuf JSON.
+///
+/// Implicit-presence fields with default values are omitted, `required`
+/// fields are always emitted, explicit-presence (`optional`) fields are
+/// emitted only when set, bytes fields are base64-encoded, and enum
+/// values are their proto name strings.
+///
+/// This impl uses `serialize_map(None)` because the number of emitted
+/// fields depends on default-omission rules; serializers that require
+/// known map lengths (e.g. `bincode`) will return a runtime error.
+/// Use the owned message type for those formats.
+impl<'__a> ::serde::Serialize for CodecBase64DecodeLimitsView<'__a> {
+    fn serialize<__S: ::serde::Serializer>(
+        &self,
+        __s: __S,
+    ) -> ::core::result::Result<__S::Ok, __S::Error> {
+        use ::serde::ser::SerializeMap as _;
+        let mut __map = __s.serialize_map(::core::option::Option::None)?;
+        if let ::core::option::Option::Some(__v) = self.encoded_input_bytes {
+            __map
+                .serialize_entry(
+                    "encodedInputBytes",
+                    &::buffa::json_helpers::ProtoJson(&__v),
+                )?;
+        }
+        if let ::core::option::Option::Some(__v) = self.decoded_output_bytes {
+            __map
+                .serialize_entry(
+                    "decodedOutputBytes",
+                    &::buffa::json_helpers::ProtoJson(&__v),
+                )?;
+        }
+        __map.end()
+    }
+}
+impl<'a> ::buffa::MessageName for CodecBase64DecodeLimitsView<'a> {
+    const PACKAGE: &'static str = "reallyme.codec.v1";
+    const NAME: &'static str = "CodecBase64DecodeLimits";
+    const FULL_NAME: &'static str = "reallyme.codec.v1.CodecBase64DecodeLimits";
+    const TYPE_URL: &'static str = "type.googleapis.com/reallyme.codec.v1.CodecBase64DecodeLimits";
+}
+::buffa::impl_default_view_instance!(CodecBase64DecodeLimitsView);
+::buffa::impl_view_reborrow!(CodecBase64DecodeLimitsView);
+::buffa::unsafe_impl_view_lifetime_parametric!(CodecBase64DecodeLimitsView);
+/** Self-contained, `'static` owned view of a `CodecBase64DecodeLimits` message.
+
+ Wraps [`::buffa::OwnedView`]`<`[`CodecBase64DecodeLimitsView`]`<'static>>`: the decoded view and the [`::buffa::bytes::Bytes`] buffer it borrows from travel together, so the handle is `'static` and `Send + Sync` — suitable for async handlers, spawned tasks, and anywhere a `'static` bound is required.
+
+ Field accessors return borrows tied to `&self`. Use [`Self::view`] to get the full [`CodecBase64DecodeLimitsView`] when you need struct patterns, iteration helpers, or to pass the view to lifetime-parameterised code.*/
+#[derive(Clone, Debug)]
+pub struct CodecBase64DecodeLimitsOwnedView(
+    ::buffa::OwnedView<CodecBase64DecodeLimitsView<'static>>,
+);
+impl CodecBase64DecodeLimitsOwnedView {
+    /// Decode an owned view from a [`::buffa::bytes::Bytes`] buffer.
+    ///
+    /// The view borrows directly from the buffer's data; the buffer is
+    /// retained inside the returned handle.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`::buffa::DecodeError`] if the buffer contains invalid
+    /// protobuf data.
+    pub fn decode(
+        bytes: ::buffa::bytes::Bytes,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        ::core::result::Result::Ok(
+            CodecBase64DecodeLimitsOwnedView(::buffa::OwnedView::decode(bytes)?),
+        )
+    }
+    /// Decode with custom [`::buffa::DecodeOptions`] (recursion limit,
+    /// max message size).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`::buffa::DecodeError`] if the buffer is invalid or
+    /// exceeds the configured limits.
+    pub fn decode_with_options(
+        bytes: ::buffa::bytes::Bytes,
+        opts: &::buffa::DecodeOptions,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        ::core::result::Result::Ok(
+            CodecBase64DecodeLimitsOwnedView(
+                ::buffa::OwnedView::decode_with_options(bytes, opts)?,
+            ),
+        )
+    }
+    /// Build from an owned message via an encode → decode round-trip.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`::buffa::DecodeError::MessageTooLarge`] if the
+    /// message's encoded size exceeds the 2 GiB protobuf limit, or
+    /// another [`::buffa::DecodeError`] if the re-encoded bytes are
+    /// somehow invalid (should not happen for well-formed messages).
+    pub fn from_owned(
+        msg: &super::super::CodecBase64DecodeLimits,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        ::core::result::Result::Ok(
+            CodecBase64DecodeLimitsOwnedView(::buffa::OwnedView::from_owned(msg)?),
+        )
+    }
+    /// Borrow the full [`CodecBase64DecodeLimitsView`] with its lifetime tied to `&self`.
+    #[must_use]
+    pub fn view(&self) -> &CodecBase64DecodeLimitsView<'_> {
+        self.0.reborrow()
+    }
+    /// Convert to the owned message type.
+    ///
+    /// Infallible: this type's constructors wire-decode their
+    /// buffer, and a view produced by wire decoding always
+    /// converts. Delegates to [`::buffa::OwnedView::to_owned_message`],
+    /// whose contract also governs handles converted from a raw
+    /// [`::buffa::OwnedView`].
+    #[must_use]
+    pub fn to_owned_message(&self) -> super::super::CodecBase64DecodeLimits {
+        self.0.to_owned_message()
+    }
+    /// The underlying bytes buffer.
+    #[must_use]
+    pub fn bytes(&self) -> &::buffa::bytes::Bytes {
+        self.0.bytes()
+    }
+    /// Consume the handle, returning the underlying bytes buffer.
+    #[must_use]
+    pub fn into_bytes(self) -> ::buffa::bytes::Bytes {
+        self.0.into_bytes()
+    }
+    /// Field 1: `encoded_input_bytes`
+    #[must_use]
+    pub fn encoded_input_bytes(&self) -> ::core::option::Option<u64> {
+        self.0.reborrow().encoded_input_bytes
+    }
+    /// Field 2: `decoded_output_bytes`
+    #[must_use]
+    pub fn decoded_output_bytes(&self) -> ::core::option::Option<u64> {
+        self.0.reborrow().decoded_output_bytes
+    }
+}
+impl ::core::convert::From<::buffa::OwnedView<CodecBase64DecodeLimitsView<'static>>>
+for CodecBase64DecodeLimitsOwnedView {
+    fn from(inner: ::buffa::OwnedView<CodecBase64DecodeLimitsView<'static>>) -> Self {
+        CodecBase64DecodeLimitsOwnedView(inner)
+    }
+}
+impl ::core::convert::From<CodecBase64DecodeLimitsOwnedView>
+for ::buffa::OwnedView<CodecBase64DecodeLimitsView<'static>> {
+    fn from(wrapper: CodecBase64DecodeLimitsOwnedView) -> Self {
+        wrapper.0
+    }
+}
+impl ::core::convert::AsRef<::buffa::OwnedView<CodecBase64DecodeLimitsView<'static>>>
+for CodecBase64DecodeLimitsOwnedView {
+    fn as_ref(&self) -> &::buffa::OwnedView<CodecBase64DecodeLimitsView<'static>> {
+        &self.0
+    }
+}
+impl ::buffa::HasMessageView for super::super::CodecBase64DecodeLimits {
+    type View<'a> = CodecBase64DecodeLimitsView<'a>;
+    type ViewHandle = CodecBase64DecodeLimitsOwnedView;
+}
+impl ::serde::Serialize for CodecBase64DecodeLimitsOwnedView {
+    fn serialize<__S: ::serde::Serializer>(
+        &self,
+        __s: __S,
+    ) -> ::core::result::Result<__S::Ok, __S::Error> {
+        ::serde::Serialize::serialize(&self.0, __s)
+    }
+}
+#[derive(Clone, Default)]
+pub struct CodecBase64DecodeRequestView<'a> {
+    /// SENSITIVE: Base64 can carry portraits, credentials and other personal data.
+    ///
+    /// Field 1: `value`
+    pub value: &'a str,
+    /// Field 2: `limits`
+    pub limits: ::buffa::MessageFieldView<
+        super::super::__buffa::view::CodecBase64DecodeLimitsView<'a>,
+    >,
+}
+impl<'a> ::core::fmt::Debug for CodecBase64DecodeRequestView<'a> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("CodecBase64DecodeRequestView")
+            .field("value", &::core::format_args!("[REDACTED]"))
+            .field("limits", &::core::format_args!("[REDACTED]"))
+            .finish()
+    }
+}
+impl<'a> ::buffa::sensitive::Zeroize for CodecBase64DecodeRequestView<'a> {
+    fn zeroize(&mut self) {
+        fn __requires_view_wipe_owner<
+            T: ::buffa::sensitive::Zeroize + ::buffa::sensitive::ZeroizeOnDrop,
+        >() {}
+        __requires_view_wipe_owner::<
+            super::super::__buffa::view::CodecBase64DecodeLimitsView<'a>,
+        >();
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.limits);
+    }
+}
+impl<'a> ::buffa::sensitive::ZeroizeOnDrop for CodecBase64DecodeRequestView<'a> {}
+impl<'a> ::core::ops::Drop for CodecBase64DecodeRequestView<'a> {
+    fn drop(&mut self) {
+        ::buffa::sensitive::Zeroize::zeroize(self);
+    }
+}
+impl<'a> ::buffa::MessageView<'a> for CodecBase64DecodeRequestView<'a> {
+    type Owned = super::super::CodecBase64DecodeRequest;
+    fn decode_view(buf: &'a [u8]) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        let __limit = ::core::cell::Cell::new(::buffa::DEFAULT_UNKNOWN_FIELD_LIMIT);
+        let __elem = ::core::cell::Cell::new(::buffa::DEFAULT_ELEMENT_MEMORY_LIMIT);
+        <Self as ::buffa::MessageView>::decode_view_ctx(
+            buf,
+            ::buffa::DecodeContext::new(::buffa::RECURSION_LIMIT, &__limit)
+                .with_element_memory(&__elem),
+        )
+    }
+    fn decode_view_with_ctx(
+        buf: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        <Self as ::buffa::MessageView>::decode_view_ctx(buf, ctx)
+    }
+    #[inline]
+    fn merge_view_field(
+        &mut self,
+        tag: ::buffa::encoding::Tag,
+        cur: &'a [u8],
+        _before_tag: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<&'a [u8], ::buffa::DecodeError> {
+        let _ = ctx;
+        #[allow(unused_variables)]
+        let view = self;
+        let mut cur = cur;
+        match tag.field_number() {
+            1u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                view.value = ::buffa::types::borrow_str(&mut cur)?;
+            }
+            2u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                let __sub_ctx = ctx.descend()?;
+                let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                match view.limits.as_mut() {
+                    Some(existing) => {
+                        ::buffa::MessageView::merge_into_view(existing, sub, __sub_ctx)?
+                    }
+                    None => {
+                        view.limits = ::buffa::MessageFieldView::set(
+                            <super::super::__buffa::view::CodecBase64DecodeLimitsView as ::buffa::MessageView>::decode_view_ctx(
+                                sub,
+                                __sub_ctx,
+                            )?,
+                        );
+                    }
+                }
+            }
+            _ => {
+                ::buffa::encoding::skip_unknown_field(tag, &mut cur, ctx)?;
+            }
+        }
+        ::core::result::Result::Ok(cur)
+    }
+    fn to_owned_message(
+        &self,
+    ) -> ::core::result::Result<
+        super::super::CodecBase64DecodeRequest,
+        ::buffa::DecodeError,
+    > {
+        self.to_owned_from_source(None)
+    }
+    #[allow(
+        clippy::useless_conversion,
+        clippy::needless_update,
+        clippy::field_reassign_with_default
+    )]
+    fn to_owned_from_source(
+        &self,
+        __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
+    ) -> ::core::result::Result<
+        super::super::CodecBase64DecodeRequest,
+        ::buffa::DecodeError,
+    > {
+        #[allow(unused_imports)]
+        use ::buffa::alloc::string::ToString as _;
+        let _ = __buffa_src;
+        let mut __owned = <super::super::CodecBase64DecodeRequest as ::core::default::Default>::default();
+        __owned.value = ::buffa::ProtoString::copy_from_str(self.value);
+        __owned.limits = match self.limits.as_option() {
+            Some(v) => {
+                ::buffa::MessageField::<
+                    super::super::CodecBase64DecodeLimits,
+                    ::buffa::Inline<super::super::CodecBase64DecodeLimits>,
+                >::some(v.to_owned_from_source(__buffa_src)?)
+            }
+            None => ::buffa::MessageField::none(),
+        };
+        ::core::result::Result::Ok(__owned)
+    }
+}
+impl<'a> ::buffa::ViewEncode<'a> for CodecBase64DecodeRequestView<'a> {
+    #[allow(clippy::needless_borrow, clippy::let_and_return)]
+    fn compute_size(&self, __cache: &mut ::buffa::SizeCache) -> u32 {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        let mut size = 0u64;
+        if !self.value.is_empty() {
+            size += 1u64 + ::buffa::types::string_encoded_len(&self.value) as u64;
+        }
+        if let ::core::option::Option::Some(__v) = self.limits.as_option() {
+            let __slot = __cache.reserve();
+            let inner_size = __v.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 1u64 + ::buffa::encoding::varint_len(inner_size as u64) as u64
+                    + inner_size as u64;
+        }
+        ::buffa::saturate_size(size)
+    }
+    #[allow(clippy::needless_borrow)]
+    fn write_to(
+        &self,
+        __cache: &mut ::buffa::SizeCache,
+        buf: &mut impl ::buffa::EncodeSink,
+    ) {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        if !self.value.is_empty() {
+            ::buffa::types::put_string_field(1u32, &self.value, buf);
+        }
+        if let ::core::option::Option::Some(__v) = self.limits.as_option() {
+            ::buffa::types::put_len_delimited_header(
+                2u32,
+                u64::from(__cache.consume_next()),
+                buf,
+            );
+            __v.write_to(__cache, buf);
+        }
+    }
+}
+/// Serializes this view as protobuf JSON.
+///
+/// Implicit-presence fields with default values are omitted, `required`
+/// fields are always emitted, explicit-presence (`optional`) fields are
+/// emitted only when set, bytes fields are base64-encoded, and enum
+/// values are their proto name strings.
+///
+/// This impl uses `serialize_map(None)` because the number of emitted
+/// fields depends on default-omission rules; serializers that require
+/// known map lengths (e.g. `bincode`) will return a runtime error.
+/// Use the owned message type for those formats.
+impl<'__a> ::serde::Serialize for CodecBase64DecodeRequestView<'__a> {
+    fn serialize<__S: ::serde::Serializer>(
+        &self,
+        __s: __S,
+    ) -> ::core::result::Result<__S::Ok, __S::Error> {
+        use ::serde::ser::SerializeMap as _;
+        let mut __map = __s.serialize_map(::core::option::Option::None)?;
+        if !::buffa::json_helpers::skip_if::is_empty_str(self.value) {
+            __map
+                .serialize_entry(
+                    "value",
+                    &::buffa::json_helpers::StringPolicyJson::<
+                        crate::guarded::SecretString,
+                    >::new(self.value),
+                )?;
+        }
+        {
+            if let ::core::option::Option::Some(__v) = self.limits.as_option() {
+                __map.serialize_entry("limits", __v)?;
+            }
+        }
+        __map.end()
+    }
+}
+impl<'a> ::buffa::MessageName for CodecBase64DecodeRequestView<'a> {
+    const PACKAGE: &'static str = "reallyme.codec.v1";
+    const NAME: &'static str = "CodecBase64DecodeRequest";
+    const FULL_NAME: &'static str = "reallyme.codec.v1.CodecBase64DecodeRequest";
+    const TYPE_URL: &'static str = "type.googleapis.com/reallyme.codec.v1.CodecBase64DecodeRequest";
+}
+::buffa::impl_default_view_instance!(CodecBase64DecodeRequestView);
+::buffa::impl_view_reborrow!(CodecBase64DecodeRequestView);
+::buffa::unsafe_impl_view_lifetime_parametric!(CodecBase64DecodeRequestView);
 #[derive(Clone, Default)]
 pub struct CodecEmptyRequestView<'a> {
     #[doc(hidden)]
@@ -28783,6 +29322,2052 @@ impl ::serde::Serialize for CodecTlvErrorOwnedView {
         ::serde::Serialize::serialize(&self.0, __s)
     }
 }
+/// Guarded RFC 8259 decoding rejects duplicate decoded object names at every
+/// level, invalid Unicode scalar sequences, trailing data and numbers outside
+/// finite binary64 range unless they fit an exact i64/u64. Number text retains
+/// the original spelling; the native typed projection follows Serde JSON's
+/// integer/floating-point visitor conventions. Object member order is retained.
+/// Every native output allocation containing decoded text or scalar payloads is wiped
+/// on clear/drop, including partial results and escaped-string scratch.
+/// Caller-owned source bytes, SDK-decoded and exported copies remain the caller's
+/// responsibility. This operation performs no canonicalization.
+///
+/// Omitted limits select defaults; explicit zero is invalid. Defaults/hard
+/// ceilings: input 1/16 MiB, depth 32/64, container entries 256/65536,
+/// nodes 65536/1048576, one decoded string 64 KiB/16 MiB, total decoded strings
+/// 1/16 MiB, scanned framing bytes 16 MiB/1 GiB. Object names and number text
+/// count toward both string budgets. Work includes subtree scans and decoded-key comparisons.
+#[derive(Clone, Default)]
+pub struct CodecJsonLimitsView<'a> {
+    /// Field 1: `input_bytes`
+    pub input_bytes: ::core::option::Option<u64>,
+    /// Field 2: `nesting_depth`
+    pub nesting_depth: ::core::option::Option<u64>,
+    /// Field 3: `container_entries`
+    pub container_entries: ::core::option::Option<u64>,
+    /// Field 4: `nodes`
+    pub nodes: ::core::option::Option<u64>,
+    /// Field 5: `string_bytes`
+    pub string_bytes: ::core::option::Option<u64>,
+    /// Field 6: `total_string_bytes`
+    pub total_string_bytes: ::core::option::Option<u64>,
+    /// Field 7: `work_bytes`
+    pub work_bytes: ::core::option::Option<u64>,
+    #[doc(hidden)]
+    pub __buffa_phantom: ::core::marker::PhantomData<&'a ()>,
+}
+impl<'a> ::core::fmt::Debug for CodecJsonLimitsView<'a> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("CodecJsonLimitsView")
+            .field("input_bytes", &::core::format_args!("[REDACTED]"))
+            .field("nesting_depth", &::core::format_args!("[REDACTED]"))
+            .field("container_entries", &::core::format_args!("[REDACTED]"))
+            .field("nodes", &::core::format_args!("[REDACTED]"))
+            .field("string_bytes", &::core::format_args!("[REDACTED]"))
+            .field("total_string_bytes", &::core::format_args!("[REDACTED]"))
+            .field("work_bytes", &::core::format_args!("[REDACTED]"))
+            .finish()
+    }
+}
+impl<'a> ::buffa::sensitive::Zeroize for CodecJsonLimitsView<'a> {
+    fn zeroize(&mut self) {
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.input_bytes);
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.nesting_depth);
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.container_entries);
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.nodes);
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.string_bytes);
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.total_string_bytes);
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.work_bytes);
+    }
+}
+impl<'a> ::buffa::sensitive::ZeroizeOnDrop for CodecJsonLimitsView<'a> {}
+impl<'a> ::core::ops::Drop for CodecJsonLimitsView<'a> {
+    fn drop(&mut self) {
+        ::buffa::sensitive::Zeroize::zeroize(self);
+    }
+}
+impl<'a> ::buffa::MessageView<'a> for CodecJsonLimitsView<'a> {
+    type Owned = super::super::CodecJsonLimits;
+    fn decode_view(buf: &'a [u8]) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        let __limit = ::core::cell::Cell::new(::buffa::DEFAULT_UNKNOWN_FIELD_LIMIT);
+        let __elem = ::core::cell::Cell::new(::buffa::DEFAULT_ELEMENT_MEMORY_LIMIT);
+        <Self as ::buffa::MessageView>::decode_view_ctx(
+            buf,
+            ::buffa::DecodeContext::new(::buffa::RECURSION_LIMIT, &__limit)
+                .with_element_memory(&__elem),
+        )
+    }
+    fn decode_view_with_ctx(
+        buf: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        <Self as ::buffa::MessageView>::decode_view_ctx(buf, ctx)
+    }
+    #[inline]
+    fn merge_view_field(
+        &mut self,
+        tag: ::buffa::encoding::Tag,
+        cur: &'a [u8],
+        _before_tag: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<&'a [u8], ::buffa::DecodeError> {
+        let _ = ctx;
+        #[allow(unused_variables)]
+        let view = self;
+        let mut cur = cur;
+        match tag.field_number() {
+            1u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::Varint,
+                )?;
+                view.input_bytes = Some(::buffa::types::decode_uint64(&mut cur)?);
+            }
+            2u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::Varint,
+                )?;
+                view.nesting_depth = Some(::buffa::types::decode_uint64(&mut cur)?);
+            }
+            3u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::Varint,
+                )?;
+                view.container_entries = Some(::buffa::types::decode_uint64(&mut cur)?);
+            }
+            4u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::Varint,
+                )?;
+                view.nodes = Some(::buffa::types::decode_uint64(&mut cur)?);
+            }
+            5u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::Varint,
+                )?;
+                view.string_bytes = Some(::buffa::types::decode_uint64(&mut cur)?);
+            }
+            6u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::Varint,
+                )?;
+                view.total_string_bytes = Some(::buffa::types::decode_uint64(&mut cur)?);
+            }
+            7u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::Varint,
+                )?;
+                view.work_bytes = Some(::buffa::types::decode_uint64(&mut cur)?);
+            }
+            _ => {
+                ::buffa::encoding::skip_unknown_field(tag, &mut cur, ctx)?;
+            }
+        }
+        ::core::result::Result::Ok(cur)
+    }
+    fn to_owned_message(
+        &self,
+    ) -> ::core::result::Result<super::super::CodecJsonLimits, ::buffa::DecodeError> {
+        self.to_owned_from_source(None)
+    }
+    #[allow(
+        clippy::useless_conversion,
+        clippy::needless_update,
+        clippy::field_reassign_with_default
+    )]
+    fn to_owned_from_source(
+        &self,
+        __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
+    ) -> ::core::result::Result<super::super::CodecJsonLimits, ::buffa::DecodeError> {
+        #[allow(unused_imports)]
+        use ::buffa::alloc::string::ToString as _;
+        let _ = __buffa_src;
+        let mut __owned = <super::super::CodecJsonLimits as ::core::default::Default>::default();
+        __owned.input_bytes = self.input_bytes;
+        __owned.nesting_depth = self.nesting_depth;
+        __owned.container_entries = self.container_entries;
+        __owned.nodes = self.nodes;
+        __owned.string_bytes = self.string_bytes;
+        __owned.total_string_bytes = self.total_string_bytes;
+        __owned.work_bytes = self.work_bytes;
+        ::core::result::Result::Ok(__owned)
+    }
+}
+impl<'a> ::buffa::ViewEncode<'a> for CodecJsonLimitsView<'a> {
+    #[allow(clippy::needless_borrow, clippy::let_and_return)]
+    fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        let mut size = 0u64;
+        if let Some(v) = self.input_bytes {
+            size += 1u64 + ::buffa::types::uint64_encoded_len(v) as u64;
+        }
+        if let Some(v) = self.nesting_depth {
+            size += 1u64 + ::buffa::types::uint64_encoded_len(v) as u64;
+        }
+        if let Some(v) = self.container_entries {
+            size += 1u64 + ::buffa::types::uint64_encoded_len(v) as u64;
+        }
+        if let Some(v) = self.nodes {
+            size += 1u64 + ::buffa::types::uint64_encoded_len(v) as u64;
+        }
+        if let Some(v) = self.string_bytes {
+            size += 1u64 + ::buffa::types::uint64_encoded_len(v) as u64;
+        }
+        if let Some(v) = self.total_string_bytes {
+            size += 1u64 + ::buffa::types::uint64_encoded_len(v) as u64;
+        }
+        if let Some(v) = self.work_bytes {
+            size += 1u64 + ::buffa::types::uint64_encoded_len(v) as u64;
+        }
+        ::buffa::saturate_size(size)
+    }
+    #[allow(clippy::needless_borrow)]
+    fn write_to(
+        &self,
+        _cache: &mut ::buffa::SizeCache,
+        buf: &mut impl ::buffa::EncodeSink,
+    ) {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        if let Some(v) = self.input_bytes {
+            ::buffa::types::put_uint64_field(1u32, v, buf);
+        }
+        if let Some(v) = self.nesting_depth {
+            ::buffa::types::put_uint64_field(2u32, v, buf);
+        }
+        if let Some(v) = self.container_entries {
+            ::buffa::types::put_uint64_field(3u32, v, buf);
+        }
+        if let Some(v) = self.nodes {
+            ::buffa::types::put_uint64_field(4u32, v, buf);
+        }
+        if let Some(v) = self.string_bytes {
+            ::buffa::types::put_uint64_field(5u32, v, buf);
+        }
+        if let Some(v) = self.total_string_bytes {
+            ::buffa::types::put_uint64_field(6u32, v, buf);
+        }
+        if let Some(v) = self.work_bytes {
+            ::buffa::types::put_uint64_field(7u32, v, buf);
+        }
+    }
+}
+/// Serializes this view as protobuf JSON.
+///
+/// Implicit-presence fields with default values are omitted, `required`
+/// fields are always emitted, explicit-presence (`optional`) fields are
+/// emitted only when set, bytes fields are base64-encoded, and enum
+/// values are their proto name strings.
+///
+/// This impl uses `serialize_map(None)` because the number of emitted
+/// fields depends on default-omission rules; serializers that require
+/// known map lengths (e.g. `bincode`) will return a runtime error.
+/// Use the owned message type for those formats.
+impl<'__a> ::serde::Serialize for CodecJsonLimitsView<'__a> {
+    fn serialize<__S: ::serde::Serializer>(
+        &self,
+        __s: __S,
+    ) -> ::core::result::Result<__S::Ok, __S::Error> {
+        use ::serde::ser::SerializeMap as _;
+        let mut __map = __s.serialize_map(::core::option::Option::None)?;
+        if let ::core::option::Option::Some(__v) = self.input_bytes {
+            __map
+                .serialize_entry("inputBytes", &::buffa::json_helpers::ProtoJson(&__v))?;
+        }
+        if let ::core::option::Option::Some(__v) = self.nesting_depth {
+            __map
+                .serialize_entry(
+                    "nestingDepth",
+                    &::buffa::json_helpers::ProtoJson(&__v),
+                )?;
+        }
+        if let ::core::option::Option::Some(__v) = self.container_entries {
+            __map
+                .serialize_entry(
+                    "containerEntries",
+                    &::buffa::json_helpers::ProtoJson(&__v),
+                )?;
+        }
+        if let ::core::option::Option::Some(__v) = self.nodes {
+            __map.serialize_entry("nodes", &::buffa::json_helpers::ProtoJson(&__v))?;
+        }
+        if let ::core::option::Option::Some(__v) = self.string_bytes {
+            __map
+                .serialize_entry(
+                    "stringBytes",
+                    &::buffa::json_helpers::ProtoJson(&__v),
+                )?;
+        }
+        if let ::core::option::Option::Some(__v) = self.total_string_bytes {
+            __map
+                .serialize_entry(
+                    "totalStringBytes",
+                    &::buffa::json_helpers::ProtoJson(&__v),
+                )?;
+        }
+        if let ::core::option::Option::Some(__v) = self.work_bytes {
+            __map.serialize_entry("workBytes", &::buffa::json_helpers::ProtoJson(&__v))?;
+        }
+        __map.end()
+    }
+}
+impl<'a> ::buffa::MessageName for CodecJsonLimitsView<'a> {
+    const PACKAGE: &'static str = "reallyme.codec.v1";
+    const NAME: &'static str = "CodecJsonLimits";
+    const FULL_NAME: &'static str = "reallyme.codec.v1.CodecJsonLimits";
+    const TYPE_URL: &'static str = "type.googleapis.com/reallyme.codec.v1.CodecJsonLimits";
+}
+::buffa::impl_default_view_instance!(CodecJsonLimitsView);
+::buffa::impl_view_reborrow!(CodecJsonLimitsView);
+::buffa::unsafe_impl_view_lifetime_parametric!(CodecJsonLimitsView);
+/** Self-contained, `'static` owned view of a `CodecJsonLimits` message.
+
+ Wraps [`::buffa::OwnedView`]`<`[`CodecJsonLimitsView`]`<'static>>`: the decoded view and the [`::buffa::bytes::Bytes`] buffer it borrows from travel together, so the handle is `'static` and `Send + Sync` — suitable for async handlers, spawned tasks, and anywhere a `'static` bound is required.
+
+ Field accessors return borrows tied to `&self`. Use [`Self::view`] to get the full [`CodecJsonLimitsView`] when you need struct patterns, iteration helpers, or to pass the view to lifetime-parameterised code.*/
+#[derive(Clone, Debug)]
+pub struct CodecJsonLimitsOwnedView(::buffa::OwnedView<CodecJsonLimitsView<'static>>);
+impl CodecJsonLimitsOwnedView {
+    /// Decode an owned view from a [`::buffa::bytes::Bytes`] buffer.
+    ///
+    /// The view borrows directly from the buffer's data; the buffer is
+    /// retained inside the returned handle.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`::buffa::DecodeError`] if the buffer contains invalid
+    /// protobuf data.
+    pub fn decode(
+        bytes: ::buffa::bytes::Bytes,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        ::core::result::Result::Ok(
+            CodecJsonLimitsOwnedView(::buffa::OwnedView::decode(bytes)?),
+        )
+    }
+    /// Decode with custom [`::buffa::DecodeOptions`] (recursion limit,
+    /// max message size).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`::buffa::DecodeError`] if the buffer is invalid or
+    /// exceeds the configured limits.
+    pub fn decode_with_options(
+        bytes: ::buffa::bytes::Bytes,
+        opts: &::buffa::DecodeOptions,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        ::core::result::Result::Ok(
+            CodecJsonLimitsOwnedView(
+                ::buffa::OwnedView::decode_with_options(bytes, opts)?,
+            ),
+        )
+    }
+    /// Build from an owned message via an encode → decode round-trip.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`::buffa::DecodeError::MessageTooLarge`] if the
+    /// message's encoded size exceeds the 2 GiB protobuf limit, or
+    /// another [`::buffa::DecodeError`] if the re-encoded bytes are
+    /// somehow invalid (should not happen for well-formed messages).
+    pub fn from_owned(
+        msg: &super::super::CodecJsonLimits,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        ::core::result::Result::Ok(
+            CodecJsonLimitsOwnedView(::buffa::OwnedView::from_owned(msg)?),
+        )
+    }
+    /// Borrow the full [`CodecJsonLimitsView`] with its lifetime tied to `&self`.
+    #[must_use]
+    pub fn view(&self) -> &CodecJsonLimitsView<'_> {
+        self.0.reborrow()
+    }
+    /// Convert to the owned message type.
+    ///
+    /// Infallible: this type's constructors wire-decode their
+    /// buffer, and a view produced by wire decoding always
+    /// converts. Delegates to [`::buffa::OwnedView::to_owned_message`],
+    /// whose contract also governs handles converted from a raw
+    /// [`::buffa::OwnedView`].
+    #[must_use]
+    pub fn to_owned_message(&self) -> super::super::CodecJsonLimits {
+        self.0.to_owned_message()
+    }
+    /// The underlying bytes buffer.
+    #[must_use]
+    pub fn bytes(&self) -> &::buffa::bytes::Bytes {
+        self.0.bytes()
+    }
+    /// Consume the handle, returning the underlying bytes buffer.
+    #[must_use]
+    pub fn into_bytes(self) -> ::buffa::bytes::Bytes {
+        self.0.into_bytes()
+    }
+    /// Field 1: `input_bytes`
+    #[must_use]
+    pub fn input_bytes(&self) -> ::core::option::Option<u64> {
+        self.0.reborrow().input_bytes
+    }
+    /// Field 2: `nesting_depth`
+    #[must_use]
+    pub fn nesting_depth(&self) -> ::core::option::Option<u64> {
+        self.0.reborrow().nesting_depth
+    }
+    /// Field 3: `container_entries`
+    #[must_use]
+    pub fn container_entries(&self) -> ::core::option::Option<u64> {
+        self.0.reborrow().container_entries
+    }
+    /// Field 4: `nodes`
+    #[must_use]
+    pub fn nodes(&self) -> ::core::option::Option<u64> {
+        self.0.reborrow().nodes
+    }
+    /// Field 5: `string_bytes`
+    #[must_use]
+    pub fn string_bytes(&self) -> ::core::option::Option<u64> {
+        self.0.reborrow().string_bytes
+    }
+    /// Field 6: `total_string_bytes`
+    #[must_use]
+    pub fn total_string_bytes(&self) -> ::core::option::Option<u64> {
+        self.0.reborrow().total_string_bytes
+    }
+    /// Field 7: `work_bytes`
+    #[must_use]
+    pub fn work_bytes(&self) -> ::core::option::Option<u64> {
+        self.0.reborrow().work_bytes
+    }
+}
+impl ::core::convert::From<::buffa::OwnedView<CodecJsonLimitsView<'static>>>
+for CodecJsonLimitsOwnedView {
+    fn from(inner: ::buffa::OwnedView<CodecJsonLimitsView<'static>>) -> Self {
+        CodecJsonLimitsOwnedView(inner)
+    }
+}
+impl ::core::convert::From<CodecJsonLimitsOwnedView>
+for ::buffa::OwnedView<CodecJsonLimitsView<'static>> {
+    fn from(wrapper: CodecJsonLimitsOwnedView) -> Self {
+        wrapper.0
+    }
+}
+impl ::core::convert::AsRef<::buffa::OwnedView<CodecJsonLimitsView<'static>>>
+for CodecJsonLimitsOwnedView {
+    fn as_ref(&self) -> &::buffa::OwnedView<CodecJsonLimitsView<'static>> {
+        &self.0
+    }
+}
+impl ::buffa::HasMessageView for super::super::CodecJsonLimits {
+    type View<'a> = CodecJsonLimitsView<'a>;
+    type ViewHandle = CodecJsonLimitsOwnedView;
+}
+impl ::serde::Serialize for CodecJsonLimitsOwnedView {
+    fn serialize<__S: ::serde::Serializer>(
+        &self,
+        __s: __S,
+    ) -> ::core::result::Result<__S::Ok, __S::Error> {
+        ::serde::Serialize::serialize(&self.0, __s)
+    }
+}
+#[derive(Clone, Default)]
+pub struct CodecJsonDecodeRequestView<'a> {
+    /// SENSITIVE: raw JSON may contain personal data and credentials.
+    ///
+    /// Field 1: `encoded`
+    pub encoded: &'a [u8],
+    /// Field 2: `limits`
+    pub limits: ::buffa::MessageFieldView<
+        super::super::__buffa::view::CodecJsonLimitsView<'a>,
+    >,
+}
+impl<'a> ::core::fmt::Debug for CodecJsonDecodeRequestView<'a> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("CodecJsonDecodeRequestView")
+            .field("encoded", &::core::format_args!("[REDACTED]"))
+            .field("limits", &::core::format_args!("[REDACTED]"))
+            .finish()
+    }
+}
+impl<'a> ::buffa::sensitive::Zeroize for CodecJsonDecodeRequestView<'a> {
+    fn zeroize(&mut self) {
+        fn __requires_view_wipe_owner<
+            T: ::buffa::sensitive::Zeroize + ::buffa::sensitive::ZeroizeOnDrop,
+        >() {}
+        __requires_view_wipe_owner::<
+            super::super::__buffa::view::CodecJsonLimitsView<'a>,
+        >();
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.limits);
+    }
+}
+impl<'a> ::buffa::sensitive::ZeroizeOnDrop for CodecJsonDecodeRequestView<'a> {}
+impl<'a> ::core::ops::Drop for CodecJsonDecodeRequestView<'a> {
+    fn drop(&mut self) {
+        ::buffa::sensitive::Zeroize::zeroize(self);
+    }
+}
+impl<'a> ::buffa::MessageView<'a> for CodecJsonDecodeRequestView<'a> {
+    type Owned = super::super::CodecJsonDecodeRequest;
+    fn decode_view(buf: &'a [u8]) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        let __limit = ::core::cell::Cell::new(::buffa::DEFAULT_UNKNOWN_FIELD_LIMIT);
+        let __elem = ::core::cell::Cell::new(::buffa::DEFAULT_ELEMENT_MEMORY_LIMIT);
+        <Self as ::buffa::MessageView>::decode_view_ctx(
+            buf,
+            ::buffa::DecodeContext::new(::buffa::RECURSION_LIMIT, &__limit)
+                .with_element_memory(&__elem),
+        )
+    }
+    fn decode_view_with_ctx(
+        buf: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        <Self as ::buffa::MessageView>::decode_view_ctx(buf, ctx)
+    }
+    #[inline]
+    fn merge_view_field(
+        &mut self,
+        tag: ::buffa::encoding::Tag,
+        cur: &'a [u8],
+        _before_tag: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<&'a [u8], ::buffa::DecodeError> {
+        let _ = ctx;
+        #[allow(unused_variables)]
+        let view = self;
+        let mut cur = cur;
+        match tag.field_number() {
+            1u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                view.encoded = ::buffa::types::borrow_bytes(&mut cur)?;
+            }
+            2u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                let __sub_ctx = ctx.descend()?;
+                let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                match view.limits.as_mut() {
+                    Some(existing) => {
+                        ::buffa::MessageView::merge_into_view(existing, sub, __sub_ctx)?
+                    }
+                    None => {
+                        view.limits = ::buffa::MessageFieldView::set(
+                            <super::super::__buffa::view::CodecJsonLimitsView as ::buffa::MessageView>::decode_view_ctx(
+                                sub,
+                                __sub_ctx,
+                            )?,
+                        );
+                    }
+                }
+            }
+            _ => {
+                ::buffa::encoding::skip_unknown_field(tag, &mut cur, ctx)?;
+            }
+        }
+        ::core::result::Result::Ok(cur)
+    }
+    fn to_owned_message(
+        &self,
+    ) -> ::core::result::Result<
+        super::super::CodecJsonDecodeRequest,
+        ::buffa::DecodeError,
+    > {
+        self.to_owned_from_source(None)
+    }
+    #[allow(
+        clippy::useless_conversion,
+        clippy::needless_update,
+        clippy::field_reassign_with_default
+    )]
+    fn to_owned_from_source(
+        &self,
+        __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
+    ) -> ::core::result::Result<
+        super::super::CodecJsonDecodeRequest,
+        ::buffa::DecodeError,
+    > {
+        #[allow(unused_imports)]
+        use ::buffa::alloc::string::ToString as _;
+        let _ = __buffa_src;
+        let mut __owned = <super::super::CodecJsonDecodeRequest as ::core::default::Default>::default();
+        __owned.encoded = ::core::convert::Into::into((self.encoded).to_vec());
+        __owned.limits = match self.limits.as_option() {
+            Some(v) => {
+                ::buffa::MessageField::<
+                    super::super::CodecJsonLimits,
+                    ::buffa::Inline<super::super::CodecJsonLimits>,
+                >::some(v.to_owned_from_source(__buffa_src)?)
+            }
+            None => ::buffa::MessageField::none(),
+        };
+        ::core::result::Result::Ok(__owned)
+    }
+}
+impl<'a> ::buffa::ViewEncode<'a> for CodecJsonDecodeRequestView<'a> {
+    #[allow(clippy::needless_borrow, clippy::let_and_return)]
+    fn compute_size(&self, __cache: &mut ::buffa::SizeCache) -> u32 {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        let mut size = 0u64;
+        if !self.encoded.is_empty() {
+            size += 1u64 + ::buffa::types::bytes_encoded_len(&self.encoded) as u64;
+        }
+        if let ::core::option::Option::Some(__v) = self.limits.as_option() {
+            let __slot = __cache.reserve();
+            let inner_size = __v.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 1u64 + ::buffa::encoding::varint_len(inner_size as u64) as u64
+                    + inner_size as u64;
+        }
+        ::buffa::saturate_size(size)
+    }
+    #[allow(clippy::needless_borrow)]
+    fn write_to(
+        &self,
+        __cache: &mut ::buffa::SizeCache,
+        buf: &mut impl ::buffa::EncodeSink,
+    ) {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        if !self.encoded.is_empty() {
+            ::buffa::types::put_shared_bytes_field(1u32, &self.encoded, buf);
+        }
+        if let ::core::option::Option::Some(__v) = self.limits.as_option() {
+            ::buffa::types::put_len_delimited_header(
+                2u32,
+                u64::from(__cache.consume_next()),
+                buf,
+            );
+            __v.write_to(__cache, buf);
+        }
+    }
+}
+/// Serializes this view as protobuf JSON.
+///
+/// Implicit-presence fields with default values are omitted, `required`
+/// fields are always emitted, explicit-presence (`optional`) fields are
+/// emitted only when set, bytes fields are base64-encoded, and enum
+/// values are their proto name strings.
+///
+/// This impl uses `serialize_map(None)` because the number of emitted
+/// fields depends on default-omission rules; serializers that require
+/// known map lengths (e.g. `bincode`) will return a runtime error.
+/// Use the owned message type for those formats.
+impl<'__a> ::serde::Serialize for CodecJsonDecodeRequestView<'__a> {
+    fn serialize<__S: ::serde::Serializer>(
+        &self,
+        __s: __S,
+    ) -> ::core::result::Result<__S::Ok, __S::Error> {
+        use ::serde::ser::SerializeMap as _;
+        let mut __map = __s.serialize_map(::core::option::Option::None)?;
+        if !::buffa::json_helpers::skip_if::is_empty_bytes(self.encoded) {
+            __map
+                .serialize_entry(
+                    "encoded",
+                    &::buffa::json_helpers::BytesPolicyJson::<
+                        crate::guarded::SecretBytes,
+                    >::new(self.encoded),
+                )?;
+        }
+        {
+            if let ::core::option::Option::Some(__v) = self.limits.as_option() {
+                __map.serialize_entry("limits", __v)?;
+            }
+        }
+        __map.end()
+    }
+}
+impl<'a> ::buffa::MessageName for CodecJsonDecodeRequestView<'a> {
+    const PACKAGE: &'static str = "reallyme.codec.v1";
+    const NAME: &'static str = "CodecJsonDecodeRequest";
+    const FULL_NAME: &'static str = "reallyme.codec.v1.CodecJsonDecodeRequest";
+    const TYPE_URL: &'static str = "type.googleapis.com/reallyme.codec.v1.CodecJsonDecodeRequest";
+}
+::buffa::impl_default_view_instance!(CodecJsonDecodeRequestView);
+::buffa::impl_view_reborrow!(CodecJsonDecodeRequestView);
+::buffa::unsafe_impl_view_lifetime_parametric!(CodecJsonDecodeRequestView);
+#[derive(Clone, Default)]
+pub struct CodecJsonNullView<'a> {
+    #[doc(hidden)]
+    pub __buffa_phantom: ::core::marker::PhantomData<&'a ()>,
+}
+impl<'a> ::core::fmt::Debug for CodecJsonNullView<'a> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("CodecJsonNullView").finish()
+    }
+}
+impl<'a> ::buffa::sensitive::Zeroize for CodecJsonNullView<'a> {
+    fn zeroize(&mut self) {}
+}
+impl<'a> ::buffa::sensitive::ZeroizeOnDrop for CodecJsonNullView<'a> {}
+impl<'a> ::core::ops::Drop for CodecJsonNullView<'a> {
+    fn drop(&mut self) {
+        ::buffa::sensitive::Zeroize::zeroize(self);
+    }
+}
+impl<'a> ::buffa::MessageView<'a> for CodecJsonNullView<'a> {
+    type Owned = super::super::CodecJsonNull;
+    fn decode_view(buf: &'a [u8]) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        let __limit = ::core::cell::Cell::new(::buffa::DEFAULT_UNKNOWN_FIELD_LIMIT);
+        let __elem = ::core::cell::Cell::new(::buffa::DEFAULT_ELEMENT_MEMORY_LIMIT);
+        <Self as ::buffa::MessageView>::decode_view_ctx(
+            buf,
+            ::buffa::DecodeContext::new(::buffa::RECURSION_LIMIT, &__limit)
+                .with_element_memory(&__elem),
+        )
+    }
+    fn decode_view_with_ctx(
+        buf: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        <Self as ::buffa::MessageView>::decode_view_ctx(buf, ctx)
+    }
+    #[inline]
+    fn merge_view_field(
+        &mut self,
+        tag: ::buffa::encoding::Tag,
+        cur: &'a [u8],
+        _before_tag: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<&'a [u8], ::buffa::DecodeError> {
+        let _ = ctx;
+        #[allow(unused_variables)]
+        let view = self;
+        let mut cur = cur;
+        match tag.field_number() {
+            _ => {
+                ::buffa::encoding::skip_unknown_field(tag, &mut cur, ctx)?;
+            }
+        }
+        ::core::result::Result::Ok(cur)
+    }
+    fn to_owned_message(
+        &self,
+    ) -> ::core::result::Result<super::super::CodecJsonNull, ::buffa::DecodeError> {
+        self.to_owned_from_source(None)
+    }
+    #[allow(
+        clippy::useless_conversion,
+        clippy::needless_update,
+        clippy::field_reassign_with_default
+    )]
+    fn to_owned_from_source(
+        &self,
+        __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
+    ) -> ::core::result::Result<super::super::CodecJsonNull, ::buffa::DecodeError> {
+        #[allow(unused_imports)]
+        use ::buffa::alloc::string::ToString as _;
+        let _ = __buffa_src;
+        let __owned = <super::super::CodecJsonNull as ::core::default::Default>::default();
+        ::core::result::Result::Ok(__owned)
+    }
+}
+impl<'a> ::buffa::ViewEncode<'a> for CodecJsonNullView<'a> {
+    #[allow(clippy::needless_borrow, clippy::let_and_return)]
+    fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        let size = 0u64;
+        ::buffa::saturate_size(size)
+    }
+    #[allow(clippy::needless_borrow)]
+    fn write_to(
+        &self,
+        _cache: &mut ::buffa::SizeCache,
+        _buf: &mut impl ::buffa::EncodeSink,
+    ) {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+    }
+}
+/// Serializes this view as protobuf JSON.
+///
+/// Implicit-presence fields with default values are omitted, `required`
+/// fields are always emitted, explicit-presence (`optional`) fields are
+/// emitted only when set, bytes fields are base64-encoded, and enum
+/// values are their proto name strings.
+///
+/// This impl uses `serialize_map(None)` because the number of emitted
+/// fields depends on default-omission rules; serializers that require
+/// known map lengths (e.g. `bincode`) will return a runtime error.
+/// Use the owned message type for those formats.
+impl<'__a> ::serde::Serialize for CodecJsonNullView<'__a> {
+    fn serialize<__S: ::serde::Serializer>(
+        &self,
+        __s: __S,
+    ) -> ::core::result::Result<__S::Ok, __S::Error> {
+        use ::serde::ser::SerializeMap as _;
+        let mut __map = __s.serialize_map(::core::option::Option::None)?;
+        __map.end()
+    }
+}
+impl<'a> ::buffa::MessageName for CodecJsonNullView<'a> {
+    const PACKAGE: &'static str = "reallyme.codec.v1";
+    const NAME: &'static str = "CodecJsonNull";
+    const FULL_NAME: &'static str = "reallyme.codec.v1.CodecJsonNull";
+    const TYPE_URL: &'static str = "type.googleapis.com/reallyme.codec.v1.CodecJsonNull";
+}
+::buffa::impl_default_view_instance!(CodecJsonNullView);
+::buffa::impl_view_reborrow!(CodecJsonNullView);
+::buffa::unsafe_impl_view_lifetime_parametric!(CodecJsonNullView);
+#[derive(Clone, Default)]
+pub struct CodecJsonArrayView<'a> {
+    /// SENSITIVE: children retain caller-controlled payloads.
+    ///
+    /// Field 1: `values`
+    pub values: ::buffa::sensitive::RepeatedView<
+        'a,
+        super::super::__buffa::view::CodecJsonValueView<'a>,
+    >,
+}
+impl<'a> ::core::fmt::Debug for CodecJsonArrayView<'a> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("CodecJsonArrayView")
+            .field("values", &::core::format_args!("[REDACTED]"))
+            .finish()
+    }
+}
+impl<'a> ::buffa::sensitive::Zeroize for CodecJsonArrayView<'a> {
+    fn zeroize(&mut self) {
+        fn __requires_view_wipe_owner<
+            T: ::buffa::sensitive::Zeroize + ::buffa::sensitive::ZeroizeOnDrop,
+        >() {}
+        __requires_view_wipe_owner::<
+            super::super::__buffa::view::CodecJsonValueView<'a>,
+        >();
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.values);
+    }
+}
+impl<'a> ::buffa::sensitive::ZeroizeOnDrop for CodecJsonArrayView<'a> {}
+impl<'a> ::core::ops::Drop for CodecJsonArrayView<'a> {
+    fn drop(&mut self) {
+        ::buffa::sensitive::Zeroize::zeroize(self);
+    }
+}
+impl<'a> ::buffa::MessageView<'a> for CodecJsonArrayView<'a> {
+    type Owned = super::super::CodecJsonArray;
+    fn decode_view(buf: &'a [u8]) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        let __limit = ::core::cell::Cell::new(::buffa::DEFAULT_UNKNOWN_FIELD_LIMIT);
+        let __elem = ::core::cell::Cell::new(::buffa::DEFAULT_ELEMENT_MEMORY_LIMIT);
+        <Self as ::buffa::MessageView>::decode_view_ctx(
+            buf,
+            ::buffa::DecodeContext::new(::buffa::RECURSION_LIMIT, &__limit)
+                .with_element_memory(&__elem),
+        )
+    }
+    fn decode_view_with_ctx(
+        buf: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        <Self as ::buffa::MessageView>::decode_view_ctx(buf, ctx)
+    }
+    #[inline]
+    fn merge_view_field(
+        &mut self,
+        tag: ::buffa::encoding::Tag,
+        cur: &'a [u8],
+        _before_tag: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<&'a [u8], ::buffa::DecodeError> {
+        let _ = ctx;
+        #[allow(unused_variables)]
+        let view = self;
+        let mut cur = cur;
+        match tag.field_number() {
+            1u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                let __sub_ctx = ctx.descend()?;
+                let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                ctx.register_element_memory(
+                    ::core::mem::size_of::<
+                        super::super::__buffa::view::CodecJsonValueView,
+                    >(),
+                )?;
+                view.values
+                    .push(
+                        <super::super::__buffa::view::CodecJsonValueView as ::buffa::MessageView>::decode_view_ctx(
+                            sub,
+                            __sub_ctx,
+                        )?,
+                    );
+            }
+            _ => {
+                ::buffa::encoding::skip_unknown_field(tag, &mut cur, ctx)?;
+            }
+        }
+        ::core::result::Result::Ok(cur)
+    }
+    fn to_owned_message(
+        &self,
+    ) -> ::core::result::Result<super::super::CodecJsonArray, ::buffa::DecodeError> {
+        self.to_owned_from_source(None)
+    }
+    #[allow(
+        clippy::useless_conversion,
+        clippy::needless_update,
+        clippy::field_reassign_with_default
+    )]
+    fn to_owned_from_source(
+        &self,
+        __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
+    ) -> ::core::result::Result<super::super::CodecJsonArray, ::buffa::DecodeError> {
+        #[allow(unused_imports)]
+        use ::buffa::alloc::string::ToString as _;
+        let _ = __buffa_src;
+        let mut __owned = <super::super::CodecJsonArray as ::core::default::Default>::default();
+        __owned.values = self
+            .values
+            .iter()
+            .map(|v| v.to_owned_from_source(__buffa_src))
+            .collect::<::core::result::Result<_, ::buffa::DecodeError>>()?;
+        ::core::result::Result::Ok(__owned)
+    }
+}
+impl<'a> ::buffa::ViewEncode<'a> for CodecJsonArrayView<'a> {
+    #[allow(clippy::needless_borrow, clippy::let_and_return)]
+    fn compute_size(&self, __cache: &mut ::buffa::SizeCache) -> u32 {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        let mut size = 0u64;
+        for v in &self.values {
+            let __slot = __cache.reserve();
+            let inner_size = v.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 1u64 + ::buffa::encoding::varint_len(inner_size as u64) as u64
+                    + inner_size as u64;
+        }
+        ::buffa::saturate_size(size)
+    }
+    #[allow(clippy::needless_borrow)]
+    fn write_to(
+        &self,
+        __cache: &mut ::buffa::SizeCache,
+        buf: &mut impl ::buffa::EncodeSink,
+    ) {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        for v in &self.values {
+            ::buffa::types::put_len_delimited_header(
+                1u32,
+                u64::from(__cache.consume_next()),
+                buf,
+            );
+            v.write_to(__cache, buf);
+        }
+    }
+}
+/// Serializes this view as protobuf JSON.
+///
+/// Implicit-presence fields with default values are omitted, `required`
+/// fields are always emitted, explicit-presence (`optional`) fields are
+/// emitted only when set, bytes fields are base64-encoded, and enum
+/// values are their proto name strings.
+///
+/// This impl uses `serialize_map(None)` because the number of emitted
+/// fields depends on default-omission rules; serializers that require
+/// known map lengths (e.g. `bincode`) will return a runtime error.
+/// Use the owned message type for those formats.
+impl<'__a> ::serde::Serialize for CodecJsonArrayView<'__a> {
+    fn serialize<__S: ::serde::Serializer>(
+        &self,
+        __s: __S,
+    ) -> ::core::result::Result<__S::Ok, __S::Error> {
+        use ::serde::ser::SerializeMap as _;
+        let mut __map = __s.serialize_map(::core::option::Option::None)?;
+        if !self.values.is_empty() {
+            __map.serialize_entry("values", &*self.values)?;
+        }
+        __map.end()
+    }
+}
+impl<'a> ::buffa::MessageName for CodecJsonArrayView<'a> {
+    const PACKAGE: &'static str = "reallyme.codec.v1";
+    const NAME: &'static str = "CodecJsonArray";
+    const FULL_NAME: &'static str = "reallyme.codec.v1.CodecJsonArray";
+    const TYPE_URL: &'static str = "type.googleapis.com/reallyme.codec.v1.CodecJsonArray";
+}
+::buffa::impl_default_view_instance!(CodecJsonArrayView);
+::buffa::impl_view_reborrow!(CodecJsonArrayView);
+::buffa::unsafe_impl_view_lifetime_parametric!(CodecJsonArrayView);
+#[derive(Clone, Default)]
+pub struct CodecJsonMemberView<'a> {
+    /// SENSITIVE: decoded member names can contain personal data.
+    ///
+    /// Field 1: `name`
+    pub name: &'a str,
+    /// SENSITIVE: a member retains caller-controlled payloads.
+    ///
+    /// Field 2: `value`
+    pub value: ::buffa::MessageFieldView<
+        super::super::__buffa::view::CodecJsonValueView<'a>,
+    >,
+}
+impl<'a> ::core::fmt::Debug for CodecJsonMemberView<'a> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("CodecJsonMemberView")
+            .field("name", &::core::format_args!("[REDACTED]"))
+            .field("value", &::core::format_args!("[REDACTED]"))
+            .finish()
+    }
+}
+impl<'a> ::buffa::sensitive::Zeroize for CodecJsonMemberView<'a> {
+    fn zeroize(&mut self) {
+        fn __requires_view_wipe_owner<
+            T: ::buffa::sensitive::Zeroize + ::buffa::sensitive::ZeroizeOnDrop,
+        >() {}
+        __requires_view_wipe_owner::<
+            super::super::__buffa::view::CodecJsonValueView<'a>,
+        >();
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.value);
+    }
+}
+impl<'a> ::buffa::sensitive::ZeroizeOnDrop for CodecJsonMemberView<'a> {}
+impl<'a> ::core::ops::Drop for CodecJsonMemberView<'a> {
+    fn drop(&mut self) {
+        ::buffa::sensitive::Zeroize::zeroize(self);
+    }
+}
+impl<'a> ::buffa::MessageView<'a> for CodecJsonMemberView<'a> {
+    type Owned = super::super::CodecJsonMember;
+    fn decode_view(buf: &'a [u8]) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        let __limit = ::core::cell::Cell::new(::buffa::DEFAULT_UNKNOWN_FIELD_LIMIT);
+        let __elem = ::core::cell::Cell::new(::buffa::DEFAULT_ELEMENT_MEMORY_LIMIT);
+        <Self as ::buffa::MessageView>::decode_view_ctx(
+            buf,
+            ::buffa::DecodeContext::new(::buffa::RECURSION_LIMIT, &__limit)
+                .with_element_memory(&__elem),
+        )
+    }
+    fn decode_view_with_ctx(
+        buf: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        <Self as ::buffa::MessageView>::decode_view_ctx(buf, ctx)
+    }
+    #[inline]
+    fn merge_view_field(
+        &mut self,
+        tag: ::buffa::encoding::Tag,
+        cur: &'a [u8],
+        _before_tag: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<&'a [u8], ::buffa::DecodeError> {
+        let _ = ctx;
+        #[allow(unused_variables)]
+        let view = self;
+        let mut cur = cur;
+        match tag.field_number() {
+            1u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                view.name = ::buffa::types::borrow_str(&mut cur)?;
+            }
+            2u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                let __sub_ctx = ctx.descend()?;
+                let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                match view.value.as_mut() {
+                    Some(existing) => {
+                        ::buffa::MessageView::merge_into_view(existing, sub, __sub_ctx)?
+                    }
+                    None => {
+                        view.value = ::buffa::MessageFieldView::set(
+                            <super::super::__buffa::view::CodecJsonValueView as ::buffa::MessageView>::decode_view_ctx(
+                                sub,
+                                __sub_ctx,
+                            )?,
+                        );
+                    }
+                }
+            }
+            _ => {
+                ::buffa::encoding::skip_unknown_field(tag, &mut cur, ctx)?;
+            }
+        }
+        ::core::result::Result::Ok(cur)
+    }
+    fn to_owned_message(
+        &self,
+    ) -> ::core::result::Result<super::super::CodecJsonMember, ::buffa::DecodeError> {
+        self.to_owned_from_source(None)
+    }
+    #[allow(
+        clippy::useless_conversion,
+        clippy::needless_update,
+        clippy::field_reassign_with_default
+    )]
+    fn to_owned_from_source(
+        &self,
+        __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
+    ) -> ::core::result::Result<super::super::CodecJsonMember, ::buffa::DecodeError> {
+        #[allow(unused_imports)]
+        use ::buffa::alloc::string::ToString as _;
+        let _ = __buffa_src;
+        let mut __owned = <super::super::CodecJsonMember as ::core::default::Default>::default();
+        __owned.name = ::buffa::ProtoString::copy_from_str(self.name);
+        __owned.value = match self.value.as_option() {
+            Some(v) => {
+                ::buffa::MessageField::<
+                    super::super::CodecJsonValue,
+                    ::buffa::Inline<super::super::CodecJsonValue>,
+                >::some(v.to_owned_from_source(__buffa_src)?)
+            }
+            None => ::buffa::MessageField::none(),
+        };
+        ::core::result::Result::Ok(__owned)
+    }
+}
+impl<'a> ::buffa::ViewEncode<'a> for CodecJsonMemberView<'a> {
+    #[allow(clippy::needless_borrow, clippy::let_and_return)]
+    fn compute_size(&self, __cache: &mut ::buffa::SizeCache) -> u32 {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        let mut size = 0u64;
+        if !self.name.is_empty() {
+            size += 1u64 + ::buffa::types::string_encoded_len(&self.name) as u64;
+        }
+        if let ::core::option::Option::Some(__v) = self.value.as_option() {
+            let __slot = __cache.reserve();
+            let inner_size = __v.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 1u64 + ::buffa::encoding::varint_len(inner_size as u64) as u64
+                    + inner_size as u64;
+        }
+        ::buffa::saturate_size(size)
+    }
+    #[allow(clippy::needless_borrow)]
+    fn write_to(
+        &self,
+        __cache: &mut ::buffa::SizeCache,
+        buf: &mut impl ::buffa::EncodeSink,
+    ) {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        if !self.name.is_empty() {
+            ::buffa::types::put_string_field(1u32, &self.name, buf);
+        }
+        if let ::core::option::Option::Some(__v) = self.value.as_option() {
+            ::buffa::types::put_len_delimited_header(
+                2u32,
+                u64::from(__cache.consume_next()),
+                buf,
+            );
+            __v.write_to(__cache, buf);
+        }
+    }
+}
+/// Serializes this view as protobuf JSON.
+///
+/// Implicit-presence fields with default values are omitted, `required`
+/// fields are always emitted, explicit-presence (`optional`) fields are
+/// emitted only when set, bytes fields are base64-encoded, and enum
+/// values are their proto name strings.
+///
+/// This impl uses `serialize_map(None)` because the number of emitted
+/// fields depends on default-omission rules; serializers that require
+/// known map lengths (e.g. `bincode`) will return a runtime error.
+/// Use the owned message type for those formats.
+impl<'__a> ::serde::Serialize for CodecJsonMemberView<'__a> {
+    fn serialize<__S: ::serde::Serializer>(
+        &self,
+        __s: __S,
+    ) -> ::core::result::Result<__S::Ok, __S::Error> {
+        use ::serde::ser::SerializeMap as _;
+        let mut __map = __s.serialize_map(::core::option::Option::None)?;
+        if !::buffa::json_helpers::skip_if::is_empty_str(self.name) {
+            __map
+                .serialize_entry(
+                    "name",
+                    &::buffa::json_helpers::StringPolicyJson::<
+                        crate::guarded::SecretString,
+                    >::new(self.name),
+                )?;
+        }
+        {
+            if let ::core::option::Option::Some(__v) = self.value.as_option() {
+                __map.serialize_entry("value", __v)?;
+            }
+        }
+        __map.end()
+    }
+}
+impl<'a> ::buffa::MessageName for CodecJsonMemberView<'a> {
+    const PACKAGE: &'static str = "reallyme.codec.v1";
+    const NAME: &'static str = "CodecJsonMember";
+    const FULL_NAME: &'static str = "reallyme.codec.v1.CodecJsonMember";
+    const TYPE_URL: &'static str = "type.googleapis.com/reallyme.codec.v1.CodecJsonMember";
+}
+::buffa::impl_default_view_instance!(CodecJsonMemberView);
+::buffa::impl_view_reborrow!(CodecJsonMemberView);
+::buffa::unsafe_impl_view_lifetime_parametric!(CodecJsonMemberView);
+#[derive(Clone, Default)]
+pub struct CodecJsonObjectView<'a> {
+    /// SENSITIVE: ordered members retain caller-controlled payloads.
+    ///
+    /// Field 1: `members`
+    pub members: ::buffa::sensitive::RepeatedView<
+        'a,
+        super::super::__buffa::view::CodecJsonMemberView<'a>,
+    >,
+}
+impl<'a> ::core::fmt::Debug for CodecJsonObjectView<'a> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("CodecJsonObjectView")
+            .field("members", &::core::format_args!("[REDACTED]"))
+            .finish()
+    }
+}
+impl<'a> ::buffa::sensitive::Zeroize for CodecJsonObjectView<'a> {
+    fn zeroize(&mut self) {
+        fn __requires_view_wipe_owner<
+            T: ::buffa::sensitive::Zeroize + ::buffa::sensitive::ZeroizeOnDrop,
+        >() {}
+        __requires_view_wipe_owner::<
+            super::super::__buffa::view::CodecJsonMemberView<'a>,
+        >();
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.members);
+    }
+}
+impl<'a> ::buffa::sensitive::ZeroizeOnDrop for CodecJsonObjectView<'a> {}
+impl<'a> ::core::ops::Drop for CodecJsonObjectView<'a> {
+    fn drop(&mut self) {
+        ::buffa::sensitive::Zeroize::zeroize(self);
+    }
+}
+impl<'a> ::buffa::MessageView<'a> for CodecJsonObjectView<'a> {
+    type Owned = super::super::CodecJsonObject;
+    fn decode_view(buf: &'a [u8]) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        let __limit = ::core::cell::Cell::new(::buffa::DEFAULT_UNKNOWN_FIELD_LIMIT);
+        let __elem = ::core::cell::Cell::new(::buffa::DEFAULT_ELEMENT_MEMORY_LIMIT);
+        <Self as ::buffa::MessageView>::decode_view_ctx(
+            buf,
+            ::buffa::DecodeContext::new(::buffa::RECURSION_LIMIT, &__limit)
+                .with_element_memory(&__elem),
+        )
+    }
+    fn decode_view_with_ctx(
+        buf: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        <Self as ::buffa::MessageView>::decode_view_ctx(buf, ctx)
+    }
+    #[inline]
+    fn merge_view_field(
+        &mut self,
+        tag: ::buffa::encoding::Tag,
+        cur: &'a [u8],
+        _before_tag: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<&'a [u8], ::buffa::DecodeError> {
+        let _ = ctx;
+        #[allow(unused_variables)]
+        let view = self;
+        let mut cur = cur;
+        match tag.field_number() {
+            1u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                let __sub_ctx = ctx.descend()?;
+                let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                ctx.register_element_memory(
+                    ::core::mem::size_of::<
+                        super::super::__buffa::view::CodecJsonMemberView,
+                    >(),
+                )?;
+                view.members
+                    .push(
+                        <super::super::__buffa::view::CodecJsonMemberView as ::buffa::MessageView>::decode_view_ctx(
+                            sub,
+                            __sub_ctx,
+                        )?,
+                    );
+            }
+            _ => {
+                ::buffa::encoding::skip_unknown_field(tag, &mut cur, ctx)?;
+            }
+        }
+        ::core::result::Result::Ok(cur)
+    }
+    fn to_owned_message(
+        &self,
+    ) -> ::core::result::Result<super::super::CodecJsonObject, ::buffa::DecodeError> {
+        self.to_owned_from_source(None)
+    }
+    #[allow(
+        clippy::useless_conversion,
+        clippy::needless_update,
+        clippy::field_reassign_with_default
+    )]
+    fn to_owned_from_source(
+        &self,
+        __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
+    ) -> ::core::result::Result<super::super::CodecJsonObject, ::buffa::DecodeError> {
+        #[allow(unused_imports)]
+        use ::buffa::alloc::string::ToString as _;
+        let _ = __buffa_src;
+        let mut __owned = <super::super::CodecJsonObject as ::core::default::Default>::default();
+        __owned.members = self
+            .members
+            .iter()
+            .map(|v| v.to_owned_from_source(__buffa_src))
+            .collect::<::core::result::Result<_, ::buffa::DecodeError>>()?;
+        ::core::result::Result::Ok(__owned)
+    }
+}
+impl<'a> ::buffa::ViewEncode<'a> for CodecJsonObjectView<'a> {
+    #[allow(clippy::needless_borrow, clippy::let_and_return)]
+    fn compute_size(&self, __cache: &mut ::buffa::SizeCache) -> u32 {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        let mut size = 0u64;
+        for v in &self.members {
+            let __slot = __cache.reserve();
+            let inner_size = v.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 1u64 + ::buffa::encoding::varint_len(inner_size as u64) as u64
+                    + inner_size as u64;
+        }
+        ::buffa::saturate_size(size)
+    }
+    #[allow(clippy::needless_borrow)]
+    fn write_to(
+        &self,
+        __cache: &mut ::buffa::SizeCache,
+        buf: &mut impl ::buffa::EncodeSink,
+    ) {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        for v in &self.members {
+            ::buffa::types::put_len_delimited_header(
+                1u32,
+                u64::from(__cache.consume_next()),
+                buf,
+            );
+            v.write_to(__cache, buf);
+        }
+    }
+}
+/// Serializes this view as protobuf JSON.
+///
+/// Implicit-presence fields with default values are omitted, `required`
+/// fields are always emitted, explicit-presence (`optional`) fields are
+/// emitted only when set, bytes fields are base64-encoded, and enum
+/// values are their proto name strings.
+///
+/// This impl uses `serialize_map(None)` because the number of emitted
+/// fields depends on default-omission rules; serializers that require
+/// known map lengths (e.g. `bincode`) will return a runtime error.
+/// Use the owned message type for those formats.
+impl<'__a> ::serde::Serialize for CodecJsonObjectView<'__a> {
+    fn serialize<__S: ::serde::Serializer>(
+        &self,
+        __s: __S,
+    ) -> ::core::result::Result<__S::Ok, __S::Error> {
+        use ::serde::ser::SerializeMap as _;
+        let mut __map = __s.serialize_map(::core::option::Option::None)?;
+        if !self.members.is_empty() {
+            __map.serialize_entry("members", &*self.members)?;
+        }
+        __map.end()
+    }
+}
+impl<'a> ::buffa::MessageName for CodecJsonObjectView<'a> {
+    const PACKAGE: &'static str = "reallyme.codec.v1";
+    const NAME: &'static str = "CodecJsonObject";
+    const FULL_NAME: &'static str = "reallyme.codec.v1.CodecJsonObject";
+    const TYPE_URL: &'static str = "type.googleapis.com/reallyme.codec.v1.CodecJsonObject";
+}
+::buffa::impl_default_view_instance!(CodecJsonObjectView);
+::buffa::impl_view_reborrow!(CodecJsonObjectView);
+::buffa::unsafe_impl_view_lifetime_parametric!(CodecJsonObjectView);
+#[derive(Clone, Default)]
+pub struct CodecJsonValueView<'a> {
+    pub kind: ::core::option::Option<
+        super::super::__buffa::view::oneof::codec_json_value::Kind<'a>,
+    >,
+}
+impl<'a> ::core::fmt::Debug for CodecJsonValueView<'a> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("CodecJsonValueView")
+            .field("kind", &::core::format_args!("[REDACTED]"))
+            .finish()
+    }
+}
+impl<'a> ::buffa::sensitive::Zeroize for CodecJsonValueView<'a> {
+    fn zeroize(&mut self) {
+        fn __requires_view_wipe_owner<
+            T: ::buffa::sensitive::Zeroize + ::buffa::sensitive::ZeroizeOnDrop,
+        >() {}
+        __requires_view_wipe_owner::<
+            super::super::__buffa::view::CodecJsonNullView<'a>,
+        >();
+        __requires_view_wipe_owner::<
+            super::super::__buffa::view::CodecJsonArrayView<'a>,
+        >();
+        __requires_view_wipe_owner::<
+            super::super::__buffa::view::CodecJsonObjectView<'a>,
+        >();
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.kind);
+    }
+}
+impl<'a> ::buffa::sensitive::ZeroizeOnDrop for CodecJsonValueView<'a> {}
+impl<'a> ::core::ops::Drop for CodecJsonValueView<'a> {
+    fn drop(&mut self) {
+        ::buffa::sensitive::Zeroize::zeroize(self);
+    }
+}
+impl<'a> ::buffa::MessageView<'a> for CodecJsonValueView<'a> {
+    type Owned = super::super::CodecJsonValue;
+    fn decode_view(buf: &'a [u8]) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        let __limit = ::core::cell::Cell::new(::buffa::DEFAULT_UNKNOWN_FIELD_LIMIT);
+        let __elem = ::core::cell::Cell::new(::buffa::DEFAULT_ELEMENT_MEMORY_LIMIT);
+        <Self as ::buffa::MessageView>::decode_view_ctx(
+            buf,
+            ::buffa::DecodeContext::new(::buffa::RECURSION_LIMIT, &__limit)
+                .with_element_memory(&__elem),
+        )
+    }
+    fn decode_view_with_ctx(
+        buf: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        <Self as ::buffa::MessageView>::decode_view_ctx(buf, ctx)
+    }
+    #[inline]
+    fn merge_view_field(
+        &mut self,
+        tag: ::buffa::encoding::Tag,
+        cur: &'a [u8],
+        _before_tag: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<&'a [u8], ::buffa::DecodeError> {
+        let _ = ctx;
+        #[allow(unused_variables)]
+        let view = self;
+        let mut cur = cur;
+        match tag.field_number() {
+            1u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                let __sub_ctx = ctx.descend()?;
+                let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                if let Some(
+                    super::super::__buffa::view::oneof::codec_json_value::Kind::NullValue(
+                        ref mut existing,
+                    ),
+                ) = view.kind
+                {
+                    ::buffa::MessageView::merge_into_view(
+                        &mut **existing,
+                        sub,
+                        __sub_ctx,
+                    )?;
+                } else {
+                    view.kind = Some(
+                        super::super::__buffa::view::oneof::codec_json_value::Kind::NullValue(
+                            ::buffa::alloc::boxed::Box::new(
+                                <super::super::__buffa::view::CodecJsonNullView as ::buffa::MessageView>::decode_view_ctx(
+                                    sub,
+                                    __sub_ctx,
+                                )?,
+                            ),
+                        ),
+                    );
+                }
+            }
+            2u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::Varint,
+                )?;
+                view.kind = Some(
+                    super::super::__buffa::view::oneof::codec_json_value::Kind::BoolValue(
+                        ::buffa::types::decode_bool(&mut cur)?,
+                    ),
+                );
+            }
+            3u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                view.kind = Some(
+                    super::super::__buffa::view::oneof::codec_json_value::Kind::NumberText(
+                        ::buffa::types::borrow_str(&mut cur)?,
+                    ),
+                );
+            }
+            4u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                view.kind = Some(
+                    super::super::__buffa::view::oneof::codec_json_value::Kind::StringValue(
+                        ::buffa::types::borrow_str(&mut cur)?,
+                    ),
+                );
+            }
+            5u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                let __sub_ctx = ctx.descend()?;
+                let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                if let Some(
+                    super::super::__buffa::view::oneof::codec_json_value::Kind::ArrayValue(
+                        ref mut existing,
+                    ),
+                ) = view.kind
+                {
+                    ::buffa::MessageView::merge_into_view(
+                        &mut **existing,
+                        sub,
+                        __sub_ctx,
+                    )?;
+                } else {
+                    view.kind = Some(
+                        super::super::__buffa::view::oneof::codec_json_value::Kind::ArrayValue(
+                            ::buffa::alloc::boxed::Box::new(
+                                <super::super::__buffa::view::CodecJsonArrayView as ::buffa::MessageView>::decode_view_ctx(
+                                    sub,
+                                    __sub_ctx,
+                                )?,
+                            ),
+                        ),
+                    );
+                }
+            }
+            6u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                let __sub_ctx = ctx.descend()?;
+                let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                if let Some(
+                    super::super::__buffa::view::oneof::codec_json_value::Kind::ObjectValue(
+                        ref mut existing,
+                    ),
+                ) = view.kind
+                {
+                    ::buffa::MessageView::merge_into_view(
+                        &mut **existing,
+                        sub,
+                        __sub_ctx,
+                    )?;
+                } else {
+                    view.kind = Some(
+                        super::super::__buffa::view::oneof::codec_json_value::Kind::ObjectValue(
+                            ::buffa::alloc::boxed::Box::new(
+                                <super::super::__buffa::view::CodecJsonObjectView as ::buffa::MessageView>::decode_view_ctx(
+                                    sub,
+                                    __sub_ctx,
+                                )?,
+                            ),
+                        ),
+                    );
+                }
+            }
+            _ => {
+                ::buffa::encoding::skip_unknown_field(tag, &mut cur, ctx)?;
+            }
+        }
+        ::core::result::Result::Ok(cur)
+    }
+    fn to_owned_message(
+        &self,
+    ) -> ::core::result::Result<super::super::CodecJsonValue, ::buffa::DecodeError> {
+        self.to_owned_from_source(None)
+    }
+    #[allow(
+        clippy::useless_conversion,
+        clippy::needless_update,
+        clippy::field_reassign_with_default
+    )]
+    fn to_owned_from_source(
+        &self,
+        __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
+    ) -> ::core::result::Result<super::super::CodecJsonValue, ::buffa::DecodeError> {
+        #[allow(unused_imports)]
+        use ::buffa::alloc::string::ToString as _;
+        let _ = __buffa_src;
+        let mut __owned = <super::super::CodecJsonValue as ::core::default::Default>::default();
+        __owned.kind = match self.kind.as_ref() {
+            ::core::option::Option::Some(v) => {
+                ::core::option::Option::Some(
+                    match v {
+                        super::super::__buffa::view::oneof::codec_json_value::Kind::NullValue(
+                            v,
+                        ) => {
+                            super::super::__buffa::oneof::codec_json_value::Kind::NullValue(
+                                ::buffa::alloc::boxed::Box::new(
+                                    v.to_owned_from_source(__buffa_src)?,
+                                ),
+                            )
+                        }
+                        super::super::__buffa::view::oneof::codec_json_value::Kind::BoolValue(
+                            v,
+                        ) => {
+                            super::super::__buffa::oneof::codec_json_value::Kind::BoolValue(
+                                *v,
+                            )
+                        }
+                        super::super::__buffa::view::oneof::codec_json_value::Kind::NumberText(
+                            v,
+                        ) => {
+                            super::super::__buffa::oneof::codec_json_value::Kind::NumberText(
+                                ::buffa::ProtoString::copy_from_str(v),
+                            )
+                        }
+                        super::super::__buffa::view::oneof::codec_json_value::Kind::StringValue(
+                            v,
+                        ) => {
+                            super::super::__buffa::oneof::codec_json_value::Kind::StringValue(
+                                ::buffa::ProtoString::copy_from_str(v),
+                            )
+                        }
+                        super::super::__buffa::view::oneof::codec_json_value::Kind::ArrayValue(
+                            v,
+                        ) => {
+                            super::super::__buffa::oneof::codec_json_value::Kind::ArrayValue(
+                                ::buffa::alloc::boxed::Box::new(
+                                    v.to_owned_from_source(__buffa_src)?,
+                                ),
+                            )
+                        }
+                        super::super::__buffa::view::oneof::codec_json_value::Kind::ObjectValue(
+                            v,
+                        ) => {
+                            super::super::__buffa::oneof::codec_json_value::Kind::ObjectValue(
+                                ::buffa::alloc::boxed::Box::new(
+                                    v.to_owned_from_source(__buffa_src)?,
+                                ),
+                            )
+                        }
+                    },
+                )
+            }
+            ::core::option::Option::None => ::core::option::Option::None,
+        };
+        ::core::result::Result::Ok(__owned)
+    }
+}
+impl<'a> ::buffa::ViewEncode<'a> for CodecJsonValueView<'a> {
+    #[allow(clippy::needless_borrow, clippy::let_and_return)]
+    fn compute_size(&self, __cache: &mut ::buffa::SizeCache) -> u32 {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        let mut size = 0u64;
+        if let ::core::option::Option::Some(ref v) = self.kind {
+            match v {
+                super::super::__buffa::view::oneof::codec_json_value::Kind::NullValue(
+                    x,
+                ) => {
+                    let __slot = __cache.reserve();
+                    let inner = x.compute_size(__cache);
+                    __cache.set(__slot, inner);
+                    size
+                        += 1u64 + ::buffa::encoding::varint_len(inner as u64) as u64
+                            + inner as u64;
+                }
+                super::super::__buffa::view::oneof::codec_json_value::Kind::BoolValue(
+                    _x,
+                ) => {
+                    size += 1u64 + ::buffa::types::BOOL_ENCODED_LEN as u64;
+                }
+                super::super::__buffa::view::oneof::codec_json_value::Kind::NumberText(
+                    x,
+                ) => {
+                    size += 1u64 + ::buffa::types::string_encoded_len(x) as u64;
+                }
+                super::super::__buffa::view::oneof::codec_json_value::Kind::StringValue(
+                    x,
+                ) => {
+                    size += 1u64 + ::buffa::types::string_encoded_len(x) as u64;
+                }
+                super::super::__buffa::view::oneof::codec_json_value::Kind::ArrayValue(
+                    x,
+                ) => {
+                    let __slot = __cache.reserve();
+                    let inner = x.compute_size(__cache);
+                    __cache.set(__slot, inner);
+                    size
+                        += 1u64 + ::buffa::encoding::varint_len(inner as u64) as u64
+                            + inner as u64;
+                }
+                super::super::__buffa::view::oneof::codec_json_value::Kind::ObjectValue(
+                    x,
+                ) => {
+                    let __slot = __cache.reserve();
+                    let inner = x.compute_size(__cache);
+                    __cache.set(__slot, inner);
+                    size
+                        += 1u64 + ::buffa::encoding::varint_len(inner as u64) as u64
+                            + inner as u64;
+                }
+            }
+        }
+        ::buffa::saturate_size(size)
+    }
+    #[allow(clippy::needless_borrow)]
+    fn write_to(
+        &self,
+        __cache: &mut ::buffa::SizeCache,
+        buf: &mut impl ::buffa::EncodeSink,
+    ) {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        if let ::core::option::Option::Some(ref v) = self.kind {
+            match v {
+                super::super::__buffa::view::oneof::codec_json_value::Kind::NullValue(
+                    x,
+                ) => {
+                    ::buffa::types::put_len_delimited_header(
+                        1u32,
+                        u64::from(__cache.consume_next()),
+                        buf,
+                    );
+                    x.write_to(__cache, buf);
+                }
+                super::super::__buffa::view::oneof::codec_json_value::Kind::BoolValue(
+                    x,
+                ) => {
+                    ::buffa::types::put_bool_field(2u32, *x, buf);
+                }
+                super::super::__buffa::view::oneof::codec_json_value::Kind::NumberText(
+                    x,
+                ) => {
+                    ::buffa::types::put_string_field(3u32, x, buf);
+                }
+                super::super::__buffa::view::oneof::codec_json_value::Kind::StringValue(
+                    x,
+                ) => {
+                    ::buffa::types::put_string_field(4u32, x, buf);
+                }
+                super::super::__buffa::view::oneof::codec_json_value::Kind::ArrayValue(
+                    x,
+                ) => {
+                    ::buffa::types::put_len_delimited_header(
+                        5u32,
+                        u64::from(__cache.consume_next()),
+                        buf,
+                    );
+                    x.write_to(__cache, buf);
+                }
+                super::super::__buffa::view::oneof::codec_json_value::Kind::ObjectValue(
+                    x,
+                ) => {
+                    ::buffa::types::put_len_delimited_header(
+                        6u32,
+                        u64::from(__cache.consume_next()),
+                        buf,
+                    );
+                    x.write_to(__cache, buf);
+                }
+            }
+        }
+    }
+}
+/// Serializes this view as protobuf JSON.
+///
+/// Implicit-presence fields with default values are omitted, `required`
+/// fields are always emitted, explicit-presence (`optional`) fields are
+/// emitted only when set, bytes fields are base64-encoded, and enum
+/// values are their proto name strings.
+///
+/// This impl uses `serialize_map(None)` because the number of emitted
+/// fields depends on default-omission rules; serializers that require
+/// known map lengths (e.g. `bincode`) will return a runtime error.
+/// Use the owned message type for those formats.
+impl<'__a> ::serde::Serialize for CodecJsonValueView<'__a> {
+    fn serialize<__S: ::serde::Serializer>(
+        &self,
+        __s: __S,
+    ) -> ::core::result::Result<__S::Ok, __S::Error> {
+        use ::serde::ser::SerializeMap as _;
+        let mut __map = __s.serialize_map(::core::option::Option::None)?;
+        if let ::core::option::Option::Some(ref __ov) = self.kind {
+            match __ov {
+                super::super::__buffa::view::oneof::codec_json_value::Kind::NullValue(
+                    v,
+                ) => {
+                    __map.serialize_entry("nullValue", v)?;
+                }
+                super::super::__buffa::view::oneof::codec_json_value::Kind::BoolValue(
+                    v,
+                ) => {
+                    __map.serialize_entry("boolValue", v)?;
+                }
+                super::super::__buffa::view::oneof::codec_json_value::Kind::NumberText(
+                    v,
+                ) => {
+                    __map
+                        .serialize_entry(
+                            "numberText",
+                            &::buffa::json_helpers::StringPolicyJson::<
+                                crate::guarded::SecretString,
+                            >::new(v),
+                        )?;
+                }
+                super::super::__buffa::view::oneof::codec_json_value::Kind::StringValue(
+                    v,
+                ) => {
+                    __map
+                        .serialize_entry(
+                            "stringValue",
+                            &::buffa::json_helpers::StringPolicyJson::<
+                                crate::guarded::SecretString,
+                            >::new(v),
+                        )?;
+                }
+                super::super::__buffa::view::oneof::codec_json_value::Kind::ArrayValue(
+                    v,
+                ) => {
+                    __map.serialize_entry("arrayValue", v)?;
+                }
+                super::super::__buffa::view::oneof::codec_json_value::Kind::ObjectValue(
+                    v,
+                ) => {
+                    __map.serialize_entry("objectValue", v)?;
+                }
+            }
+        }
+        __map.end()
+    }
+}
+impl<'a> ::buffa::MessageName for CodecJsonValueView<'a> {
+    const PACKAGE: &'static str = "reallyme.codec.v1";
+    const NAME: &'static str = "CodecJsonValue";
+    const FULL_NAME: &'static str = "reallyme.codec.v1.CodecJsonValue";
+    const TYPE_URL: &'static str = "type.googleapis.com/reallyme.codec.v1.CodecJsonValue";
+}
+::buffa::impl_default_view_instance!(CodecJsonValueView);
+::buffa::impl_view_reborrow!(CodecJsonValueView);
+::buffa::unsafe_impl_view_lifetime_parametric!(CodecJsonValueView);
+#[derive(Clone, Default)]
+pub struct CodecJsonDecodeResultView<'a> {
+    /// SENSITIVE: complete decoded document with recursive cleanup ownership.
+    ///
+    /// Field 1: `value`
+    pub value: ::buffa::MessageFieldView<
+        super::super::__buffa::view::CodecJsonValueView<'a>,
+    >,
+    #[doc(hidden)]
+    pub __buffa_phantom: ::core::marker::PhantomData<&'a ()>,
+}
+impl<'a> ::core::fmt::Debug for CodecJsonDecodeResultView<'a> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("CodecJsonDecodeResultView")
+            .field("value", &::core::format_args!("[REDACTED]"))
+            .finish()
+    }
+}
+impl<'a> ::buffa::sensitive::Zeroize for CodecJsonDecodeResultView<'a> {
+    fn zeroize(&mut self) {
+        fn __requires_view_wipe_owner<
+            T: ::buffa::sensitive::Zeroize + ::buffa::sensitive::ZeroizeOnDrop,
+        >() {}
+        __requires_view_wipe_owner::<
+            super::super::__buffa::view::CodecJsonValueView<'a>,
+        >();
+        ::buffa::sensitive::Zeroize::zeroize(&mut self.value);
+    }
+}
+impl<'a> ::buffa::sensitive::ZeroizeOnDrop for CodecJsonDecodeResultView<'a> {}
+impl<'a> ::core::ops::Drop for CodecJsonDecodeResultView<'a> {
+    fn drop(&mut self) {
+        ::buffa::sensitive::Zeroize::zeroize(self);
+    }
+}
+impl<'a> ::buffa::MessageView<'a> for CodecJsonDecodeResultView<'a> {
+    type Owned = super::super::CodecJsonDecodeResult;
+    fn decode_view(buf: &'a [u8]) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        let __limit = ::core::cell::Cell::new(::buffa::DEFAULT_UNKNOWN_FIELD_LIMIT);
+        let __elem = ::core::cell::Cell::new(::buffa::DEFAULT_ELEMENT_MEMORY_LIMIT);
+        <Self as ::buffa::MessageView>::decode_view_ctx(
+            buf,
+            ::buffa::DecodeContext::new(::buffa::RECURSION_LIMIT, &__limit)
+                .with_element_memory(&__elem),
+        )
+    }
+    fn decode_view_with_ctx(
+        buf: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+        <Self as ::buffa::MessageView>::decode_view_ctx(buf, ctx)
+    }
+    #[inline]
+    fn merge_view_field(
+        &mut self,
+        tag: ::buffa::encoding::Tag,
+        cur: &'a [u8],
+        _before_tag: &'a [u8],
+        ctx: ::buffa::DecodeContext<'_>,
+    ) -> ::core::result::Result<&'a [u8], ::buffa::DecodeError> {
+        let _ = ctx;
+        #[allow(unused_variables)]
+        let view = self;
+        let mut cur = cur;
+        match tag.field_number() {
+            1u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                let __sub_ctx = ctx.descend()?;
+                let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                match view.value.as_mut() {
+                    Some(existing) => {
+                        ::buffa::MessageView::merge_into_view(existing, sub, __sub_ctx)?
+                    }
+                    None => {
+                        view.value = ::buffa::MessageFieldView::set(
+                            <super::super::__buffa::view::CodecJsonValueView as ::buffa::MessageView>::decode_view_ctx(
+                                sub,
+                                __sub_ctx,
+                            )?,
+                        );
+                    }
+                }
+            }
+            _ => {
+                ::buffa::encoding::skip_unknown_field(tag, &mut cur, ctx)?;
+            }
+        }
+        ::core::result::Result::Ok(cur)
+    }
+    fn to_owned_message(
+        &self,
+    ) -> ::core::result::Result<
+        super::super::CodecJsonDecodeResult,
+        ::buffa::DecodeError,
+    > {
+        self.to_owned_from_source(None)
+    }
+    #[allow(
+        clippy::useless_conversion,
+        clippy::needless_update,
+        clippy::field_reassign_with_default
+    )]
+    fn to_owned_from_source(
+        &self,
+        __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
+    ) -> ::core::result::Result<
+        super::super::CodecJsonDecodeResult,
+        ::buffa::DecodeError,
+    > {
+        #[allow(unused_imports)]
+        use ::buffa::alloc::string::ToString as _;
+        let _ = __buffa_src;
+        let mut __owned = <super::super::CodecJsonDecodeResult as ::core::default::Default>::default();
+        __owned.value = match self.value.as_option() {
+            Some(v) => {
+                ::buffa::MessageField::<
+                    super::super::CodecJsonValue,
+                    ::buffa::Inline<super::super::CodecJsonValue>,
+                >::some(v.to_owned_from_source(__buffa_src)?)
+            }
+            None => ::buffa::MessageField::none(),
+        };
+        ::core::result::Result::Ok(__owned)
+    }
+}
+impl<'a> ::buffa::ViewEncode<'a> for CodecJsonDecodeResultView<'a> {
+    #[allow(clippy::needless_borrow, clippy::let_and_return)]
+    fn compute_size(&self, __cache: &mut ::buffa::SizeCache) -> u32 {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        let mut size = 0u64;
+        if let ::core::option::Option::Some(__v) = self.value.as_option() {
+            let __slot = __cache.reserve();
+            let inner_size = __v.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 1u64 + ::buffa::encoding::varint_len(inner_size as u64) as u64
+                    + inner_size as u64;
+        }
+        ::buffa::saturate_size(size)
+    }
+    #[allow(clippy::needless_borrow)]
+    fn write_to(
+        &self,
+        __cache: &mut ::buffa::SizeCache,
+        buf: &mut impl ::buffa::EncodeSink,
+    ) {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        if let ::core::option::Option::Some(__v) = self.value.as_option() {
+            ::buffa::types::put_len_delimited_header(
+                1u32,
+                u64::from(__cache.consume_next()),
+                buf,
+            );
+            __v.write_to(__cache, buf);
+        }
+    }
+}
+/// Serializes this view as protobuf JSON.
+///
+/// Implicit-presence fields with default values are omitted, `required`
+/// fields are always emitted, explicit-presence (`optional`) fields are
+/// emitted only when set, bytes fields are base64-encoded, and enum
+/// values are their proto name strings.
+///
+/// This impl uses `serialize_map(None)` because the number of emitted
+/// fields depends on default-omission rules; serializers that require
+/// known map lengths (e.g. `bincode`) will return a runtime error.
+/// Use the owned message type for those formats.
+impl<'__a> ::serde::Serialize for CodecJsonDecodeResultView<'__a> {
+    fn serialize<__S: ::serde::Serializer>(
+        &self,
+        __s: __S,
+    ) -> ::core::result::Result<__S::Ok, __S::Error> {
+        use ::serde::ser::SerializeMap as _;
+        let mut __map = __s.serialize_map(::core::option::Option::None)?;
+        {
+            if let ::core::option::Option::Some(__v) = self.value.as_option() {
+                __map.serialize_entry("value", __v)?;
+            }
+        }
+        __map.end()
+    }
+}
+impl<'a> ::buffa::MessageName for CodecJsonDecodeResultView<'a> {
+    const PACKAGE: &'static str = "reallyme.codec.v1";
+    const NAME: &'static str = "CodecJsonDecodeResult";
+    const FULL_NAME: &'static str = "reallyme.codec.v1.CodecJsonDecodeResult";
+    const TYPE_URL: &'static str = "type.googleapis.com/reallyme.codec.v1.CodecJsonDecodeResult";
+}
+::buffa::impl_default_view_instance!(CodecJsonDecodeResultView);
+::buffa::impl_view_reborrow!(CodecJsonDecodeResultView);
+::buffa::unsafe_impl_view_lifetime_parametric!(CodecJsonDecodeResultView);
 #[derive(Clone, Default)]
 pub struct CodecProviderInfoRequestView<'a> {
     #[doc(hidden)]
@@ -32911,6 +35496,9 @@ impl<'a> ::buffa::sensitive::Zeroize for CodecApiOperationRequestView<'a> {
             super::super::__buffa::view::CodecTextRequestView<'a>,
         >();
         __requires_view_wipe_owner::<
+            super::super::__buffa::view::CodecBase64DecodeRequestView<'a>,
+        >();
+        __requires_view_wipe_owner::<
             super::super::__buffa::view::CodecBytesRequestView<'a>,
         >();
         __requires_view_wipe_owner::<
@@ -32966,6 +35554,9 @@ impl<'a> ::buffa::sensitive::Zeroize for CodecApiOperationRequestView<'a> {
         >();
         __requires_view_wipe_owner::<
             super::super::__buffa::view::CodecTlvSourceRequestView<'a>,
+        >();
+        __requires_view_wipe_owner::<
+            super::super::__buffa::view::CodecJsonDecodeRequestView<'a>,
         >();
         ::buffa::sensitive::Zeroize::zeroize(&mut self.operation);
     }
@@ -34153,6 +36744,37 @@ impl<'a> ::buffa::MessageView<'a> for CodecApiOperationRequestView<'a> {
                     );
                 }
             }
+            8002u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                let __sub_ctx = ctx.descend()?;
+                let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                if let Some(
+                    super::super::__buffa::view::oneof::codec_api_operation_request::Operation::Base64DecodeWithLimits(
+                        ref mut existing,
+                    ),
+                ) = view.operation
+                {
+                    ::buffa::MessageView::merge_into_view(
+                        &mut **existing,
+                        sub,
+                        __sub_ctx,
+                    )?;
+                } else {
+                    view.operation = Some(
+                        super::super::__buffa::view::oneof::codec_api_operation_request::Operation::Base64DecodeWithLimits(
+                            ::buffa::alloc::boxed::Box::new(
+                                <super::super::__buffa::view::CodecBase64DecodeRequestView as ::buffa::MessageView>::decode_view_ctx(
+                                    sub,
+                                    __sub_ctx,
+                                )?,
+                            ),
+                        ),
+                    );
+                }
+            }
             8010u32 => {
                 ::buffa::encoding::check_wire_type(
                     tag,
@@ -34742,6 +37364,37 @@ impl<'a> ::buffa::MessageView<'a> for CodecApiOperationRequestView<'a> {
                     );
                 }
             }
+            12000u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                let __sub_ctx = ctx.descend()?;
+                let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                if let Some(
+                    super::super::__buffa::view::oneof::codec_api_operation_request::Operation::JsonDecode(
+                        ref mut existing,
+                    ),
+                ) = view.operation
+                {
+                    ::buffa::MessageView::merge_into_view(
+                        &mut **existing,
+                        sub,
+                        __sub_ctx,
+                    )?;
+                } else {
+                    view.operation = Some(
+                        super::super::__buffa::view::oneof::codec_api_operation_request::Operation::JsonDecode(
+                            ::buffa::alloc::boxed::Box::new(
+                                <super::super::__buffa::view::CodecJsonDecodeRequestView as ::buffa::MessageView>::decode_view_ctx(
+                                    sub,
+                                    __sub_ctx,
+                                )?,
+                            ),
+                        ),
+                    );
+                }
+            }
             _ => {
                 ::buffa::encoding::skip_unknown_field(tag, &mut cur, ctx)?;
             }
@@ -35109,6 +37762,15 @@ impl<'a> ::buffa::MessageView<'a> for CodecApiOperationRequestView<'a> {
                                 ),
                             )
                         }
+                        super::super::__buffa::view::oneof::codec_api_operation_request::Operation::Base64DecodeWithLimits(
+                            v,
+                        ) => {
+                            super::super::__buffa::oneof::codec_api_operation_request::Operation::Base64DecodeWithLimits(
+                                ::buffa::alloc::boxed::Box::new(
+                                    v.to_owned_from_source(__buffa_src)?,
+                                ),
+                            )
+                        }
                         super::super::__buffa::view::oneof::codec_api_operation_request::Operation::Base64urlEncode(
                             v,
                         ) => {
@@ -35275,6 +37937,15 @@ impl<'a> ::buffa::MessageView<'a> for CodecApiOperationRequestView<'a> {
                             v,
                         ) => {
                             super::super::__buffa::oneof::codec_api_operation_request::Operation::TlvReadLength(
+                                ::buffa::alloc::boxed::Box::new(
+                                    v.to_owned_from_source(__buffa_src)?,
+                                ),
+                            )
+                        }
+                        super::super::__buffa::view::oneof::codec_api_operation_request::Operation::JsonDecode(
+                            v,
+                        ) => {
+                            super::super::__buffa::oneof::codec_api_operation_request::Operation::JsonDecode(
                                 ::buffa::alloc::boxed::Box::new(
                                     v.to_owned_from_source(__buffa_src)?,
                                 ),
@@ -35666,6 +38337,16 @@ impl<'a> ::buffa::ViewEncode<'a> for CodecApiOperationRequestView<'a> {
                         += 3u64 + ::buffa::encoding::varint_len(inner as u64) as u64
                             + inner as u64;
                 }
+                super::super::__buffa::view::oneof::codec_api_operation_request::Operation::Base64DecodeWithLimits(
+                    x,
+                ) => {
+                    let __slot = __cache.reserve();
+                    let inner = x.compute_size(__cache);
+                    __cache.set(__slot, inner);
+                    size
+                        += 3u64 + ::buffa::encoding::varint_len(inner as u64) as u64
+                            + inner as u64;
+                }
                 super::super::__buffa::view::oneof::codec_api_operation_request::Operation::Base64urlEncode(
                     x,
                 ) => {
@@ -35847,6 +38528,16 @@ impl<'a> ::buffa::ViewEncode<'a> for CodecApiOperationRequestView<'a> {
                             + inner as u64;
                 }
                 super::super::__buffa::view::oneof::codec_api_operation_request::Operation::TlvReadLength(
+                    x,
+                ) => {
+                    let __slot = __cache.reserve();
+                    let inner = x.compute_size(__cache);
+                    __cache.set(__slot, inner);
+                    size
+                        += 3u64 + ::buffa::encoding::varint_len(inner as u64) as u64
+                            + inner as u64;
+                }
+                super::super::__buffa::view::oneof::codec_api_operation_request::Operation::JsonDecode(
                     x,
                 ) => {
                     let __slot = __cache.reserve();
@@ -36240,6 +38931,16 @@ impl<'a> ::buffa::ViewEncode<'a> for CodecApiOperationRequestView<'a> {
                     );
                     x.write_to(__cache, buf);
                 }
+                super::super::__buffa::view::oneof::codec_api_operation_request::Operation::Base64DecodeWithLimits(
+                    x,
+                ) => {
+                    ::buffa::types::put_len_delimited_header(
+                        8002u32,
+                        u64::from(__cache.consume_next()),
+                        buf,
+                    );
+                    x.write_to(__cache, buf);
+                }
                 super::super::__buffa::view::oneof::codec_api_operation_request::Operation::Base64urlEncode(
                     x,
                 ) => {
@@ -36425,6 +39126,16 @@ impl<'a> ::buffa::ViewEncode<'a> for CodecApiOperationRequestView<'a> {
                 ) => {
                     ::buffa::types::put_len_delimited_header(
                         11004u32,
+                        u64::from(__cache.consume_next()),
+                        buf,
+                    );
+                    x.write_to(__cache, buf);
+                }
+                super::super::__buffa::view::oneof::codec_api_operation_request::Operation::JsonDecode(
+                    x,
+                ) => {
+                    ::buffa::types::put_len_delimited_header(
+                        12000u32,
                         u64::from(__cache.consume_next()),
                         buf,
                     );
@@ -36639,6 +39350,11 @@ impl<'__a> ::serde::Serialize for CodecApiOperationRequestView<'__a> {
                 ) => {
                     __map.serialize_entry("base64Decode", v)?;
                 }
+                super::super::__buffa::view::oneof::codec_api_operation_request::Operation::Base64DecodeWithLimits(
+                    v,
+                ) => {
+                    __map.serialize_entry("base64DecodeWithLimits", v)?;
+                }
                 super::super::__buffa::view::oneof::codec_api_operation_request::Operation::Base64urlEncode(
                     v,
                 ) => {
@@ -36733,6 +39449,11 @@ impl<'__a> ::serde::Serialize for CodecApiOperationRequestView<'__a> {
                     v,
                 ) => {
                     __map.serialize_entry("tlvReadLength", v)?;
+                }
+                super::super::__buffa::view::oneof::codec_api_operation_request::Operation::JsonDecode(
+                    v,
+                ) => {
+                    __map.serialize_entry("jsonDecode", v)?;
                 }
             }
         }
@@ -36880,6 +39601,9 @@ impl<'a> ::buffa::sensitive::Zeroize for CodecApiOperationResultView<'a> {
             super::super::__buffa::view::CodecBytesResultView<'a>,
         >();
         __requires_view_wipe_owner::<
+            super::super::__buffa::view::CodecBytesResultView<'a>,
+        >();
+        __requires_view_wipe_owner::<
             super::super::__buffa::view::CodecTextResultView<'a>,
         >();
         __requires_view_wipe_owner::<
@@ -36935,6 +39659,9 @@ impl<'a> ::buffa::sensitive::Zeroize for CodecApiOperationResultView<'a> {
         >();
         __requires_view_wipe_owner::<
             super::super::__buffa::view::CodecTlvLengthView<'a>,
+        >();
+        __requires_view_wipe_owner::<
+            super::super::__buffa::view::CodecJsonDecodeResultView<'a>,
         >();
         ::buffa::sensitive::Zeroize::zeroize(&mut self.result);
     }
@@ -38122,6 +40849,37 @@ impl<'a> ::buffa::MessageView<'a> for CodecApiOperationResultView<'a> {
                     );
                 }
             }
+            8002u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                let __sub_ctx = ctx.descend()?;
+                let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                if let Some(
+                    super::super::__buffa::view::oneof::codec_api_operation_result::Result::Base64DecodeWithLimits(
+                        ref mut existing,
+                    ),
+                ) = view.result
+                {
+                    ::buffa::MessageView::merge_into_view(
+                        &mut **existing,
+                        sub,
+                        __sub_ctx,
+                    )?;
+                } else {
+                    view.result = Some(
+                        super::super::__buffa::view::oneof::codec_api_operation_result::Result::Base64DecodeWithLimits(
+                            ::buffa::alloc::boxed::Box::new(
+                                <super::super::__buffa::view::CodecBytesResultView as ::buffa::MessageView>::decode_view_ctx(
+                                    sub,
+                                    __sub_ctx,
+                                )?,
+                            ),
+                        ),
+                    );
+                }
+            }
             8010u32 => {
                 ::buffa::encoding::check_wire_type(
                     tag,
@@ -38711,6 +41469,37 @@ impl<'a> ::buffa::MessageView<'a> for CodecApiOperationResultView<'a> {
                     );
                 }
             }
+            12000u32 => {
+                ::buffa::encoding::check_wire_type(
+                    tag,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )?;
+                let __sub_ctx = ctx.descend()?;
+                let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                if let Some(
+                    super::super::__buffa::view::oneof::codec_api_operation_result::Result::JsonDecode(
+                        ref mut existing,
+                    ),
+                ) = view.result
+                {
+                    ::buffa::MessageView::merge_into_view(
+                        &mut **existing,
+                        sub,
+                        __sub_ctx,
+                    )?;
+                } else {
+                    view.result = Some(
+                        super::super::__buffa::view::oneof::codec_api_operation_result::Result::JsonDecode(
+                            ::buffa::alloc::boxed::Box::new(
+                                <super::super::__buffa::view::CodecJsonDecodeResultView as ::buffa::MessageView>::decode_view_ctx(
+                                    sub,
+                                    __sub_ctx,
+                                )?,
+                            ),
+                        ),
+                    );
+                }
+            }
             _ => {
                 ::buffa::encoding::skip_unknown_field(tag, &mut cur, ctx)?;
             }
@@ -39078,6 +41867,15 @@ impl<'a> ::buffa::MessageView<'a> for CodecApiOperationResultView<'a> {
                                 ),
                             )
                         }
+                        super::super::__buffa::view::oneof::codec_api_operation_result::Result::Base64DecodeWithLimits(
+                            v,
+                        ) => {
+                            super::super::__buffa::oneof::codec_api_operation_result::Result::Base64DecodeWithLimits(
+                                ::buffa::alloc::boxed::Box::new(
+                                    v.to_owned_from_source(__buffa_src)?,
+                                ),
+                            )
+                        }
                         super::super::__buffa::view::oneof::codec_api_operation_result::Result::Base64urlEncode(
                             v,
                         ) => {
@@ -39244,6 +42042,15 @@ impl<'a> ::buffa::MessageView<'a> for CodecApiOperationResultView<'a> {
                             v,
                         ) => {
                             super::super::__buffa::oneof::codec_api_operation_result::Result::TlvReadLength(
+                                ::buffa::alloc::boxed::Box::new(
+                                    v.to_owned_from_source(__buffa_src)?,
+                                ),
+                            )
+                        }
+                        super::super::__buffa::view::oneof::codec_api_operation_result::Result::JsonDecode(
+                            v,
+                        ) => {
+                            super::super::__buffa::oneof::codec_api_operation_result::Result::JsonDecode(
                                 ::buffa::alloc::boxed::Box::new(
                                     v.to_owned_from_source(__buffa_src)?,
                                 ),
@@ -39635,6 +42442,16 @@ impl<'a> ::buffa::ViewEncode<'a> for CodecApiOperationResultView<'a> {
                         += 3u64 + ::buffa::encoding::varint_len(inner as u64) as u64
                             + inner as u64;
                 }
+                super::super::__buffa::view::oneof::codec_api_operation_result::Result::Base64DecodeWithLimits(
+                    x,
+                ) => {
+                    let __slot = __cache.reserve();
+                    let inner = x.compute_size(__cache);
+                    __cache.set(__slot, inner);
+                    size
+                        += 3u64 + ::buffa::encoding::varint_len(inner as u64) as u64
+                            + inner as u64;
+                }
                 super::super::__buffa::view::oneof::codec_api_operation_result::Result::Base64urlEncode(
                     x,
                 ) => {
@@ -39816,6 +42633,16 @@ impl<'a> ::buffa::ViewEncode<'a> for CodecApiOperationResultView<'a> {
                             + inner as u64;
                 }
                 super::super::__buffa::view::oneof::codec_api_operation_result::Result::TlvReadLength(
+                    x,
+                ) => {
+                    let __slot = __cache.reserve();
+                    let inner = x.compute_size(__cache);
+                    __cache.set(__slot, inner);
+                    size
+                        += 3u64 + ::buffa::encoding::varint_len(inner as u64) as u64
+                            + inner as u64;
+                }
+                super::super::__buffa::view::oneof::codec_api_operation_result::Result::JsonDecode(
                     x,
                 ) => {
                     let __slot = __cache.reserve();
@@ -40209,6 +43036,16 @@ impl<'a> ::buffa::ViewEncode<'a> for CodecApiOperationResultView<'a> {
                     );
                     x.write_to(__cache, buf);
                 }
+                super::super::__buffa::view::oneof::codec_api_operation_result::Result::Base64DecodeWithLimits(
+                    x,
+                ) => {
+                    ::buffa::types::put_len_delimited_header(
+                        8002u32,
+                        u64::from(__cache.consume_next()),
+                        buf,
+                    );
+                    x.write_to(__cache, buf);
+                }
                 super::super::__buffa::view::oneof::codec_api_operation_result::Result::Base64urlEncode(
                     x,
                 ) => {
@@ -40394,6 +43231,16 @@ impl<'a> ::buffa::ViewEncode<'a> for CodecApiOperationResultView<'a> {
                 ) => {
                     ::buffa::types::put_len_delimited_header(
                         11004u32,
+                        u64::from(__cache.consume_next()),
+                        buf,
+                    );
+                    x.write_to(__cache, buf);
+                }
+                super::super::__buffa::view::oneof::codec_api_operation_result::Result::JsonDecode(
+                    x,
+                ) => {
+                    ::buffa::types::put_len_delimited_header(
+                        12000u32,
                         u64::from(__cache.consume_next()),
                         buf,
                     );
@@ -40608,6 +43455,11 @@ impl<'__a> ::serde::Serialize for CodecApiOperationResultView<'__a> {
                 ) => {
                     __map.serialize_entry("base64Decode", v)?;
                 }
+                super::super::__buffa::view::oneof::codec_api_operation_result::Result::Base64DecodeWithLimits(
+                    v,
+                ) => {
+                    __map.serialize_entry("base64DecodeWithLimits", v)?;
+                }
                 super::super::__buffa::view::oneof::codec_api_operation_result::Result::Base64urlEncode(
                     v,
                 ) => {
@@ -40702,6 +43554,11 @@ impl<'__a> ::serde::Serialize for CodecApiOperationResultView<'__a> {
                     v,
                 ) => {
                     __map.serialize_entry("tlvReadLength", v)?;
+                }
+                super::super::__buffa::view::oneof::codec_api_operation_result::Result::JsonDecode(
+                    v,
+                ) => {
+                    __map.serialize_entry("jsonDecode", v)?;
                 }
             }
         }

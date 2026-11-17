@@ -14,6 +14,11 @@ const classifiedField = (message, field, kind, sensitivity) => Object.freeze({
 });
 
 export const codecProtoScalarFieldClassifications = Object.freeze([
+  classifiedField("CodecBase64DecodeRequest", "value", "string", "sensitive"),
+  classifiedField("CodecJsonDecodeRequest", "encoded", "bytes", "sensitive"),
+  classifiedField("CodecJsonMember", "name", "string", "sensitive"),
+  classifiedField("CodecJsonValue", "number_text", "string", "sensitive"),
+  classifiedField("CodecJsonValue", "string_value", "string", "sensitive"),
   classifiedField("CodecWasmInitializeRequest", "module_bytes", "bytes", "public"),
   classifiedField("CodecBytesRequest", "value", "bytes", "sensitive"),
   classifiedField("CodecTextRequest", "value", "string", "sensitive"),
@@ -75,6 +80,11 @@ export const codecProtoScalarFieldClassifications = Object.freeze([
 // these classifications explicit makes generated clear and Drop hardening
 // fail closed when the deterministic-CBOR schema evolves.
 export const codecProtoSensitiveNonTextFieldClassifications = Object.freeze([
+  classifiedField("CodecJsonValue", "bool_value", "bool", "sensitive"),
+  classifiedField("CodecJsonArray", "values", "repeated-message", "sensitive"),
+  classifiedField("CodecJsonObject", "members", "repeated-message", "sensitive"),
+  classifiedField("CodecJsonMember", "value", "message-field", "sensitive"),
+  classifiedField("CodecJsonDecodeResult", "value", "message-field", "sensitive"),
   classifiedField("CodecPemBundleDecodeResult", "blocks", "repeated-message", "sensitive"),
   classifiedField("CodecGeneralCborHeader", "argument", "uint64", "sensitive"),
   classifiedField("CodecTlvHeader", "declared_value_length", "uint64", "sensitive"),
@@ -167,6 +177,14 @@ export const codecProtoSensitiveNonTextFieldClassifications = Object.freeze([
 // but still require redaction and zeroizing generated clear paths. Oneof owners
 // that use generated manual Deserialize also receive compatible Drop logic.
 export const codecProtoSensitiveOwnerMessages = Object.freeze([
+  "CodecBase64DecodeRequest",
+  "CodecJsonDecodeRequest",
+  "CodecJsonDecodeResult",
+  "CodecJsonNull",
+  "CodecJsonArray",
+  "CodecJsonObject",
+  "CodecJsonMember",
+  "CodecJsonValue",
   "CodecGeneralCborTaggedBytes",
   "CodecUint32Result",
   "CodecApiOperationRequest",

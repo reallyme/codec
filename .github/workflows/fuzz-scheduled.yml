@@ -33,6 +33,7 @@ jobs:
           - multikey
           - operation_contract
           - jcs_text
+          - guarded_json
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -48,7 +49,7 @@ jobs:
         run: cargo install --git https://github.com/rust-fuzz/cargo-fuzz.git --rev 984c861c8dfea28055254c5f1d2659ab2cd63f76 --locked cargo-fuzz
 
       - name: Seed regression corpus
-        if: matrix.target == 'general_cbor' || matrix.target == 'operation_contract' || matrix.target == 'der_schema'
+        if: matrix.target == 'general_cbor' || matrix.target == 'operation_contract' || matrix.target == 'der_schema' || matrix.target == 'guarded_json'
         env:
           FUZZ_CORPUS_TARGET: ${{ matrix.target }}
         run: |

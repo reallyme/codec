@@ -69,6 +69,22 @@ class SdkErrorContextTest {
                 CodecError
                     .newBuilder()
                     .setOrigin(provider)
+                    .setCanonicalization(
+                        CodecCanonicalizationError.newBuilder().setReason(
+                            CodecErrorReason.CODEC_ERROR_REASON_CANONICAL_JSON_ALLOCATION_FAILURE,
+                        ),
+                    ).build(),
+                CodecError
+                    .newBuilder()
+                    .setOrigin(provider)
+                    .setCanonicalization(
+                        CodecCanonicalizationError.newBuilder().setReason(
+                            CodecErrorReason.CODEC_ERROR_REASON_CANONICAL_JSON_ARITHMETIC_OVERFLOW,
+                        ),
+                    ).build(),
+                CodecError
+                    .newBuilder()
+                    .setOrigin(provider)
                     .setBackend(
                         CodecBackendError.newBuilder().setReason(CodecErrorReason.CODEC_ERROR_REASON_BACKEND_INTERNAL),
                     ).build(),
@@ -103,6 +119,22 @@ class SdkErrorContextTest {
             boundary(699, CodecErrorOrigin.CODEC_ERROR_ORIGIN_CALLER),
             boundary(101, CodecErrorOrigin.CODEC_ERROR_ORIGIN_CALLER),
             boundary(601, CodecErrorOrigin.CODEC_ERROR_ORIGIN_PROVIDER),
+            CodecError
+                .newBuilder()
+                .setOrigin(CodecErrorOrigin.CODEC_ERROR_ORIGIN_CALLER)
+                .setCanonicalization(
+                    CodecCanonicalizationError.newBuilder().setReason(
+                        CodecErrorReason.CODEC_ERROR_REASON_CANONICAL_JSON_ALLOCATION_FAILURE,
+                    ),
+                ).build(),
+            CodecError
+                .newBuilder()
+                .setOrigin(CodecErrorOrigin.CODEC_ERROR_ORIGIN_CALLER)
+                .setCanonicalization(
+                    CodecCanonicalizationError.newBuilder().setReason(
+                        CodecErrorReason.CODEC_ERROR_REASON_CANONICAL_JSON_ARITHMETIC_OVERFLOW,
+                    ),
+                ).build(),
             CodecError.getDefaultInstance(),
         )) {
             val mapped = exceptionForCodecError(error)
@@ -112,6 +144,26 @@ class SdkErrorContextTest {
         }
         assertNull(ReallyMeCodecException.InvalidInput().reason)
         assertNull(ReallyMeCodecException.ProviderFailure().origin)
+    }
+
+    @Test
+    fun base64ProviderFailuresPreserveContextAndRejectForgedOrigin() {
+        for (reason in listOf(
+            CodecErrorReason.CODEC_ERROR_REASON_BASE_ALLOCATION_FAILURE,
+            CodecErrorReason.CODEC_ERROR_REASON_BASE_LENGTH_OVERFLOW,
+        )) {
+            val builder =
+                CodecError
+                    .newBuilder()
+                    .setOrigin(CodecErrorOrigin.CODEC_ERROR_ORIGIN_PROVIDER)
+                    .setBaseEncoding(CodecBaseEncodingError.newBuilder().setReason(reason))
+            val mapped = exceptionForCodecError(builder.build())
+            assertIs<ReallyMeCodecException.ProviderFailure>(mapped)
+            assertEquals(reason, mapped.reason)
+            assertEquals(CodecErrorOrigin.CODEC_ERROR_ORIGIN_PROVIDER, mapped.origin)
+            builder.setOrigin(CodecErrorOrigin.CODEC_ERROR_ORIGIN_CALLER)
+            assertNull(exceptionForCodecError(builder.build()).reason)
+        }
     }
 
     private fun boundary(

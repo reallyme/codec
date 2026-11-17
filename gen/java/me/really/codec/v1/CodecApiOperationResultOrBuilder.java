@@ -426,6 +426,17 @@ public interface CodecApiOperationResultOrBuilder extends
   me.really.codec.v1.CodecBytesResult getBase64Decode();
 
   /**
+   * <code>.reallyme.codec.v1.CodecBytesResult base64_decode_with_limits = 8002 [json_name = "base64DecodeWithLimits"];</code>
+   * @return Whether the base64DecodeWithLimits field is set.
+   */
+  boolean hasBase64DecodeWithLimits();
+  /**
+   * <code>.reallyme.codec.v1.CodecBytesResult base64_decode_with_limits = 8002 [json_name = "base64DecodeWithLimits"];</code>
+   * @return The base64DecodeWithLimits.
+   */
+  me.really.codec.v1.CodecBytesResult getBase64DecodeWithLimits();
+
+  /**
    * <code>.reallyme.codec.v1.CodecTextResult base64url_encode = 8010 [json_name = "base64urlEncode"];</code>
    * @return Whether the base64urlEncode field is set.
    */
@@ -633,6 +644,17 @@ public interface CodecApiOperationResultOrBuilder extends
    * @return The tlvReadLength.
    */
   me.really.codec.v1.CodecTlvLength getTlvReadLength();
+
+  /**
+   * <code>.reallyme.codec.v1.CodecJsonDecodeResult json_decode = 12000 [json_name = "jsonDecode"];</code>
+   * @return Whether the jsonDecode field is set.
+   */
+  boolean hasJsonDecode();
+  /**
+   * <code>.reallyme.codec.v1.CodecJsonDecodeResult json_decode = 12000 [json_name = "jsonDecode"];</code>
+   * @return The jsonDecode.
+   */
+  me.really.codec.v1.CodecJsonDecodeResult getJsonDecode();
 
   public me.really.codec.v1.CodecApiOperationResult.ResultCase getResultCase();
 }

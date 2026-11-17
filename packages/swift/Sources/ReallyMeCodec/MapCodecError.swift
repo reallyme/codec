@@ -16,7 +16,12 @@ extension ReallyMeCodecRustCAbiProvider {
             guard error.unknownFields.data.isEmpty,
                 Self.isKnownReason(error.reason, range: 100...199)
             else { return .providerFailure }
-            expectedOrigin = .caller
+            switch error.reason {
+            case .baseAllocationFailure, .baseLengthOverflow:
+                expectedOrigin = .provider
+            default:
+                expectedOrigin = .caller
+            }
             reason = error.reason
         case .pem(let error):
             guard error.unknownFields.data.isEmpty,
@@ -34,7 +39,12 @@ extension ReallyMeCodecRustCAbiProvider {
             guard error.unknownFields.data.isEmpty,
                 Self.isKnownReason(error.reason, range: 400...499)
             else { return .providerFailure }
-            expectedOrigin = error.reason == .canonicalInternal ? .provider : .caller
+            switch error.reason {
+            case .canonicalInternal, .canonicalJsonAllocationFailure, .canonicalJsonArithmeticOverflow:
+                expectedOrigin = .provider
+            default:
+                expectedOrigin = .caller
+            }
             reason = error.reason
         case .backend(let error):
             guard error.unknownFields.data.isEmpty,

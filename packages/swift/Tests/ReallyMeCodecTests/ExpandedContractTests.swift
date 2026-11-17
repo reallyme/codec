@@ -91,4 +91,37 @@ final class ExpandedContractTests: XCTestCase {
         XCTAssertEqual(reason.reason, .pemResourceLimitExceeded)
     }
 
+    func testGeneratedGuardedJSONPreservesUnicodeAndDuplicateReason() throws {
+        let codec = try self.codec()
+        var json = ReallyMeProtoCodecJsonDecodeRequest()
+        json.encoded = Data(#"{"hello":"world\u0021"}"#.utf8)
+        var request = ReallyMeProtoCodecApiOperationRequest()
+        request.operation = .jsonDecode(json)
+        let response = try ReallyMeProtoCodecApiOperationResponse(
+            serializedBytes: codec.processOperation(Array(request.serializedData()))
+        )
+        guard case .result(let result)? = response.outcome,
+            case .jsonDecode(let document)? = result.result,
+            case .objectValue(let object)? = document.value.kind,
+            let member = object.members.first,
+            case .stringValue(let text)? = member.value.kind
+        else {
+            XCTFail("expected generated JSON result")
+            return
+        }
+        XCTAssertEqual(member.name, "hello")
+        XCTAssertEqual(text, "world!")
+        json.encoded = Data(#"{"x":1,"\u0078":2}"#.utf8)
+        request.operation = .jsonDecode(json)
+        let rejected = try ReallyMeProtoCodecApiOperationResponse(
+            serializedBytes: codec.processOperation(Array(request.serializedData()))
+        )
+        guard case .error(let error)? = rejected.outcome,
+            case .canonicalization(let detail)? = error.error
+        else {
+            XCTFail("expected generated JSON failure")
+            return
+        }
+        XCTAssertEqual(detail.reason, .canonicalJsonDuplicateProperty)
+    }
 }

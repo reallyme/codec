@@ -47,17 +47,18 @@ if (pinCheck.error !== undefined || pinCheck.status !== 0) {
 const POLICY_MODULE_SHA256 = new Map([
   ["packages/ts/scripts/lint-typescript.mjs", "ac3fbad064d2655773cc5c8476eda63e5e1cff0e53cceb6d9cf0faca923df89d"],
   ["scripts/check_swift_source_style.mjs", "24a53cb703ea5763ace64a7c6e43a96ec721235cfe6efec6b0bec134b43d0455"],
-  ["scripts/release-readiness/sdk-source-policy.mjs", "9527f3842536ed78e8d4358c4a802f7ecf1669c6537d87d67a4d6ccb6e28011f"],
+  ["scripts/release-readiness/sdk-source-policy.mjs", "899c4afff1ce5729ea7fc016d876ac630a62db53edc536ed79a4022c251711f9"],
   ["scripts/generate_codec_sdk_contract.mjs", "1512ecb968019c0516d326540947981edafd10a328782fbff483586e0300ee12"],
   ["scripts/codec_proto_schema.mjs", "4ee81a8a3c896d70a871bfb4a0724c007d709891a88580c3eed777bb80ddcbc9"],
   ["scripts/release-readiness/native-proto-policy.mjs", "cd434704f16db0de4e2a80db1a7fbfa1a6e86e7b04df9669da9b53cd18c4cdd9"],
-  ["scripts/generate_codec_proto.mjs", "2488376480cec9894b24fcb777a96ee5b062b5b077386112c278d82352ce5719"],
+  ["scripts/check_local_proto_tools.mjs", "9e2168572f62d179cb1004a201a02d68c5ed8ac796c42486c539cd4c28e91084"],
+  ["scripts/generate_codec_proto.mjs", "db31951789f27299e1c28cd15c235657f73cda462e1563608da6c4a948185f88"],
   ["scripts/generate_codec_proto_support.mjs", "6ec4f0c7727003fd2d36e537a51f27a0f20bf5cbdf194de912857d94c0ba462a"],
   ["scripts/harden_codec_sdk_proto.mjs", "c736d6c1a443980843e7b35dc072601e29811e4189ed7728d53d41a6ec522ce9"],
   ["scripts/release-readiness/source-policy.mjs", "1bc1368be565bfb972ef68a7b3a532c5b1969f40ef9893cd660fb1c244a4202e"],
   ["scripts/verify_release_version.mjs", "bc858e3f4bd98b808b5557b7c50755b4a0d3595393842d7cd01728f853d86215"],
-  ["scripts/codec_proto_sensitivity.mjs", "00f8d4738b480809212adfe026a86563c74a2db5f118d8c804a02fe691dba5d8"],
-  ["scripts/validate_codec_vectors.mjs", "186876266ef657bda5a450b00f1b8adab188d65ae8483ecb86bb9862ed864763"],
+  ["scripts/codec_proto_sensitivity.mjs", "ebdfba18a6c14d5390d6016b7a414ac076eedd1f1a78a7ba0a0974bf68686c36"],
+  ["scripts/validate_codec_vectors.mjs", "4953822f064dc2dc12533899f3e6f4cff219bcb6e1a41d11c5d661ca41b0af18"],
   ["scripts/generate_codec_limits.mjs", "9f566d26749206dffcabf2795b4ce5cd7f20d51ce6d863e0527b91b64d143256"],
 ]);
 for (const [path, expected] of POLICY_MODULE_SHA256) {
@@ -1240,7 +1241,7 @@ assertSetEquals({
 });
 assertContains(codecProtoSchemaPath, "CodecWasmReinstantiateRequest reinstantiate_wasm = 5;");
 assertContains(codecProtoSchemaPath, "CodecEmptyResult reinstantiated_wasm = 5;");
-const expandedHandlers = ["dispatch_api", "execute_scalars", "execute_general_cbor", "execute_der", "execute_tlv"]
+const expandedHandlers = ["dispatch_api", "execute_scalars", "execute_general_cbor", "execute_der", "execute_tlv", "execute_json"]
   .map((name) => {
     const source = stripSourceComments(readText(`crates/codec/src/operation_contract/${name}.rs`));
     // Routing patterns delegate ownership; only the leaf arm implements an
@@ -1286,6 +1287,20 @@ if (/\bcodec_\w+::[a-z]\w*\s*\(/u.test(scalarDispatchSource)) {
 const legacyScalarSource = stripSourceStringsAndComments(readText("crates/adapter/src/scalar_ops.rs"));
 if (/\b(?:fn|struct|enum)\b/u.test(legacyScalarSource)) {
   fail("the legacy scalar adapter must only re-export the shared generated-contract implementation");
+}
+
+assertContains("crates/codec/src/operation_contract/execute_json.rs", "crate::json::decode");
+for (const [path, testName] of [
+  ["crates/codec/tests/base64_limits_vector_tests.rs", "shared_bounded_base64_vectors_pin_wire_bytes_and_typed_outcomes"],
+  ["packages/swift/Tests/ReallyMeCodecTests/Base64LimitVectorTests.swift", "testSharedBoundedBase64WireBytesAndTypedOutcomes"],
+  ["packages/kotlin/src/test/kotlin/me/really/codec/Base64LimitVectorTest.kt", "sharedBoundedBase64WireBytesAndTypedOutcomes"],
+  ["packages/ts/test/base64-limits-vectors.test.mjs", "manifest.base64DecodeWithLimits.cases"],
+  ["crates/codec/tests/json_vector_tests.rs", "shared_json_decode_vectors_pin_wire_bytes_and_typed_outcomes"],
+  ["packages/swift/Tests/ReallyMeCodecTests/JsonVectorTests.swift", "testSharedJsonWireBytesAndTypedOutcomes"],
+  ["packages/kotlin/src/test/kotlin/me/really/codec/JsonVectorTest.kt", "sharedJsonWireBytesAndTypedOutcomes"],
+  ["packages/ts/test/json-vectors.test.mjs", "manifest.jsonDecode.cases"],
+]) {
+  assertContains(path, testName);
 }
 
 assertContains("crates/codec/src/operation_contract/execute_tlv.rs", "tlv::read_header");
@@ -1736,10 +1751,14 @@ assertContains("crates/codec/src/operation_contract/run_contract.rs", 'include!(
 
 assertContains("buf.gen.yaml", "out: crates/proto/src/generated/buffa");
 assertContains("buf.gen.yaml", "out: packages/ts/src/proto/generated");
-assertContains("buf.gen.yaml", "buf.build/bufbuild/es:v2.17.0");
-assertContains("buf.gen.yaml", "buf.build/apple/swift:v1.39.0");
-assertContains("buf.gen.yaml", "buf.build/protocolbuffers/java:v36.2");
-assertContains("buf.gen.yaml", "buf.build/protocolbuffers/kotlin:v36.2");
+assertContains("buf.gen.yaml", "local: [node, packages/ts/node_modules/@bufbuild/protoc-gen-es/bin/protoc-gen-es]");
+assertContains("packages/ts/package.json", '"@bufbuild/protoc-gen-es": "2.17.0"');
+assertContains("buf.gen.yaml", "local: protoc-gen-swift");
+assertContains("buf.gen.yaml", "protoc_builtin: java");
+assertContains("buf.gen.yaml", "protoc_builtin: kotlin");
+assertNotContains("buf.gen.yaml", "remote:");
+assertContains("scripts/check_local_proto_tools.mjs", "libprotoc 36.2");
+assertContains("scripts/check_local_proto_tools.mjs", "protoc-gen-swift 1.39.0");
 assertContains("crates/proto/src/generated/buffa/mod.rs", "pub mod codec");
 assertContains("crates/proto/src/error.rs", "pub struct CodecWireError");
 assertContains("crates/proto/src/error.rs", "pub fn try_new");
@@ -1793,7 +1812,7 @@ assertContains(
 );
 assertContains(
   "crates/proto/src/wire.rs",
-  ".try_encode_to_vec()",
+  ".try_encode_bounded(wire_length, &mut *encoded)",
 );
 assertContains("crates/proto/tests/generated_tests/error_wire.rs", "bounded_protobuf_decode_rejects_oversized_messages");
 assertContains("crates/proto/tests/generated_tests/error_wire.rs", "json_decode_rejects_inputs_that_expand_past_binary_cap");
@@ -2117,6 +2136,12 @@ for (const path of [".github/workflows/fuzz.yml", ".github/workflows/fuzz-schedu
 }
 assertNotContains(".github/workflows/fuzz.yml", "cargo +nightly fuzz");
 assertContains(".github/workflows/fuzz-scheduled.yml", "- operation_contract");
+assertContains(".github/workflows/fuzz-scheduled.yml", "- guarded_json");
+assertContains(".github/workflows/fuzz.yml", "fuzz run guarded_json fuzz/seeds/guarded_json -- -runs=0");
+assertContains("fuzz/Cargo.toml", 'name = "guarded_json"');
+assertContains("fuzz/README.md", "`guarded_json`");
+assertContains("fuzz/tests/targets/guarded_json.rs", "reallyme_codec::json::decode(input, None)");
+assertContains("fuzz/tests/targets/guarded_json.rs", "reallyme_codec::json::from_slice::<CodecTextResult>(input, None)");
 assertContains("fuzz/Cargo.toml", 'name = "operation_contract"');
 assertContains("fuzz/README.md", "`operation_contract`");
 assertContains("fuzz/tests/targets/operation_contract.rs", "process_operation_response(data)");
@@ -2288,7 +2313,7 @@ assertContains(
 // Keep the fixture set anchored outside the manifest itself. A checksum field
 // beside its own bytes cannot detect a coordinated golden-vector edit.
 const EXPECTED_CODEC_VECTORS_SHA256 =
-  "c0013dc61c0c9346adad3bf6f98a476408582b60cc9c20a7eb14069228497724";
+  "11cbffcae7894518d115b7514bce7f9a94a5a91c11991bfc2bfcf0db83fbed03";
 const codecVectorDigest = createHash("sha256")
   .update(readText("vectors/codec-vectors.json"), "utf8")
   .digest("hex");
@@ -2483,7 +2508,7 @@ assertContains(
   "ReallyMeCodecMemory.clearOwned(&responseBytes)",
 );
 assertContains("packages/swift/Sources/ReallyMeCodec/CallCodecWithRustCAbi.swift", "throw ReallyMeCodecError.providerFailure");
-assertContains("packages/swift/Sources/ReallyMeCodec/MapCodecError.swift", "expectedOrigin = error.reason == .canonicalInternal ? .provider : .caller");
+assertContains("packages/swift/Sources/ReallyMeCodec/MapCodecError.swift", "case .canonicalInternal, .canonicalJsonAllocationFailure, .canonicalJsonArithmeticOverflow:");
 assertContains("packages/swift/Tests/ReallyMeCodecTests/ReallyMeCodecTests.swift", 'XCTAssertNil(try codec.tryParseCid("not-a-cid"))');
 assertContains("packages/swift/Tests/ReallyMeCodecTests/ReallyMeCodecTests.swift", "XCTAssertEqual(try codec.dagCborCodecCode(), 0x71)");
 assertContains("packages/swift/Tests/ReallyMeCodecTests/ReallyMeCodecTests.swift", 'codec.base58btcDecode("")');

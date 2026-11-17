@@ -117,7 +117,12 @@ internal fun exceptionForCodecError(codecError: CodecError): ReallyMeCodecExcept
                 ) {
                     return ReallyMeCodecException.ProviderFailure()
                 }
-                CodecErrorOrigin.CODEC_ERROR_ORIGIN_CALLER
+                when (codecError.baseEncoding.reason) {
+                    CodecErrorReason.CODEC_ERROR_REASON_BASE_ALLOCATION_FAILURE,
+                    CodecErrorReason.CODEC_ERROR_REASON_BASE_LENGTH_OVERFLOW,
+                    -> CodecErrorOrigin.CODEC_ERROR_ORIGIN_PROVIDER
+                    else -> CodecErrorOrigin.CODEC_ERROR_ORIGIN_CALLER
+                }
             }
             CodecError.ErrorCase.PEM -> {
                 if (!knownProviderReason(codecError.pem.reallyMeHasUnknownFieldsForValidation(), codecError.pem.reason, 200..299)) {
@@ -145,13 +150,12 @@ internal fun exceptionForCodecError(codecError: CodecError): ReallyMeCodecExcept
                 ) {
                     return ReallyMeCodecException.ProviderFailure()
                 }
-                if (
-                    codecError.canonicalization.reason ==
-                    CodecErrorReason.CODEC_ERROR_REASON_CANONICAL_INTERNAL
-                ) {
-                    CodecErrorOrigin.CODEC_ERROR_ORIGIN_PROVIDER
-                } else {
-                    CodecErrorOrigin.CODEC_ERROR_ORIGIN_CALLER
+                when (codecError.canonicalization.reason) {
+                    CodecErrorReason.CODEC_ERROR_REASON_CANONICAL_INTERNAL,
+                    CodecErrorReason.CODEC_ERROR_REASON_CANONICAL_JSON_ALLOCATION_FAILURE,
+                    CodecErrorReason.CODEC_ERROR_REASON_CANONICAL_JSON_ARITHMETIC_OVERFLOW,
+                    -> CodecErrorOrigin.CODEC_ERROR_ORIGIN_PROVIDER
+                    else -> CodecErrorOrigin.CODEC_ERROR_ORIGIN_CALLER
                 }
             }
             CodecError.ErrorCase.BACKEND -> {

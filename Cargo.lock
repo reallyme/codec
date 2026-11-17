@@ -658,6 +658,7 @@ dependencies = [
  "reallyme-codec-multikey",
  "reallyme-codec-pem",
  "reallyme-codec-proto",
+ "serde",
  "serde_json",
  "stats_alloc",
  "thiserror",
@@ -677,6 +678,7 @@ name = "reallyme-codec-base64"
 version = "0.4.4"
 dependencies = [
  "base64",
+ "reallyme-codec-proto",
  "thiserror",
  "zeroize",
 ]
