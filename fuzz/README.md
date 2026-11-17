@@ -17,6 +17,8 @@ libFuzzer targets for the codec parsers.
 | `deterministic_cbor` | generic deterministic-CBOR decode + canonical re-encode | `codec_cbor::{decode_deterministic_cbor, encode_deterministic_cbor}` |
 | `general_cbor` | bounded borrowed framing, profiles, key equivalence, exact received embedding, cursor consumption | `codec_cbor::general::{frame_prefix, validate_exact, encode, Cursor}` |
 | `tlv` | bounded definite BER/ISO 7816 and DER headers, exact source spans, prefix/exact framing | `reallyme_codec::tlv::{read_header, frame_prefix, frame_exact}` |
+| `der` | fixed borrowed DER reader shapes and integer-pair round trips | `reallyme_codec::der::{decode_der, decode_unsigned_integer_pair}` |
+| `der_schema` | caller-supplied DER schemas, documents, limits, allocation bounds, and result spans | generated `CodecDerDecodeRequest` through `process_operation_response` |
 | `operation_contract` | executable protobuf + generated ProtoJSON dispatch | `reallyme_codec::operation_contract::{process_operation_response, process_operation_response_json}` |
 | `jcs_text` | strict JSON parsing and canonicalization idempotence | `codec_jcs::canonicalize_json_text` |
 
@@ -34,6 +36,9 @@ cargo +nightly-2026-07-01 fuzz run deterministic_cbor -- -max_total_time=60  # t
 mkdir -p fuzz/corpus/general_cbor
 cp fuzz/seeds/general_cbor/* fuzz/corpus/general_cbor/
 cargo +nightly-2026-07-01 fuzz run general_cbor -- -max_total_time=120
+mkdir -p fuzz/corpus/der_schema
+cp fuzz/seeds/der_schema/* fuzz/corpus/der_schema/
+cargo +nightly-2026-07-01 fuzz run der_schema -- -max_total_time=120 -max_len=2097152
 cargo +nightly-2026-07-01 fuzz run jcs_text -- -max_total_time=60  # time-boxed
 cargo +nightly-2026-07-01 fuzz list                              # all targets
 ```

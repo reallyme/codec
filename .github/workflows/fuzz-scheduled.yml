@@ -26,6 +26,7 @@ jobs:
           - deterministic_cbor
           - general_cbor
           - der
+          - der_schema
           - tlv
           - multibase
           - multicodec
@@ -47,7 +48,7 @@ jobs:
         run: cargo install --git https://github.com/rust-fuzz/cargo-fuzz.git --rev 984c861c8dfea28055254c5f1d2659ab2cd63f76 --locked cargo-fuzz
 
       - name: Seed regression corpus
-        if: matrix.target == 'general_cbor' || matrix.target == 'operation_contract'
+        if: matrix.target == 'general_cbor' || matrix.target == 'operation_contract' || matrix.target == 'der_schema'
         env:
           FUZZ_CORPUS_TARGET: ${{ matrix.target }}
         run: |
@@ -55,7 +56,9 @@ jobs:
           cp "fuzz/seeds/$FUZZ_CORPUS_TARGET/"* "fuzz/corpus/$FUZZ_CORPUS_TARGET/"
 
       - name: Run time-boxed fuzz target
-        run: cargo +nightly-2026-07-01 fuzz run ${{ matrix.target }} -- -max_total_time=300 -rss_limit_mb=4096
+        env:
+          FUZZ_MAX_LEN: ${{ matrix.target == 'der_schema' && '2097152' || '0' }}
+        run: cargo +nightly-2026-07-01 fuzz run ${{ matrix.target }} -- -max_total_time=300 -rss_limit_mb=4096 -max_len="$FUZZ_MAX_LEN"
 
       - name: Upload crash artifacts
         if: failure()

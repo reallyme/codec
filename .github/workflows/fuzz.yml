@@ -42,6 +42,9 @@ jobs:
       - name: Replay operation contract regression
         run: cargo +nightly-2026-07-01 fuzz run operation_contract fuzz/seeds/operation_contract/provider_info.json
 
+      - name: Replay caller-supplied DER schema regressions
+        run: cargo +nightly-2026-07-01 fuzz run der_schema fuzz/seeds/der_schema -- -runs=0 -max_len=2097152
+
       - name: Record verified source
         id: verified
         shell: bash

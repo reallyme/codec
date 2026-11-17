@@ -25,6 +25,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
+stats_alloc = "=0.1.10"
 
 codec-base64url = { package = "reallyme-codec-base64url", path = "../crates/base64url" }
 codec-base64 = { package = "reallyme-codec-base64", path = "../crates/base64" }
@@ -125,6 +126,13 @@ bench = false
 [[bin]]
 name = "der"
 path = "tests/targets/der.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "der_schema"
+path = "tests/targets/der_schema.rs"
 test = false
 doc = false
 bench = false
