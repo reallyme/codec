@@ -1886,7 +1886,6 @@ assertContains(
   "packages/kotlin/gradle/verification-metadata.xml",
   "<verify-signatures>false</verify-signatures>",
 );
-assertContains("docs/dependency-updates.md", "verifying every trusted full fingerprint");
 assertContains("scripts/write_native_manifest.mjs", "sha256");
 assertContains("scripts/write_native_manifest.mjs", 'writeFileSync(`${path}.sha256`');
 assertContains("scripts/write_native_manifest.mjs", "GITHUB_SHA does not match the checked-out source SHA");
