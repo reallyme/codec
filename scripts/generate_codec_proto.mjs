@@ -26,8 +26,8 @@ if (arguments_.length > 1 || (arguments_.length === 1 && arguments_[0] !== "--ch
 // may coexist on PATH. Require both the fork's name and exact release output.
 for (const generator of generators) {
   const result = spawnSync(generator, ["--version"], { cwd: root, encoding: "utf8" });
-  if (result.error !== undefined || result.status !== 0 || result.stdout.trim() !== `${generator} 0.1.2`) {
-    fail(`install ${generator} from its published 0.1.2 package`);
+  if (result.error !== undefined || result.status !== 0 || result.stdout.trim() !== `${generator} 0.1.3`) {
+    fail(`install ${generator} from its published 0.1.3 package`);
   }
 }
 if (arguments_[0] === "--check-tools") {

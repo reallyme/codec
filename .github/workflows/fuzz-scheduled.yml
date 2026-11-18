@@ -43,7 +43,7 @@ jobs:
       - name: Install Rust nightly
         uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
-          toolchain: nightly-2026-07-01
+          toolchain: nightly-2026-11-10
 
       - name: Install cargo-fuzz
         run: cargo install --git https://github.com/rust-fuzz/cargo-fuzz.git --rev 984c861c8dfea28055254c5f1d2659ab2cd63f76 --locked cargo-fuzz
@@ -59,7 +59,7 @@ jobs:
       - name: Run time-boxed fuzz target
         env:
           FUZZ_MAX_LEN: ${{ matrix.target == 'der_schema' && '2097152' || '0' }}
-        run: cargo +nightly-2026-07-01 fuzz run ${{ matrix.target }} -- -max_total_time=300 -rss_limit_mb=4096 -max_len="$FUZZ_MAX_LEN"
+        run: cargo +nightly-2026-11-10 fuzz run ${{ matrix.target }} -- -max_total_time=300 -rss_limit_mb=4096 -max_len="$FUZZ_MAX_LEN"
 
       - name: Upload crash artifacts
         if: failure()

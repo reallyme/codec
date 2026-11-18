@@ -52,7 +52,7 @@ const POLICY_MODULE_SHA256 = new Map([
   ["scripts/codec_proto_schema.mjs", "4ee81a8a3c896d70a871bfb4a0724c007d709891a88580c3eed777bb80ddcbc9"],
   ["scripts/release-readiness/native-proto-policy.mjs", "cd434704f16db0de4e2a80db1a7fbfa1a6e86e7b04df9669da9b53cd18c4cdd9"],
   ["scripts/check_local_proto_tools.mjs", "9e2168572f62d179cb1004a201a02d68c5ed8ac796c42486c539cd4c28e91084"],
-  ["scripts/generate_codec_proto.mjs", "db31951789f27299e1c28cd15c235657f73cda462e1563608da6c4a948185f88"],
+  ["scripts/generate_codec_proto.mjs", "07979a127107e964eb5c1cf1727e1d7f117fe17dd15e97afd101d683d03cf11b"],
   ["scripts/generate_codec_proto_support.mjs", "6ec4f0c7727003fd2d36e537a51f27a0f20bf5cbdf194de912857d94c0ba462a"],
   ["scripts/harden_codec_sdk_proto.mjs", "c736d6c1a443980843e7b35dc072601e29811e4189ed7728d53d41a6ec522ce9"],
   ["scripts/release-readiness/source-policy.mjs", "1bc1368be565bfb972ef68a7b3a532c5b1969f40ef9893cd660fb1c244a4202e"],
@@ -342,7 +342,7 @@ assertCargoMetadataPolicy({
     name: "reallyme-codec-proto",
     dependencies: [{
       name: "reallyme-buffa", rename: "buffa", source: "registry",
-      requirement: "=0.1.2", features: ["json", "zeroize"],
+      requirement: "=0.1.3", features: ["json", "zeroize"],
     }],
   }],
 });
@@ -429,7 +429,7 @@ if (rootCargo.includes("crates/crypto") || rootCargo.includes("crates/proto/cryp
   fail("root Cargo.toml still references removed crypto crates");
 }
 assertContains("Cargo.toml", 'repository = "https://github.com/reallyme/codec"');
-assertContains("Cargo.toml", 'buffa = { package = "reallyme-buffa", version = "=0.1.2", features = ["json", "zeroize"] }');
+assertContains("Cargo.toml", 'buffa = { package = "reallyme-buffa", version = "=0.1.3", features = ["json", "zeroize"] }');
 assertContains("README.md", "ReallyMe Codec is one cross-language codec operation contract for identity data.");
 assertContains("README.md", "released in lockstep with `reallyme-codec`");
 assertContains("README.md", "SDK consumers should usually start with the umbrella package");
@@ -2133,7 +2133,7 @@ assertContains(".github/dependabot.yml", "package-ecosystem: cargo");
 assertContains(".github/dependabot.yml", "package-ecosystem: gradle");
 assertContains("scripts/verify_release_dependency_security.mjs", "DEPENDENCY_SECURITY_WORKFLOW");
 for (const path of [".github/workflows/fuzz.yml", ".github/workflows/fuzz-scheduled.yml"]) {
-  assertContains(path, "toolchain: nightly-2026-07-01");
+  assertContains(path, "toolchain: nightly-2026-11-10");
 }
 assertNotContains(".github/workflows/fuzz.yml", "cargo +nightly fuzz");
 assertContains(".github/workflows/fuzz-scheduled.yml", "- operation_contract");
@@ -2187,7 +2187,7 @@ assertContains("fuzz/Cargo.toml", 'name = "jcs_text"');
 assertContains("fuzz/tests/targets/jcs_text.rs", "canonicalize_json_text(json)");
 assertContains("fuzz/README.md", "`jcs_text`");
 assertContains(".github/workflows/fuzz-scheduled.yml", "- jcs_text");
-assertContains("scripts/test_native_sanitizers.sh", "nightly-2026-07-01");
+assertContains("scripts/test_native_sanitizers.sh", "nightly-2026-11-10");
 assertContains("scripts/test_native_sanitizers.sh", "-Zsanitizer=address");
 assertContains("scripts/test_native_sanitizers.sh", "-Zub-checks=yes -Zextra-const-ub-checks=yes");
 assertContains(".github/workflows/code-checks.yml", "Test native sanitizer lanes");

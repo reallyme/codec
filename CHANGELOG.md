@@ -2,6 +2,8 @@
 
 ## 0.4.4 (unreleased)
 
+- Upgrade the ReallyMe Buffa runtime and generators to 0.1.3 and require
+  Rust 1.100 to match their minimum supported compiler.
 - Parse JCS strings into wiping owners and numbers without heap scratch, so
   escaped keys and values are cleared on successful and failed canonicalization.
 - Compare Swift runtime library size and modification/change timestamps as well

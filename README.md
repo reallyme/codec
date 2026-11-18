@@ -32,7 +32,7 @@ Codecs for Rust, TypeScript, Swift, Java and Kotlin, covering base encodings, mu
 cargo add reallyme-codec
 ```
 
-The Rust crates require Rust `1.96.0` or newer. Default features enable the
+The Rust crates require Rust `1.100.0` or newer. Default features enable the
 base-encoding, CBOR/JCS, multiformat, and PEM families. Consumers can enable the
 strict DER reader or the borrowed `tlv` framing surface separately and select
 only the families they use:

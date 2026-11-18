@@ -27,7 +27,17 @@ Both envelopes use the same runtime entry points and semantic implementations.
 
 ## Generated runtime compatibility
 
-Generated types implement Buffa traits. Keep the matching runtime version. When a message implements `Drop`, borrow its fields or use builders and `mem::take` to transfer ownership.
+The `generated` feature exposes message types produced by ReallyMe Buffa
+0.1.3 under the `buffa` dependency alias. Native cleanup messages implement
+`Drop`; bytes and strings use wipe-owning storage, and repeated fields use
+guarded collections. Borrow fields or use builders and `mem::take` when
+transferring ownership. Those types and the public `encode_protobuf` and `decode_protobuf`
+functions implement Buffa traits, so a Buffa version change can alter this
+crate's source API even when the protobuf schema is unchanged. Treat such a
+runtime upgrade as a compatibility review, regenerate every language binding,
+and run downstream compile tests before publishing. The wire schema remains
+the cross-language contract; callers should not depend on Buffa-owned fields
+or views for long-lived domain models.
 
 ## License
 

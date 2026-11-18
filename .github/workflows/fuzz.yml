@@ -28,7 +28,7 @@ jobs:
       - name: Install Rust nightly
         uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
-          toolchain: nightly-2026-07-01
+          toolchain: nightly-2026-11-10
 
       - name: Verify fuzz lockfile is current
         run: cargo metadata --manifest-path fuzz/Cargo.toml --locked --format-version 1 > /dev/null
@@ -37,16 +37,16 @@ jobs:
         run: cargo install --git https://github.com/rust-fuzz/cargo-fuzz.git --rev 984c861c8dfea28055254c5f1d2659ab2cd63f76 --locked cargo-fuzz
 
       - name: Build fuzz targets
-        run: cargo +nightly-2026-07-01 fuzz build
+        run: cargo +nightly-2026-11-10 fuzz build
 
       - name: Replay operation contract regression
-        run: cargo +nightly-2026-07-01 fuzz run operation_contract fuzz/seeds/operation_contract/provider_info.json
+        run: cargo +nightly-2026-11-10 fuzz run operation_contract fuzz/seeds/operation_contract/provider_info.json
 
       - name: Replay caller-supplied DER schema regressions
-        run: cargo +nightly-2026-07-01 fuzz run der_schema fuzz/seeds/der_schema -- -runs=0 -max_len=2097152
+        run: cargo +nightly-2026-11-10 fuzz run der_schema fuzz/seeds/der_schema -- -runs=0 -max_len=2097152
 
       - name: Replay guarded JSON regressions
-        run: cargo +nightly-2026-07-01 fuzz run guarded_json fuzz/seeds/guarded_json -- -runs=0
+        run: cargo +nightly-2026-11-10 fuzz run guarded_json fuzz/seeds/guarded_json -- -runs=0
 
       - name: Record verified source
         id: verified
