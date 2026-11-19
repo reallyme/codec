@@ -25,6 +25,13 @@ public  final class CodecDeterministicCborNull extends
     return "CodecDeterministicCborNull{<redacted>}";
   }
 
+  // Preserve protobuf value equality while keeping hashes independent of
+  // sensitive field contents.
+  @java.lang.Override
+  public boolean equals(java.lang.Object other) {
+    return super.equals(other);
+  }
+
   @java.lang.Override
   public int hashCode() {
     return 0x524d;
