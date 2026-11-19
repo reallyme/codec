@@ -4,6 +4,8 @@
 
 #[derive(Debug, thiserror::Error)]
 pub(super) enum StorageErrorReason {
+    #[error("invalid guarded JSON type")]
+    InvalidJsonType,
     #[error("guarded storage length overflow")]
     LengthOverflow,
     #[error("guarded storage allocation failed")]

@@ -284,7 +284,7 @@ function packageChecksum(pkg) {
 async function publishedChecksum(pkg) {
   const response = await fetch(
     `https://crates.io/api/v1/crates/${encodeURIComponent(pkg.name)}/${encodeURIComponent(pkg.version)}`,
-    { headers: { "User-Agent": "reallyme-codec-release/0.4.3" }, signal: AbortSignal.timeout(20000) },
+    { headers: { "User-Agent": "reallyme-codec-release/0.4.4" }, signal: AbortSignal.timeout(20000) },
   );
   if (response.status === 404) {
     return null;

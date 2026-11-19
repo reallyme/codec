@@ -11,7 +11,7 @@ on:
         description: Release version without leading v
         required: true
         type: string
-        default: 0.4.3
+        default: 0.4.4
       source_sha:
         description: Copy the full source SHA from the successful Crates Package Preflight summary
         required: true
@@ -71,7 +71,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: reallyme/release-readiness
-          ref: 55115f21d5bf9a3fbc1bb8d10484aecba6e7bd8f
+          ref: e323ea52bc1f76e67df03fc95e19d596fb54bd03
           path: .release-readiness
           persist-credentials: false
 
@@ -114,6 +114,14 @@ jobs:
           persist-credentials: false
           ref: ${{ needs.verify-release-sha.outputs.release_sha }}
 
+      - name: Checkout release-readiness runner
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: reallyme/release-readiness
+          ref: e323ea52bc1f76e67df03fc95e19d596fb54bd03
+          path: .release-readiness
+          persist-credentials: false
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
@@ -136,8 +144,11 @@ jobs:
 
       # No build cache is restored here: this job holds the registry token, and
       # publishing uses --no-verify, so a cache could only add poisoning risk.
-      - name: Check package contents for private local files
-        run: python3 scripts/check_release_privacy.py "$RUNNER_TEMP/release-package"
+      - name: Verify publication privacy
+        shell: bash
+        env:
+          PUBLICATION_PATH: ${{ runner.temp }}/release-package
+        run: node .release-readiness/scripts/repository-privacy.mjs --artifact "$PUBLICATION_PATH"
 
       - name: Publish crates in dependency order
         run: |

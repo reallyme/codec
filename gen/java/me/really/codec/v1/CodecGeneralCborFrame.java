@@ -256,6 +256,11 @@ public  final class CodecGeneralCborFrame extends
   public static final int OPTIONS_FIELD_NUMBER = 6;
   private me.really.codec.v1.CodecGeneralCborOptions options_;
   /**
+   * <pre>
+   * Standalone frames carry options here. Collection frames inherit their
+   * containing CodecGeneralCborFrames.options when this field is absent.
+   * </pre>
+   *
    * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 6 [json_name = "options"];</code>
    */
   @java.lang.Override
@@ -263,6 +268,11 @@ public  final class CodecGeneralCborFrame extends
     return ((bitField0_ & 0x00000010) != 0);
   }
   /**
+   * <pre>
+   * Standalone frames carry options here. Collection frames inherit their
+   * containing CodecGeneralCborFrames.options when this field is absent.
+   * </pre>
+   *
    * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 6 [json_name = "options"];</code>
    */
   @java.lang.Override
@@ -270,6 +280,11 @@ public  final class CodecGeneralCborFrame extends
     return options_ == null ? me.really.codec.v1.CodecGeneralCborOptions.getDefaultInstance() : options_;
   }
   /**
+   * <pre>
+   * Standalone frames carry options here. Collection frames inherit their
+   * containing CodecGeneralCborFrames.options when this field is absent.
+   * </pre>
+   *
    * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 6 [json_name = "options"];</code>
    */
   private void setOptions(me.really.codec.v1.CodecGeneralCborOptions value) {
@@ -278,6 +293,11 @@ public  final class CodecGeneralCborFrame extends
     bitField0_ |= 0x00000010;
   }
   /**
+   * <pre>
+   * Standalone frames carry options here. Collection frames inherit their
+   * containing CodecGeneralCborFrames.options when this field is absent.
+   * </pre>
+   *
    * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 6 [json_name = "options"];</code>
    */
   @java.lang.SuppressWarnings("ReferenceEquality")
@@ -293,6 +313,11 @@ public  final class CodecGeneralCborFrame extends
     bitField0_ |= 0x00000010;
   }
   /**
+   * <pre>
+   * Standalone frames carry options here. Collection frames inherit their
+   * containing CodecGeneralCborFrames.options when this field is absent.
+   * </pre>
+   *
    * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 6 [json_name = "options"];</code>
    */
   private void clearOptions() {
@@ -618,6 +643,11 @@ public  final class CodecGeneralCborFrame extends
     }
 
     /**
+     * <pre>
+     * Standalone frames carry options here. Collection frames inherit their
+     * containing CodecGeneralCborFrames.options when this field is absent.
+     * </pre>
+     *
      * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 6 [json_name = "options"];</code>
      */
     @java.lang.Override
@@ -625,6 +655,11 @@ public  final class CodecGeneralCborFrame extends
       return instance.hasOptions();
     }
     /**
+     * <pre>
+     * Standalone frames carry options here. Collection frames inherit their
+     * containing CodecGeneralCborFrames.options when this field is absent.
+     * </pre>
+     *
      * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 6 [json_name = "options"];</code>
      */
     @java.lang.Override
@@ -632,6 +667,11 @@ public  final class CodecGeneralCborFrame extends
       return instance.getOptions();
     }
     /**
+     * <pre>
+     * Standalone frames carry options here. Collection frames inherit their
+     * containing CodecGeneralCborFrames.options when this field is absent.
+     * </pre>
+     *
      * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 6 [json_name = "options"];</code>
      */
     public Builder setOptions(me.really.codec.v1.CodecGeneralCborOptions value) {
@@ -640,6 +680,11 @@ public  final class CodecGeneralCborFrame extends
       return this;
       }
     /**
+     * <pre>
+     * Standalone frames carry options here. Collection frames inherit their
+     * containing CodecGeneralCborFrames.options when this field is absent.
+     * </pre>
+     *
      * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 6 [json_name = "options"];</code>
      */
     public Builder setOptions(
@@ -649,6 +694,11 @@ public  final class CodecGeneralCborFrame extends
       return this;
     }
     /**
+     * <pre>
+     * Standalone frames carry options here. Collection frames inherit their
+     * containing CodecGeneralCborFrames.options when this field is absent.
+     * </pre>
+     *
      * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 6 [json_name = "options"];</code>
      */
     public Builder mergeOptions(me.really.codec.v1.CodecGeneralCborOptions value) {
@@ -657,6 +707,11 @@ public  final class CodecGeneralCborFrame extends
       return this;
     }
     /**
+     * <pre>
+     * Standalone frames carry options here. Collection frames inherit their
+     * containing CodecGeneralCborFrames.options when this field is absent.
+     * </pre>
+     *
      * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 6 [json_name = "options"];</code>
      */
     public Builder clearOptions() {  copyOnWrite();

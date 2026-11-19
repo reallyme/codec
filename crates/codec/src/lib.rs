@@ -39,6 +39,10 @@ pub mod tlv;
 #[cfg(feature = "hex")]
 pub mod hex;
 
+/// Guarded, bounded JSON decoding and generated-type projections.
+#[cfg(feature = "json")]
+pub mod json;
+
 /// JSON Canonicalization Scheme helpers.
 #[cfg(feature = "jcs")]
 pub mod jcs;

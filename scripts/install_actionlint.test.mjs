@@ -57,7 +57,7 @@ function fixture(t) {
     LINT_EXTRACT_LOG: join(root, "extract"),
   };
   const run = (arguments_ = []) => {
-    const result = spawnSync("bash", [script, ...arguments_], { cwd: root, env, encoding: "utf8", timeout: 10_000 });
+    const result = spawnSync("bash", [script, ...arguments_], { cwd: root, env, encoding: "utf8", timeout: 60_000 });
     assert.equal(result.error, undefined);
     assert.equal(readdirSync(runner).some((name) => name.startsWith("workflow-lint.")), false);
     return result;

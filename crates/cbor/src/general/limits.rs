@@ -12,7 +12,9 @@ pub const MAX_DEPTH: usize = 64;
 /// Hard cap for structural nodes, including tags and string chunks.
 pub const MAX_NODES: usize = 65_536;
 /// Hard cap for entries in one array/map or chunks in one string.
-pub const MAX_ENTRIES: usize = 4_096;
+pub const MAX_ENTRIES: usize = 65_536;
+/// Default entries in one array/map or chunks in one string.
+pub const DEFAULT_ENTRIES: usize = 4_096;
 /// Hard cap for validation work credits.
 pub const MAX_WORK: usize = 67_108_864;
 const DEFAULT_WORK: usize = 16_777_216;
@@ -20,7 +22,11 @@ const DEFAULT_WORK: usize = 16_777_216;
 const ENCODED_KEY_MAX_SCAN_NODES: usize = 1_048_576;
 const ENCODED_KEY_MAX_COMPARISON_BYTES: usize = 1_048_576;
 
-/// Caller-lowerable limits; private fields prevent bypassing hard ceilings.
+/// Caller-configurable limits; private fields prevent bypassing hard ceilings.
+///
+/// Container entries default to 4,096 and may be explicitly raised to 65,536.
+/// The independent node, byte, depth, and work budgets still apply to the whole
+/// operation, so a container and its children must fit within the node budget.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Limits {
     pub(super) input: usize,
@@ -86,7 +92,7 @@ impl Limits {
         entries,
         entries,
         MAX_ENTRIES,
-        "Set or inspect the maximum entries or chunks in one container."
+        "Set or inspect entries or chunks per container (default 4,096; ceiling 65,536)."
     );
     limit!(
         with_byte_string_bytes,
@@ -118,7 +124,7 @@ impl Default for Limits {
             output: MAX_BYTES,
             depth: MAX_DEPTH,
             nodes: MAX_NODES,
-            entries: MAX_ENTRIES,
+            entries: DEFAULT_ENTRIES,
             bytes: MAX_BYTES,
             text: MAX_BYTES,
             work: DEFAULT_WORK,

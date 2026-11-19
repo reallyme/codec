@@ -46,12 +46,10 @@ public final class ReallyMeCodecRustCAbiLibrary: @unchecked Sendable {
             }
             let resolvedPath = URL(fileURLWithPath: path).resolvingSymlinksInPath().path
             guard let hashedIdentity = LoadedFileIdentity(path: resolvedPath),
-                let attributes = try? FileManager.default.attributesOfItem(atPath: resolvedPath),
-                let size = attributes[.size] as? Int,
-                size > 0,
-                size <= Self.maximumVerifiedLibraryBytes,
+                hashedIdentity.size > 0,
+                hashedIdentity.size <= Self.maximumVerifiedLibraryBytes,
                 let contents = FileManager.default.contents(atPath: resolvedPath),
-                contents.count == size
+                contents.count == hashedIdentity.size
             else {
                 throw ReallyMeCodecError.dynamicLibraryNotFound
             }
@@ -117,10 +115,17 @@ public final class ReallyMeCodecRustCAbiLibrary: @unchecked Sendable {
             else {
                 throw ReallyMeCodecError.dynamicLibraryLoadFailed
             }
+            // Device/inode alone miss in-place writes. Compare mutation state
+            // immediately before loading and again after dyld maps the image.
+            guard LoadedFileIdentity(path: resolvedPath) == requiredIdentity else {
+                throw ReallyMeCodecError.dynamicLibraryLoadFailed
+            }
             guard let loadedHandle = dlopen(resolvedPath, RTLD_NOW | RTLD_LOCAL) else {
                 throw ReallyMeCodecError.dynamicLibraryLoadFailed
             }
-            guard Self.loadedImageIdentity(handle: loadedHandle) == requiredIdentity else {
+            guard Self.loadedImageIdentity(handle: loadedHandle) == requiredIdentity,
+                LoadedFileIdentity(path: resolvedPath) == requiredIdentity
+            else {
                 dlclose(loadedHandle)
                 throw ReallyMeCodecError.dynamicLibraryLoadFailed
             }
@@ -187,26 +192,6 @@ public final class ReallyMeCodecRustCAbiLibrary: @unchecked Sendable {
         #else
             _ = symbol
             throw ReallyMeCodecError.unsupportedPlatform
-        #endif
-    }
-}
-
-/// Device and inode pair that identifies one file independent of its path.
-private struct LoadedFileIdentity: Equatable {
-    let device: Int64
-    let inode: UInt64
-
-    init?(path: String) {
-        #if canImport(Darwin)
-            var status = stat()
-            guard stat(path, &status) == 0, (status.st_mode & S_IFMT) == S_IFREG else {
-                return nil
-            }
-            device = Int64(status.st_dev)
-            inode = UInt64(status.st_ino)
-        #else
-            _ = path
-            return nil
         #endif
     }
 }

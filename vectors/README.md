@@ -1,36 +1,30 @@
-# Codec Vectors
+# Test vectors
 
-`codec-vectors.json` contains shared codec test inputs and expected outputs.
+`codec-vectors.json` supplies inputs, expected bytes and failures for the Rust,
+TypeScript, Swift and Kotlin tests. Validate edits with:
 
-The suite uses three provenance levels:
+```sh
+node scripts/validate_codec_vectors.mjs
+```
 
-Source labels are `official` for specification examples, `trusted-upstream` for upstream fixtures and `reallyme-pinned` for repository test cases.
+Sources use `official` for specification examples, `trusted-upstream` for
+upstream fixtures and `reallyme-pinned` for this repository's test cases.
+Deterministic-CBOR sections use `golden`, `rejection-fixture`,
+`construction-recipe` and `interop-fixture` to distinguish expected outcomes.
+Keep source references and fixture hashes when updating imported data.
 
-Schema version 2 includes rejection cases. Tests must assert the indicated rejection outcome.
+Typed values use decimal strings for `unsigned` and `negative`, padded base64
+for `bytes`, and explicit `array` or `map` containers. Maps contain key/value
+entry lists. This notation is test data, not a public codec API.
 
-`deterministicCbor.fixtureClasses` labels each section by intent:
+Resource recipes have these meanings:
 
-Fixture classes are `golden` for expected bytes, `rejection-fixture` for invalid input, `construction-recipe` for generated large inputs and `interop-fixture` for interoperability cases.
+- `encoded-byte-count`: `count` copies of `fillByteHex`.
+- `byte-string-length`: one byte string containing `count` zero bytes.
+- `balanced-array-tree`: `levels` array levels, each with `branching` children,
+  followed by null leaves.
+- `array-of-null`: one array of `count` null values.
+- `nested-singleton-arrays`: null wrapped in `depth` one-element arrays.
 
-Interoperability cases require `fixtureKind`, `sourceRepo`, `sourceCommit`, `source`, `explanation`, `sourceFiles`, `hex`, `byteLength` and `sha256`. Source-file entries include SHA-256 hashes. Use synthetic data without PII or secrets.
-
-Unsigned fixture integers are decimal strings to preserve values above `2^53 - 1`. `equivalentInputOrders` lists entry orders; `resourceRejections` specifies generated large inputs.
-
-The positive-value notation is explicitly discriminated: `unsigned` and
-`negative` contain decimal strings, `bytes` contains standard padded base64,
-and recursive containers use `array` or `map`. A map contains an entry list;
-each entry has a typed `key` and `value`. Bare JSON arrays never represent maps.
-
-Resource construction recipe semantics are fixed as follows:
-
-- `encoded-byte-count` creates exactly `count` bytes, each equal to
-  `fillByteHex`;
-- `byte-string-length` creates one semantic byte string containing exactly
-  `count` zero bytes;
-- `balanced-array-tree` creates `levels` array-container levels, with every
-  array containing `branching` children and null leaves after the final level;
-- `array-of-null` creates one array with exactly `count` null children;
-- `nested-singleton-arrays` wraps null in exactly `depth` single-element
-  arrays.
-
-A scalar root has depth zero; a container root has depth one. Every value and map key counts as one node.
+A scalar root has depth zero; a container root has depth one. Every value and
+map key counts as one node.

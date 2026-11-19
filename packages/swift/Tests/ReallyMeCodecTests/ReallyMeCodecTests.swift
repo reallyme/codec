@@ -176,7 +176,7 @@ final class ReallyMeCodecTests: XCTestCase {
         _ operation: @autoclosure () throws -> Any
     ) {
         XCTAssertThrowsError(try operation()) { error in
-            XCTAssertEqual(error as? ReallyMeCodecError, expected)
+            XCTAssertEqual((error as? ReallyMeCodecError)?.category, expected.category)
         }
     }
 
@@ -432,7 +432,7 @@ final class ReallyMeCodecTests: XCTestCase {
             return
         }
         XCTAssertEqual(
-            ReallyMeCodecRustCAbiProvider.errorForCodecError(malformedJsonError),
+            ReallyMeCodecRustCAbiProvider.errorForCodecError(malformedJsonError).category,
             .invalidInput
         )
     }

@@ -13,7 +13,7 @@ on:
         description: Release version without leading v
         required: true
         type: string
-        default: 0.4.3
+        default: 0.4.4
       source_sha:
         description: Full commit SHA on main used for this release
         required: true
@@ -66,7 +66,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: reallyme/release-readiness
-          ref: 55115f21d5bf9a3fbc1bb8d10484aecba6e7bd8f
+          ref: e323ea52bc1f76e67df03fc95e19d596fb54bd03
           path: .release-readiness
           persist-credentials: false
 
@@ -107,6 +107,12 @@ jobs:
           RELEASE_TAG: v${{ inputs.version }}
           SOURCE_SHA: ${{ steps.source.outputs.sha }}
 
+      - name: Verify publication privacy
+        shell: bash
+        env:
+          PUBLICATION_PATH: ${{ runner.temp }}/release-readiness-ci.json
+        run: node .release-readiness/scripts/repository-privacy.mjs --artifact "$PUBLICATION_PATH"
+
       - name: Record verified CI
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -140,6 +146,14 @@ jobs:
           persist-credentials: false
           ref: ${{ needs.verify-source-sha.outputs.release_sha }}
 
+      - name: Checkout release-readiness runner
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: reallyme/release-readiness
+          ref: e323ea52bc1f76e67df03fc95e19d596fb54bd03
+          path: .release-readiness
+          persist-credentials: false
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
@@ -169,8 +183,11 @@ jobs:
         run: ./gradlew test -Preallyme.codec.nativeResourcesDir=../../build/kotlin-native-resources
         shell: bash
 
-      - name: Check package contents for private local files
-        run: python3 scripts/check_release_privacy.py build/kotlin-native-resources
+      - name: Verify publication privacy
+        shell: bash
+        env:
+          PUBLICATION_PATH: build/kotlin-native-resources
+        run: node .release-readiness/scripts/repository-privacy.mjs --artifact "$PUBLICATION_PATH"
 
       - name: Upload codec JNI resource
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -191,6 +208,14 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ needs.verify-source-sha.outputs.release_sha }}
+
+      - name: Checkout release-readiness runner
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: reallyme/release-readiness
+          ref: e323ea52bc1f76e67df03fc95e19d596fb54bd03
+          path: .release-readiness
+          persist-credentials: false
 
       - name: Install Java
         uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
@@ -219,8 +244,11 @@ jobs:
         env:
           MAVEN_REPOSITORY: ${{ runner.temp }}/maven-jvm
 
-      - name: Check package contents for private local files
-        run: python3 scripts/check_release_privacy.py "$RUNNER_TEMP/maven-jvm"
+      - name: Verify publication privacy
+        shell: bash
+        env:
+          PUBLICATION_PATH: ${{ runner.temp }}/maven-jvm/
+        run: node .release-readiness/scripts/repository-privacy.mjs --artifact "$PUBLICATION_PATH"
 
       - name: Upload verified package
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -276,7 +304,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: reallyme/release-readiness
-          ref: 55115f21d5bf9a3fbc1bb8d10484aecba6e7bd8f
+          ref: e323ea52bc1f76e67df03fc95e19d596fb54bd03
           path: .release-readiness
           persist-credentials: false
 
@@ -304,8 +332,11 @@ jobs:
           SOURCE_SHA: ${{ needs.verify-source-sha.outputs.release_sha }}
           RELEASE_VERSION: ${{ inputs.version }}
 
-      - name: Check package contents for private local files
-        run: python3 scripts/check_release_privacy.py "$RUNNER_TEMP/android-publication"
+      - name: Verify publication privacy
+        shell: bash
+        env:
+          PUBLICATION_PATH: ${{ runner.temp }}/android-publication/
+        run: node .release-readiness/scripts/repository-privacy.mjs --artifact "$PUBLICATION_PATH"
 
       - name: Upload tested Android publication
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

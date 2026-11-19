@@ -61,11 +61,21 @@ public interface CodecGeneralCborFrameOrBuilder extends
   boolean getValidated();
 
   /**
+   * <pre>
+   * Standalone frames carry options here. Collection frames inherit their
+   * containing CodecGeneralCborFrames.options when this field is absent.
+   * </pre>
+   *
    * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 6 [json_name = "options"];</code>
    * @return Whether the options field is set.
    */
   boolean hasOptions();
   /**
+   * <pre>
+   * Standalone frames carry options here. Collection frames inherit their
+   * containing CodecGeneralCborFrames.options when this field is absent.
+   * </pre>
+   *
    * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 6 [json_name = "options"];</code>
    * @return The options.
    */

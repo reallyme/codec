@@ -47,17 +47,18 @@ if (pinCheck.error !== undefined || pinCheck.status !== 0) {
 const POLICY_MODULE_SHA256 = new Map([
   ["packages/ts/scripts/lint-typescript.mjs", "ac3fbad064d2655773cc5c8476eda63e5e1cff0e53cceb6d9cf0faca923df89d"],
   ["scripts/check_swift_source_style.mjs", "24a53cb703ea5763ace64a7c6e43a96ec721235cfe6efec6b0bec134b43d0455"],
-  ["scripts/release-readiness/sdk-source-policy.mjs", "9527f3842536ed78e8d4358c4a802f7ecf1669c6537d87d67a4d6ccb6e28011f"],
-  ["scripts/generate_codec_sdk_contract.mjs", "0f0c49b1f3f8185c6599aa4123b8b432224e146760561a2d45d5e37d9dae9cd0"],
+  ["scripts/release-readiness/sdk-source-policy.mjs", "899c4afff1ce5729ea7fc016d876ac630a62db53edc536ed79a4022c251711f9"],
+  ["scripts/generate_codec_sdk_contract.mjs", "1512ecb968019c0516d326540947981edafd10a328782fbff483586e0300ee12"],
   ["scripts/codec_proto_schema.mjs", "4ee81a8a3c896d70a871bfb4a0724c007d709891a88580c3eed777bb80ddcbc9"],
   ["scripts/release-readiness/native-proto-policy.mjs", "cd434704f16db0de4e2a80db1a7fbfa1a6e86e7b04df9669da9b53cd18c4cdd9"],
-  ["scripts/generate_codec_proto.mjs", "2488376480cec9894b24fcb777a96ee5b062b5b077386112c278d82352ce5719"],
+  ["scripts/check_local_proto_tools.mjs", "9e2168572f62d179cb1004a201a02d68c5ed8ac796c42486c539cd4c28e91084"],
+  ["scripts/generate_codec_proto.mjs", "07979a127107e964eb5c1cf1727e1d7f117fe17dd15e97afd101d683d03cf11b"],
   ["scripts/generate_codec_proto_support.mjs", "6ec4f0c7727003fd2d36e537a51f27a0f20bf5cbdf194de912857d94c0ba462a"],
-  ["scripts/harden_codec_sdk_proto.mjs", "60636ba0bc757c45ec951ca13d79fedba29620f605a1c1d4e6b6d0c8c3c0d0ae"],
+  ["scripts/harden_codec_sdk_proto.mjs", "c736d6c1a443980843e7b35dc072601e29811e4189ed7728d53d41a6ec522ce9"],
   ["scripts/release-readiness/source-policy.mjs", "1bc1368be565bfb972ef68a7b3a532c5b1969f40ef9893cd660fb1c244a4202e"],
   ["scripts/verify_release_version.mjs", "bc858e3f4bd98b808b5557b7c50755b4a0d3595393842d7cd01728f853d86215"],
-  ["scripts/codec_proto_sensitivity.mjs", "e74e8459712b1091f4dc413fe32d9c6a4b160d90d110d22f9cb52601d5c3ca77"],
-  ["scripts/validate_codec_vectors.mjs", "2441249555b41a4dddc20096ae56521a165058284f933bf418b074dd76420fb9"],
+  ["scripts/codec_proto_sensitivity.mjs", "ebdfba18a6c14d5390d6016b7a414ac076eedd1f1a78a7ba0a0974bf68686c36"],
+  ["scripts/validate_codec_vectors.mjs", "4953822f064dc2dc12533899f3e6f4cff219bcb6e1a41d11c5d661ca41b0af18"],
   ["scripts/generate_codec_limits.mjs", "9f566d26749206dffcabf2795b4ce5cd7f20d51ce6d863e0527b91b64d143256"],
 ]);
 for (const [path, expected] of POLICY_MODULE_SHA256) {
@@ -323,7 +324,7 @@ const assertTypescriptProtoFacadeCompleteness = ({ facadePath, generatedPath }) 
   });
 };
 
-assertReallyMeReleasePackagePolicy({ version: "0.9.5" });
+assertReallyMeReleasePackagePolicy({ version: "0.9.7" });
 const rustChecks = ".github/workflows/code-checks.yml";
 assertRustReleasePolicy({
   release: { workflow: rustChecks, job: "rust", step: "Test on the release toolchain" },
@@ -341,7 +342,7 @@ assertCargoMetadataPolicy({
     name: "reallyme-codec-proto",
     dependencies: [{
       name: "reallyme-buffa", rename: "buffa", source: "registry",
-      requirement: "=0.1.2", features: ["json", "zeroize"],
+      requirement: "=0.1.3", features: ["json", "zeroize"],
     }],
   }],
 });
@@ -375,8 +376,8 @@ for (const workflow of [".github/workflows/fuzz.yml", ".github/workflows/fuzz-sc
   });
 }
 
-const codecPackageVersion = "0.4.3";
-const codecProtoPackageVersion = "0.4.3";
+const codecPackageVersion = "0.4.4";
+const codecProtoPackageVersion = "0.4.4";
 assertContains("Package.swift", `let ffiArtifactVersion = "${codecPackageVersion}"`);
 // The probes are separate Cargo workspaces. Root workspace metadata cannot
 // detect a release bump that leaves their own lockfile package entries stale.
@@ -428,7 +429,7 @@ if (rootCargo.includes("crates/crypto") || rootCargo.includes("crates/proto/cryp
   fail("root Cargo.toml still references removed crypto crates");
 }
 assertContains("Cargo.toml", 'repository = "https://github.com/reallyme/codec"');
-assertContains("Cargo.toml", 'buffa = { package = "reallyme-buffa", version = "=0.1.2", features = ["json", "zeroize"] }');
+assertContains("Cargo.toml", 'buffa = { package = "reallyme-buffa", version = "=0.1.3", features = ["json", "zeroize"] }');
 for (const rustLeafCrate of codecRustLeafCrates) {
   const manifest = readText(rustLeafCrate);
   if (!manifest.includes(`version = "${codecPackageVersion}"`)) {
@@ -638,7 +639,10 @@ assertNotContains("packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodec
 assertNotContains("packages/ts/src/cbor.ts", "bytesBase64url");
 assertNotContains("packages/ts/src/cbor.ts", "string(value: string)");
 assertContains("crates/jcs/src/canonicalize.rs", "canonicalize_json_text");
-assertContains("crates/jcs/src/parse_json.rs", "serde_json::Deserializer::from_str(input)");
+assertContains("crates/jcs/src/parse_json.rs", "read_json_string(self.input, &mut self.offset)");
+assertNotContains("crates/jcs/src/parse_json.rs", "serde_json::Deserializer::from_str(input)");
+assertContains("crates/jcs/src/read_json_string.rs", "Zeroizing::new(String::new())");
+assertContains("crates/jcs/tests/parse_cleanup_tests.rs", "escaped_keys_and_values_are_wiped_on_success_and_all_failure_paths");
 assertContains("crates/ffi/src/codec.rs", "initialize_output_length(output_ptr");
 assertContains("crates/ffi/src/codec.rs", "write_i32(result_out, 0)");
 assertNotContains("crates/ffi/src/codec.rs", "serde_json::to_vec(&cbor_to_tagged");
@@ -871,11 +875,11 @@ assertContains(
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  'const RELEASE_READINESS_COMMIT = "55115f21d5bf9a3fbc1bb8d10484aecba6e7bd8f"',
+  'const RELEASE_READINESS_COMMIT = "e323ea52bc1f76e67df03fc95e19d596fb54bd03"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  '"3f351bd201ed2f1068cbdd87884fb07759a7ae1f1f0148099df046d9580cecb6"',
+  '"825ebca65a1324ea7cf42713ca5c4c67b0d929444d24dcaf7500fc9fa0ca7e20"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
@@ -1230,7 +1234,7 @@ assertSetEquals({
 });
 assertContains(codecProtoSchemaPath, "CodecWasmReinstantiateRequest reinstantiate_wasm = 5;");
 assertContains(codecProtoSchemaPath, "CodecEmptyResult reinstantiated_wasm = 5;");
-const expandedHandlers = ["dispatch_api", "execute_scalars", "execute_general_cbor", "execute_der", "execute_tlv"]
+const expandedHandlers = ["dispatch_api", "execute_scalars", "execute_general_cbor", "execute_der", "execute_tlv", "execute_json"]
   .map((name) => {
     const source = stripSourceComments(readText(`crates/codec/src/operation_contract/${name}.rs`));
     // Routing patterns delegate ownership; only the leaf arm implements an
@@ -1276,6 +1280,20 @@ if (/\bcodec_\w+::[a-z]\w*\s*\(/u.test(scalarDispatchSource)) {
 const legacyScalarSource = stripSourceStringsAndComments(readText("crates/adapter/src/scalar_ops.rs"));
 if (/\b(?:fn|struct|enum)\b/u.test(legacyScalarSource)) {
   fail("the legacy scalar adapter must only re-export the shared generated-contract implementation");
+}
+
+assertContains("crates/codec/src/operation_contract/execute_json.rs", "crate::json::decode");
+for (const [path, testName] of [
+  ["crates/codec/tests/base64_limits_vector_tests.rs", "shared_bounded_base64_vectors_pin_wire_bytes_and_typed_outcomes"],
+  ["packages/swift/Tests/ReallyMeCodecTests/Base64LimitVectorTests.swift", "testSharedBoundedBase64WireBytesAndTypedOutcomes"],
+  ["packages/kotlin/src/test/kotlin/me/really/codec/Base64LimitVectorTest.kt", "sharedBoundedBase64WireBytesAndTypedOutcomes"],
+  ["packages/ts/test/base64-limits-vectors.test.mjs", "manifest.base64DecodeWithLimits.cases"],
+  ["crates/codec/tests/json_vector_tests.rs", "shared_json_decode_vectors_pin_wire_bytes_and_typed_outcomes"],
+  ["packages/swift/Tests/ReallyMeCodecTests/JsonVectorTests.swift", "testSharedJsonWireBytesAndTypedOutcomes"],
+  ["packages/kotlin/src/test/kotlin/me/really/codec/JsonVectorTest.kt", "sharedJsonWireBytesAndTypedOutcomes"],
+  ["packages/ts/test/json-vectors.test.mjs", "manifest.jsonDecode.cases"],
+]) {
+  assertContains(path, testName);
 }
 
 assertContains("crates/codec/src/operation_contract/execute_tlv.rs", "tlv::read_header");
@@ -1489,6 +1507,16 @@ for (const sdkPath of [
   assertNotContains(sdkPath, "reason <=");
 }
 assertContains("packages/ts/src/classifyOperationError.ts", "const errorCodeForCodecErrorMessage =");
+assertContains("packages/ts/src/errors.ts", "readonly reason: CodecErrorReason | undefined");
+assertContains("packages/ts/src/errors.ts", "readonly origin: CodecErrorOrigin | undefined");
+assertContains("packages/kotlin/src/main/kotlin/me/really/codec/generated/ReallyMeCodecException.kt", "public val reason: CodecErrorReason?");
+assertContains("packages/kotlin/src/main/kotlin/me/really/codec/generated/ReallyMeCodecException.kt", "public val origin: CodecErrorOrigin?");
+assertContains("packages/swift/Sources/ReallyMeCodec/Generated/CodecSdkContract.swift", "case operationFailure(");
+assertContains("packages/swift/Sources/ReallyMeCodec/Generated/CodecSdkContract.swift", "public var reason: ReallyMeProtoCodecErrorReason?");
+for (const errorEnum of ["CodecErrorReason", "CodecErrorOrigin", "CodecSdkErrorCategory"]) {
+  assertContains("gen/swift/reallyme/codec/v1/codec.pb.swift", `nonisolated public enum ReallyMeProto${errorEnum}:`);
+}
+
 for (const reasonRange of [
   "reason < 100 || reason > 199",
   "reason < 200 || reason > 299",
@@ -1509,16 +1537,16 @@ for (const typedSdkResultReaderPath of [
   assertNotContains(typedSdkResultReaderPath, "errorCodeForCodecError(");
 }
 assertContains(
-  "packages/swift/Sources/ReallyMeCodec/CallCodecWithRustCAbi.swift",
+  "packages/swift/Sources/ReallyMeCodec/MapCodecError.swift",
   "static func errorForCodecError(",
 );
 assertContains(
-  "packages/swift/Sources/ReallyMeCodec/CallCodecWithRustCAbi.swift",
+  "packages/swift/Sources/ReallyMeCodec/MapCodecError.swift",
   "Self.isNonCanonicalReason(error.reason)",
 );
 assertContains(
   "packages/kotlin/src/main/kotlin/me/really/codec/CallCodec.kt",
-  "private fun exceptionForCodecError(codecError: CodecError)",
+  "internal fun exceptionForCodecError(codecError: CodecError)",
 );
 assertContains(
   "packages/kotlin/src/main/kotlin/me/really/codec/CallCodec.kt",
@@ -1716,10 +1744,14 @@ assertContains("crates/codec/src/operation_contract/run_contract.rs", 'include!(
 
 assertContains("buf.gen.yaml", "out: crates/proto/src/generated/buffa");
 assertContains("buf.gen.yaml", "out: packages/ts/src/proto/generated");
-assertContains("buf.gen.yaml", "buf.build/bufbuild/es:v2.17.0");
-assertContains("buf.gen.yaml", "buf.build/apple/swift:v1.39.0");
-assertContains("buf.gen.yaml", "buf.build/protocolbuffers/java:v36.2");
-assertContains("buf.gen.yaml", "buf.build/protocolbuffers/kotlin:v36.2");
+assertContains("buf.gen.yaml", "local: [node, packages/ts/node_modules/@bufbuild/protoc-gen-es/bin/protoc-gen-es]");
+assertContains("packages/ts/package.json", '"@bufbuild/protoc-gen-es": "2.17.0"');
+assertContains("buf.gen.yaml", "local: protoc-gen-swift");
+assertContains("buf.gen.yaml", "protoc_builtin: java");
+assertContains("buf.gen.yaml", "protoc_builtin: kotlin");
+assertNotContains("buf.gen.yaml", "remote:");
+assertContains("scripts/check_local_proto_tools.mjs", "libprotoc 36.2");
+assertContains("scripts/check_local_proto_tools.mjs", "protoc-gen-swift 1.39.0");
 assertContains("crates/proto/src/generated/buffa/mod.rs", "pub mod codec");
 assertContains("crates/proto/src/error.rs", "pub struct CodecWireError");
 assertContains("crates/proto/src/error.rs", "pub fn try_new");
@@ -1773,7 +1805,7 @@ assertContains(
 );
 assertContains(
   "crates/proto/src/wire.rs",
-  ".try_encode_to_vec()",
+  ".try_encode_bounded(wire_length, &mut *encoded)",
 );
 assertContains("crates/proto/tests/generated_tests/error_wire.rs", "bounded_protobuf_decode_rejects_oversized_messages");
 assertContains("crates/proto/tests/generated_tests/error_wire.rs", "json_decode_rejects_inputs_that_expand_past_binary_cap");
@@ -1849,7 +1881,13 @@ assertContains("packages/kotlin/build.gradle.kts", "reallyme.codec.requireFullNa
 assertContains("packages/kotlin/build.gradle.kts", "verifyBundledNativeResources");
 assertContains("packages/kotlin/build.gradle.kts", "verifyHostBundledNativeResource");
 assertContains("packages/kotlin/build.gradle.kts", "verifyJarContainsNativeResources");
-assertContains("packages/kotlin/build.gradle.kts", "ZipFile(jarTask.get().archiveFile.get().asFile)");
+// Ktlint may split this call chain across lines and add a trailing comma.
+// Preserve the artifact-source check without depending on its presentation.
+if (!/ZipFile\s*\(\s*jarTask\s*\.\s*get\(\)\s*\.\s*archiveFile\s*\.\s*get\(\)\s*\.\s*asFile\s*,?\s*\)/u.test(
+  scrubCommentsForAssertion("packages/kotlin/build.gradle.kts", readText("packages/kotlin/build.gradle.kts")),
+)) {
+  fail("packages/kotlin/build.gradle.kts must open the JVM JAR produced by its jar task");
+}
 assertContains("packages/kotlin/build.gradle.kts", "expectedNativeDigestMetadata");
 assertContains("packages/kotlin/build.gradle.kts", "ReallyMe codec native digest does not match");
 assertContains("packages/kotlin/build.gradle.kts", "JVM JAR native digest does not match");
@@ -2087,14 +2125,29 @@ assertContains(".github/dependabot.yml", "package-ecosystem: cargo");
 assertContains(".github/dependabot.yml", "package-ecosystem: gradle");
 assertContains("scripts/verify_release_dependency_security.mjs", "DEPENDENCY_SECURITY_WORKFLOW");
 for (const path of [".github/workflows/fuzz.yml", ".github/workflows/fuzz-scheduled.yml"]) {
-  assertContains(path, "toolchain: nightly-2026-07-01");
+  assertContains(path, "toolchain: nightly-2026-11-10");
 }
 assertNotContains(".github/workflows/fuzz.yml", "cargo +nightly fuzz");
 assertContains(".github/workflows/fuzz-scheduled.yml", "- operation_contract");
+assertContains(".github/workflows/fuzz-scheduled.yml", "- guarded_json");
+assertContains(".github/workflows/fuzz.yml", "fuzz run guarded_json fuzz/seeds/guarded_json -- -runs=0");
+assertContains("fuzz/Cargo.toml", 'name = "guarded_json"');
+assertContains("fuzz/README.md", "`guarded_json`");
+assertContains("fuzz/tests/targets/guarded_json.rs", "reallyme_codec::json::decode(input, None)");
+assertContains("fuzz/tests/targets/guarded_json.rs", "reallyme_codec::json::from_slice::<CodecTextResult>(input, None)");
 assertContains("fuzz/Cargo.toml", 'name = "operation_contract"');
 assertContains("fuzz/README.md", "`operation_contract`");
 assertContains("fuzz/tests/targets/operation_contract.rs", "process_operation_response(data)");
 assertContains("fuzz/tests/targets/operation_contract.rs", "process_operation_response_json(data)");
+assertContains(".github/workflows/fuzz-scheduled.yml", "- der_schema");
+assertContains(".github/workflows/fuzz.yml", "fuzz run der_schema fuzz/seeds/der_schema -- -runs=0");
+assertContains(".github/workflows/fuzz.yml", "-max_len=2097152");
+assertContains(".github/workflows/fuzz-scheduled.yml", "FUZZ_MAX_LEN");
+assertContains("fuzz/Cargo.toml", 'name = "der_schema"');
+assertContains("fuzz/README.md", "`der_schema`");
+assertContains("fuzz/tests/targets/der_schema.rs", "decode_protobuf::<proto::CodecDerDecodeRequest>(data)");
+assertContains("fuzz/tests/targets/der_schema.rs", "process_operation_response(&wire)");
+assertContains("fuzz/tests/targets/der_schema.rs", "measurement.change().bytes_allocated < MAX_OPERATION_ALLOCATED_BYTES");
 assertContains(".github/workflows/fuzz-scheduled.yml", "- deterministic_cbor");
 assertContains("fuzz/Cargo.toml", 'name = "deterministic_cbor"');
 assertContains("fuzz/README.md", "`deterministic_cbor`");
@@ -2126,7 +2179,7 @@ assertContains("fuzz/Cargo.toml", 'name = "jcs_text"');
 assertContains("fuzz/tests/targets/jcs_text.rs", "canonicalize_json_text(json)");
 assertContains("fuzz/README.md", "`jcs_text`");
 assertContains(".github/workflows/fuzz-scheduled.yml", "- jcs_text");
-assertContains("scripts/test_native_sanitizers.sh", "nightly-2026-07-01");
+assertContains("scripts/test_native_sanitizers.sh", "nightly-2026-11-10");
 assertContains("scripts/test_native_sanitizers.sh", "-Zsanitizer=address");
 assertContains("scripts/test_native_sanitizers.sh", "-Zub-checks=yes -Zextra-const-ub-checks=yes");
 assertContains(".github/workflows/code-checks.yml", "Test native sanitizer lanes");
@@ -2134,8 +2187,8 @@ assertContains(".github/workflows/kotlin-android-package-release.yml", "Sign and
 assertNotContains(".github/workflows/kotlin-android-package-release.yml", "bundleReleaseAar");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "requireFullNativeResources=true");
 assertContains("packages/kotlin/settings.gradle.kts", 'rootProject.name = "reallyme-codec"');
-assertContains("packages/kotlin/README.md", "me.really:codec:0.4.3");
-assertContains("packages/kotlin/README.md", "ships Rust JNI libraries as platform resources");
+assertContains("packages/kotlin/README.md", "me.really:codec:0.4.4");
+assertContains("packages/kotlin/README.md", "JNI libraries as platform resources");
 assertContains(
   "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodecRustNativeProvider.kt",
   "/me/really/codec/native",
@@ -2253,7 +2306,7 @@ assertContains(
 // Keep the fixture set anchored outside the manifest itself. A checksum field
 // beside its own bytes cannot detect a coordinated golden-vector edit.
 const EXPECTED_CODEC_VECTORS_SHA256 =
-  "36e558e2cc8cd1ec50171ff3fb5478ebcde03d6eacd5df7192b13e05d70905d8";
+  "11cbffcae7894518d115b7514bce7f9a94a5a91c11991bfc2bfcf0db83fbed03";
 const codecVectorDigest = createHash("sha256")
   .update(readText("vectors/codec-vectors.json"), "utf8")
   .digest("hex");
@@ -2263,6 +2316,16 @@ if (codecVectorDigest !== EXPECTED_CODEC_VECTORS_SHA256) {
 const codecVectorManifest = readJson("vectors/codec-vectors.json");
 if (codecVectorManifest.schemaVersion !== 2) {
   fail("vectors/codec-vectors.json must use schemaVersion 2");
+}
+for (const [path, marker] of [
+  ["crates/codec/tests/pem_bundle_vector_tests.rs", "shared_pem_bundle_vectors_pin_wire_bytes_and_typed_outcomes"],
+  ["packages/swift/Tests/ReallyMeCodecTests/PemBundleVectorTests.swift", "testSharedPemBundleWireBytesAndTypedOutcomes"],
+  ["packages/kotlin/src/test/kotlin/me/really/codec/PemBundleVectorTest.kt", "sharedPemBundleWireBytesAndTypedOutcomes"],
+  ["packages/ts/test/pem-bundle-vectors.test.mjs", "shared PEM bundle vector:"],
+]) {
+  assertContains(path, marker);
+  assertContains(path, "responseHex");
+  assertContains(path, "codec-vectors.json");
 }
 for (const key of [
   "base64MissingPadding",
@@ -2438,7 +2501,7 @@ assertContains(
   "ReallyMeCodecMemory.clearOwned(&responseBytes)",
 );
 assertContains("packages/swift/Sources/ReallyMeCodec/CallCodecWithRustCAbi.swift", "throw ReallyMeCodecError.providerFailure");
-assertContains("packages/swift/Sources/ReallyMeCodec/CallCodecWithRustCAbi.swift", ".canonicalInternal");
+assertContains("packages/swift/Sources/ReallyMeCodec/MapCodecError.swift", "case .canonicalInternal, .canonicalJsonAllocationFailure, .canonicalJsonArithmeticOverflow:");
 assertContains("packages/swift/Tests/ReallyMeCodecTests/ReallyMeCodecTests.swift", 'XCTAssertNil(try codec.tryParseCid("not-a-cid"))');
 assertContains("packages/swift/Tests/ReallyMeCodecTests/ReallyMeCodecTests.swift", "XCTAssertEqual(try codec.dagCborCodecCode(), 0x71)");
 assertContains("packages/swift/Tests/ReallyMeCodecTests/ReallyMeCodecTests.swift", 'codec.base58btcDecode("")');
@@ -2561,7 +2624,7 @@ assertContains(
 );
 assertContains("packages/ts/src/proto.ts", "CodecOperationResponseSchema");
 assertContains("packages/ts/src/proto.ts", "CodecOperationResultSchema");
-assertContains("packages/ts/src/operationContract.ts", "errorCodeForCodecErrorMessage");
+assertContains("packages/ts/src/operationContract.ts", "errorForCodecErrorMessage");
 assertContains("packages/ts/src/operationContract.ts", "MAX_CODEC_PROTO_MESSAGE_BYTES");
 assertContains("packages/ts/src/classifyOperationError.ts", "CodecErrorReason.CANONICAL_INTERNAL");
 assertContains("packages/ts/src/classifyOperationError.ts", 'case "boundary":');
@@ -2879,7 +2942,7 @@ assertContains("scripts/test_android_consumer_r8_runtime.sh", "$SDKMANAGER\" \"e
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android AVD was not available after creation");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "$AVDMANAGER\" create avd --force");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android consumer R8 runtime gate passed");
-assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.4.3");
+assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.4.4");
 assertContains(
   "packages/kotlin-android/gradle.properties",
   "org.gradle.jvmargs=-Xmx1g -XX:MaxMetaspaceSize=768m -Dfile.encoding=UTF-8",
@@ -2923,7 +2986,11 @@ assertSubstringsInOrder(".github/workflows/kotlin-android-package-preflight.yml"
 assertNotContains(".github/workflows/kotlin-android-package-preflight.yml", ":consumer-r8-runtime:assembleRelease");
 assertNotContains(".github/workflows/kotlin-android-package-release.yml", "gradlew");
 
-assertContains("packages/kotlin/build.gradle.kts", 'val localReleaseRepositoryDir = providers.gradleProperty("reallyme.maven.localReleaseRepositoryDir")');
+if (!/val\s+localReleaseRepositoryDir\s*=\s*providers\s*\.gradleProperty\("reallyme\.maven\.localReleaseRepositoryDir"\)/u.test(
+  scrubCommentsForAssertion("packages/kotlin/build.gradle.kts", readText("packages/kotlin/build.gradle.kts")),
+)) {
+  fail("packages/kotlin/build.gradle.kts must derive its local release repository from the configured property");
+}
 assertContains("packages/kotlin/build.gradle.kts", 'name = "localRelease"');
 assertContains("packages/kotlin/build.gradle.kts", 'if (name.endsWith("ToRemoteReleaseRepository"))');
 assertContains("packages/kotlin-android/build.gradle.kts", 'val localReleaseRepositoryDir = providers.gradleProperty("reallyme.maven.localReleaseRepositoryDir")');
@@ -2956,13 +3023,13 @@ assertContains("packages/ts/scripts/browser-wasm-test.mjs", "Chrome or Chromium 
 assertContains(".github/workflows/release-readiness.yml", "Test TypeScript codec package in browser");
 assertContains(".github/workflows/npm-package-preflight.yml", "Test TypeScript codec package in browser");
 
-assertContains("README.md", "https://github.com/reallyme/codec");
 assertContains("README.md", "https://www.npmjs.com/package/@reallyme/codec");
-assertContains("README.md", "me.really:codec:0.4.3");
+assertContains("README.md", "me.really:codec:0.4.4");
 assertContains("README.md", "reallyme-codec-proto");
 assertContains("README.md", "`me.really:codec-android` AAR");
 assertContains("CONTRACT.md", "crates/proto/proto/reallyme/codec/v1/codec.proto");
-assertContains("SECURITY.md", "reallyme-codec");
+assertContains("SECURITY.md", "security@really.me");
+assertContains("SECURITY_MEMORY_MODEL.md", "Wire-byte and node limits do not impose a total heap quota.");
 assertContains("buf.yaml", "modules:");
 assertContains("buf.yaml", "- path: crates/proto/proto");
 assertContains("crates/proto/proto/reallyme/codec/v1/codec.proto", "package reallyme.codec.v1;");

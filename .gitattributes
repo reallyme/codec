@@ -1,0 +1,2 @@
+# Keep protobuf fuzz inputs out of text diffs and line-ending conversion.
+fuzz/seeds/der_schema/*.pb binary

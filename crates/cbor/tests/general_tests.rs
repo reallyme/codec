@@ -7,8 +7,8 @@
 use codec_cbor::general::{
     encode, frame_exact, frame_prefix, read_header_prefix, validate_exact, validate_prefix,
     ArgumentWidth, CborError, Cursor, ErrorReason, Float, FloatPolicy, FloatWidth, LengthPolicy,
-    Limits, MajorType, MapEntry, MapOrdering, Profile, Serialization, ValueRef, MAX_BYTES,
-    MAX_DEPTH, MAX_ENTRIES, MAX_NODES, MAX_WORK,
+    Limits, MajorType, MapEntry, MapOrdering, Profile, Serialization, ValueRef, DEFAULT_ENTRIES,
+    MAX_BYTES, MAX_DEPTH, MAX_ENTRIES, MAX_NODES, MAX_WORK,
 };
 
 fn bytes(hex: &str) -> Vec<u8> {

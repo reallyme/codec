@@ -13,7 +13,9 @@ import Foundation
 private let expectedCodecAbiVersion: UInt32 = 6
 private let expectedCodecPackageMajor: UInt32 = 0
 private let expectedCodecPackageMinor: UInt32 = 4
-private let expectedCodecPackagePatch: UInt32 = 3
+private let expectedCodecPackagePatch: UInt32 = 4
+// Shared transport cap includes JSON expansion and operation framing. Its value
+// is derived and checked by scripts/generate_codec_limits.mjs.
 private let maxProtoJsonRequestLength = 22_373_720
 
 private typealias CodecAbiVersionFunction = @convention(c) () -> UInt32
@@ -208,90 +210,6 @@ struct ReallyMeCodecRustCAbiProvider: Sendable {
             maxRequestLength: maxProtoJsonRequestLength,
             function: processOperationJsonFunction
         )
-    }
-
-    static func errorForCodecError(_ codecError: ReallyMeProtoCodecError) -> ReallyMeCodecError {
-        guard codecError.unknownFields.data.isEmpty else {
-            return .providerFailure
-        }
-        let expectedOrigin: ReallyMeProtoCodecErrorOrigin
-        switch codecError.error {
-        case .baseEncoding(let error):
-            guard error.unknownFields.data.isEmpty,
-                Self.isKnownReason(error.reason, range: 100...199)
-            else { return .providerFailure }
-            expectedOrigin = .caller
-        case .pem(let error):
-            guard error.unknownFields.data.isEmpty,
-                Self.isKnownReason(error.reason, range: 200...299)
-            else { return .providerFailure }
-            expectedOrigin = .caller
-        case .multiformat(let error):
-            guard error.unknownFields.data.isEmpty,
-                Self.isKnownReason(error.reason, range: 300...399)
-            else { return .providerFailure }
-            expectedOrigin = .caller
-        case .canonicalization(let error):
-            guard error.unknownFields.data.isEmpty,
-                Self.isKnownReason(error.reason, range: 400...499)
-            else { return .providerFailure }
-            expectedOrigin = error.reason == .canonicalInternal ? .provider : .caller
-        case .backend(let error):
-            guard error.unknownFields.data.isEmpty,
-                Self.isKnownReason(error.reason, range: 500...599)
-            else { return .providerFailure }
-            expectedOrigin = .provider
-        case .boundary(let error):
-            guard error.unknownFields.data.isEmpty,
-                Self.isKnownReason(error.reason, range: 600...699)
-            else { return .providerFailure }
-            expectedOrigin = .caller
-        case nil:
-            return .providerFailure
-        }
-        guard codecError.origin == expectedOrigin else {
-            return .providerFailure
-        }
-        guard expectedOrigin == .caller else { return .providerFailure }
-        switch codecError.error {
-        case .baseEncoding(let error) where error.reason == .baseNonCanonicalHex:
-            return .nonCanonical
-        case .multiformat(let error)
-        where error.reason == .multiformatUnknownMulticodec || error.reason == .multiformatInvalidMulticodecPrefix:
-            return .unsupportedCodec
-        case .canonicalization(let error) where error.reason == .canonicalUnsupportedIpldValue:
-            return .unsupportedIpldValue
-        case .canonicalization(let error) where Self.isNonCanonicalReason(error.reason):
-            return .nonCanonical
-        default:
-            return .invalidInput
-        }
-    }
-
-    private static func isNonCanonicalReason(
-        _ reason: ReallyMeProtoCodecErrorReason
-    ) -> Bool {
-        switch reason {
-        case .canonicalNonCanonicalCbor,
-            .canonicalNonCanonicalJson,
-            .canonicalNonMinimalCborInteger,
-            .canonicalDuplicateCborMapKey,
-            .canonicalCborMapKeysOutOfOrder,
-            .canonicalCborTrailingBytes:
-            return true
-        default:
-            return false
-        }
-    }
-
-    private static func isKnownReason(
-        _ reason: ReallyMeProtoCodecErrorReason,
-        range: ClosedRange<Int>
-    ) -> Bool {
-        if case .UNRECOGNIZED = reason {
-            return false
-        }
-        return range.contains(reason.rawValue)
     }
 
     private func processWithFunction(
