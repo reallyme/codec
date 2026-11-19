@@ -27,18 +27,14 @@ for (const [name, packageBoundaries] of workflows) {
     const history = source.indexOf("run: node scripts/check_ignored_files.mjs --history");
     const admission = source.indexOf("      - name: Verify release candidate\n");
     assert.ok(history > runner && history < admission);
-    const checks = source.match(/run: python3 scripts\/check_release_privacy\.py /gu) ?? [];
-    assert.equal(checks.length, packageBoundaries);
+    const checks = source.match(/- name: Verify publication privacy/gu) ?? [];
+    assert.equal(checks.length, packageBoundaries + (name.includes("preflight") ? 1 : 0));
     for (const step of source.split("      - name: ").slice(1)) {
-      if (!step.startsWith("Check package contents for private local files\n")) continue;
+      if (!step.startsWith("Verify publication privacy\n")) continue;
       assert.doesNotMatch(step, /secrets\./u);
-      assert.match(step, /check_release_privacy\.py/u);
+      assert.match(step, /node \.release-readiness\/scripts\/repository-privacy\.mjs --artifact "\$PUBLICATION_PATH"/u);
     }
-    if (name.startsWith("npm-")) {
-      assert.match(source, /check_release_privacy\.py --npm/u);
-    } else {
-      assert.doesNotMatch(source, /check_release_privacy\.py --npm/u);
-    }
+
   });
 }
 

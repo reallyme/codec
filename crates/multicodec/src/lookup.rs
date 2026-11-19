@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::table::{CodecTag, KeyLength, KeyMaterialKind, MULTICODEC_TABLE};
+use crate::validate_public_key_payload::validate_public_key_payload;
 
 /// Failure to strip a public-key multicodec prefix.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
@@ -16,6 +17,17 @@ pub enum CodecPrefixError {
     /// A recognized public-key prefix carries an invalid payload length.
     #[error("invalid multicodec payload length")]
     InvalidLength,
+    /// A compressed EC payload lacks a compressed SEC1 point tag.
+    #[error("invalid compressed public key point tag")]
+    InvalidCompressedPoint,
+    /// A variable-length public-key payload exceeds its semantic size ceiling.
+    #[error("public key payload exceeds size limit")]
+    KeyTooLarge {
+        /// Maximum accepted payload size.
+        max: usize,
+        /// Received payload size.
+        actual: usize,
+    },
 }
 
 /// Codec metadata resolved from a multicodec prefix.
@@ -57,8 +69,9 @@ pub fn lookup_codec_prefix(bytes: &[u8]) -> Option<CodecLookupResult> {
 ///
 /// # Errors
 ///
-/// Rejects unknown prefixes, non-public key classes, and invalid key lengths
-/// so callers cannot accidentally use prefixed or private bytes as raw keys.
+/// Rejects unknown prefixes, non-public key classes, invalid key lengths, and
+/// malformed compressed EC tags. RSA payloads are opaque and bounded to 4 KiB;
+/// callers must still validate DER and cryptographic key properties before use.
 pub fn strip_codec_prefix(bytes: &[u8]) -> Result<&[u8], CodecPrefixError> {
     let found = lookup_codec_prefix(bytes).ok_or(CodecPrefixError::InvalidPrefix)?;
     if found.key_material != KeyMaterialKind::PublicKey {
@@ -67,14 +80,7 @@ pub fn strip_codec_prefix(bytes: &[u8]) -> Result<&[u8], CodecPrefixError> {
     let remainder = bytes
         .get(found.codec.len()..)
         .ok_or(CodecPrefixError::InvalidLength)?;
-    let valid = match found.key_length {
-        KeyLength::Fixed(expected) => remainder.len() == expected,
-        KeyLength::Variable => !remainder.is_empty(),
-        KeyLength::NotApplicable => false,
-    };
-    if !valid {
-        return Err(CodecPrefixError::InvalidLength);
-    }
+    validate_public_key_payload(found.name, remainder)?;
     Ok(remainder)
 }
 

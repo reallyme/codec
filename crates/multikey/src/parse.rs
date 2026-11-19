@@ -3,10 +3,12 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use codec_multibase::multibase_to_bytes;
-use codec_multicodec::{lookup_codec_prefix, CodecLookupResult, KeyLength, KeyMaterialKind};
+use codec_multicodec::{
+    lookup_codec_prefix, validate_public_key_payload, KeyLength, KeyMaterialKind,
+};
 
-use crate::encode::MAX_RSA_PUBLIC_KEY_DER_LEN;
-use crate::error::{classify_multikey_codec, MultikeyError};
+use crate::error::MultikeyError;
+use crate::map_public_key_error::map_public_key_error;
 use zeroize::Zeroizing;
 
 /// A multikey decoded into its codec metadata and raw public key bytes.
@@ -66,8 +68,8 @@ impl ParsedMultikey {
 
 /// Parses a multibase-encoded multikey string into its codec and key bytes.
 ///
-/// Fails closed: returns an error on non-canonical multibase, unknown codec
-/// prefix, or a key length that does not match the codec.
+/// Fails closed on non-canonical multibase, unknown prefixes, incorrect lengths,
+/// invalid compressed EC tags, or RSA payloads beyond the shared size ceiling.
 pub fn parse_multikey(multibase_key: &str) -> Result<ParsedMultikey, MultikeyError> {
     if multibase_key.len() < 2 {
         return Err(MultikeyError::InvalidMultibase);
@@ -99,15 +101,9 @@ pub fn parse_multikey(multibase_key: &str) -> Result<ParsedMultikey, MultikeyErr
         .get(found.codec.len()..)
         .ok_or(MultikeyError::UnknownCodecPrefix)?;
 
-    // 3) key length validation
-    validate_key_length(&found, public_key.len())?;
-    if matches!(
-        found.name,
-        "p256-pub" | "p384-pub" | "p521-pub" | "secp256k1-pub"
-    ) && !matches!(public_key.first(), Some(0x02 | 0x03))
-    {
-        return Err(MultikeyError::InvalidCompressedPoint);
-    }
+    validate_public_key_payload(found.name, public_key).map_err(|error| {
+        map_public_key_error(found.name, found.key_length, public_key.len(), error)
+    })?;
 
     Ok(ParsedMultikey {
         codec_name: found.name,
@@ -116,32 +112,3 @@ pub fn parse_multikey(multibase_key: &str) -> Result<ParsedMultikey, MultikeyErr
         key_length: found.key_length,
     })
 }
-
-fn validate_key_length(found: &CodecLookupResult, length: usize) -> Result<(), MultikeyError> {
-    match found.key_length {
-        KeyLength::Fixed(expected) if length != expected => {
-            return Err(MultikeyError::KeyLengthMismatch {
-                codec: classify_multikey_codec(found.name),
-                expected,
-                actual: length,
-            });
-        }
-        KeyLength::Variable if length == 0 => return Err(MultikeyError::EmptyKey),
-        KeyLength::NotApplicable => return Err(MultikeyError::NonPublicKeyMaterial),
-        KeyLength::Fixed(_) | KeyLength::Variable => {}
-    }
-
-    if found.name == "rsa-pub" && length > MAX_RSA_PUBLIC_KEY_DER_LEN {
-        return Err(MultikeyError::KeyTooLarge {
-            codec: classify_multikey_codec(found.name),
-            max: MAX_RSA_PUBLIC_KEY_DER_LEN,
-            actual: length,
-        });
-    }
-
-    Ok(())
-}
-
-#[cfg(kani)]
-#[path = "key_length_proof_tests.rs"]
-mod proofs;

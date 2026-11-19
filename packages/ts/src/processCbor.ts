@@ -303,6 +303,10 @@ export const dagCborMultihash = (bytes: Uint8Array): Uint8Array => {
   }
 };
 
+/**
+ * Checks bounded CID syntax. CIDv1 hash codes and digest lengths remain opaque;
+ * use dagCborVerifyCid for DAG-CBOR/SHA-256 content verification.
+ */
 export const isValidCidString = (cid: string): boolean => {
   ensureStringValue(cid);
   const value = requireReallyMeCodecWasmProvider().isValidCidString(cid);
@@ -312,6 +316,10 @@ export const isValidCidString = (cid: string): boolean => {
   return value;
 };
 
+/**
+ * Returns canonical text for bounded CID syntax, including opaque CIDv1 hash
+ * codes and digest lengths. Successful parsing makes no content-integrity claim.
+ */
 export const tryParseCid = (cid: string): string | undefined => {
   try {
     ensureStringValue(cid);

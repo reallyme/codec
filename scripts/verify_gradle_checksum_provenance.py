@@ -28,6 +28,16 @@ REPOSITORIES = (
 )
 ARTIFACT_DOWNLOAD_TIMEOUT_SECONDS = 600
 ARTIFACT_DOWNLOAD_ATTEMPTS = 3
+MAX_CONCURRENT_DOWNLOADS = 4
+CURL_RETRY_ATTEMPTS = 2
+CURL_RETRY_BUDGET_SECONDS = 30
+CURL_HTTP_STATUS = re.compile(r"CODEC_HTTP_STATUS:([0-9]{3})")
+CURL_TRANSPORT_OPTIONS = (
+    "--user-agent", "reallyme-codec-dependency-verification/1 (+https://github.com/reallyme/codec)",
+    "--retry", str(CURL_RETRY_ATTEMPTS),
+    "--retry-max-time", str(CURL_RETRY_BUDGET_SECONDS),
+    "--write-out", "%{stderr}CODEC_HTTP_STATUS:%{http_code}\\n",
+)
 COORDINATE_PART = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._+-]*\Z")
 SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 
@@ -81,6 +91,15 @@ def verify(item):
         preferred = (REPOSITORIES[2], REPOSITORIES[0], REPOSITORIES[1])
     else:
         preferred = REPOSITORIES
+    failures = []
+
+    def transport_failure(base, kind, completed):
+        # Record only fixed repository names and numeric transport status;
+        # backend error text is unnecessary for diagnosing publisher outages.
+        match = CURL_HTTP_STATUS.search(completed.stderr)
+        status = int(match.group(1)) if match else 0
+        return (base, kind, completed.returncode, status)
+
     # Resolve one repository completely before considering the next. Plugin
     # marker POMs can differ byte-for-byte between the plugin portal and Maven
     # Central, so a later mirror's sidecar must not override the first source's
@@ -92,6 +111,7 @@ def verify(item):
             sidecar = subprocess.run(
                 (
                     "curl", "-fLsS", "--proto", "=https", "--proto-redir", "=https",
+                    *CURL_TRANSPORT_OPTIONS,
                     "--max-time", "8", "--max-filesize", "1024", base + path,
                 ),
                 capture_output=True,
@@ -104,16 +124,21 @@ def verify(item):
                 if published == expected:
                     return ("match-sha256", base, (group, name, version, artifact))
                 return ("mismatch", base, (group, name, version, artifact, expected, published))
+            failures.append(transport_failure(base, "sidecar", sidecar))
 
             # A fresh publisher download corroborates exact bytes when a
             # SHA-256 sidecar is unavailable. SHA-1 is never sufficient.
             for _ in range(ARTIFACT_DOWNLOAD_ATTEMPTS):
+                # A range request is useful only for bytes retained from a
+                # previous timeout, never for a fresh or empty output file.
+                resume = ("-C", "-") if destination.exists() and destination.stat().st_size > 0 else ()
                 completed = subprocess.run(
                     (
                         "curl", "-fLsS", "--proto", "=https", "--proto-redir", "=https",
+                        *CURL_TRANSPORT_OPTIONS,
                         "--max-time", str(ARTIFACT_DOWNLOAD_TIMEOUT_SECONDS),
                         "--max-filesize", "134217728",
-                        "-C", "-", "-o", str(destination), base + path[:-7],
+                        *resume, "-o", str(destination), base + path[:-7],
                     ),
                     capture_output=True,
                     text=True,
@@ -125,6 +150,7 @@ def verify(item):
                 # received. Resume only timeouts, then hash the complete file
                 # so a changed publisher response cannot pass verification.
             if completed.returncode != 0:
+                failures.append(transport_failure(base, "artifact", completed))
                 continue
             with destination.open("rb") as stream:
                 published_sha256 = hashlib.file_digest(stream, "sha256").hexdigest()
@@ -132,12 +158,13 @@ def verify(item):
                 return ("match-artifact-sha256", base, (group, name, version, artifact))
             return ("mismatch", base, (group, name, version, artifact, expected, published_sha256))
 
-    return ("unavailable", "", (group, name, version, artifact))
+    return ("unavailable", "", (group, name, version, artifact, tuple(failures)))
 
 
 if __name__ == "__main__":
     all_entries = entries()
-    with ThreadPoolExecutor(max_workers=12) as executor:
+    # Keep concurrent publisher traffic bounded, including during retries.
+    with ThreadPoolExecutor(max_workers=MAX_CONCURRENT_DOWNLOADS) as executor:
         results = list(executor.map(verify, all_entries.items()))
     counts = Counter(result[0] for result in results)
     sources = Counter(result[1] for result in results if result[0].startswith("match"))

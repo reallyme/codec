@@ -102,7 +102,50 @@ impl ProtoBytesJson for SecretBytes {
                 let mut bytes = decode_base64(value).map_err(E::custom)?;
                 Ok(core::mem::take(&mut *bytes).into())
             }
+            fn visit_string<E: serde::de::Error>(self, value: String) -> Result<Self::Value, E> {
+                let value = zeroize::Zeroizing::new(value);
+                self.visit_str(&value)
+            }
+            fn visit_bool<E: serde::de::Error>(self, value: bool) -> Result<Self::Value, E> {
+                let _value = zeroize::Zeroizing::new(value);
+                Err(E::custom(StorageErrorReason::InvalidJsonType))
+            }
+            fn visit_i64<E: serde::de::Error>(self, value: i64) -> Result<Self::Value, E> {
+                let _value = zeroize::Zeroizing::new(value);
+                Err(E::custom(StorageErrorReason::InvalidJsonType))
+            }
+            fn visit_u64<E: serde::de::Error>(self, value: u64) -> Result<Self::Value, E> {
+                let _value = zeroize::Zeroizing::new(value);
+                Err(E::custom(StorageErrorReason::InvalidJsonType))
+            }
+            fn visit_f64<E: serde::de::Error>(self, value: f64) -> Result<Self::Value, E> {
+                let _value = zeroize::Zeroizing::new(value);
+                Err(E::custom(StorageErrorReason::InvalidJsonType))
+            }
+            fn visit_unit<E: serde::de::Error>(self) -> Result<Self::Value, E> {
+                Err(E::custom(StorageErrorReason::InvalidJsonType))
+            }
+            fn visit_seq<A: serde::de::SeqAccess<'de>>(
+                self,
+                _: A,
+            ) -> Result<Self::Value, A::Error> {
+                Err(serde::de::Error::custom(
+                    StorageErrorReason::InvalidJsonType,
+                ))
+            }
+            fn visit_map<M: serde::de::MapAccess<'de>>(
+                self,
+                _: M,
+            ) -> Result<Self::Value, M::Error> {
+                Err(serde::de::Error::custom(
+                    StorageErrorReason::InvalidJsonType,
+                ))
+            }
+            fn visit_byte_buf<E: serde::de::Error>(self, value: Vec<u8>) -> Result<Self::Value, E> {
+                let _value = zeroize::Zeroizing::new(value);
+                Err(E::custom(StorageErrorReason::InvalidJsonType))
+            }
         }
-        deserializer.deserialize_str(Visitor)
+        deserializer.deserialize_any(Visitor)
     }
 }

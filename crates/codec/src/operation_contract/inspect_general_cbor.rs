@@ -86,17 +86,16 @@ pub(super) fn inspect(
         }
         Inspection::CODEC_GENERAL_CBOR_INSPECTION_CHILDREN => {
             let mut result = proto::CodecGeneralCborFrames::default();
+            result.options = Some(shape::options(profile, limits)?).into();
             let capacity = shape::receipt_capacity(frame.children().map_err(map_error)?, limits)?;
             result.values = shape::reserve_receipts(capacity)?;
             let mut cursor = frame.children().map_err(map_error)?;
             for child in cursor.by_ref() {
                 let child = child.map_err(map_error)?;
-                result.values.push(shape::frame(
+                result.values.push(shape::collection_frame(
                     &request.encoded,
                     &child,
                     request.validate,
-                    profile,
-                    limits,
                 )?);
             }
             result.consumed_bytes = shape::size(cursor.consumed_bytes().len())?;

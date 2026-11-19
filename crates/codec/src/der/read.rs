@@ -43,6 +43,14 @@ impl<'a> DerReader<'a> {
     }
 
     #[cfg(feature = "operation-contract")]
+    pub(super) fn contract_remaining_elements(&self) -> Result<usize, DerError> {
+        self.limits
+            .elements
+            .checked_sub(self.elements)
+            .ok_or(DerError::new(DerErrorReason::ArithmeticOverflow))
+    }
+
+    #[cfg(feature = "operation-contract")]
     pub(super) fn contract_remaining(&self) -> Result<&'a [u8], DerError> {
         let position = usize::try_from(self.inner.position())
             .map_err(|_| DerError::new(DerErrorReason::ArithmeticOverflow))?;

@@ -1,45 +1,28 @@
-# Fuzzing Harnesses
+# Fuzzing
 
-libFuzzer targets for the codec parsers.
-
-## Targets
-
-| Target | Parser under test | Entry point |
-| --- | --- | --- |
-| `multibase` | multibase + base58btc decode | `codec_multibase::{multibase_to_bytes, base58btc_decode}` |
-| `multicodec` | multicodec varint prefix | `codec_multicodec::{lookup_codec_prefix, strip_codec_prefix}` |
-| `multikey` | multikey (multibase+multicodec+binding) | `codec_multikey::parse_multikey` |
-| `base64url` | unpadded base64url decode | `codec_base64url::base64url_to_bytes` |
-| `base64` | padded base64 decode and canonical re-encode | `codec_base64::{base64_to_bytes, bytes_to_base64}` |
-| `hex` | lowercase hexadecimal decode and canonical re-encode | `codec_hex::{lower_hex_to_bytes, bytes_to_lower_hex}` |
-| `pem_decode` | PEM envelope decode and re-encode | `codec_pem::{decode_pem, encode_pem}` |
-| `dag_cbor` | DAG-CBOR decode + canonical re-encode + CID parse/verify | `codec_cbor::{decode_dag_cbor, encode_dag_cbor, try_parse_cid, verify_dag_cbor_cid}` |
-| `deterministic_cbor` | generic deterministic-CBOR decode + canonical re-encode | `codec_cbor::{decode_deterministic_cbor, encode_deterministic_cbor}` |
-| `general_cbor` | bounded borrowed framing, profiles, key equivalence, exact received embedding, cursor consumption | `codec_cbor::general::{frame_prefix, validate_exact, encode, Cursor}` |
-| `tlv` | bounded definite BER/ISO 7816 and DER headers, exact source spans, prefix/exact framing | `reallyme_codec::tlv::{read_header, frame_prefix, frame_exact}` |
-| `operation_contract` | executable protobuf + generated ProtoJSON dispatch | `reallyme_codec::operation_contract::{process_operation_response, process_operation_response_json}` |
-| `jcs_text` | strict JSON parsing and canonicalization idempotence | `codec_jcs::canonicalize_json_text` |
-
-## Running
-
-Requires a nightly toolchain (libFuzzer) and `cargo-fuzz`:
+Install the pinned nightly and cargo-fuzz, then run a target from the repository
+root:
 
 ```sh
-rustup toolchain install nightly-2026-07-01
+rustup toolchain install nightly-2026-11-10
 cargo install --git https://github.com/rust-fuzz/cargo-fuzz.git --rev 984c861c8dfea28055254c5f1d2659ab2cd63f76 --locked cargo-fuzz
-
-# From the repository root:
-cargo +nightly-2026-07-01 fuzz run multibase
-cargo +nightly-2026-07-01 fuzz run deterministic_cbor -- -max_total_time=60  # time-boxed
-mkdir -p fuzz/corpus/general_cbor
-cp fuzz/seeds/general_cbor/* fuzz/corpus/general_cbor/
-cargo +nightly-2026-07-01 fuzz run general_cbor -- -max_total_time=120
-cargo +nightly-2026-07-01 fuzz run jcs_text -- -max_total_time=60  # time-boxed
-cargo +nightly-2026-07-01 fuzz list                              # all targets
+cargo +nightly-2026-11-10 fuzz list
+cargo +nightly-2026-11-10 fuzz run multibase -- -max_total_time=60
 ```
 
-Reproduce a crash artifact:
+Targets include `base64`, `base64url`, `hex`, `multibase`, `multicodec`,
+`multikey`, `pem_decode`, `dag_cbor`, `deterministic_cbor`, `general_cbor`,
+`der`, `der_schema`, `tlv`, `jcs_text`, `guarded_json` and `operation_contract`.
+
+Seed corpora are under `fuzz/seeds/`. The DER schema corpus contains generated
+requests and needs `-max_len=2097152` to include its largest seed:
 
 ```sh
-cargo +nightly-2026-07-01 fuzz run <target> fuzz/artifacts/<target>/<crash-file>
+cargo +nightly-2026-11-10 fuzz run der_schema fuzz/seeds/der_schema -- -runs=0 -max_len=2097152
+```
+
+Replay a saved failure with:
+
+```sh
+cargo +nightly-2026-11-10 fuzz run <target> fuzz/artifacts/<target>/<crash-file>
 ```

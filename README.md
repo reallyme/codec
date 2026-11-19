@@ -1,256 +1,131 @@
 # ReallyMe Codec
 
-Codecs for Rust, TypeScript, Swift, Java and Kotlin, covering base encodings, multiformats, CBOR, CID, canonical JSON and PEM.
-
-## Published Surfaces
-
-| Surface | Distribution | Native path |
-|---|---|---|
-| Rust | `reallyme-codec` on crates.io | Pure Rust |
-| TypeScript | `@reallyme/codec` on npm | Rust WASM |
-| Swift | `ReallyMeCodec` through SwiftPM | Rust C ABI |
-| Java/Kotlin | `me.really:codec` on Maven Central | Rust JNI |
-| Android | `me.really:codec-android` AAR | Rust JNI in `jniLibs` |
-| Protobuf | `reallyme.codec.v1` schema | Generated bindings |
-
-## Supported Codecs
-
-| Category | Surface |
-|---|---|
-| Base encodings | base64, unpadded base64url, lowercase hex, base58btc |
-| Multiformats | multibase, multicodec, multikey, key-binding validation |
-| Canonical data | deterministic generic CBOR, DAG-CBOR, CID helpers, SHA-256 content hash, multihash helpers, JCS |
-| General CBOR (Rust) | borrowed framing and received spans, arbitrary tags, unsorted unique maps, full integer range, floats, protected encoding |
-| PEM | PEM decode and encode with label, size, line-width, and line-ending policy; decoding permits public keys by default |
-| Protobuf | `reallyme.codec.v1` generated operation requests, generated ProtoJSON, and codec error envelopes |
+Codecs for base encodings, multiformats, CBOR, CID, canonical JSON, PEM, DER and
+TLV framing. Rust implements the operations; SDKs are available for TypeScript,
+Swift, Java, Kotlin and Android.
 
 ## Install
 
-### Rust
+| Language | Package | Usage |
+|---|---|---|
+| Rust | `reallyme-codec` | [Rust API](https://docs.rs/reallyme-codec) |
+| TypeScript | [`@reallyme/codec`](https://www.npmjs.com/package/@reallyme/codec) | [Wasm setup](packages/ts/README.md) |
+| Swift | `ReallyMeCodec` | [SwiftPM setup](packages/swift/README.md) |
+| Java/Kotlin | `me.really:codec:0.4.4` | [JVM setup](packages/kotlin/README.md) |
+| Android | `me.really:codec-android` AAR | [Android setup](packages/kotlin-android/README.md) |
 
-```sh
-cargo add reallyme-codec
-```
-
-The Rust crates require Rust `1.96.0` or newer. Default features enable the
-base-encoding, CBOR/JCS, multiformat, and PEM families. Consumers can enable the
-strict DER reader or the borrowed `tlv` framing surface separately and select
-only the families they use:
+Use matching package versions across languages. Swift consumers need a release
+tag with a matching binary artifact; an untagged main checkout may not load a
+provider. Rust leaf crates share the umbrella crate's release version.
 
 ```toml
-reallyme-codec = { version = "0.4.3", default-features = false, features = [
-  "base64url",
-  "multikey",
-] }
+[dependencies]
+reallyme-codec = "0.4.4"
 ```
 
-The generated operation boundary is opt-in for Rust consumers: enable
-`operation-contract` to use `reallyme_codec::operation_contract`. The `serde`
-feature enables the base64url field adapters.
+Rust requires version 1.100 or newer. Base encodings, CBOR/JCS, multiformats and
+PEM are enabled by default. Enable `der`, `tlv`, `json`, `serde` or
+`operation-contract` when needed. To select individual families:
 
-The `tlv` feature reads identifiers, definite lengths, or complete headers
-with BER/ISO 7816 or canonical DER rules. It frames prefix or exact values
-without copying payloads. Callers can opt into source limits up to 16 MiB.
-See the
-[TLV contract](docs/protobuf.md#definite-tlv-framing) for profiles, checked source
-spans, limits, and typed failures. Schema-directed DER remains a separate strict
-reader.
-
-### Swift
-
-```swift
-.package(
-    url: "https://github.com/reallyme/codec",
-    from: "0.4.3"
-)
+```toml
+reallyme-codec = { version = "0.4.4", default-features = false, features = ["base64url", "multikey"] }
 ```
-
-```swift
-.product(name: "ReallyMeCodec", package: "codec")
-```
-
-### Kotlin
-
-```kotlin
-dependencies {
-    implementation("me.really:codec:0.4.3")
-}
-```
-
-### Android
-
-```kotlin
-dependencies {
-    implementation("me.really:codec-android:0.4.3")
-}
-```
-
-### TypeScript
-
-```sh
-npm install @reallyme/codec
-```
-
-For production deployments, pin exact package versions or release tags so codec
-behavior remains identical across language lanes. SwiftPM consumers must use a
-release tag with its matching FFI artifact; a Git revision of `main` can have
-an unbound manifest and make `ReallyMeCodec()` unavailable.
-
-## Versioning
-
-This package is pre-1.0. Review compatibility notes before upgrading.
-
-Cargo version requirements use caret compatibility by default. Use exact constraints or lockfiles when deployment requires a fixed package version.
-
-## Quick Start
-
-Rust:
 
 ```rust
 use reallyme_codec::base64url::{base64url_to_bytes, bytes_to_base64url};
 
-fn round_trip() -> Result<(), reallyme_codec::base64url::Base64UrlError> {
-    let encoded = bytes_to_base64url(b"hello");
-    let decoded = base64url_to_bytes(&encoded)?;
-    assert_eq!(decoded, b"hello");
-    Ok(())
+fn decode_example() -> Result<Vec<u8>, reallyme_codec::base64url::Base64UrlError> {
+    base64url_to_bytes(&bytes_to_base64url(b"hello"))
 }
 ```
 
-Swift:
+## Formats and limits
 
-```swift
-import ReallyMeCodec
+- Base64 uses the standard padded alphabet; base64url is unpadded. Both reject
+  nonzero pad bits. Hex accepts lowercase only.
+- Deterministic CBOR uses RFC 8949 section 4.2.3 length-first map-key ordering.
+  It supports integer or text map keys and exact integers, but rejects floats,
+  tags, indefinite lengths and unsupported simple values. Limits are 1 MiB for
+  encoded input/output, 64 container levels, 65,536 nodes and 16,384 entries per
+  container. Map keys count as nodes.
+- DAG-CBOR supports text map keys and signed 64-bit integers. This package's
+  profile excludes floats and tags.
+- JCS is a strict RFC 8785 subset. It rejects duplicate properties, unpaired
+  surrogates, Unicode noncharacters and integer-valued numbers outside ±(2^53−1), including `1e19`.
+- CID parsing checks syntax, not content integrity. CIDv1 can contain unknown
+  hash codes or truncated digests. Use `verify_dag_cbor_cid` / `dagCborVerifyCid`
+  to verify canonical DAG-CBOR against its complete SHA-256 CID in lowercase
+  base32.
+- PEM decoding permits public-key labels by default. Select private-key labels
+  explicitly. Armor decoding does not validate the decoded key or certificate.
+- DER checks values against a supplied schema. TLV framing checks only outer
+  headers and extents; it does not recursively validate ASN.1 values.
 
-let codec = try ReallyMeCodec()
-let encoded = try codec.base64urlEncode([1, 2, 3])
+Rust's `cbor::general` API supports borrowed framing, tags, received encodings,
+float policies and unsorted unique maps. A framing receipt alone does not imply
+semantic validity; use `validate_prefix` or `validate_exact` when required.
+`Limits::with_entries(65_536)` permits larger containers than the 4,096-entry
+default while retaining the byte, depth, node and work budgets. The 65,536-node
+budget allows at most 65,535 scalar children in one flat array.
+
+With the `json` feature, `json::decode` returns a bounded document and
+`json::from_slice` projects it into an owned Serde target. Object order and
+number spelling are preserved; duplicate decoded names and exceeded limits
+return typed errors.
+
+`base64::base64_to_bytes_with_limits` takes independent schema-defined encoded
+and decoded byte budgets and returns `Zeroizing<Vec<u8>>`. The existing decoder
+retains its 2,097,152-byte input default; the existing scalar operation retains
+its separate 1 MiB transport cap. Configurable budgets do not override transport
+limits.
+
+See [data handling](SECURITY_MEMORY_MODEL.md) before processing sensitive data.
+Input limits do not impose a total heap quota, and managed copies cannot be
+reliably erased.
+
+## Protobuf API
+
+The [schema](crates/proto/proto/reallyme/codec/v1/codec.proto) defines requests,
+results, options and typed errors. Generated Rust messages are available in
+`reallyme-codec-proto`; TypeScript exports them through `@reallyme/codec/proto`.
+Swift and Kotlin provide serialized operation methods.
+
+Enable `operation-contract` for Rust dispatch. Binary and ProtoJSON requests
+both return binary protobuf responses. See [protobuf usage](docs/protobuf.md).
+
+## Build and test
+
+From the repository root:
+
+```sh
+cargo fmt --all --check
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo test --workspace --all-features
+cargo check -p reallyme-codec-wasm --target wasm32-unknown-unknown
+cargo audit
+cargo deny check
 ```
 
-Kotlin:
+SDK build/test commands are in their package READMEs. See
+[fuzzing](fuzz/README.md) for corpus replay and fuzz targets. On Linux, install
+Kani 0.68.0 and run `bash scripts/check-formal.sh` for the bounded proof suite.
 
-```kotlin
-import me.really.codec.ReallyMeCodec
+To regenerate protobuf bindings, install the pinned local tools and run:
 
-val encoded = ReallyMeCodec.base64urlEncode(byteArrayOf(1, 2, 3))
+```sh
+npm ci --prefix packages/ts
+cargo install reallyme-protoc-gen-buffa --version '=0.1.3' --locked
+cargo install reallyme-protoc-gen-buffa-packaging --version '=0.1.3' --locked
+scripts/install_local_proto_tools.sh
+PATH="$PWD/.build/codec-proto-tools/bin:$PATH" node scripts/generate_codec_proto.mjs
 ```
 
-Java:
+The local protobuf tool installer requires macOS. Keep the resulting generated
+files with the schema changes.
 
-```java
-import me.really.codec.ReallyMeCodec;
+## Security
 
-String encoded = ReallyMeCodec.base64urlEncode(new byte[] {1, 2, 3});
-```
-
-TypeScript, after [initializing the WASM provider](packages/ts/README.md#usage):
-
-```ts
-import { ReallyMeCodec } from "@reallyme/codec";
-
-const encoded = ReallyMeCodec.base64urlEncode(new Uint8Array([1, 2, 3]));
-```
-
-```swift
-import Foundation
-
-let value = ReallyMeDeterministicCbor.mapText([
-    ("b", ReallyMeDeterministicCbor.unsigned(2)),
-    ("a", ReallyMeDeterministicCbor.bytes(Data([0, 1, 2]))),
-])
-let cbor = try codec.deterministicCborEncodeData(value)
-```
-
-```kotlin
-import me.really.codec.ReallyMeDeterministicCbor
-
-val value = ReallyMeDeterministicCbor.mapText(
-    linkedMapOf(
-        "b" to ReallyMeDeterministicCbor.unsignedLong(2),
-        "a" to ReallyMeDeterministicCbor.bytes(byteArrayOf(0, 1, 2)),
-    ),
-)
-val cbor = ReallyMeCodec.deterministicCborEncode(value)
-```
-
-```ts
-import { ReallyMeDeterministicCbor } from "@reallyme/codec";
-
-const value = ReallyMeDeterministicCbor.mapText([
-  ["b", ReallyMeDeterministicCbor.unsigned(2n)],
-  ["a", ReallyMeDeterministicCbor.bytes(new Uint8Array([0, 1, 2]))],
-]);
-const cbor = ReallyMeCodec.deterministicCborEncode(value);
-```
-
-Rust consumers also have `reallyme_codec::cbor::general` (or
-`codec_cbor::general` from `reallyme-codec-cbor`). `frame_prefix`/`frame_exact`
-return borrowed framing receipts; `validate_prefix`/`validate_exact` additionally
-check UTF-8 and semantic key uniqueness under an explicit `Profile`. Neither
-operation interprets arbitrary tag registrations. `Profile::received()` permits
-received widths and indefinite containers; `Profile::preferred()` requires
-definite lengths, shortest arguments, and shortest exact floats. Both accept
-unsorted unique maps. Optional map-order and finite-only/no-float policies are
-independent selections.
-
-`Frame::tagged_bytes()` exposes the complete received wrapper and contiguous
-opaque byte-string contents separately. Its `validate_embedded` operation
-requires tag 24 and exactly one embedded item; empty or trailing payloads fail.
-Chunked strings expose borrowed chunks instead of inventing a contiguous span.
-`Cursor` traverses received items with cumulative budgets and exact consumed and
-remaining spans. Framing receipts do not imply basic validity, and borrowed
-storage requires a caller-owned zeroizing buffer for sensitive input.
-
-General map keys use RFC 8949 section 5.6.1 basic-model equality. Integer and float types are distinct; float zero signs are equivalent. Registered-tag and application-specific equivalence require additional caller checks. Encoding preserves map order and received items; incompatible profiles return an error.
-
-`Limits` lets callers lower input/output bytes, depth, nodes, container entries,
-aggregate byte/text contents, and work. Hard ceilings are 1 MiB per input/output,
-64 open containers/tags, 65,536 nodes, 4,096 entries per container, 1 MiB per
-aggregate string category, and 64 Mi work credits (16 Mi by default). Complex keys can exhaust the work budget before other limits.
-
-Deterministic-CBOR encode canonicalizes map ordering. Decode rejects duplicate
-semantic map keys, non-canonical map order, non-minimal integer or length
-forms, unsupported CBOR types, and inputs outside the documented resource
-limits. The generic profile permits at most 64 nested containers, 65,536 nodes
-(including map keys), and 16,384 entries per container. Encoded input and output
-are each capped at 1 MiB; aggregate UTF-8 text and aggregate byte-string content
-are each capped at 1 MiB.
-
-Map keys use RFC 8949 §4.2.3 length-first ordering. This profile differs from
-the bytewise ordering in RFC 8949 §4.2.1 when keys have different encoded
-lengths. JCS is a strict RFC 8785 subset: integer-valued binary64 numbers
-outside the interoperable ±(2⁵³−1) range are rejected, including `1e19`.
-
-DAG-CBOR uses text map keys and signed 64-bit integers; floats and tags are outside the supported profile.
-
-Swift and JVM packages include native libraries. See their package READMEs for installation and local-library loading.
-
-## Protobuf
-
-The importable wire/config operation contract lives in the publishable proto crate at
-[`crates/proto/proto/reallyme/codec/v1/codec.proto`](crates/proto/proto/reallyme/codec/v1/codec.proto).
-Service, application, and storage protos can import it when they need stable
-codec identifiers or non-secret error envelopes.
-
-The executable transport boundary accepts one generated
-`CodecOperationRequest` and returns one binary `CodecOperationResponse` whose
-oneofs identify either the exact operation result or a typed `CodecError`.
-Structured SDK methods build requests for that same entrypoint and require
-the matching result variant. Base encodings and JCS call Rust through dedicated
-scalar adapter functions. Native Rust callers retain typed codec APIs and do
-not need to serialize.
-
-ProtoJSON uses protobuf enum names and standard padded Base64 for bytes. JSON requests return binary protobuf responses. Prefer binary protobuf or native APIs for sensitive data.
-
-The generated proto surfaces are available through:
-
-| Language | Proto surface | Generic execution |
-|---|---|---|
-| Rust | `reallyme-codec-proto` | `process_operation_response`, `process_operation_response_json` |
-| Swift | Internal generated wire types | `processOperation`, `processOperationJson` |
-| Kotlin / Java | `me.really.codec.v1` | `processOperation`, `processOperationJson` |
-| TypeScript | `@reallyme/codec/proto` | `processOperation`, `processOperationJson` |
-
-See [docs/protobuf.md](docs/protobuf.md) for the boundary rules.
+Report vulnerabilities through [the security policy](SECURITY.md).
 
 ## License
 

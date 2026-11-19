@@ -231,7 +231,11 @@ final class DeterministicCborVectorTests: XCTestCase {
         for vector in vectors.negative {
             let encoded = try Self.hexBytes(vector.hex)
             Self.assertCodecError(
-                vector.errorClass == "non-canonical" ? .nonCanonical : .invalidInput,
+                .operationFailure(
+                    category: vector.errorClass == "non-canonical" ? .nonCanonical : .invalidInput,
+                    reason: try Self.decodeFailureReason(vector.reason),
+                    origin: .caller
+                ),
                 try codec.deterministicCborDecode(encoded),
                 vector.name + ":" + vector.reason
             )
@@ -543,6 +547,23 @@ final class DeterministicCborVectorTests: XCTestCase {
         return result
     }
 
+    private static func decodeFailureReason(_ reason: String) throws -> ReallyMeProtoCodecErrorReason {
+        switch reason {
+        case "duplicate-key":
+            return .canonicalDuplicateCborMapKey
+        case "map-key-order":
+            return .canonicalCborMapKeysOutOfOrder
+        case "non-minimal-integer", "non-minimal-length":
+            return .canonicalNonMinimalCborInteger
+        case "trailing-data":
+            return .canonicalCborTrailingBytes
+        case "indefinite-length", "invalid-utf8", "unsupported-integer", "unsupported-type":
+            return .canonicalInvalidCbor
+        default:
+            throw DeterministicCborFixtureError.invalidManifest
+        }
+    }
+
     private static func assertCodecError(
         _ expected: ReallyMeCodecError,
         _ operation: @autoclosure () throws -> Any,
@@ -558,7 +579,24 @@ final class DeterministicCborVectorTests: XCTestCase {
         _ context: String
     ) {
         XCTAssertThrowsError(try operation(), context) { error in
-            XCTAssertEqual(error as? ReallyMeCodecError, .invalidInput, context)
+            guard let failure = error as? ReallyMeCodecError else {
+                return XCTFail("resource failure must use the SDK error type: \(context)")
+            }
+            // Local admission fails before a response exists. Rust rejections
+            // must retain the boundary reason and caller origin from the wire.
+            if case .operationFailure = failure {
+                XCTAssertEqual(
+                    failure,
+                    .operationFailure(
+                        category: .invalidInput,
+                        reason: .boundaryResourceLimitExceeded,
+                        origin: .caller
+                    ),
+                    context
+                )
+            } else {
+                XCTAssertEqual(failure, .invalidInput, context)
+            }
         }
     }
 }

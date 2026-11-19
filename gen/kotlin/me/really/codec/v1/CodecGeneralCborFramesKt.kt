@@ -144,7 +144,49 @@ public object CodecGeneralCborFramesKt {
     public fun clearConsumedBytes() {
       _builder.clearConsumedBytes()
     }
+
+    /**
+     * ```
+     * Shared by every frame in this collection, including an empty collection.
+     * ```
+     *
+     * `.reallyme.codec.v1.CodecGeneralCborOptions options = 3 [json_name = "options"];`
+     */
+    public var options: me.really.codec.v1.CodecGeneralCborOptions
+      @kotlin.jvm.JvmName("getOptions")
+        get() = _builder.options
+      @kotlin.jvm.JvmName("setOptions")
+        set(value) {
+        _builder.options = value
+      }
+    /**
+     * ```
+     * Shared by every frame in this collection, including an empty collection.
+     * ```
+     *
+     * `.reallyme.codec.v1.CodecGeneralCborOptions options = 3 [json_name = "options"];`
+     */
+    public fun clearOptions() {
+      _builder.clearOptions()
+    }
+    /**
+     * ```
+     * Shared by every frame in this collection, including an empty collection.
+     * ```
+     *
+     * `.reallyme.codec.v1.CodecGeneralCborOptions options = 3 [json_name = "options"];`
+     * @return Whether the options field is set.
+     */
+    public fun hasOptions(): kotlin.Boolean {
+      return _builder.hasOptions()
+    }
+
+    public val CodecGeneralCborFramesKt.Dsl.optionsOrNull: me.really.codec.v1.CodecGeneralCborOptions?
+      get() = _builder.optionsOrNull
   }
 }
 public inline fun me.really.codec.v1.CodecGeneralCborFrames.copy(block: `me.really.codec.v1`.CodecGeneralCborFramesKt.Dsl.() -> kotlin.Unit): me.really.codec.v1.CodecGeneralCborFrames =
   `me.really.codec.v1`.CodecGeneralCborFramesKt.Dsl._create(this.toBuilder()).apply { block() }._build()
+
+public val me.really.codec.v1.CodecGeneralCborFramesOrBuilder.optionsOrNull: me.really.codec.v1.CodecGeneralCborOptions?
+  get() = if (hasOptions()) getOptions() else null

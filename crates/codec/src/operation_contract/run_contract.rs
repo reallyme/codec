@@ -24,6 +24,8 @@ mod dispatch_api;
 mod execute_der;
 #[path = "execute_general_cbor.rs"]
 mod execute_general_cbor;
+#[path = "execute_json.rs"]
+mod execute_json;
 #[path = "execute_tlv.rs"]
 mod execute_tlv;
 use codec_proto::generated::proto::reallyme::codec::v1::CodecApiOperationRequest as ApiRequest;

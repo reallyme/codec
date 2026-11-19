@@ -2,7 +2,8 @@
 
 Small lowercase hexadecimal helpers used by the ReallyMe codec packages.
 
-The decoder rejects uppercase input, odd lengths and non-hex characters with typed errors.
+The decoder is intentionally canonical: uppercase input is rejected, and odd
+lengths or non-hex characters return typed errors.
 
 ## License
 

@@ -246,6 +246,30 @@ public object CodecApiOperationResultKt {
     }
 
     /**
+     * `.reallyme.codec.v1.CodecPemBundleDecodeResult pem_bundle_decode = 4002 [json_name = "pemBundleDecode"];`
+     */
+    public var pemBundleDecode: me.really.codec.v1.CodecPemBundleDecodeResult
+      @kotlin.jvm.JvmName("getPemBundleDecode")
+        get() = _builder.pemBundleDecode
+      @kotlin.jvm.JvmName("setPemBundleDecode")
+        set(value) {
+        _builder.pemBundleDecode = value
+      }
+    /**
+     * `.reallyme.codec.v1.CodecPemBundleDecodeResult pem_bundle_decode = 4002 [json_name = "pemBundleDecode"];`
+     */
+    public fun clearPemBundleDecode() {
+      _builder.clearPemBundleDecode()
+    }
+    /**
+     * `.reallyme.codec.v1.CodecPemBundleDecodeResult pem_bundle_decode = 4002 [json_name = "pemBundleDecode"];`
+     * @return Whether the pemBundleDecode field is set.
+     */
+    public fun hasPemBundleDecode(): kotlin.Boolean {
+      return _builder.hasPemBundleDecode()
+    }
+
+    /**
      * `.reallyme.codec.v1.CodecDeterministicCborEncodeResult deterministic_cbor_encode = 5000 [json_name = "deterministicCborEncode"];`
      */
     public var deterministicCborEncode: me.really.codec.v1.CodecDeterministicCborEncodeResult
@@ -906,6 +930,30 @@ public object CodecApiOperationResultKt {
     }
 
     /**
+     * `.reallyme.codec.v1.CodecBytesResult base64_decode_with_limits = 8002 [json_name = "base64DecodeWithLimits"];`
+     */
+    public var base64DecodeWithLimits: me.really.codec.v1.CodecBytesResult
+      @kotlin.jvm.JvmName("getBase64DecodeWithLimits")
+        get() = _builder.base64DecodeWithLimits
+      @kotlin.jvm.JvmName("setBase64DecodeWithLimits")
+        set(value) {
+        _builder.base64DecodeWithLimits = value
+      }
+    /**
+     * `.reallyme.codec.v1.CodecBytesResult base64_decode_with_limits = 8002 [json_name = "base64DecodeWithLimits"];`
+     */
+    public fun clearBase64DecodeWithLimits() {
+      _builder.clearBase64DecodeWithLimits()
+    }
+    /**
+     * `.reallyme.codec.v1.CodecBytesResult base64_decode_with_limits = 8002 [json_name = "base64DecodeWithLimits"];`
+     * @return Whether the base64DecodeWithLimits field is set.
+     */
+    public fun hasBase64DecodeWithLimits(): kotlin.Boolean {
+      return _builder.hasBase64DecodeWithLimits()
+    }
+
+    /**
      * `.reallyme.codec.v1.CodecTextResult base64url_encode = 8010 [json_name = "base64urlEncode"];`
      */
     public var base64UrlEncode: me.really.codec.v1.CodecTextResult
@@ -1360,6 +1408,30 @@ public object CodecApiOperationResultKt {
     public fun hasTlvReadLength(): kotlin.Boolean {
       return _builder.hasTlvReadLength()
     }
+
+    /**
+     * `.reallyme.codec.v1.CodecJsonDecodeResult json_decode = 12000 [json_name = "jsonDecode"];`
+     */
+    public var jsonDecode: me.really.codec.v1.CodecJsonDecodeResult
+      @kotlin.jvm.JvmName("getJsonDecode")
+        get() = _builder.jsonDecode
+      @kotlin.jvm.JvmName("setJsonDecode")
+        set(value) {
+        _builder.jsonDecode = value
+      }
+    /**
+     * `.reallyme.codec.v1.CodecJsonDecodeResult json_decode = 12000 [json_name = "jsonDecode"];`
+     */
+    public fun clearJsonDecode() {
+      _builder.clearJsonDecode()
+    }
+    /**
+     * `.reallyme.codec.v1.CodecJsonDecodeResult json_decode = 12000 [json_name = "jsonDecode"];`
+     * @return Whether the jsonDecode field is set.
+     */
+    public fun hasJsonDecode(): kotlin.Boolean {
+      return _builder.hasJsonDecode()
+    }
     public val resultCase: me.really.codec.v1.CodecApiOperationResult.ResultCase
     @kotlin.jvm.JvmName("getResultCase")
       get() = _builder.resultCase
@@ -1398,6 +1470,9 @@ public val me.really.codec.v1.CodecApiOperationResultOrBuilder.pemDecodeOrNull: 
 
 public val me.really.codec.v1.CodecApiOperationResultOrBuilder.pemEncodeOrNull: me.really.codec.v1.CodecPemEncodeResult?
   get() = if (hasPemEncode()) getPemEncode() else null
+
+public val me.really.codec.v1.CodecApiOperationResultOrBuilder.pemBundleDecodeOrNull: me.really.codec.v1.CodecPemBundleDecodeResult?
+  get() = if (hasPemBundleDecode()) getPemBundleDecode() else null
 
 public val me.really.codec.v1.CodecApiOperationResultOrBuilder.deterministicCborEncodeOrNull: me.really.codec.v1.CodecDeterministicCborEncodeResult?
   get() = if (hasDeterministicCborEncode()) getDeterministicCborEncode() else null
@@ -1480,6 +1555,9 @@ public val me.really.codec.v1.CodecApiOperationResultOrBuilder.base64EncodeOrNul
 public val me.really.codec.v1.CodecApiOperationResultOrBuilder.base64DecodeOrNull: me.really.codec.v1.CodecBytesResult?
   get() = if (hasBase64Decode()) getBase64Decode() else null
 
+public val me.really.codec.v1.CodecApiOperationResultOrBuilder.base64DecodeWithLimitsOrNull: me.really.codec.v1.CodecBytesResult?
+  get() = if (hasBase64DecodeWithLimits()) getBase64DecodeWithLimits() else null
+
 public val me.really.codec.v1.CodecApiOperationResultOrBuilder.base64UrlEncodeOrNull: me.really.codec.v1.CodecTextResult?
   get() = if (hasBase64UrlEncode()) getBase64UrlEncode() else null
 
@@ -1536,3 +1614,6 @@ public val me.really.codec.v1.CodecApiOperationResultOrBuilder.tlvReadIdentifier
 
 public val me.really.codec.v1.CodecApiOperationResultOrBuilder.tlvReadLengthOrNull: me.really.codec.v1.CodecTlvLength?
   get() = if (hasTlvReadLength()) getTlvReadLength() else null
+
+public val me.really.codec.v1.CodecApiOperationResultOrBuilder.jsonDecodeOrNull: me.really.codec.v1.CodecJsonDecodeResult?
+  get() = if (hasJsonDecode()) getJsonDecode() else null

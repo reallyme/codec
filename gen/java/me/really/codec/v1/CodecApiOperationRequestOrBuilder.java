@@ -146,6 +146,17 @@ public interface CodecApiOperationRequestOrBuilder extends
   me.really.codec.v1.CodecPemEncodeRequest getPemEncode();
 
   /**
+   * <code>.reallyme.codec.v1.CodecPemBundleDecodeRequest pem_bundle_decode = 4002 [json_name = "pemBundleDecode"];</code>
+   * @return Whether the pemBundleDecode field is set.
+   */
+  boolean hasPemBundleDecode();
+  /**
+   * <code>.reallyme.codec.v1.CodecPemBundleDecodeRequest pem_bundle_decode = 4002 [json_name = "pemBundleDecode"];</code>
+   * @return The pemBundleDecode.
+   */
+  me.really.codec.v1.CodecPemBundleDecodeRequest getPemBundleDecode();
+
+  /**
    * <pre>
    * 5000-5999: deterministic generic-CBOR encode/decode.
    * </pre>
@@ -459,6 +470,17 @@ public interface CodecApiOperationRequestOrBuilder extends
   me.really.codec.v1.CodecTextRequest getBase64Decode();
 
   /**
+   * <code>.reallyme.codec.v1.CodecBase64DecodeRequest base64_decode_with_limits = 8002 [json_name = "base64DecodeWithLimits"];</code>
+   * @return Whether the base64DecodeWithLimits field is set.
+   */
+  boolean hasBase64DecodeWithLimits();
+  /**
+   * <code>.reallyme.codec.v1.CodecBase64DecodeRequest base64_decode_with_limits = 8002 [json_name = "base64DecodeWithLimits"];</code>
+   * @return The base64DecodeWithLimits.
+   */
+  me.really.codec.v1.CodecBase64DecodeRequest getBase64DecodeWithLimits();
+
+  /**
    * <code>.reallyme.codec.v1.CodecBytesRequest base64url_encode = 8010 [json_name = "base64urlEncode"];</code>
    * @return Whether the base64urlEncode field is set.
    */
@@ -674,6 +696,25 @@ public interface CodecApiOperationRequestOrBuilder extends
    * @return The tlvReadLength.
    */
   me.really.codec.v1.CodecTlvSourceRequest getTlvReadLength();
+
+  /**
+   * <pre>
+   * 12000-12999: guarded JSON document decoding.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecJsonDecodeRequest json_decode = 12000 [json_name = "jsonDecode"];</code>
+   * @return Whether the jsonDecode field is set.
+   */
+  boolean hasJsonDecode();
+  /**
+   * <pre>
+   * 12000-12999: guarded JSON document decoding.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecJsonDecodeRequest json_decode = 12000 [json_name = "jsonDecode"];</code>
+   * @return The jsonDecode.
+   */
+  me.really.codec.v1.CodecJsonDecodeRequest getJsonDecode();
 
   public me.really.codec.v1.CodecApiOperationRequest.OperationCase getOperationCase();
 }

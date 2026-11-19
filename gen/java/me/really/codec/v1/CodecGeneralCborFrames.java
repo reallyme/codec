@@ -20,6 +20,13 @@ public  final class CodecGeneralCborFrames extends
     return "CodecGeneralCborFrames{<redacted>}";
   }
 
+  // Preserve protobuf value equality while keeping hashes independent of
+  // sensitive field contents.
+  @java.lang.Override
+  public boolean equals(java.lang.Object other) {
+    return super.equals(other);
+  }
+
   @java.lang.Override
   public int hashCode() {
     return 0x524d;
@@ -35,6 +42,7 @@ public  final class CodecGeneralCborFrames extends
   private CodecGeneralCborFrames() {
     values_ = emptyProtobufList();
   }
+  private int bitField0_;
   public static final int VALUES_FIELD_NUMBER = 1;
   private com.google.protobuf.Internal.ProtobufList<me.really.codec.v1.CodecGeneralCborFrame> values_;
   /**
@@ -197,6 +205,73 @@ public  final class CodecGeneralCborFrames extends
   private void clearConsumedBytes() {
 
     consumedBytes_ = 0L;
+  }
+
+  public static final int OPTIONS_FIELD_NUMBER = 3;
+  private me.really.codec.v1.CodecGeneralCborOptions options_;
+  /**
+   * <pre>
+   * Shared by every frame in this collection, including an empty collection.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 3 [json_name = "options"];</code>
+   */
+  @java.lang.Override
+  public boolean hasOptions() {
+    return ((bitField0_ & 0x00000001) != 0);
+  }
+  /**
+   * <pre>
+   * Shared by every frame in this collection, including an empty collection.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 3 [json_name = "options"];</code>
+   */
+  @java.lang.Override
+  public me.really.codec.v1.CodecGeneralCborOptions getOptions() {
+    return options_ == null ? me.really.codec.v1.CodecGeneralCborOptions.getDefaultInstance() : options_;
+  }
+  /**
+   * <pre>
+   * Shared by every frame in this collection, including an empty collection.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 3 [json_name = "options"];</code>
+   */
+  private void setOptions(me.really.codec.v1.CodecGeneralCborOptions value) {
+    java.util.Objects.requireNonNull(value);
+    options_ = value;
+    bitField0_ |= 0x00000001;
+  }
+  /**
+   * <pre>
+   * Shared by every frame in this collection, including an empty collection.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 3 [json_name = "options"];</code>
+   */
+  @java.lang.SuppressWarnings("ReferenceEquality")
+  private void mergeOptions(me.really.codec.v1.CodecGeneralCborOptions value) {
+    java.util.Objects.requireNonNull(value);
+    if (options_ != null &&
+        options_ != me.really.codec.v1.CodecGeneralCborOptions.getDefaultInstance()) {
+      options_ =
+        me.really.codec.v1.CodecGeneralCborOptions.newBuilder(options_).mergeFrom(value).buildPartial();
+    } else {
+      options_ = value;
+    }
+    bitField0_ |= 0x00000001;
+  }
+  /**
+   * <pre>
+   * Shared by every frame in this collection, including an empty collection.
+   * </pre>
+   *
+   * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 3 [json_name = "options"];</code>
+   */
+  private void clearOptions() {
+    options_ = null;
+    bitField0_ = (bitField0_ & ~0x00000001);
   }
 
   public static me.really.codec.v1.CodecGeneralCborFrames parseFrom(
@@ -474,6 +549,77 @@ public  final class CodecGeneralCborFrames extends
       return this;
     }
 
+    /**
+     * <pre>
+     * Shared by every frame in this collection, including an empty collection.
+     * </pre>
+     *
+     * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 3 [json_name = "options"];</code>
+     */
+    @java.lang.Override
+    public boolean hasOptions() {
+      return instance.hasOptions();
+    }
+    /**
+     * <pre>
+     * Shared by every frame in this collection, including an empty collection.
+     * </pre>
+     *
+     * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 3 [json_name = "options"];</code>
+     */
+    @java.lang.Override
+    public me.really.codec.v1.CodecGeneralCborOptions getOptions() {
+      return instance.getOptions();
+    }
+    /**
+     * <pre>
+     * Shared by every frame in this collection, including an empty collection.
+     * </pre>
+     *
+     * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 3 [json_name = "options"];</code>
+     */
+    public Builder setOptions(me.really.codec.v1.CodecGeneralCborOptions value) {
+      copyOnWrite();
+      instance.setOptions(value);
+      return this;
+      }
+    /**
+     * <pre>
+     * Shared by every frame in this collection, including an empty collection.
+     * </pre>
+     *
+     * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 3 [json_name = "options"];</code>
+     */
+    public Builder setOptions(
+        me.really.codec.v1.CodecGeneralCborOptions.Builder builderForValue) {
+      copyOnWrite();
+      instance.setOptions(builderForValue.build());
+      return this;
+    }
+    /**
+     * <pre>
+     * Shared by every frame in this collection, including an empty collection.
+     * </pre>
+     *
+     * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 3 [json_name = "options"];</code>
+     */
+    public Builder mergeOptions(me.really.codec.v1.CodecGeneralCborOptions value) {
+      copyOnWrite();
+      instance.mergeOptions(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Shared by every frame in this collection, including an empty collection.
+     * </pre>
+     *
+     * <code>.reallyme.codec.v1.CodecGeneralCborOptions options = 3 [json_name = "options"];</code>
+     */
+    public Builder clearOptions() {  copyOnWrite();
+      instance.clearOptions();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:reallyme.codec.v1.CodecGeneralCborFrames)
   }
   @java.lang.Override
@@ -490,13 +636,15 @@ public  final class CodecGeneralCborFrames extends
       }
       case BUILD_MESSAGE_INFO: {
           java.lang.Object[] objects = new java.lang.Object[] {
+            "bitField0_",
             "values_",
             me.really.codec.v1.CodecGeneralCborFrame.class,
             "consumedBytes_",
+            "options_",
           };
           java.lang.String info =
-              "\u0000\u0002\u0000\u0000\u0001\u0002\u0002\u0000\u0001\u0000\u0001\u001b\u0002\u0003" +
-              "";
+              "\u0000\u0003\u0000\u0001\u0001\u0003\u0003\u0000\u0001\u0000\u0001\u001b\u0002\u0003" +
+              "\u0003\u1009\u0000";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

@@ -107,9 +107,9 @@ checksum = "87a0cf66fd1eb2fb7b822cb78370d82303750809bc6ba855f3f58e517d3238db"
 
 [[package]]
 name = "bytes"
-version = "1.12.1"
+version = "1.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04"
+checksum = "776dfebd015e2d8732c684a2c71003674ccb49457b539b9e82151ba38e96dd7c"
 
 [[package]]
 name = "cc"
@@ -264,9 +264,9 @@ checksum = "1c66915cc5391097de7a2b0b972e8505aa33c0df401fd3a6811dbdb32881ba48"
 
 [[package]]
 name = "foldhash"
-version = "0.1.5"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
+checksum = "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
 
 [[package]]
 name = "futures-core"
@@ -317,19 +317,14 @@ dependencies = [
 
 [[package]]
 name = "hashbrown"
-version = "0.15.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9229cfe53dfd69f0609a49f65461bd93001ea1ef889cd5529dd176593f5338a1"
-dependencies = [
- "foldhash",
- "serde",
-]
-
-[[package]]
-name = "hashbrown"
 version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a"
+dependencies = [
+ "foldhash",
+ "serde",
+ "serde_core",
+]
 
 [[package]]
 name = "hybrid-array"
@@ -347,7 +342,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cc4e190f5d26ca7051642629da2c52fc03bde85a03197c99408dcd291734c855"
 dependencies = [
  "equivalent",
- "hashbrown 0.17.1",
+ "hashbrown",
 ]
 
 [[package]]
@@ -533,6 +528,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 
 [[package]]
+name = "pem"
+version = "4.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d354a98a3d1251555de99e8fdd8afda05573c31b82f59063a7b0a29b5527f120"
+dependencies = [
+ "base64",
+ "serde_core",
+]
+
+[[package]]
 name = "pin-project-lite"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -589,9 +594,9 @@ checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
 
 [[package]]
 name = "rand"
-version = "0.10.3"
+version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65c9fb96cbc91e3478eaae79a69fcd3f1ae4ad052e471fe6732fff548984b4af"
+checksum = "8f6fa277c67e6ea590466f04c3fe82cb509f0864fe470643e5570de9514a9b11"
 dependencies = [
  "getrandom",
  "rand_core",
@@ -614,14 +619,14 @@ dependencies = [
 
 [[package]]
 name = "reallyme-buffa"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1fc2662256cc4682ea0add47beb0df80bfe69d2ab0fc2fb5525771d712e285eb"
+checksum = "68ea3931b565a10693d123041299ccd1ff3bd0ceb3ab76281a377242d24b0e71"
 dependencies = [
  "base64",
  "bytes",
  "foldhash",
- "hashbrown 0.15.5",
+ "hashbrown",
  "once_cell",
  "rustversion",
  "serde",
@@ -633,7 +638,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "der",
  "proptest",
@@ -648,14 +653,16 @@ dependencies = [
  "reallyme-codec-multikey",
  "reallyme-codec-pem",
  "reallyme-codec-proto",
+ "serde",
  "serde_json",
+ "stats_alloc",
  "thiserror",
  "zeroize",
 ]
 
 [[package]]
 name = "reallyme-codec-adapter"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "reallyme-codec",
  "reallyme-codec-multibase",
@@ -663,16 +670,17 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-base64"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "base64",
+ "reallyme-codec-proto",
  "thiserror",
  "zeroize",
 ]
 
 [[package]]
 name = "reallyme-codec-base64url"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "base64",
  "serde",
@@ -683,7 +691,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-cbor"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "cid",
  "half",
@@ -700,7 +708,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-ffi"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "jni",
  "reallyme-buffa",
@@ -712,7 +720,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-hex"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "thiserror",
  "zeroize",
@@ -720,7 +728,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-jcs"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "itoa",
  "ryu-js",
@@ -733,7 +741,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-multibase"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "base64",
  "bs58",
@@ -744,14 +752,14 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-multicodec"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "thiserror",
 ]
 
 [[package]]
 name = "reallyme-codec-multikey"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "reallyme-codec-base64url",
  "reallyme-codec-multibase",
@@ -762,16 +770,19 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-pem"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "base64",
+ "pem",
+ "reallyme-codec-proto",
+ "serde_json",
  "thiserror",
  "zeroize",
 ]
 
 [[package]]
 name = "reallyme-codec-proto"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "base64",
  "reallyme-buffa",
@@ -784,7 +795,7 @@ dependencies = [
 
 [[package]]
 name = "reallyme-codec-wasm"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "js-sys",
  "reallyme-codec",
@@ -796,9 +807,9 @@ dependencies = [
 
 [[package]]
 name = "regex-syntax"
-version = "0.8.11"
+version = "0.8.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
+checksum = "d902046e6a28a1e4c3cab97258a0ce11e994903f01c2d97a9447a0b3df85f4f6"
 
 [[package]]
 name = "ripemd"
@@ -1185,9 +1196,9 @@ dependencies = [
 
 [[package]]
 name = "zeroize"
-version = "1.9.1"
+version = "1.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e13084392c5e4bc371903e2935a5eaeed24905a7511356b883835e18a78f6879"
+checksum = "85ccff8a4805aba1eaa4cd4afcd49f7557dd2cf5fd79ffc37f8959466effc5aa"
 
 [[package]]
 name = "zmij"

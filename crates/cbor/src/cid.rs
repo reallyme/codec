@@ -16,7 +16,7 @@ pub const DAG_CBOR_CODEC: u64 = 0x71;
 
 /// Maximum CID string size accepted before multibase decoding.
 ///
-/// A CID with the supported 64-byte digest and four u64 varints occupies at
+/// A CID with a bounded 64-byte opaque digest and four u64 varints occupies at
 /// most 104 binary bytes. This budget accommodates even base2 and the UTF-8
 /// base256emoji representation, while bounding quadratic base conversions.
 pub const MAX_CID_STRING_LEN: usize = 1024;
@@ -62,12 +62,16 @@ impl DagCborMultihash {
     }
 }
 
-/// Validated CID, independent of the upstream CID type.
+/// Syntax-validated CID, independent of the upstream CID type.
+///
+/// CIDv1 hash codes and digest lengths remain opaque. This type establishes
+/// framing and resource bounds; hash support and content integrity require a
+/// separate verifier such as [`verify_dag_cbor_cid`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParsedCid(Cid);
 
 impl ParsedCid {
-    /// Return the validated CID's canonical binary representation.
+    /// Return the syntax-validated CID's canonical binary representation.
     pub fn to_bytes(&self) -> Vec<u8> {
         self.0.to_bytes()
     }
@@ -107,7 +111,7 @@ fn dag_cbor_cid(hash: DagCborMultihash) -> Cid {
 pub enum CidVerificationStatus {
     /// The canonical CID matches the validated block.
     Match,
-    /// A canonical CID identifies different bytes.
+    /// A canonical CID differs in version, codec, hash parameters, or digest.
     Mismatch,
     /// The CID parses but its textual representation is not canonical.
     NonCanonical,
@@ -146,6 +150,10 @@ impl DagCborCidVerification {
 }
 
 /// Validate one canonical DAG-CBOR block and compare its CID text.
+///
+/// A match requires CIDv1, the DAG-CBOR codec, and the complete 32-byte SHA-256
+/// digest of the validated block. Syntax-only CID admission does not relax any
+/// of these verification requirements.
 ///
 /// # Errors
 ///
@@ -191,15 +199,22 @@ fn classify_parsed_cid(
     }
 }
 
-/// Returns whether `s` parses as a valid CID string.
+/// Returns whether `s` has valid, bounded CID syntax.
+///
+/// CIDv1 hash codes and lengths are opaque: unknown codes, truncated digests,
+/// and identity digests can pass. Use [`verify_dag_cbor_cid`] to verify content
+/// against the DAG-CBOR/SHA-256 profile.
 pub fn is_valid_cid_string(s: &str) -> bool {
     try_parse_cid(s).is_some()
 }
 
-/// Parses `s` as a CID, returning `None` if it is not a valid CID string.
+/// Parses bounded CID syntax, returning `None` on a framing or limit failure.
 ///
 /// Accepts CIDv0 and multibase CID strings up to [`MAX_CID_STRING_LEN`]. Paths,
 /// non-minimal binary encodings, and trailing decoded bytes are rejected.
+/// CIDv0 requires the full 32-byte SHA-256 multihash. CIDv1 accepts opaque hash
+/// codes and 0..=64 digest bytes when the declared length matches the suffix;
+/// successful parsing makes no hash-support or content-integrity claim.
 pub fn try_parse_cid(s: &str) -> Option<ParsedCid> {
     parse_cid_string(s).map(|(cid, _base)| ParsedCid(cid))
 }
@@ -235,8 +250,10 @@ fn parse_cid_wire(bytes: &[u8], has_multibase_prefix: bool) -> Option<Cid> {
     let (codec, fields) = take_varint(fields)?;
     let (algorithm, fields) = take_varint(fields)?;
     let (declared, digest) = take_varint(fields)?;
-    // The digest occupies the entire suffix. Check the received extent before
-    // constructing a multihash, which enforces the storage capacity.
+    // CIDv1 syntax carries hash code and digest length independently. Preserve
+    // opaque codes and bounded lengths here; content verifiers enforce their
+    // own algorithm and full-digest requirements. The declared digest must
+    // occupy the entire suffix before the storage-capacity check below.
     if usize::try_from(declared).ok()? != digest.len() {
         return None;
     }

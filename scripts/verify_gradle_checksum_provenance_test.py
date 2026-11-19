@@ -134,10 +134,11 @@ class ProvenanceTests(unittest.TestCase):
                 return subprocess.CompletedProcess(args, 22, "", "no sidecar")
             attempts += 1
             destination = Path(args[args.index("-o") + 1])
-            self.assertIn("-C", args)
             if attempts == 1:
+                self.assertNotIn("-C", args)
                 destination.write_bytes(payload[:10])
                 return subprocess.CompletedProcess(args, 28, "", "timeout")
+            self.assertIn("-C", args)
             destination.write_bytes(payload)
             return subprocess.CompletedProcess(args, 0, "", "")
 
@@ -145,6 +146,35 @@ class ProvenanceTests(unittest.TestCase):
             status, _, _ = provenance.verify(item)
         self.assertEqual(status, "match-artifact-sha256")
         self.assertEqual(attempts, 2)
+
+    def test_empty_timeout_restarts_without_a_range_request(self):
+        payload = b"complete publisher artifact"
+        item = (("example.org", "artifact", "1.0", "artifact-1.0.jar"), hashlib.sha256(payload).hexdigest())
+        attempts = 0
+
+        def download(args, **_):
+            nonlocal attempts
+            if "-o" not in args:
+                return subprocess.CompletedProcess(args, 22, "", "missing sidecar")
+            attempts += 1
+            self.assertNotIn("-C", args)
+            destination = Path(args[args.index("-o") + 1])
+            destination.write_bytes(b"" if attempts == 1 else payload)
+            return subprocess.CompletedProcess(args, 28 if attempts == 1 else 0, "", "")
+
+        with patch.object(provenance.subprocess, "run", side_effect=download):
+            status, _, _ = provenance.verify(item)
+        self.assertEqual(status, "match-artifact-sha256")
+        self.assertEqual(attempts, 2)
+
+    def test_unavailable_diagnostics_omit_backend_text(self):
+        item = (("example.org", "artifact", "1.0", "artifact-1.0.jar"), "0" * 64)
+        response = subprocess.CompletedProcess(args=(), returncode=22, stdout="", stderr="private backend text\nCODEC_HTTP_STATUS:503\n")
+        with patch.object(provenance.subprocess, "run", return_value=response):
+            status, _, details = provenance.verify(item)
+        self.assertEqual(status, "unavailable")
+        self.assertNotIn("private backend text", repr(details))
+        self.assertTrue(all(failure[2:] == (22, 503) for failure in details[-1]))
 
 
 if __name__ == "__main__":

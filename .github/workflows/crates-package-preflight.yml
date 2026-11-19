@@ -13,7 +13,7 @@ on:
         description: Release version without leading v
         required: true
         type: string
-        default: 0.4.3
+        default: 0.4.4
       source_sha:
         description: Full commit SHA on main used for this release
         required: true
@@ -64,7 +64,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: reallyme/release-readiness
-          ref: 55115f21d5bf9a3fbc1bb8d10484aecba6e7bd8f
+          ref: e323ea52bc1f76e67df03fc95e19d596fb54bd03
           path: .release-readiness
           persist-credentials: false
 
@@ -99,6 +99,12 @@ jobs:
           RELEASE_TAG: v${{ inputs.version }}
           SOURCE_SHA: ${{ steps.source.outputs.sha }}
 
+      - name: Verify publication privacy
+        shell: bash
+        env:
+          PUBLICATION_PATH: ${{ runner.temp }}/release-readiness-ci.json
+        run: node .release-readiness/scripts/repository-privacy.mjs --artifact "$PUBLICATION_PATH"
+
       - name: Record verified CI
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -118,13 +124,21 @@ jobs:
           persist-credentials: false
           ref: ${{ needs.verify-source-sha.outputs.release_sha }}
 
+      - name: Checkout release-readiness runner
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: reallyme/release-readiness
+          ref: e323ea52bc1f76e67df03fc95e19d596fb54bd03
+          path: .release-readiness
+          persist-credentials: false
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
           toolchain: 1.100.0
 
       - name: Install cargo-audit
-        uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3, cargo-audit
+        uses: taiki-e/install-action@75a7c0f87bd666af3cdb75c5b9e9d03ab6044e6f # v2.90.6, cargo-audit
         with:
           tool: cargo-audit@0.23.0
 
@@ -159,8 +173,11 @@ jobs:
         env:
           CRATE_ARCHIVE_DIR: ${{ runner.temp }}/release-package
 
-      - name: Check package contents for private local files
-        run: python3 scripts/check_release_privacy.py "$RUNNER_TEMP/release-package"
+      - name: Verify publication privacy
+        shell: bash
+        env:
+          PUBLICATION_PATH: ${{ runner.temp }}/release-package
+        run: node .release-readiness/scripts/repository-privacy.mjs --artifact "$PUBLICATION_PATH"
 
       - name: Upload verified package
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

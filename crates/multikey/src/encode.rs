@@ -3,21 +3,15 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use codec_multibase::bytes_to_multibase58btc;
-use codec_multicodec::{KeyLength, KeyMaterialKind, MULTICODEC_TABLE};
+use codec_multicodec::{validate_public_key_payload, KeyMaterialKind, MULTICODEC_TABLE};
 
-use crate::error::{classify_multikey_codec, CodecNameReason, MultikeyError};
-
-/// Maximum accepted RSA public-key DER payload in a multikey.
-///
-/// The supported RSA multicodec is variable-length because DER size depends on
-/// modulus size and encoding details. A 4 KiB cap leaves room for common public
-/// keys while preventing unbounded base58 and FFI amplification through RSA.
-pub const MAX_RSA_PUBLIC_KEY_DER_LEN: usize = 4 * 1024;
+use crate::error::{CodecNameReason, MultikeyError};
+use crate::map_public_key_error::map_public_key_error;
 
 /// Encodes a public key as a multibase (base58btc) multikey string.
 ///
-/// Fails closed: returns an error if the codec name is unknown or the key
-/// length does not match the codec.
+/// Fails closed on unknown codecs, incorrect lengths, invalid compressed EC
+/// tags, or RSA payloads beyond the shared public-key size ceiling.
 pub fn encode_multikey(codec_name: &str, public_key: &[u8]) -> Result<String, MultikeyError> {
     let (canonical_codec_name, spec) = MULTICODEC_TABLE
         .iter()
@@ -32,38 +26,14 @@ pub fn encode_multikey(codec_name: &str, public_key: &[u8]) -> Result<String, Mu
         });
     }
 
-    match spec.key_length {
-        KeyLength::Fixed(expected) if public_key.len() != expected => {
-            return Err(MultikeyError::KeyLengthMismatch {
-                codec: classify_multikey_codec(canonical_codec_name),
-                expected,
-                actual: public_key.len(),
-            });
-        }
-        KeyLength::Variable if public_key.is_empty() => return Err(MultikeyError::EmptyKey),
-        KeyLength::NotApplicable => {
-            return Err(MultikeyError::UnknownCodecName {
-                reason: CodecNameReason::Unsupported,
-            });
-        }
-        KeyLength::Fixed(_) | KeyLength::Variable => {}
-    }
-
-    if *canonical_codec_name == "rsa-pub" && public_key.len() > MAX_RSA_PUBLIC_KEY_DER_LEN {
-        return Err(MultikeyError::KeyTooLarge {
-            codec: classify_multikey_codec(canonical_codec_name),
-            max: MAX_RSA_PUBLIC_KEY_DER_LEN,
-            actual: public_key.len(),
-        });
-    }
-
-    if matches!(
-        *canonical_codec_name,
-        "p256-pub" | "p384-pub" | "p521-pub" | "secp256k1-pub"
-    ) && !matches!(public_key.first(), Some(0x02 | 0x03))
-    {
-        return Err(MultikeyError::InvalidCompressedPoint);
-    }
+    validate_public_key_payload(canonical_codec_name, public_key).map_err(|error| {
+        map_public_key_error(
+            canonical_codec_name,
+            spec.key_length,
+            public_key.len(),
+            error,
+        )
+    })?;
 
     let capacity = spec
         .codec

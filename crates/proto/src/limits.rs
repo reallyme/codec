@@ -19,13 +19,23 @@ pub(crate) const MAX_CODEC_PROTO_SEMANTIC_NODES: usize = CODEC_PROTO_DETERMINIST
 const CODEC_PROTO_JSON_TOKENS_PER_CBOR_NODE: usize = 9;
 const CODEC_PROTO_JSON_FIXED_OPERATION_TOKENS: usize = 128;
 pub(crate) const MAX_CODEC_PROTO_JSON_TOKENS: usize = max_codec_proto_json_tokens_const();
-// Buffa charges repeated elements but not every boxed oneof payload.
-pub(crate) const MAX_CODEC_PROTO_ELEMENT_MEMORY_BYTES: usize =
-    CODEC_PROTO_DETERMINISTIC_CBOR_NODES * CODEC_PROTO_ELEMENT_MEMORY_BYTES_PER_NODE;
-// Buffa does not charge every nested oneof allocation. A tighter repeated
-// element allowance keeps a maximally nested malformed binary message below
-// the transport allocation budget while preserving the semantic node ceiling.
+// Buffa's quota charges repeated element footprints, including map entries.
+// It is not a total decoded-heap limit: boxed oneof payloads, vector capacity
+// growth, and caller-owned input need separate accounting. Keep the semantic
+// node allowance intact; SECURITY_MEMORY_MODEL.md records this runtime gap.
+pub(crate) const MAX_CODEC_PROTO_ELEMENT_MEMORY_BYTES: usize = codec_proto_element_memory_bytes();
+// Covers the generated repeated-element representation at the semantic node
+// ceiling. This factor does not estimate every nested allocation or process RSS.
 const CODEC_PROTO_ELEMENT_MEMORY_BYTES_PER_NODE: usize = 224;
+
+const fn codec_proto_element_memory_bytes() -> usize {
+    match CODEC_PROTO_DETERMINISTIC_CBOR_NODES
+        .checked_mul(CODEC_PROTO_ELEMENT_MEMORY_BYTES_PER_NODE)
+    {
+        Some(limit) => limit,
+        None => 0,
+    }
+}
 
 // Each semantic node is allowed 128 bytes of protobuf/ProtoJSON structure.
 // The largest generated leaf and map-entry paths are substantially smaller;
@@ -196,6 +206,11 @@ const fn codec_proto_json_nesting_depth() -> usize {
 
 // Array lengths make these compile-time invariants impossible to defer to a
 // runtime panic, while retaining exact transport-cap and nonzero checks.
+const _: [(); 1] = [(); if MAX_CODEC_PROTO_ELEMENT_MEMORY_BYTES != 0 {
+    1
+} else {
+    0
+}];
 const _: [(); 1] = [(); if CODEC_PROTO_RECURSION_LIMIT != 0 {
     1
 } else {

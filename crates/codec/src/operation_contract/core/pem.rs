@@ -21,6 +21,9 @@ use zeroize::Zeroizing;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 #[non_exhaustive]
 pub enum PemOperationError {
+    /// A bounded block-count or allocation budget was exhausted.
+    #[error("pem resource limit exceeded")]
+    ResourceLimitExceeded,
     /// The caller supplied no PEM text.
     #[error("empty pem input")]
     EmptyInput,
@@ -124,6 +127,7 @@ pub fn encode_pem(
 
 fn pem_operation_error(error: PemError) -> PemOperationError {
     match error {
+        PemError::ResourceLimitExceeded => PemOperationError::ResourceLimitExceeded,
         PemError::EmptyInput => PemOperationError::EmptyInput,
         PemError::EmptyDer => PemOperationError::EmptyDer,
         PemError::InputTooLarge => PemOperationError::InputTooLarge,
@@ -143,3 +147,9 @@ fn pem_operation_error(error: PemError) -> PemOperationError {
 #[cfg(test)]
 #[path = "pem_tests.rs"]
 mod tests;
+
+impl From<PemError> for PemOperationError {
+    fn from(error: PemError) -> Self {
+        pem_operation_error(error)
+    }
+}

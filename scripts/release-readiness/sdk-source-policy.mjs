@@ -37,7 +37,7 @@ export function assertSdkSourcePolicies(context) {
     auditedConcurrencyBridges: [
       {
         path: "packages/swift/Sources/ReallyMeCodec/RustCAbiLibrary.swift",
-        digest: "b11011ae3c9857be91b43caffae8eefdc329b0c79b54756152c53be0da8bfd34",
+        digest: "132d4788486fc08df8af68dbb2f1562a5b4a4ca7e3d6f9febe01d4c153ee7945",
         reason: "The immutable dlopen handle is retained for every function call and closed only after the last owning reference ends.",
         tokens: ["@unchecked Sendable"],
       },

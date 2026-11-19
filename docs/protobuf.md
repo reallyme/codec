@@ -33,9 +33,6 @@ Base64 decoding uses the standard alphabet with padding and rejects nonzero pad
 bits. Input and output budgets are independent of the protobuf transport limit.
 The schema specifies the options available for each operation.
 
-CID parsing checks syntax, not content integrity. Use the CID verification
-operation when checking a payload.
-
 ## Data ownership
 
 Messages and serialized buffers can contain personal data or key material.
@@ -43,6 +40,3 @@ Do not log generated messages or their JSON representations. Callers own the
 lifetime and cleanup of input buffers and returned transport bytes. Managed
 runtimes and serialization can create additional copies; see the
 [memory ownership model](../SECURITY_MEMORY_MODEL.md) for the supported guarantees.
-
-Generated JVM transport messages use constant hashes. Avoid using them as keys
-for large untrusted hash collections.

@@ -20,11 +20,11 @@ function fixture(t, selected, output, status = 0) {
   mkdirSync(join(root, "bin"));
   cpSync(join(repository, "scripts/generate_codec_proto.mjs"), join(root, "scripts/generate_codec_proto.mjs"));
   for (const tool of tools) {
-    const text = tool === selected ? output : `${tool} 0.1.2`;
+    const text = tool === selected ? output : `${tool} 0.1.3`;
     writeFileSync(join(root, "bin", tool), `#!/usr/bin/env node\nconsole.log(${JSON.stringify(text)}); process.exit(${tool === selected ? status : 0});\n`, { mode: 0o700 });
   }
   return spawnSync(process.execPath, [join(root, "scripts/generate_codec_proto.mjs"), "--check-tools"], {
-    cwd: root, encoding: "utf8", timeout: 10_000,
+    cwd: root, encoding: "utf8", timeout: 60_000,
     env: { ...process.env, PATH: `${join(root, "bin")}:${process.env.PATH ?? ""}` },
   });
 }
@@ -37,16 +37,16 @@ test("both exact published generator identities are accepted in a checkout path 
 
 for (const tool of tools) {
   for (const [name, output, status] of [
-    ["upstream executable identity", "protoc-gen-buffa 0.1.2", 0],
-    ["previous generator", `${tool} 0.1.1`, 0],
-    ["newer unreviewed generator", `${tool} 0.1.3`, 0],
-    ["failed executable with plausible version output", `${tool} 0.1.2`, 1],
+    ["upstream executable identity", "protoc-gen-buffa 0.1.3", 0],
+    ["previous generator", `${tool} 0.1.2`, 0],
+    ["newer unreviewed generator", `${tool} 0.1.4`, 0],
+    ["failed executable with plausible version output", `${tool} 0.1.3`, 1],
   ]) {
     test(`${tool} rejects ${name}`, (t) => {
       const result = fixture(t, tool, output, status);
       assert.equal(result.error, undefined);
       assert.equal(result.status, 1);
-      assert.match(result.stderr, /install protoc-gen-reallyme-buffa(?:-packaging)? from its published 0\.1\.2 package/u);
+      assert.match(result.stderr, /install protoc-gen-reallyme-buffa(?:-packaging)? from its published 0\.1\.3 package/u);
     });
   }
 }

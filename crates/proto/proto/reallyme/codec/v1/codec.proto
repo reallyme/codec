@@ -137,6 +137,52 @@ message CodecPemDecodeRequest {
   CodecPemDecodeOptions options = 2;
 }
 
+// A separate compatibility mode retains established PEM bundle admission.
+// Strict mode rejects surrounding text, legacy headers, and inline armor.
+enum CodecPemSyntaxProfile {
+  CODEC_PEM_SYNTAX_PROFILE_UNSPECIFIED = 0;
+  CODEC_PEM_SYNTAX_PROFILE_STRICT = 100;
+  CODEC_PEM_SYNTAX_PROFILE_COMPATIBLE = 110;
+}
+
+// FIRST stops after the first complete block, including on malformed trailing
+// armor. ALL validates every complete block before returning any of them.
+enum CodecPemDecodeScope {
+  CODEC_PEM_DECODE_SCOPE_UNSPECIFIED = 0;
+  CODEC_PEM_DECODE_SCOPE_ALL = 100;
+  CODEC_PEM_DECODE_SCOPE_FIRST = 110;
+}
+
+// Zero bounds select 1.5 MiB input, 1 MiB DER per block and 64 blocks.
+// Unspecified profile and scope select STRICT and ALL respectively.
+message CodecPemBundleDecodeOptions {
+  uint32 max_input_len = 1;
+  uint32 max_der_len = 2;
+  uint32 max_blocks = 3;
+  CodecPemSyntaxProfile syntax_profile = 4;
+  CodecPemDecodeScope scope = 5;
+}
+
+message CodecPemBundleDecodeRequest {
+  // SENSITIVE: armor may contain identifying certificates or private keys.
+  bytes pem = 1;
+  CodecPemBundleDecodeOptions options = 2;
+}
+
+// Labels remain exact external PEM text, including labels unknown to Codec.
+// No DER interpretation, trust decision, or certificate filtering is performed.
+message CodecPemBundleBlock {
+  // SENSITIVE: compatibility labels are arbitrary received UTF-8 text.
+  string label = 1;
+  // SENSITIVE: original decoded DER requires guarded ownership.
+  bytes der = 2;
+}
+
+message CodecPemBundleDecodeResult {
+  // SENSITIVE: every returned block retains protected labels and DER.
+  repeated CodecPemBundleBlock blocks = 1;
+}
+
 enum CodecPemLineEnding {
   CODEC_PEM_LINE_ENDING_UNSPECIFIED = 0;
   CODEC_PEM_LINE_ENDING_LF = 100;
@@ -497,6 +543,9 @@ enum CodecErrorReason {
   CODEC_ERROR_REASON_BASE_INVALID_LENGTH = 102;
   CODEC_ERROR_REASON_BASE_INPUT_TOO_LARGE = 103;
   CODEC_ERROR_REASON_BASE_OUTPUT_TOO_LARGE = 104;
+  CODEC_ERROR_REASON_BASE_INVALID_LIMITS = 105;
+  CODEC_ERROR_REASON_BASE_LENGTH_OVERFLOW = 106;
+  CODEC_ERROR_REASON_BASE_ALLOCATION_FAILURE = 107;
   CODEC_ERROR_REASON_BASE_INVALID_BASE64 = 110;
   CODEC_ERROR_REASON_BASE_INVALID_BASE64URL = 111;
   CODEC_ERROR_REASON_BASE_INVALID_HEX = 120;
@@ -514,6 +563,7 @@ enum CodecErrorReason {
   CODEC_ERROR_REASON_PEM_MISSING_BEGIN = 208;
   CODEC_ERROR_REASON_PEM_MISSING_END = 209;
   CODEC_ERROR_REASON_PEM_INVALID_BASE64 = 210;
+  CODEC_ERROR_REASON_PEM_RESOURCE_LIMIT_EXCEEDED = 211;
 
   // Multiformats and key envelopes.
   CODEC_ERROR_REASON_MULTIFORMAT_INVALID_MULTIBASE_PREFIX = 300;
@@ -534,6 +584,21 @@ enum CodecErrorReason {
   CODEC_ERROR_REASON_CANONICAL_UNSUPPORTED_IPLD_VALUE = 409;
   CODEC_ERROR_REASON_CANONICAL_INVALID_DER = 410;
   CODEC_ERROR_REASON_CANONICAL_INVALID_TLV = 411;
+  CODEC_ERROR_REASON_CANONICAL_JSON_INVALID_LIMITS = 412;
+  CODEC_ERROR_REASON_CANONICAL_JSON_INPUT_LIMIT = 413;
+  CODEC_ERROR_REASON_CANONICAL_JSON_DEPTH_LIMIT = 414;
+  CODEC_ERROR_REASON_CANONICAL_JSON_ENTRY_LIMIT = 415;
+  CODEC_ERROR_REASON_CANONICAL_JSON_NODE_LIMIT = 416;
+  CODEC_ERROR_REASON_CANONICAL_JSON_STRING_LIMIT = 417;
+  CODEC_ERROR_REASON_CANONICAL_JSON_TOTAL_STRING_LIMIT = 418;
+  CODEC_ERROR_REASON_CANONICAL_JSON_WORK_LIMIT = 419;
+  CODEC_ERROR_REASON_CANONICAL_JSON_DUPLICATE_PROPERTY = 420;
+  CODEC_ERROR_REASON_CANONICAL_JSON_INVALID_UNICODE = 421;
+  CODEC_ERROR_REASON_CANONICAL_JSON_NUMBER_OUT_OF_RANGE = 422;
+  CODEC_ERROR_REASON_CANONICAL_JSON_ALLOCATION_FAILURE = 423;
+  CODEC_ERROR_REASON_CANONICAL_JSON_ARITHMETIC_OVERFLOW = 424;
+  CODEC_ERROR_REASON_CANONICAL_JSON_INVALID_TARGET = 425;
+  CODEC_ERROR_REASON_CANONICAL_JSON_INVALID_VALUE = 426;
 
   // Backend failures.
   CODEC_ERROR_REASON_BACKEND_INTERNAL = 500;
@@ -559,8 +624,25 @@ message CodecTextRequest {
   string value = 1;
 }
 
-message CodecEmptyRequest {
+// Independent budgets for strict padded-standard Base64 decoding. Omitted
+// fields select defaults of 2,097,152 encoded bytes and 1,572,864 decoded bytes.
+// Explicit zero permits only empty input/output. Limits must fit the platform's
+// addressable buffer size. Encoded bytes exclude any caller-removed data-URL
+// prefix; alphabet, padding and unused pad bits must be canonical RFC 4648.
+// The native API may raise either budget; transport envelopes retain their
+// existing independent hard limits.
+message CodecBase64DecodeLimits {
+  optional uint64 encoded_input_bytes = 1;
+  optional uint64 decoded_output_bytes = 2;
 }
+
+message CodecBase64DecodeRequest {
+  // SENSITIVE: Base64 can carry portraits, credentials and other personal data.
+  string value = 1;
+  CodecBase64DecodeLimits limits = 2;
+}
+
+message CodecEmptyRequest {}
 
 message CodecBytesResult {
   // SENSITIVE: payload ownership requires redaction and zeroization.
@@ -582,8 +664,7 @@ message CodecUint32Result {
   uint32 value = 1;
 }
 
-message CodecEmptyResult {
-}
+message CodecEmptyResult {}
 
 message CodecOptionalTextResult {
   CodecTextResult value = 1;
@@ -757,6 +838,8 @@ message CodecGeneralCborFrame {
   CodecByteSpan body = 3;
   CodecGeneralCborHeader header = 4;
   bool validated = 5;
+  // Standalone frames carry options here. Collection frames inherit their
+  // containing CodecGeneralCborFrames.options when this field is absent.
   CodecGeneralCborOptions options = 6;
 }
 
@@ -764,6 +847,8 @@ message CodecGeneralCborFrames {
   // SENSITIVE: payload ownership requires redaction and zeroization.
   repeated CodecGeneralCborFrame values = 1;
   uint64 consumed_bytes = 2;
+  // Shared by every frame in this collection, including an empty collection.
+  CodecGeneralCborOptions options = 3;
 }
 
 message CodecGeneralCborChunks {
@@ -1182,8 +1267,76 @@ message CodecTlvError {
   CodecTlvErrorReason detail = 2;
 }
 
-message CodecProviderInfoRequest {
+// Guarded RFC 8259 decoding rejects duplicate decoded object names at every
+// level, invalid Unicode scalar sequences, trailing data and numbers outside
+// finite binary64 range unless they fit an exact i64/u64. Number text retains
+// the original spelling; the native typed projection follows Serde JSON's
+// integer/floating-point visitor conventions. Object member order is retained.
+// Every native output allocation containing decoded text or scalar payloads is wiped
+// on clear/drop, including partial results and escaped-string scratch.
+// Caller-owned source bytes, SDK-decoded and exported copies remain the caller's
+// responsibility. This operation performs no canonicalization.
+//
+// Omitted limits select defaults; explicit zero is invalid. Defaults/hard
+// ceilings: input 1/16 MiB, depth 32/64, container entries 256/65536,
+// nodes 65536/1048576, one decoded string 64 KiB/16 MiB, total decoded strings
+// 1/16 MiB, scanned framing bytes 16 MiB/1 GiB. Object names and number text
+// count toward both string budgets. Work includes subtree scans and decoded-key comparisons.
+message CodecJsonLimits {
+  optional uint64 input_bytes = 1;
+  optional uint64 nesting_depth = 2;
+  optional uint64 container_entries = 3;
+  optional uint64 nodes = 4;
+  optional uint64 string_bytes = 5;
+  optional uint64 total_string_bytes = 6;
+  optional uint64 work_bytes = 7;
 }
+
+message CodecJsonDecodeRequest {
+  // SENSITIVE: raw JSON may contain personal data and credentials.
+  bytes encoded = 1;
+  CodecJsonLimits limits = 2;
+}
+
+message CodecJsonNull {}
+
+message CodecJsonArray {
+  // SENSITIVE: children retain caller-controlled payloads.
+  repeated CodecJsonValue values = 1;
+}
+
+message CodecJsonMember {
+  // SENSITIVE: decoded member names can contain personal data.
+  string name = 1;
+  // SENSITIVE: a member retains caller-controlled payloads.
+  CodecJsonValue value = 2;
+}
+
+message CodecJsonObject {
+  // SENSITIVE: ordered members retain caller-controlled payloads.
+  repeated CodecJsonMember members = 1;
+}
+
+message CodecJsonValue {
+  oneof kind {
+    CodecJsonNull null_value = 1;
+    // SENSITIVE: scalar observations may identify a person.
+    bool bool_value = 2;
+    // SENSITIVE: validated original JSON number spelling.
+    string number_text = 3;
+    // SENSITIVE: decoded UTF-8 scalar contents.
+    string string_value = 4;
+    CodecJsonArray array_value = 5;
+    CodecJsonObject object_value = 6;
+  }
+}
+
+message CodecJsonDecodeResult {
+  // SENSITIVE: complete decoded document with recursive cleanup ownership.
+  CodecJsonValue value = 1;
+}
+
+message CodecProviderInfoRequest {}
 
 message CodecProviderInfo {
   uint32 abi_version = 1;
@@ -1227,7 +1380,6 @@ message CodecProviderOperationResult {
   }
 }
 
-
 message CodecGeneralCborFloatPropertiesRequest {
   CodecGeneralCborFloat value = 1;
 }
@@ -1267,8 +1419,7 @@ message CodecWasmInitializeRequest {
 
 // Host recovery uses only the private module cached after byte verification.
 // A caller cannot supply an unverified compiled module through this operation.
-message CodecWasmReinstantiateRequest {
-}
+message CodecWasmReinstantiateRequest {}
 
 // Legacy scalar selectors remain available only as compatibility adapters.
 // New callers select operations through CodecApiOperationRequest instead.
@@ -1344,6 +1495,7 @@ message CodecApiOperationRequest {
     // 4000-4999: PEM armor and DER envelope helpers.
     CodecPemDecodeRequest pem_decode = 4000;
     CodecPemEncodeRequest pem_encode = 4001;
+    CodecPemBundleDecodeRequest pem_bundle_decode = 4002;
 
     // 5000-5999: deterministic generic-CBOR encode/decode.
     CodecDeterministicCborEncodeRequest deterministic_cbor_encode = 5000;
@@ -1375,6 +1527,7 @@ message CodecApiOperationRequest {
     CodecDerReadRequest der_read = 7002;
     CodecBytesRequest base64_encode = 8000;
     CodecTextRequest base64_decode = 8001;
+    CodecBase64DecodeRequest base64_decode_with_limits = 8002;
     CodecBytesRequest base64url_encode = 8010;
     CodecTextRequest base64url_decode = 8011;
     CodecBytesRequest base64url_decode_bytes = 8012;
@@ -1395,6 +1548,8 @@ message CodecApiOperationRequest {
     CodecTlvSourceRequest tlv_frame_exact = 11002;
     CodecTlvSourceRequest tlv_read_identifier = 11003;
     CodecTlvSourceRequest tlv_read_length = 11004;
+    // 12000-12999: guarded JSON document decoding.
+    CodecJsonDecodeRequest json_decode = 12000;
   }
 }
 
@@ -1414,6 +1569,7 @@ message CodecApiOperationResult {
     CodecDagCborDecodeResult dag_cbor_decode = 3002;
     CodecPemDecodeResult pem_decode = 4000;
     CodecPemEncodeResult pem_encode = 4001;
+    CodecPemBundleDecodeResult pem_bundle_decode = 4002;
     CodecDeterministicCborEncodeResult deterministic_cbor_encode = 5000;
     CodecDeterministicCborDecodeResult deterministic_cbor_decode = 5001;
 
@@ -1443,6 +1599,7 @@ message CodecApiOperationResult {
     CodecDerReadResult der_read = 7002;
     CodecTextResult base64_encode = 8000;
     CodecBytesResult base64_decode = 8001;
+    CodecBytesResult base64_decode_with_limits = 8002;
     CodecTextResult base64url_encode = 8010;
     CodecBytesResult base64url_decode = 8011;
     CodecBytesResult base64url_decode_bytes = 8012;
@@ -1462,6 +1619,7 @@ message CodecApiOperationResult {
     CodecTlvFrame tlv_frame_exact = 11002;
     CodecTlvIdentifier tlv_read_identifier = 11003;
     CodecTlvLength tlv_read_length = 11004;
+    CodecJsonDecodeResult json_decode = 12000;
   }
 }
 

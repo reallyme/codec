@@ -12,20 +12,22 @@ import { resolve, sep } from "node:path";
 // Verify the immutable official package before executing its runner. Local
 // checker/module digests remain review tripwires; the package runner supplies
 // the core and enforces proof that every applicable source policy was invoked.
-const RELEASE_READINESS_COMMIT = "55115f21d5bf9a3fbc1bb8d10484aecba6e7bd8f";
+const RELEASE_READINESS_COMMIT = "e323ea52bc1f76e67df03fc95e19d596fb54bd03";
 const RELEASE_READINESS_CORE_SHA256 =
-  "3f351bd201ed2f1068cbdd87884fb07759a7ae1f1f0148099df046d9580cecb6";
+  "825ebca65a1324ea7cf42713ca5c4c67b0d929444d24dcaf7500fc9fa0ca7e20";
 const LOCAL_CHECKER_SHA256 =
-  "0b7aaf8263cc9c0c891c413d83520b932f462f6da79325eef4d59313fb47be6c";
+  "def0bc8edb898cb1fe18aa9c6dd5801d4ecce618a72623c391b980882600c1f9";
 const RELEASE_READINESS_CORE_URL =
   `https://raw.githubusercontent.com/reallyme/release-readiness/${RELEASE_READINESS_COMMIT}/core.mjs`;
 const RELEASE_READINESS_RUNNER_SHA256 =
-  "81ef5c47a24bd6a3d44f6ad8278541b9f9d61a781845775d5eb629b4c94ecd1b";
+  "3486696ab93190b627438a6aa7248e972872c83b4efc62286aecb1f60ee3783c";
 const RELEASE_READINESS_PACKAGE_SHA256 =
-  "bf0309c5b50066d278036b49a37b245cfd948b89fbaf1e43f1d3a03d668c77be";
+  "c5de23339bcd17107f63a2b467c1c0441a2695f0c12a786ced2b491d7c7a425f";
 const RELEASE_READINESS_SUPPORT_FILES = [
-  ["scripts/public-ci.mjs", "6f958c4a6aa03f0ff2860979232fa51d5ea5d4d124db33895328d7cd33d91b53"],
-  ["scripts/public-release.mjs", "3aa9f122b627231a69deb18f98f582bd52b3bd8139108ab91241d027fc3f28af"],
+  ["scripts/publication-paths.py", "45d3485bc03f4a73f955942648b13e5fba8f06d450326eb13c7b0df2ad518caf"],
+  ["scripts/repository-privacy.mjs", "6c8f44bf810e947fcbe3e0a9e45cdaac007009a5fe719f0ca928bc5bbd04c346"],
+  ["scripts/public-ci.mjs", "9b64390152f9b440f2045a6f2bd91965ce7c09c12b5b0eb41e20298bbab22686"],
+  ["scripts/public-release.mjs", "187ac87a288d14bdfaec38a2e22a547dcda8fa7df8f3a8701063306ea2bd78e0"],
   ["scripts/public-repo-policy.mjs", "fdad8fe9c0e85043b764a0321558af7a85324bceb7724c693a2824d955b0a204"],
   ["scripts/android-runtime.mjs", "5e80d5dee4a1ac225dfe155dd6d5477e1c52bc18be103f7b6fef181a0d4cb3c9"],
   ["scripts/android-publication.mjs", "539660a91b7b9150a9d85cafff35c5bbefd97a57541d2343f55f1d1243e3be7b"],
