@@ -324,7 +324,7 @@ const assertTypescriptProtoFacadeCompleteness = ({ facadePath, generatedPath }) 
   });
 };
 
-assertReallyMeReleasePackagePolicy({ version: "0.9.8" });
+assertReallyMeReleasePackagePolicy({ version: "0.9.9" });
 const rustChecks = ".github/workflows/code-checks.yml";
 assertRustReleasePolicy({
   release: { workflow: rustChecks, job: "rust", step: "Test on the release toolchain" },
@@ -875,11 +875,11 @@ assertContains(
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  'const RELEASE_READINESS_COMMIT = "d424fdd5c6e824a8dd4b13d7eef9113d307378ae"',
+  'const RELEASE_READINESS_COMMIT = "16aab5287de498e858ff3b85d9e66d7c9f7ebb74"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
-  '"28cd02304b60782b9443782f53e4e11d2b926f86d8ed8cc45569bec925ac27a6"',
+  '"56ae3823215f5bca908d2fce3c9304d4ea6bab0334038f37ebe33023dadb8594"',
 );
 assertContains(
   "scripts/run_pinned_release_readiness.mjs",
@@ -2003,7 +2003,12 @@ assertWorkflowPermissionsPolicy({
 });
 assertWorkflowPermissionsPolicy({
   path: ".github/workflows/cla.yaml",
-  workflow: { actions: "write", checks: "read", contents: "write", "pull-requests": "write", statuses: "write" },
+  workflow: { contents: "read" },
+  jobs: {
+    "cla-signatures": { actions: "write", contents: "write", "pull-requests": "write" },
+    "cla-merge-queue": { actions: "read", contents: "read", "pull-requests": "read" },
+    CLAAssistant: { contents: "none" },
+  },
 });
 const readOnlyWorkflowPaths = [
   ".github/workflows/ci.yml",
@@ -2979,7 +2984,9 @@ assertContains("packages/kotlin-android/settings.gradle.kts", "exclusiveContent"
 assertContains("packages/kotlin-android/consumer-r8-runtime/build.gradle.kts", "me.really:codec-android:${rootProject.version}");
 assertContains("scripts/stage-android-publication.sh", "verifyReleaseAarContainsJniLibs");
 assertContains("scripts/test-android-runtime.sh", 'ANDROID_R8_PAGE_SIZE_BYTES="16384"');
-assertContains("scripts/prepare-android-runtime.sh", "google_apis_ps16k");
+assertContains("scripts/prepare-android-runtime.sh", 'bash "$REPO_ROOT/scripts/prepare-android-avd.sh" "$AVD_NAME"');
+assertContains("scripts/prepare-android-avd.sh", "google_apis_ps16k");
+assertContains("scripts/prepare-android-avd.sh", 'COMMAND_LINE_TOOLS_VERSION="23.0"');
 assertSubstringsInOrder(".github/workflows/kotlin-android-package-preflight.yml", [
   "Download tested Android publication", "Verify tested Android publication", "Upload tested Android publication",
 ]);

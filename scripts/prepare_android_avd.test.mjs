@@ -27,13 +27,14 @@ function fixture(t, { installed = false } = {}) {
     const event = (value) => appendFileSync(process.env.FIXTURE_ROOT + "/events", value + "\\n");
     if (args[0] === "--version") {
       event("version");
-      console.log(process.env.FIXTURE_VERSION ?? "23.0");
-      process.exit(Number(process.env.FIXTURE_VERSION_EXIT ?? "0"));
+      console.log("1.0.16111833");
+      process.exit(0);
     }
     assert.deepEqual(args, ["emulator", "platforms;android-37.0", "system-images;android-37.1;google_apis_ps16k;x86_64"]);
     event("packages");
     process.exit(Number(process.env.FIXTURE_PACKAGES_EXIT ?? "0"));
   `);
+  writeFileSync(join(root, "tools/source.properties"), "Pkg.Revision=23.0\nPkg.Path=cmdline-tools;23.0\n");
   writeTool("tools/avdmanager", `
     import assert from "node:assert/strict";
     import { appendFileSync, writeFileSync } from "node:fs";
@@ -57,12 +58,14 @@ function fixture(t, { installed = false } = {}) {
     const destination = join(process.env.ANDROID_HOME, "cmdline-tools/23.0/bin");
     mkdirSync(destination, { recursive: true });
     for (const tool of ["sdkmanager", "avdmanager"]) cpSync(join(root, "tools", tool), join(destination, tool));
+    cpSync(join(root, "tools/source.properties"), join(destination, "../source.properties"));
   `);
   if (installed) {
     mkdirSync(join(root, "sdk/cmdline-tools/23.0/bin"), { recursive: true });
     for (const tool of ["sdkmanager", "avdmanager"]) {
       cpSync(join(root, "tools", tool), join(root, "sdk/cmdline-tools/23.0/bin", tool));
     }
+    cpSync(join(root, "tools/source.properties"), join(root, "sdk/cmdline-tools/23.0/source.properties"));
   }
   const run = (overrides = {}, args = ["consumer-test"]) => spawnSync("bash", [script, ...args], {
     encoding: "utf8", timeout: 30_000,
@@ -72,21 +75,26 @@ function fixture(t, { installed = false } = {}) {
     },
   });
   const events = () => existsSync(join(root, "events")) ? readFileSync(join(root, "events"), "utf8").trim().split("\n") : [];
-  return { run, events };
+  const metadata = (contents) => {
+    const path = join(root, "sdk/cmdline-tools/23.0/source.properties");
+    if (contents === undefined) rmSync(path);
+    else writeFileSync(path, contents);
+  };
+  return { run, events, metadata };
 }
 
 test("AVD creation installs and selects pinned tools before validating the image target", (t) => {
   const { run, events } = fixture(t);
   const result = run();
   assert.equal(result.status, 0, result.stderr);
-  assert.deepEqual(events(), ["install", "version", "packages", "avd"]);
+  assert.deepEqual(events(), ["install", "packages", "avd"]);
 });
 
-test("already installed pinned tools are checked without using the hosted latest tools", (t) => {
+test("installed bundle metadata is checked independently of the delegated CLI version", (t) => {
   const { run, events } = fixture(t, { installed: true });
   const result = run({ FIXTURE_INSTALL_EXIT: "37" });
   assert.equal(result.status, 0, result.stderr);
-  assert.deepEqual(events(), ["version", "packages", "avd"]);
+  assert.deepEqual(events(), ["packages", "avd"]);
 });
 
 test("a failed pinned tools installation cannot fall back to the hosted tools", (t) => {
@@ -95,20 +103,21 @@ test("a failed pinned tools installation cannot fall back to the hosted tools", 
   assert.deepEqual(events(), ["install"]);
 });
 
-test("wrong versions and unsuccessful version probes stop before package or AVD creation", (t) => {
-  for (const overrides of [{ FIXTURE_VERSION: "12.0" }, { FIXTURE_VERSION_EXIT: "38" }]) {
-    const { run, events } = fixture(t, { installed: true });
-    const result = run(overrides);
+test("wrong, ambiguous and missing bundle revisions stop before invoking tools", (t) => {
+  for (const contents of ["Pkg.Revision=12.0\n", "Pkg.Revision=23.0\nPkg.Revision=12.0\n", undefined]) {
+    const { run, events, metadata } = fixture(t, { installed: true });
+    metadata(contents);
+    const result = run();
     assert.equal(result.status, 1);
     assert.match(result.stderr, /unexpected version/u);
-    assert.deepEqual(events(), ["version"]);
+    assert.deepEqual(events(), []);
   }
 });
 
 test("failed image installation stops before AVD creation", (t) => {
   const { run, events } = fixture(t, { installed: true });
   assert.equal(run({ FIXTURE_PACKAGES_EXIT: "39" }).status, 39);
-  assert.deepEqual(events(), ["version", "packages"]);
+  assert.deepEqual(events(), ["packages"]);
 });
 
 test("android-0, other image targets and missing metadata fail before emulator boot", (t) => {

@@ -17,6 +17,7 @@ if [[ "$ANDROID_HOME_VALUE" != /* || "$ANDROID_AVD_HOME" != /* ]]; then
     exit 2
 fi
 readonly COMMAND_LINE_TOOLS_VERSION="23.0"
+readonly TOOL_PROPERTIES="$ANDROID_HOME_VALUE/cmdline-tools/$COMMAND_LINE_TOOLS_VERSION/source.properties"
 readonly SDKMANAGER="$ANDROID_HOME_VALUE/cmdline-tools/$COMMAND_LINE_TOOLS_VERSION/bin/sdkmanager"
 readonly AVDMANAGER="$ANDROID_HOME_VALUE/cmdline-tools/$COMMAND_LINE_TOOLS_VERSION/bin/avdmanager"
 readonly ANDROID_R8_PLATFORM="platforms;android-37.0"
@@ -34,7 +35,10 @@ if [[ ! -x "$SDKMANAGER" || ! -x "$AVDMANAGER" ]]; then
     printf 'Pinned Android command-line tools are unavailable\n' >&2
     exit 1
 fi
-if ! tool_version="$("$SDKMANAGER" --version)" || [[ "$tool_version" != "$COMMAND_LINE_TOOLS_VERSION" ]]; then
+# sdkmanager now delegates to Android CLI, whose --version identifies that
+# CLI rather than this SDK bundle. Check the installed package revision.
+if ! tool_version="$(LC_ALL=C sed -n 's/^Pkg\.Revision=//p' "$TOOL_PROPERTIES" 2>/dev/null)" ||
+    [[ "$tool_version" != "$COMMAND_LINE_TOOLS_VERSION" ]]; then
     printf 'Pinned Android command-line tools have an unexpected version\n' >&2
     exit 1
 fi
