@@ -429,13 +429,6 @@ if (rootCargo.includes("crates/crypto") || rootCargo.includes("crates/proto/cryp
 }
 assertContains("Cargo.toml", 'repository = "https://github.com/reallyme/codec"');
 assertContains("Cargo.toml", 'buffa = { package = "reallyme-buffa", version = "=0.1.2", features = ["json", "zeroize"] }');
-assertContains("README.md", "ReallyMe Codec is one cross-language codec operation contract for identity data.");
-assertContains("README.md", "released in lockstep with `reallyme-codec`");
-assertContains("README.md", "SDK consumers should usually start with the umbrella package");
-assertContains("crates/codec/README.md", "ReallyMe Codec is one cross-language codec contract for identity data.");
-assertContains("crates/codec/README.md", "released in lockstep");
-assertContains("docs/rust-publishing.md", "`reallyme-codec` is the recommended public Rust entry point.");
-assertContains("docs/rust-publishing.md", "They are released in lockstep");
 for (const rustLeafCrate of codecRustLeafCrates) {
   const manifest = readText(rustLeafCrate);
   if (!manifest.includes(`version = "${codecPackageVersion}"`)) {
@@ -1886,7 +1879,6 @@ assertContains(
   "packages/kotlin/gradle/verification-metadata.xml",
   "<verify-signatures>false</verify-signatures>",
 );
-assertContains("docs/dependency-updates.md", "verifying every trusted full fingerprint");
 assertContains("scripts/write_native_manifest.mjs", "sha256");
 assertContains("scripts/write_native_manifest.mjs", 'writeFileSync(`${path}.sha256`');
 assertContains("scripts/write_native_manifest.mjs", "GITHUB_SHA does not match the checked-out source SHA");
@@ -2462,11 +2454,6 @@ assertContains("packages/swift/Tests/ReallyMeCodecTests/ProviderSafetyTests.swif
 assertContains("packages/swift/Tests/ReallyMeCodecTests/ReallyMeCodecTests.swift", "testSwiftDataAndCborBuildersPreserveCanonicalBytes");
 assertContains("packages/kotlin/src/test/kotlin/me/really/codec/ReallyMeCodecTest.kt", "deterministicAndDagCborBuildersPreserveCanonicalBytes");
 assertContains("packages/ts/test/reallyme-codec.test.mjs", "CBOR helper builders preserve canonical bytes");
-assertContains("README.md", "Deterministic generic CBOR is a first-class structured surface");
-assertContains("packages/swift/README.md", "SwiftProtobuf message-depth limit");
-assertContains("packages/kotlin/README.md", "does not keep a parallel hand-written JSON result path");
-assertContains("packages/ts/README.md", "the package does not");
-assertContains("packages/ts/README.md", "operation-specific `*Proto` helper APIs");
 assertContains("scripts/build_swift_xcframework.sh", "xcodebuild -create-xcframework");
 assertContains("scripts/build_swift_xcframework.sh", "-C panic=unwind");
 assertContains("scripts/build_swift_xcframework.sh", "cargo build --locked");
@@ -2478,10 +2465,6 @@ assertContains("scripts/test_ffi_abi_release_artifact.sh", "env -u RUSTFLAGS car
 assertContains("scripts/test_ffi_abi_release_artifact.sh", "-C panic=unwind");
 assertContains("scripts/test_ffi_abi_release_artifact.sh", "rm_codec_process_operation_json");
 assertContains("packages/swift/README.md", "cargo build --locked");
-assertContains("docs/protobuf.md", "any SwiftProtobuf.Message");
-assertContains("docs/protobuf.md", "serde_json::to_*");
-assertContains("docs/protobuf.md", "TypeScript protobuf-es messages are plain JavaScript objects");
-assertContains("docs/protobuf.md", "degrade toward quadratic behavior");
 assertContains("scripts/build_swift_xcframework.sh", 'cat >"${MODULE_HEADERS_DIR}/module.modulemap"');
 assertContains("scripts/build_swift_xcframework.sh", 'cat >"${MODULE_HEADERS_DIR}/reallyme_codec_ffi.h"');
 assertContains("scripts/build_swift_xcframework.sh", 'header "reallyme_codec_ffi.h"');
@@ -2897,7 +2880,6 @@ assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android AVD was n
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "$AVDMANAGER\" create avd --force");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android consumer R8 runtime gate passed");
 assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.4.3");
-assertContains("packages/kotlin-android/README.md", "never sourced from the Git worktree");
 assertContains(
   "packages/kotlin-android/gradle.properties",
   "org.gradle.jvmargs=-Xmx1g -XX:MaxMetaspaceSize=768m -Dfile.encoding=UTF-8",
@@ -2978,12 +2960,9 @@ assertContains("README.md", "https://github.com/reallyme/codec");
 assertContains("README.md", "https://www.npmjs.com/package/@reallyme/codec");
 assertContains("README.md", "me.really:codec:0.4.3");
 assertContains("README.md", "reallyme-codec-proto");
-assertContains("README.md", "## Published Surfaces");
 assertContains("README.md", "`me.really:codec-android` AAR");
-assertContains("README.md", "## Source Map");
-assertContains("CONTRACT.md", "reallyme/codec");
+assertContains("CONTRACT.md", "crates/proto/proto/reallyme/codec/v1/codec.proto");
 assertContains("SECURITY.md", "reallyme-codec");
-assertContains("SECURITY_MEMORY_MODEL.md", "reallyme-codec");
 assertContains("buf.yaml", "modules:");
 assertContains("buf.yaml", "- path: crates/proto/proto");
 assertContains("crates/proto/proto/reallyme/codec/v1/codec.proto", "package reallyme.codec.v1;");

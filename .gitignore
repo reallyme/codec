@@ -22,6 +22,9 @@ target/
 *~
 
 # Local environment
+dependency-updates.md
+rust-publishing.md
+formal-verification.md
 AGENTS.md
 .agents/
 .claude/
