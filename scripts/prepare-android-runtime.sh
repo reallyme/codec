@@ -14,17 +14,7 @@ fi
 readonly APK_PATH="$1"
 readonly AVD_NAME="$2"
 readonly MAVEN_REPOSITORY="$3"
-readonly ANDROID_HOME_VALUE="${ANDROID_HOME:?Android SDK path is required}"
-readonly SDKMANAGER="$ANDROID_HOME_VALUE/cmdline-tools/latest/bin/sdkmanager"
-readonly AVDMANAGER="$ANDROID_HOME_VALUE/cmdline-tools/latest/bin/avdmanager"
-readonly ANDROID_R8_PLATFORM="platforms;android-37.0"
-readonly ANDROID_R8_SYSTEM_IMAGE="system-images;android-37.1;google_apis_ps16k;x86_64"
-export ANDROID_AVD_HOME="${ANDROID_AVD_HOME:?isolated Android AVD home is required}"
-mkdir -p "$ANDROID_AVD_HOME"
-
-{ yes 2>/dev/null || true; } | "$SDKMANAGER" "emulator" "$ANDROID_R8_PLATFORM" "$ANDROID_R8_SYSTEM_IMAGE"
-# Use the same hardware profile as the Android R8 runtime workflow.
-printf 'no\n' | "$AVDMANAGER" create avd --force -n "$AVD_NAME" -k "$ANDROID_R8_SYSTEM_IMAGE" --device pixel
+bash "$REPO_ROOT/scripts/prepare-android-avd.sh" "$AVD_NAME"
 
 # The published AAR is a new dependency on every CI candidate. Bind its
 # sealed bytes into an isolated copy of the consumer's strict verification
