@@ -67,6 +67,32 @@ test("clean index passes and explicit negations remain supported", (t) => {
   assert.equal(check().status, 0);
 });
 
+test("staged work reports fail even when unstaged bytes look like a README", (t) => {
+  const { git, write, check } = fixture(t);
+  write("README.md", "# Task summary\n\nPrivate working notes.\n");
+  git("add", "README.md");
+  write("README.md", "# Public package\n");
+  const result = check();
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /TRANSIENT_DOCUMENTATION_CONTENT/u);
+});
+
+test("custom public guides require a staged declaration", (t) => {
+  const { git, write, check } = fixture(t);
+  write("docs/api.md", "# Public API\n");
+  git("add", "docs/api.md");
+  write(".github/documentation-policy.json", JSON.stringify({
+    schema: 1,
+    documents: [{
+      path: "docs/api.md", kind: "reference",
+      purpose: "Describe the supported public API and compatibility guarantees.",
+    }],
+  }));
+  assert.equal(check().status, 1);
+  git("add", ".github/documentation-policy.json");
+  assert.equal(check().status, 0);
+});
+
 test("force-added ignored files fail including newline paths", (t) => {
   const { git, write, check } = fixture(t);
   write(".gitignore", "*.env\n");
@@ -187,6 +213,19 @@ test("history rejects ignored files even when a later commit removes them", (t) 
   const result = check("--history");
   assert.equal(result.status, 1);
   assert.match(result.stderr, /"private\\nvalue\.env"/u);
+});
+
+test("history rejects work reports deleted before the pushed tip", (t) => {
+  const { git, write, check } = fixture(t);
+  write("README.md", "# Task summary\n\nPrivate working notes.\n");
+  git("add", "README.md");
+  git("-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "Add fixture files");
+  git("rm", "README.md");
+  git("-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "Update fixture files");
+  assert.equal(check().status, 0);
+  const result = check("--history");
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /TRANSIENT_DOCUMENTATION_CONTENT/u);
 });
 
 test("clean complete history passes while shallow history fails closed", (t) => {

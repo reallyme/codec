@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "documents": [
+    {
+      "path": "CONTRACT.md",
+      "kind": "contract",
+      "purpose": "Define the public encoding, decoding, validation and error contracts."
+    },
+    {
+      "path": "SECURITY_MEMORY_MODEL.md",
+      "kind": "reference",
+      "purpose": "Explain sensitive-buffer ownership, cleanup guarantees and platform limits."
+    },
+    {
+      "path": "docs/protobuf.md",
+      "kind": "reference",
+      "purpose": "Describe the public protobuf contract and supported serialization formats."
+    }
+  ]
+}

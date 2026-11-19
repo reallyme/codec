@@ -66,7 +66,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: reallyme/release-readiness
-          ref: e323ea52bc1f76e67df03fc95e19d596fb54bd03
+          ref: 16aab5287de498e858ff3b85d9e66d7c9f7ebb74
           path: .release-readiness
           persist-credentials: false
 
@@ -79,6 +79,12 @@ jobs:
         uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
           toolchain: 1.100.0
+
+      - name: Install dependency maintenance tools
+        uses: taiki-e/install-action@75a7c0f87bd666af3cdb75c5b9e9d03ab6044e6f # v2.90.6
+        with:
+          tool: cargo-audit@0.23.0,cargo-outdated@0.19.0
+          fallback: none
 
       - name: Authenticate release-readiness package
         run: node scripts/run_pinned_release_readiness.mjs --check-pins
@@ -150,7 +156,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: reallyme/release-readiness
-          ref: e323ea52bc1f76e67df03fc95e19d596fb54bd03
+          ref: 16aab5287de498e858ff3b85d9e66d7c9f7ebb74
           path: .release-readiness
           persist-credentials: false
 
@@ -214,7 +220,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: reallyme/release-readiness
-          ref: e323ea52bc1f76e67df03fc95e19d596fb54bd03
+          ref: 16aab5287de498e858ff3b85d9e66d7c9f7ebb74
           path: .release-readiness
           persist-credentials: false
 
@@ -306,7 +312,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: reallyme/release-readiness
-          ref: e323ea52bc1f76e67df03fc95e19d596fb54bd03
+          ref: 16aab5287de498e858ff3b85d9e66d7c9f7ebb74
           path: .release-readiness
           persist-credentials: false
 
