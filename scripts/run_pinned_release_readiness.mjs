@@ -12,26 +12,29 @@ import { resolve, sep } from "node:path";
 // Verify the immutable official package before executing its runner. Local
 // checker/module digests remain review tripwires; the package runner supplies
 // the core and enforces proof that every applicable source policy was invoked.
-const RELEASE_READINESS_COMMIT = "e323ea52bc1f76e67df03fc95e19d596fb54bd03";
+const RELEASE_READINESS_COMMIT = "d424fdd5c6e824a8dd4b13d7eef9113d307378ae";
 const RELEASE_READINESS_CORE_SHA256 =
-  "825ebca65a1324ea7cf42713ca5c4c67b0d929444d24dcaf7500fc9fa0ca7e20";
+  "28cd02304b60782b9443782f53e4e11d2b926f86d8ed8cc45569bec925ac27a6";
 const LOCAL_CHECKER_SHA256 =
-  "def0bc8edb898cb1fe18aa9c6dd5801d4ecce618a72623c391b980882600c1f9";
+  "14286854588ef664a5c4b72eb8a558cd0bbfd75ec67fa152799abf5d8a45a45f";
 const RELEASE_READINESS_CORE_URL =
   `https://raw.githubusercontent.com/reallyme/release-readiness/${RELEASE_READINESS_COMMIT}/core.mjs`;
 const RELEASE_READINESS_RUNNER_SHA256 =
-  "3486696ab93190b627438a6aa7248e972872c83b4efc62286aecb1f60ee3783c";
+  "952e4770e7380269e497b9700c48766ec614f250b53ca8f4773cc16842d445b4";
 const RELEASE_READINESS_PACKAGE_SHA256 =
-  "c5de23339bcd17107f63a2b467c1c0441a2695f0c12a786ced2b491d7c7a425f";
+  "b220498e609173cdf939942cf381dc584fa531379e929cbd0dad074e02e47f4c";
 const RELEASE_READINESS_SUPPORT_FILES = [
-  ["scripts/publication-paths.py", "45d3485bc03f4a73f955942648b13e5fba8f06d450326eb13c7b0df2ad518caf"],
-  ["scripts/repository-privacy.mjs", "6c8f44bf810e947fcbe3e0a9e45cdaac007009a5fe719f0ca928bc5bbd04c346"],
+  ["scripts/publication-paths.py", "34de1a347aae95feb873f978ccf1357e5c9ee0d668965c669f636163c6eabe18"],
+  ["scripts/repository-privacy.mjs", "545d02c0bfb5a50623c7439761fb329c2eb0299ee3d182ea1c14f6078a85faa8"],
   ["scripts/public-ci.mjs", "9b64390152f9b440f2045a6f2bd91965ce7c09c12b5b0eb41e20298bbab22686"],
   ["scripts/public-release.mjs", "187ac87a288d14bdfaec38a2e22a547dcda8fa7df8f3a8701063306ea2bd78e0"],
   ["scripts/public-repo-policy.mjs", "fdad8fe9c0e85043b764a0321558af7a85324bceb7724c693a2824d955b0a204"],
   ["scripts/android-runtime.mjs", "5e80d5dee4a1ac225dfe155dd6d5477e1c52bc18be103f7b6fef181a0d4cb3c9"],
   ["scripts/android-publication.mjs", "539660a91b7b9150a9d85cafff35c5bbefd97a57541d2343f55f1d1243e3be7b"],
   ["templates/cla.yaml", "3c5e89c5753d128643e5862e6baeb6b97c4f0ce1d6ef158cf46db3deeec6b955"],
+  ["scripts/dependency-maintenance.mjs", "ee9a2af2b97c670ab7125311d70a0a836ff9ca04005ad980e3591c3e2339babd"],
+  ["scripts/dependency-versions.mjs", "966b671a09bf6bcd3207e19c57d7f0b6744cee23c8b119dcca63394c0d61604f"],
+  ["scripts/documentation-policy.mjs", "c9cc9393cd8e3c93a5e835841e4d34c5837ca8858a27e8b717c00ce9ea6b5301"],
 ];
 const LOCAL_CHECKER_PATH = "scripts/check_release_readiness.mjs";
 const MAX_CORE_BYTES = 262_144;

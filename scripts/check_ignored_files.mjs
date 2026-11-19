@@ -65,6 +65,8 @@ try {
   }
   const { assertRepositoryPrivacy, assertPushPrivacy } =
     await import("../.release-readiness/scripts/repository-privacy.mjs");
+  const { assertDocumentationPolicy } =
+    await import("../.release-readiness/scripts/documentation-policy.mjs");
   if (args[0] === "--pre-push") {
     assertPushPrivacy({ updates: readInput() });
   } else if (args[0] === "--history") {
@@ -77,6 +79,9 @@ try {
     assertPushPrivacy({ updates: `HEAD ${tip} refs/heads/main ${"0".repeat(tip.length)}\n` });
   } else {
     assertRepositoryPrivacy();
+    // Match the exact staged bytes that Git will commit, including policy
+    // declarations; unstaged edits must not hide a staged work report.
+    assertDocumentationPolicy({ staged: true });
   }
   console.log("tracked files respect committed ignore rules");
 } catch (error) {

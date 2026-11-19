@@ -242,16 +242,22 @@ for (const [extension, language] of [["rs", "rust"], ["ts", "typescript"], ["swi
   });
 }
 
-test("a tampered module imported by the official runner fails authentication before execution", (t) => {
-  const f = fixture(t);
-  const module = "scripts/public-ci.mjs";
-  const path = join(f.root, ".release-readiness", module);
-  writeFileSync(path, `${readFileSync(path, "utf8")}\nprocess.exit(94);\n`);
-  const result = f.run();
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /package scripts\/public-ci\.mjs does not match the reviewed upstream pin/u);
-  assert.equal(existsSync(join(f.root, "checker-executed")), false);
-});
+for (const module of [
+  "scripts/public-ci.mjs",
+  "scripts/dependency-maintenance.mjs",
+  "scripts/dependency-versions.mjs",
+  "scripts/documentation-policy.mjs",
+]) {
+  test(`tampered ${module} fails authentication before execution`, (t) => {
+    const f = fixture(t);
+    const path = join(f.root, ".release-readiness", module);
+    writeFileSync(path, `${readFileSync(path, "utf8")}\nprocess.exit(94);\n`);
+    const result = f.run();
+    assert.equal(result.status, 1);
+    assert.ok(result.stderr.includes(`package ${module} does not match the reviewed upstream pin`));
+    assert.equal(existsSync(join(f.root, "checker-executed")), false);
+  });
+}
 
 test("pin-only verification does not execute the checker", (t) => {
   const f = fixture(t);
