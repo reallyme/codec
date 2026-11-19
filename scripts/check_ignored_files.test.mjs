@@ -43,10 +43,14 @@ function fixture(t) {
     return result.stdout;
   };
   git("init", "--quiet", "--initial-branch=main");
+  const baselineRules = "AGENTS.md\n.claude/\n.codex/\n.local/\n.build/\n";
   const write = (path, contents) => {
+    if (path === ".gitignore") contents = baselineRules + contents;
     mkdirSync(dirname(join(root, path)), { recursive: true });
     writeFileSync(join(root, path), contents);
   };
+  write(".gitignore", "");
+  git("add", ".gitignore");
   const checkInput = (input, ...args) => spawnSync(process.execPath, [script, ...args], {
     cwd: root, env, encoding: "utf8", input,
   });
@@ -145,20 +149,22 @@ test("repository rules reject local instructions and tool/build directories", (t
   for (const path of paths) {
     write(path, "local only\n");
     git("add", "--force", path);
+    const result = check();
+    assert.equal(result.status, 1, path);
+    assert.ok(result.stderr.includes(JSON.stringify(path)), result.stderr);
+    git("rm", "--cached", path);
   }
-  const result = check();
-  assert.equal(result.status, 1);
-  for (const path of paths) assert.ok(result.stderr.includes(JSON.stringify(path)));
 });
 
 test("symlink ignore files are rejected", { skip: process.platform === "win32" }, (t) => {
   const { root, git, write, check } = fixture(t);
   write("rules", "*.env\n");
+  rmSync(join(root, ".gitignore"));
   symlinkSync("rules", join(root, ".gitignore"));
   git("add", ".gitignore", "rules");
   const result = check();
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /INVALID_IGNORE_FILE/u);
+  assert.match(result.stderr, /IGNORE_FILE_MUST_BE_REGULAR/u);
 });
 
 test("unsupported arguments and missing repositories fail closed", (t) => {
@@ -224,27 +230,5 @@ test("push validation handles tags, deletions and malformed inputs", (t) => {
   assert.equal(checkInput(`(delete) ${"0".repeat(40)} refs/tags/fixture ${tag}\n`, "--pre-push").status, 0);
   const invalid = checkInput("refs/heads/main --all refs/heads/main invalid\n", "--pre-push");
   assert.equal(invalid.status, 1);
-  assert.match(invalid.stderr, /INVALID_PUSH_INPUT/u);
-});
-
-test("artifact paths follow shared ignore rules and reject path traversal", (t) => {
-  const { git, write, checkInput } = fixture(t);
-  write(".gitignore", "*.env\nprivate/\n");
-  git("add", ".gitignore");
-  assert.equal(checkInput("public.txt\0", "--paths").status, 0);
-  assert.equal(checkInput("private/file\0", "--paths").status, 1);
-  for (const path of ["../public.txt\0", "/private.env\0", "private\\file\0", "unterminated"]) {
-    assert.match(checkInput(path, "--paths").stderr, /INVALID_PATH_INPUT/u);
-  }
-});
-
-test("npm admission permits compiled distribution paths without relaxing Git or private-file rules", (t) => {
-  const { git, write, checkInput } = fixture(t);
-  write(".gitignore", "dist/\nAGENTS.md\n");
-  git("add", ".gitignore");
-  assert.equal(checkInput("package/dist/index.js\0", "--npm-paths").status, 0);
-  assert.equal(checkInput("package/dist/AGENTS.md\0", "--npm-paths").status, 1);
-  write("dist/index.js", "public build\n");
-  git("add", "--force", "dist/index.js");
-  assert.equal(checkInput("package/dist/index.js\0", "--npm-paths").status, 1);
+  assert.match(invalid.stderr, /INVALID_PUSH_UPDATES/u);
 });

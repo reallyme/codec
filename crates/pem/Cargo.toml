@@ -4,7 +4,7 @@
 
 [package]
 name = "reallyme-codec-pem"
-version = "0.4.3"
+version = "0.4.4"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -18,9 +18,14 @@ include = ["/src/**/*.rs", "/tests/**/*.rs", "/Cargo.toml", "/README.md", "/LICE
 name = "codec_pem"
 
 [dependencies]
+codec-proto = { package = "reallyme-codec-proto", version = "=0.4.4", path = "../proto", features = ["generated"] }
 base64 = { workspace = true }
 thiserror = { workspace = true }
 zeroize = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+pem = "=4.0.0"
 
 [lints]
 workspace = true

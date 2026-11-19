@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-export { ReallyMeCodecError } from "./errors.js";
+export { ReallyMeCodecError, CodecErrorReason, CodecErrorOrigin } from "./errors.js";
 export type { ReallyMeCodecErrorCode } from "./errors.js";
 export {
   base64Decode,

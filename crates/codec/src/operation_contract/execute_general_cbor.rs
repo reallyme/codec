@@ -120,16 +120,13 @@ pub(super) fn execute(operation: &mut Operation) -> Result<OperationResult, Code
             let mut cursor = cbor::Cursor::new(&request.encoded, limits, profile.lengths())
                 .map_err(map_error)?;
             let mut result = proto::CodecGeneralCborFrames::default();
+            result.options = Some(shape::options(profile, limits)?).into();
             result.values = shape::reserve_receipts(capacity)?;
             for frame in cursor.by_ref() {
                 let frame = frame.map_err(map_error)?;
-                result.values.push(shape::frame(
-                    &request.encoded,
-                    &frame,
-                    false,
-                    profile,
-                    limits,
-                )?);
+                result
+                    .values
+                    .push(shape::collection_frame(&request.encoded, &frame, false)?);
             }
             result.consumed_bytes = shape::size(cursor.consumed_bytes().len())?;
             Ok(OperationResult::GeneralCborCursor(Box::new(result)))

@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-readonly TOOLCHAIN="${REALLYME_CODEC_SANITIZER_TOOLCHAIN:-nightly-2026-07-01}"
+readonly TOOLCHAIN="${REALLYME_CODEC_SANITIZER_TOOLCHAIN:-nightly-2026-11-10}"
 readonly TARGET="${REALLYME_CODEC_SANITIZER_TARGET:-$(rustc +"$TOOLCHAIN" -vV | sed -n 's/^host: //p')}"
 readonly PACKAGES=(
     -p reallyme-codec

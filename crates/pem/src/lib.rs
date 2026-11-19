@@ -10,13 +10,20 @@
 //! structure.
 
 mod decode;
+mod decode_bundle;
 mod encode;
 mod error;
+mod frame_bundle;
 mod label;
 mod policy;
 mod types;
 
+pub use codec_proto::generated::proto::reallyme::codec::v1::{
+    CodecPemBundleBlock, CodecPemBundleDecodeOptions, CodecPemBundleDecodeRequest,
+    CodecPemBundleDecodeResult, CodecPemDecodeScope, CodecPemSyntaxProfile,
+};
 pub use decode::decode_pem;
+pub use decode_bundle::decode_pem_bundle;
 pub use encode::{encode_pem, preflight_pem_encoded_length};
 pub use error::PemError;
 pub use label::PemLabel;

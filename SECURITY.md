@@ -1,38 +1,14 @@
-# Security Policy
+# Security policy
 
-`reallyme-codec` is security-sensitive infrastructure. We treat parser bugs,
-non-canonical encoding acceptance, boundary panics, memory-safety issues, and
-cross-language divergence as security-relevant.
+Report vulnerabilities privately through
+[GitHub vulnerability reporting](https://github.com/reallyme/codec/security/advisories/new)
+or [security@really.me](mailto:security@really.me).
 
-## Reporting
+Include the package and version, affected operation, and a small reproduction.
+Use synthetic data; do not send private keys or production identity documents.
+Parser failures, resource exhaustion, incorrect canonicalization, memory-safety
+issues and exposure of input data are security-relevant.
 
-Please report vulnerabilities privately before public disclosure through
-[GitHub private vulnerability reporting](https://github.com/reallyme/codec/security/advisories/new).
-
-The primary security contact is [security@really.me](mailto:security@really.me).
-
-Include the affected package, version, input shape, and the smallest
-reproduction you can share without exposing sensitive data. Do not attach
-private keys, production identity documents, or other secrets.
-
-## Scope
-
-In scope:
-
-- parser panics, unbounded resource use, or memory-safety issues;
-- acceptance of non-canonical encodings where canonical form is required;
-- Swift, Kotlin, or TypeScript behavior diverging from Rust;
-- FFI/JNI/WASM boundary validation failures;
-- error paths that expose raw attacker-controlled input, PII, or backend
-  exception text.
-
-Out of scope:
-
-- cryptographic primitive implementation bugs, provider policy, and key
-  management issues that belong to the separate crypto repository;
-- unsupported platform combinations that fail closed with typed errors.
-
-## Supported Versions
-
-The current `0.3.x` line receives security fixes while the public API remains in
-early release. Pin exact versions in production deployments.
+The latest published minor release line receives security fixes.
+See [data handling](SECURITY_MEMORY_MODEL.md) for precautions when processing
+sensitive data.

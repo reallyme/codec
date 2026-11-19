@@ -390,8 +390,15 @@ const fn error_origin(
     match (branch, reason) {
         (CodecWireErrorBranch::Backend, _)
         | (
+            CodecWireErrorBranch::BaseEncoding,
+            CodecErrorReason::CODEC_ERROR_REASON_BASE_LENGTH_OVERFLOW
+            | CodecErrorReason::CODEC_ERROR_REASON_BASE_ALLOCATION_FAILURE,
+        )
+        | (
             CodecWireErrorBranch::Canonicalization,
-            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_INTERNAL,
+            CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_INTERNAL
+            | CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_JSON_ALLOCATION_FAILURE
+            | CodecErrorReason::CODEC_ERROR_REASON_CANONICAL_JSON_ARITHMETIC_OVERFLOW,
         ) => CodecWireErrorOrigin::Provider,
         _ => CodecWireErrorOrigin::Caller,
     }

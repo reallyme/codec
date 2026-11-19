@@ -13,13 +13,16 @@
 //! If dependency feature unification enables `serde_json/arbitrary_precision`,
 //! the raw-text entry point fails closed with
 //! [`JcsError::UnsupportedNumberRepresentation`]. The feature changes the
-//! deserializer's number visitor contract, so proceeding could produce
-//! noncanonical bytes. Integrators that require that feature should use a
-//! separately compiled JCS lane until an independent tokenizer is available.
+//! dependency's number visitor contract. That feature combination remains
+//! unsupported; use a separately compiled JCS lane.
+//! The raw-text parser decodes strings into wiping owners and parses numbers
+//! without a heap scratch buffer. Returned canonical text belongs to the caller.
 
 mod canonicalize;
 mod error;
 mod parse_json;
+mod read_json_string;
+mod sensitive_json_value;
 
 pub use canonicalize::{canonicalize_json_text, canonicalize_trusted_json_value};
 pub use error::JcsError;

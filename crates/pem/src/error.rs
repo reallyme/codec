@@ -8,6 +8,9 @@ use thiserror::Error;
 #[derive(Debug, Error, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum PemError {
+    /// A block-count or bounded allocation limit was exceeded.
+    #[error("pem: resource limit exceeded")]
+    ResourceLimitExceeded,
     /// The input text exceeded the configured maximum size.
     #[error("pem: input too large")]
     InputTooLarge,

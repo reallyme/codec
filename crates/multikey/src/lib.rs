@@ -12,6 +12,7 @@
 mod binding;
 mod encode;
 mod error;
+mod map_public_key_error;
 mod parse;
 
 #[allow(deprecated)]

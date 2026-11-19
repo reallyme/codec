@@ -69,7 +69,7 @@ fn read_value(
     let start = reader.contract_remaining()?;
     let mut header_reader =
         SliceReader::new_with_encoding_rules(start, EncodingRules::Der).map_err(map_backend)?;
-    let header = Header::decode(&mut header_reader).map_err(map_backend)?;
+    Header::decode(&mut header_reader).map_err(map_backend)?;
     let header_len = usize::try_from(header_reader.position())
         .map_err(|_| DerError::new(DerErrorReason::ArithmeticOverflow))?;
     let mut result = proto::CodecDerValue::default();
@@ -111,14 +111,13 @@ fn read_value(
             let [child_schema] = &schema.children[..] else {
                 return Err(invalid());
             };
-            // Every DER value occupies at least a tag and a length octet.
-            // Reserve the bounded content-derived ceiling before storing any
-            // scalar-bearing children, so growth cannot abandon stale values.
-            let content_len = usize::try_from(header.length())
-                .map_err(|_| DerError::new(DerErrorReason::ArithmeticOverflow))?;
-            let capacity = (content_len / 2).min(reader.contract_element_limit());
-            result.children = reserve_children(capacity)?;
             reader.read_set_of(|nested| {
+                // Payload length is not a child count: nested singleton sets
+                // can otherwise multiply a full reservation at every level.
+                // Count borrowed immediate TLVs before storing sensitive values
+                // so the guarded list never grows and abandons stale storage.
+                let capacity = count_children(nested)?;
+                result.children = reserve_children(capacity)?;
                 while !nested.is_finished() {
                     result
                         .children
@@ -140,6 +139,25 @@ fn read_value(
     result.received = Some(span(source, received)?).into();
     result.contents = Some(span(source, contents)?).into();
     Ok(result)
+}
+
+fn count_children(reader: &DerReader<'_>) -> Result<usize, DerError> {
+    let mut contents =
+        SliceReader::new_with_encoding_rules(reader.contract_remaining()?, EncodingRules::Der)
+            .map_err(map_backend)?;
+    let maximum = reader.contract_remaining_elements()?;
+    let mut count = 0_usize;
+    while !contents.is_finished() {
+        count = count
+            .checked_add(1)
+            .ok_or(DerError::new(DerErrorReason::ArithmeticOverflow))?;
+        if count > maximum {
+            return Err(DerError::new(DerErrorReason::TooManyElements));
+        }
+        let header = Header::decode(&mut contents).map_err(map_backend)?;
+        contents.read_slice(header.length()).map_err(map_backend)?;
+    }
+    Ok(count)
 }
 
 fn copy_bytes(bytes: &[u8]) -> Result<Vec<u8>, DerError> {

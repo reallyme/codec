@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 env:
-  BUFFA_VERSION: 0.1.2
+  BUFFA_VERSION: 0.1.3
   BUF_VERSION: 1.75.0
 
 jobs:
@@ -34,7 +34,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: reallyme/release-readiness
-          ref: 55115f21d5bf9a3fbc1bb8d10484aecba6e7bd8f
+          ref: e323ea52bc1f76e67df03fc95e19d596fb54bd03
           path: .release-readiness
           persist-credentials: false
 
@@ -98,6 +98,12 @@ jobs:
 
       - name: Install TypeScript codec package dependencies
         run: npm ci --prefix packages/ts
+
+      - name: Install pinned local protobuf tools
+        run: |
+          scripts/install_local_proto_tools.sh
+          printf '%s\n' "$PWD/.build/codec-proto-tools/bin" >> "$GITHUB_PATH"
+
 
       - name: Build and stage native codec for both SDKs
         run: |

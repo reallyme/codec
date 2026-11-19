@@ -24,7 +24,8 @@ license = "MIT OR Apache-2.0"
 cargo-fuzz = true
 
 [dependencies]
-libfuzzer-sys = "0.4"
+libfuzzer-sys = "0.4.13"
+stats_alloc = "=0.1.10"
 
 codec-base64url = { package = "reallyme-codec-base64url", path = "../crates/base64url" }
 codec-base64 = { package = "reallyme-codec-base64", path = "../crates/base64" }
@@ -130,6 +131,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "der_schema"
+path = "tests/targets/der_schema.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "tlv"
 path = "tests/targets/tlv.rs"
 test = false
@@ -139,3 +147,10 @@ bench = false
 # Standalone workspace: keep this crate out of the parent workspace so the
 # parent's lint denies and toolchain pin do not apply to the fuzz targets.
 [workspace]
+
+[[bin]]
+name = "guarded_json"
+path = "tests/targets/guarded_json.rs"
+test = false
+doc = false
+bench = false

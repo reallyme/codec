@@ -231,14 +231,16 @@ pub fn dag_cbor_multihash_value(input: &[u8]) -> Result<DagCborMultihash, Scalar
     Ok(dag_cbor_multihash(input))
 }
 
-/// Parse a CID and return its canonical text when valid.
+/// Parse bounded CID syntax and return canonical text. CIDv1 hash codes and
+/// digest lengths remain opaque; content verification is a separate operation.
 pub fn parse_cid(input: &str) -> Option<String> {
     let request = CodecTextRequestView { value: input };
     let input = request.value;
     try_parse_cid(input).map(|cid| cid.to_string())
 }
 
-/// Report whether the supplied text is a valid CID.
+/// Report bounded CID syntax admission, including opaque CIDv1 hash codes and
+/// digest lengths. Successful admission makes no content-integrity claim.
 pub fn valid_cid(input: &str) -> bool {
     let request = CodecTextRequestView { value: input };
     let input = request.value;

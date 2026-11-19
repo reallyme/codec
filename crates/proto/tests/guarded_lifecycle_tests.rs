@@ -209,3 +209,22 @@ fn late_json_failure_erases_an_already_parsed_inline_number() {
     assert!(result.is_err());
     allocator::assert_erased(Some(1));
 }
+
+#[test]
+fn binary_serialization_creates_a_separate_wiping_transport_owner() {
+    use reallyme_codec_proto::encode_protobuf;
+    let message = proto::CodecBytesResult {
+        value: vec![PAYLOAD_BYTE; PAYLOAD_LENGTH].into(),
+    };
+    let mut wire = encode_protobuf(&message).unwrap();
+    assert_ne!(wire.as_ptr(), message.value.as_ptr());
+    assert!(wire
+        .windows(PAYLOAD_LENGTH)
+        .any(|bytes| bytes == message.value.as_slice()));
+    let initialized = wire.len();
+    allocator::watch(wire.as_mut_ptr(), initialized);
+    drop(wire);
+    allocator::assert_erased(None);
+    // Erasing a serialized copy does not erase its still-live source owner.
+    assert_eq!(message.value.as_slice(), &[PAYLOAD_BYTE; PAYLOAD_LENGTH]);
+}

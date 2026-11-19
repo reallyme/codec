@@ -7,11 +7,12 @@ use proptest::prelude::{any, proptest};
 use super::{
     bytes, encode, frame_exact, frame_prefix, read_header_prefix, reason, validate_exact,
     ArgumentWidth, ErrorReason, Float, FloatPolicy, LengthPolicy, Limits, MapEntry, MapOrdering,
-    Profile, Serialization, ValueRef, MAX_BYTES, MAX_DEPTH, MAX_ENTRIES, MAX_NODES, MAX_WORK,
+    Profile, Serialization, ValueRef, DEFAULT_ENTRIES, MAX_BYTES, MAX_DEPTH, MAX_ENTRIES,
+    MAX_NODES, MAX_WORK,
 };
 
 #[test]
-fn all_resource_limits_are_caller_lowerable_and_enforced() {
+fn all_resource_limits_enforce_their_hard_ceilings_and_tighter_budgets() {
     for limits in [
         Limits::default().with_input_bytes(MAX_BYTES + 1),
         Limits::default().with_output_bytes(MAX_BYTES + 1),
@@ -155,7 +156,7 @@ fn maximum_input_depth_nodes_and_huge_declarations_are_bounded() {
 }
 
 #[test]
-fn exact_node_and_entry_ceilings_are_reachable_without_allocating_a_tree() {
+fn exact_node_ceiling_and_default_entry_limit_are_reachable_without_allocating_a_tree() {
     let mut input = vec![0x90]; // Sixteen child arrays.
     for index in 0..16 {
         let count = if index == 15 { 4094_usize } else { 4095 };
@@ -177,13 +178,13 @@ fn exact_node_and_entry_ceilings_are_reachable_without_allocating_a_tree() {
         ErrorReason::NodeLimit,
     );
     let mut entries = vec![0x99, 0x10, 0x00];
-    entries.extend(core::iter::repeat_n(0, MAX_ENTRIES));
+    entries.extend(core::iter::repeat_n(0, DEFAULT_ENTRIES));
     validate_exact(&entries, Profile::preferred(), Limits::default()).unwrap();
     reason(
         validate_exact(
             &entries,
             Profile::preferred(),
-            Limits::default().with_entries(MAX_ENTRIES - 1).unwrap(),
+            Limits::default().with_entries(DEFAULT_ENTRIES - 1).unwrap(),
         ),
         ErrorReason::EntryLimit,
     );

@@ -29,6 +29,36 @@ function replaceAllRequired(text, before, after, path) {
   return next;
 }
 
+function exposeSwiftErrorEnums(source) {
+  // These enums contain fixed codes only. Export the actual generated types
+  // for SDK failure context while keeping every sensitive message internal.
+  for (const name of ["CodecErrorReason", "CodecErrorOrigin", "CodecSdkErrorCategory"]) {
+    const type = `ReallyMeProto${name}`;
+    const original = `nonisolated enum ${type}:`;
+    const exported = `nonisolated public enum ${type}:`;
+    source = replaceAllRequired(source, original, exported, type);
+    const start = source.indexOf(exported);
+    const end = source.indexOf("\n}\n", start);
+    if (start < 0 || end < 0) fail(`missing generated Swift error enum ${type}`);
+    let body = source.slice(start, end);
+    for (const [before, after] of [
+      ["  typealias RawValue", "  public typealias RawValue"],
+      ["  init()", "  public init()"],
+      ["  init?(rawValue:", "  public init?(rawValue:"],
+      ["  var rawValue:", "  public var rawValue:"],
+      ["  static let allCases:", "  public static let allCases:"],
+    ]) body = replaceAllRequired(body, before, after, type);
+    source = source.slice(0, start) + body + source.slice(end);
+    const extensionStart = source.indexOf(`nonisolated extension ${type}: SwiftProtobuf._ProtoNameProviding {`);
+    const extensionEnd = source.indexOf("\n}\n", extensionStart);
+    if (extensionStart < 0 || extensionEnd < 0) fail(`missing generated Swift enum names ${type}`);
+    const names = replaceAllRequired(source.slice(extensionStart, extensionEnd),
+      "  static let _protobuf_nameMap", "  public static let _protobuf_nameMap", type);
+    source = source.slice(0, extensionStart) + names + source.slice(extensionEnd);
+  }
+  return source;
+}
+
 
 function redactSwiftDebug() {
   const filePath = join(root, "gen/swift/reallyme/codec/v1/codec.pb.swift");
@@ -87,10 +117,12 @@ function redactSwiftDebug() {
   }
   // SwiftProtobuf formats through a generic Message extension. Public message
   // types would expose raw fields even when their concrete formatter is redacted.
-  // The Swift SDK therefore keeps generated wire types internal to its module.
+  // The Swift SDK keeps generated messages internal. Only fixed error enums
+  // are public so callers can inspect typed, non-PII failure context.
+  source = exposeSwiftErrorEnums(source);
   writeFileSync(filePath, source);
   // SwiftPM compiles sources from one target directory. The generated wire
-  // code is internal in both locations, so it cannot be imported separately.
+  // messages remain internal in both locations and cannot be imported separately.
   mkdirSync(join(root, "packages/swift/Sources/ReallyMeCodec/Generated"), { recursive: true });
   writeFileSync(
     join(root, "packages/swift/Sources/ReallyMeCodec/Generated/CodecProto.swift"),

@@ -20,7 +20,7 @@ plugins {
 }
 
 group = "me.really"
-version = "0.4.3"
+version = "0.4.4"
 
 // The JVM jar and Android AAR expose the same me.really.codec classes.
 // The shared capability makes Gradle reject a graph containing both.
@@ -48,18 +48,31 @@ configurations.configureEach {
     }
 }
 
-val remoteMavenRepositoryUrl = providers.gradleProperty("reallyme.maven.repositoryUrl")
-    .orElse(providers.environmentVariable("REALLYME_MAVEN_REPOSITORY_URL"))
-val remoteMavenUsername = providers.gradleProperty("reallyme.maven.username")
-    .orElse(providers.environmentVariable("REALLYME_MAVEN_USERNAME"))
-val remoteMavenPassword = providers.gradleProperty("reallyme.maven.password")
-    .orElse(providers.environmentVariable("REALLYME_MAVEN_PASSWORD"))
-val signingKey = providers.gradleProperty("signingInMemoryKey")
-    .orElse(providers.environmentVariable("MAVEN_SIGNING_KEY"))
-val signingPassword = providers.gradleProperty("signingInMemoryKeyPassword")
-    .orElse(providers.environmentVariable("MAVEN_SIGNING_PASSWORD"))
-val localReleaseRepositoryDir = providers.gradleProperty("reallyme.maven.localReleaseRepositoryDir")
-    .map { file(it) }
+val remoteMavenRepositoryUrl =
+    providers
+        .gradleProperty("reallyme.maven.repositoryUrl")
+        .orElse(providers.environmentVariable("REALLYME_MAVEN_REPOSITORY_URL"))
+val remoteMavenUsername =
+    providers
+        .gradleProperty("reallyme.maven.username")
+        .orElse(providers.environmentVariable("REALLYME_MAVEN_USERNAME"))
+val remoteMavenPassword =
+    providers
+        .gradleProperty("reallyme.maven.password")
+        .orElse(providers.environmentVariable("REALLYME_MAVEN_PASSWORD"))
+val signingKey =
+    providers
+        .gradleProperty("signingInMemoryKey")
+        .orElse(providers.environmentVariable("MAVEN_SIGNING_KEY"))
+val signingPassword =
+    providers
+        .gradleProperty("signingInMemoryKeyPassword")
+        .orElse(providers.environmentVariable("MAVEN_SIGNING_PASSWORD"))
+val localReleaseRepositoryDir =
+    providers
+        .gradleProperty("reallyme.maven.localReleaseRepositoryDir")
+        .map { file(it) }
+
 fun nonBlank(value: String?): String? = value?.trim()?.takeIf { it.isNotEmpty() }
 
 val remoteMavenRepositoryUrlValue = nonBlank(remoteMavenRepositoryUrl.orNull)
@@ -67,68 +80,78 @@ val remoteMavenUsernameValue = nonBlank(remoteMavenUsername.orNull)
 val remoteMavenPasswordValue = nonBlank(remoteMavenPassword.orNull)
 val signingKeyValue = nonBlank(signingKey.orNull)
 val signingPasswordValue = nonBlank(signingPassword.orNull)
-val remoteMavenRepositoryUri = remoteMavenRepositoryUrlValue?.let { value ->
-    val parsed = try {
-        URI(value)
-    } catch (_: IllegalArgumentException) {
-        throw GradleException("remote Maven repository URL is invalid")
+val remoteMavenRepositoryUri =
+    remoteMavenRepositoryUrlValue?.let { value ->
+        val parsed =
+            try {
+                URI(value)
+            } catch (_: IllegalArgumentException) {
+                throw GradleException("remote Maven repository URL is invalid")
+            }
+        if (
+            parsed.scheme != "https" ||
+            parsed.host.isNullOrBlank() ||
+            parsed.userInfo != null ||
+            parsed.query != null ||
+            parsed.fragment != null
+        ) {
+            throw GradleException(
+                "remote Maven repository URL must be an absolute HTTPS URL without embedded credentials, a query, or a fragment",
+            )
+        }
+        parsed
     }
-    if (
-        parsed.scheme != "https" ||
-        parsed.host.isNullOrBlank() ||
-        parsed.userInfo != null ||
-        parsed.query != null ||
-        parsed.fragment != null
-    ) {
-        throw GradleException(
-            "remote Maven repository URL must be an absolute HTTPS URL without embedded credentials, a query, or a fragment"
-        )
-    }
-    parsed
-}
 val configuredNativeResourcesDir = providers.gradleProperty("reallyme.codec.nativeResourcesDir")
-val nativeResourcesDir = configuredNativeResourcesDir
-    .map { file(it) }
-    .orElse(layout.buildDirectory.dir("generated/native-resources").map { it.asFile })
-val requireFullNativeResources = providers.gradleProperty("reallyme.codec.requireFullNativeResources")
-    .map { it == "true" }
-    .orElse(false)
-val requiredNativeResources = listOf(
-    "me/really/codec/native/linux-x86_64/libreallyme_codec_ffi.so",
-    "me/really/codec/native/linux-x86_64/libreallyme_codec_ffi.so.sha256",
-    "me/really/codec/native/linux-aarch64/libreallyme_codec_ffi.so",
-    "me/really/codec/native/linux-aarch64/libreallyme_codec_ffi.so.sha256",
-    "me/really/codec/native/macos-x86_64/libreallyme_codec_ffi.dylib",
-    "me/really/codec/native/macos-x86_64/libreallyme_codec_ffi.dylib.sha256",
-    "me/really/codec/native/macos-aarch64/libreallyme_codec_ffi.dylib",
-    "me/really/codec/native/macos-aarch64/libreallyme_codec_ffi.dylib.sha256",
-    "me/really/codec/native/windows-x86_64/reallyme_codec_ffi.dll",
-    "me/really/codec/native/windows-x86_64/reallyme_codec_ffi.dll.sha256",
-    "me/really/codec/native/native-manifest.json",
-)
-val hostNativePlatform = when {
-    System.getProperty("os.name").contains("Mac", ignoreCase = true) -> "macos"
-    System.getProperty("os.name").contains("Linux", ignoreCase = true) -> "linux"
-    System.getProperty("os.name").contains("Windows", ignoreCase = true) -> "windows"
-    else -> throw GradleException("unsupported host operating system for ReallyMe codec JNI resources")
-}
-val hostNativeArch = when (System.getProperty("os.arch").lowercase()) {
-    "aarch64", "arm64" -> "aarch64"
-    "amd64", "x86_64" -> "x86_64"
-    else -> throw GradleException("unsupported host architecture for ReallyMe codec JNI resources")
-}
-val hostNativeLibraryName = when (hostNativePlatform) {
-    "macos" -> "libreallyme_codec_ffi.dylib"
-    "windows" -> "reallyme_codec_ffi.dll"
-    else -> "libreallyme_codec_ffi.so"
-}
+val nativeResourcesDir =
+    configuredNativeResourcesDir
+        .map { file(it) }
+        .orElse(layout.buildDirectory.dir("generated/native-resources").map { it.asFile })
+val requireFullNativeResources =
+    providers
+        .gradleProperty("reallyme.codec.requireFullNativeResources")
+        .map { it == "true" }
+        .orElse(false)
+val requiredNativeResources =
+    listOf(
+        "me/really/codec/native/linux-x86_64/libreallyme_codec_ffi.so",
+        "me/really/codec/native/linux-x86_64/libreallyme_codec_ffi.so.sha256",
+        "me/really/codec/native/linux-aarch64/libreallyme_codec_ffi.so",
+        "me/really/codec/native/linux-aarch64/libreallyme_codec_ffi.so.sha256",
+        "me/really/codec/native/macos-x86_64/libreallyme_codec_ffi.dylib",
+        "me/really/codec/native/macos-x86_64/libreallyme_codec_ffi.dylib.sha256",
+        "me/really/codec/native/macos-aarch64/libreallyme_codec_ffi.dylib",
+        "me/really/codec/native/macos-aarch64/libreallyme_codec_ffi.dylib.sha256",
+        "me/really/codec/native/windows-x86_64/reallyme_codec_ffi.dll",
+        "me/really/codec/native/windows-x86_64/reallyme_codec_ffi.dll.sha256",
+        "me/really/codec/native/native-manifest.json",
+    )
+val hostNativePlatform =
+    when {
+        System.getProperty("os.name").contains("Mac", ignoreCase = true) -> "macos"
+        System.getProperty("os.name").contains("Linux", ignoreCase = true) -> "linux"
+        System.getProperty("os.name").contains("Windows", ignoreCase = true) -> "windows"
+        else -> throw GradleException("unsupported host operating system for ReallyMe codec JNI resources")
+    }
+val hostNativeArch =
+    when (System.getProperty("os.arch").lowercase()) {
+        "aarch64", "arm64" -> "aarch64"
+        "amd64", "x86_64" -> "x86_64"
+        else -> throw GradleException("unsupported host architecture for ReallyMe codec JNI resources")
+    }
+val hostNativeLibraryName =
+    when (hostNativePlatform) {
+        "macos" -> "libreallyme_codec_ffi.dylib"
+        "windows" -> "reallyme_codec_ffi.dll"
+        else -> "libreallyme_codec_ffi.so"
+    }
 val requiredHostNativeResource =
     "me/really/codec/native/$hostNativePlatform-$hostNativeArch/$hostNativeLibraryName"
 val requiredHostNativeDigest = "$requiredHostNativeResource.sha256"
-val ffiRustFlags = listOfNotNull(
-    nonBlank(providers.environmentVariable("RUSTFLAGS").orNull),
-    "-C panic=unwind",
-).joinToString(" ")
+val ffiRustFlags =
+    listOfNotNull(
+        nonBlank(providers.environmentVariable("RUSTFLAGS").orNull),
+        "-C panic=unwind",
+    ).joinToString(" ")
 
 fun sha256Hex(file: File): String {
     val digest = MessageDigest.getInstance("SHA-256")
@@ -160,11 +183,9 @@ fun sha256Hex(bytes: ByteArray): String {
     }
 }
 
-fun expectedNativeDigestMetadata(file: File): String =
-    "${sha256Hex(file)} ${file.length()}\n"
+fun expectedNativeDigestMetadata(file: File): String = "${sha256Hex(file)} ${file.length()}\n"
 
-fun expectedNativeDigestMetadata(bytes: ByteArray): String =
-    "${sha256Hex(bytes)} ${bytes.size}\n"
+fun expectedNativeDigestMetadata(bytes: ByteArray): String = "${sha256Hex(bytes)} ${bytes.size}\n"
 
 kotlin {
     jvmToolchain(21)
@@ -184,7 +205,10 @@ ktlint {
     filter {
         // Generated bindings are verified by Buf freshness, not style rules.
         exclude { entry ->
-            entry.file.toPath().normalize().startsWith(rootProject.file("../../gen").toPath().normalize())
+            entry.file
+                .toPath()
+                .normalize()
+                .startsWith(rootProject.file("../../gen").toPath().normalize())
         }
         exclude("**/generated/**")
     }
@@ -202,52 +226,59 @@ sourceSets {
     }
 }
 
-val buildHostNativeLibrary = tasks.register<Exec>("buildHostNativeLibrary") {
-    group = "build"
-    description = "Builds the host Rust JNI library for local JVM tests."
-    onlyIf { !configuredNativeResourcesDir.isPresent }
-    workingDir = layout.projectDirectory.dir("../..").asFile
-    environment("RUSTFLAGS", ffiRustFlags)
-    commandLine("cargo", "build", "--locked", "-p", "reallyme-codec-ffi", "--release")
-}
+val buildHostNativeLibrary =
+    tasks.register<Exec>("buildHostNativeLibrary") {
+        group = "build"
+        description = "Builds the host Rust JNI library for local JVM tests."
+        onlyIf { !configuredNativeResourcesDir.isPresent }
+        workingDir = layout.projectDirectory.dir("../..").asFile
+        environment("RUSTFLAGS", ffiRustFlags)
+        commandLine("cargo", "build", "--locked", "-p", "reallyme-codec-ffi", "--release")
+    }
 
 val cargoWorkspaceRoot = file("../..")
-val cargoTargetDirectory = providers.environmentVariable("CARGO_TARGET_DIR")
-    .orNull
-    ?.takeIf { it.isNotBlank() }
-    ?.let { configuredPath ->
-        val configured = File(configuredPath)
-        if (configured.isAbsolute) configured else cargoWorkspaceRoot.resolve(configured)
-    }
-    ?: cargoWorkspaceRoot.resolve("target")
+val cargoTargetDirectory =
+    providers
+        .environmentVariable("CARGO_TARGET_DIR")
+        .orNull
+        ?.takeIf { it.isNotBlank() }
+        ?.let { configuredPath ->
+            val configured = File(configuredPath)
+            if (configured.isAbsolute) configured else cargoWorkspaceRoot.resolve(configured)
+        }
+        ?: cargoWorkspaceRoot.resolve("target")
 
-val stageHostNativeResource = tasks.register<Copy>("stageHostNativeResource") {
-    group = "build"
-    description = "Stages the host Rust JNI library as a JVM package resource for local tests."
-    onlyIf { !configuredNativeResourcesDir.isPresent }
-    dependsOn(buildHostNativeLibrary)
-    from(cargoTargetDirectory.resolve("release/$hostNativeLibraryName"))
-    into(nativeResourcesDir.map {
-        it.resolve("me/really/codec/native/$hostNativePlatform-$hostNativeArch")
-    })
-}
-
-val writeHostNativeDigest = tasks.register("writeHostNativeDigest") {
-    group = "build"
-    description = "Writes bounded integrity metadata for the local host JNI library."
-    onlyIf { !configuredNativeResourcesDir.isPresent }
-    dependsOn(stageHostNativeResource)
-    val library = nativeResourcesDir.map { it.resolve(requiredHostNativeResource) }
-    val sidecar = nativeResourcesDir.map { it.resolve(requiredHostNativeDigest) }
-    inputs.file(library)
-    outputs.file(sidecar)
-    doLast {
-        val libraryFile = library.get()
-        val sidecarFile = sidecar.get()
-        sidecarFile.parentFile.mkdirs()
-        sidecarFile.writeText(expectedNativeDigestMetadata(libraryFile))
+val stageHostNativeResource =
+    tasks.register<Copy>("stageHostNativeResource") {
+        group = "build"
+        description = "Stages the host Rust JNI library as a JVM package resource for local tests."
+        onlyIf { !configuredNativeResourcesDir.isPresent }
+        dependsOn(buildHostNativeLibrary)
+        from(cargoTargetDirectory.resolve("release/$hostNativeLibraryName"))
+        into(
+            nativeResourcesDir.map {
+                it.resolve("me/really/codec/native/$hostNativePlatform-$hostNativeArch")
+            },
+        )
     }
-}
+
+val writeHostNativeDigest =
+    tasks.register("writeHostNativeDigest") {
+        group = "build"
+        description = "Writes bounded integrity metadata for the local host JNI library."
+        onlyIf { !configuredNativeResourcesDir.isPresent }
+        dependsOn(stageHostNativeResource)
+        val library = nativeResourcesDir.map { it.resolve(requiredHostNativeResource) }
+        val sidecar = nativeResourcesDir.map { it.resolve(requiredHostNativeDigest) }
+        inputs.file(library)
+        outputs.file(sidecar)
+        doLast {
+            val libraryFile = library.get()
+            val sidecarFile = sidecar.get()
+            sidecarFile.parentFile.mkdirs()
+            sidecarFile.writeText(expectedNativeDigestMetadata(libraryFile))
+        }
+    }
 
 dependencies {
     api("com.google.protobuf:protobuf-javalite:4.36.2")
@@ -279,106 +310,122 @@ tasks.withType<Javadoc>().configureEach {
     standardOptions.addStringOption("Xdoclint:none", "-quiet")
 }
 
-val verifyBundledNativeResources = tasks.register("verifyBundledNativeResources") {
-    group = "verification"
-    description = "Verifies that release JVM artifacts include every supported native FFI library."
-    inputs.dir(nativeResourcesDir)
-    doLast {
-        val root = nativeResourcesDir.get()
-        val missing = requiredNativeResources.filter { relativePath ->
-            !root.resolve(relativePath).isFile
-        }
-        if (missing.isNotEmpty()) {
-            throw GradleException(
-                "missing ReallyMe codec native resources: ${missing.joinToString(", ")}"
-            )
-        }
-        for (relativePath in requiredNativeResources.filter { it.endsWith(".so") || it.endsWith(".dylib") || it.endsWith(".dll") }) {
-            val library = root.resolve(relativePath)
-            val sidecar = root.resolve("$relativePath.sha256")
-            val expected = expectedNativeDigestMetadata(library)
-            if (sidecar.readText() != expected) {
+val verifyBundledNativeResources =
+    tasks.register("verifyBundledNativeResources") {
+        group = "verification"
+        description = "Verifies that release JVM artifacts include every supported native FFI library."
+        inputs.dir(nativeResourcesDir)
+        doLast {
+            val root = nativeResourcesDir.get()
+            val missing =
+                requiredNativeResources.filter { relativePath ->
+                    !root.resolve(relativePath).isFile
+                }
+            if (missing.isNotEmpty()) {
                 throw GradleException(
-                    "ReallyMe codec native digest does not match $relativePath"
+                    "missing ReallyMe codec native resources: ${missing.joinToString(", ")}",
                 )
             }
-        }
-    }
-}
-
-val verifyHostBundledNativeResource = tasks.register("verifyHostBundledNativeResource") {
-    group = "verification"
-    description = "Verifies that local JVM artifacts include the host Rust JNI library."
-    dependsOn(writeHostNativeDigest)
-    inputs.dir(nativeResourcesDir)
-    doLast {
-        val root = nativeResourcesDir.get()
-        if (!root.resolve(requiredHostNativeResource).isFile) {
-            throw GradleException(
-                "missing ReallyMe codec host native resource: $requiredHostNativeResource"
-            )
-        }
-        if (!root.resolve(requiredHostNativeDigest).isFile) {
-            throw GradleException(
-                "missing ReallyMe codec host native digest: $requiredHostNativeDigest"
-            )
-        }
-        if (
-            root.resolve(requiredHostNativeDigest).readText() !=
-            expectedNativeDigestMetadata(root.resolve(requiredHostNativeResource))
-        ) {
-            throw GradleException(
-                "ReallyMe codec host native digest does not match $requiredHostNativeResource"
-            )
-        }
-    }
-}
-
-val verifyJarContainsNativeResources = tasks.register("verifyJarContainsNativeResources") {
-    group = "verification"
-    description = "Verifies that the packaged JVM JAR contains native resources with matching digests."
-    val jarTask = tasks.named<Jar>("jar")
-    dependsOn(jarTask)
-    if (requireFullNativeResources.get()) {
-        dependsOn(verifyBundledNativeResources)
-    } else {
-        dependsOn(verifyHostBundledNativeResource)
-    }
-    inputs.file(jarTask.flatMap { it.archiveFile })
-    doLast {
-        val requiredResources = if (requireFullNativeResources.get()) {
-            requiredNativeResources
-        } else {
-            listOf(requiredHostNativeResource, requiredHostNativeDigest)
-        }
-        ZipFile(jarTask.get().archiveFile.get().asFile).use { archive ->
-            for (relativePath in requiredResources) {
-                archive.getEntry(relativePath)
-                    ?: throw GradleException("JVM JAR is missing native resource: $relativePath")
-            }
-            val nativeLibraries = requiredResources.filter {
-                it.endsWith(".so") || it.endsWith(".dylib") || it.endsWith(".dll")
-            }
-            for (relativePath in nativeLibraries) {
-                val libraryEntry = archive.getEntry(relativePath)
-                    ?: throw GradleException("JVM JAR is missing native library: $relativePath")
-                val sidecarEntry = archive.getEntry("$relativePath.sha256")
-                    ?: throw GradleException("JVM JAR is missing native digest: $relativePath.sha256")
-                val bytes = archive.getInputStream(libraryEntry).use { it.readBytes() }
-                try {
-                    val sidecarText = archive.getInputStream(sidecarEntry)
-                        .bufferedReader(Charsets.US_ASCII)
-                        .use { it.readText() }
-                    if (sidecarText != expectedNativeDigestMetadata(bytes)) {
-                        throw GradleException("JVM JAR native digest does not match $relativePath")
-                    }
-                } finally {
-                    bytes.fill(0)
+            for (relativePath in requiredNativeResources.filter { it.endsWith(".so") || it.endsWith(".dylib") || it.endsWith(".dll") }) {
+                val library = root.resolve(relativePath)
+                val sidecar = root.resolve("$relativePath.sha256")
+                val expected = expectedNativeDigestMetadata(library)
+                if (sidecar.readText() != expected) {
+                    throw GradleException(
+                        "ReallyMe codec native digest does not match $relativePath",
+                    )
                 }
             }
         }
     }
-}
+
+val verifyHostBundledNativeResource =
+    tasks.register("verifyHostBundledNativeResource") {
+        group = "verification"
+        description = "Verifies that local JVM artifacts include the host Rust JNI library."
+        dependsOn(writeHostNativeDigest)
+        inputs.dir(nativeResourcesDir)
+        doLast {
+            val root = nativeResourcesDir.get()
+            if (!root.resolve(requiredHostNativeResource).isFile) {
+                throw GradleException(
+                    "missing ReallyMe codec host native resource: $requiredHostNativeResource",
+                )
+            }
+            if (!root.resolve(requiredHostNativeDigest).isFile) {
+                throw GradleException(
+                    "missing ReallyMe codec host native digest: $requiredHostNativeDigest",
+                )
+            }
+            if (
+                root.resolve(requiredHostNativeDigest).readText() !=
+                expectedNativeDigestMetadata(root.resolve(requiredHostNativeResource))
+            ) {
+                throw GradleException(
+                    "ReallyMe codec host native digest does not match $requiredHostNativeResource",
+                )
+            }
+        }
+    }
+
+val verifyJarContainsNativeResources =
+    tasks.register("verifyJarContainsNativeResources") {
+        group = "verification"
+        description = "Verifies that the packaged JVM JAR contains native resources with matching digests."
+        val jarTask = tasks.named<Jar>("jar")
+        dependsOn(jarTask)
+        if (requireFullNativeResources.get()) {
+            dependsOn(verifyBundledNativeResources)
+        } else {
+            dependsOn(verifyHostBundledNativeResource)
+        }
+        inputs.file(jarTask.flatMap { it.archiveFile })
+        doLast {
+            val requiredResources =
+                if (requireFullNativeResources.get()) {
+                    requiredNativeResources
+                } else {
+                    listOf(requiredHostNativeResource, requiredHostNativeDigest)
+                }
+            ZipFile(
+                jarTask
+                    .get()
+                    .archiveFile
+                    .get()
+                    .asFile,
+            ).use { archive ->
+                for (relativePath in requiredResources) {
+                    archive.getEntry(relativePath)
+                        ?: throw GradleException("JVM JAR is missing native resource: $relativePath")
+                }
+                val nativeLibraries =
+                    requiredResources.filter {
+                        it.endsWith(".so") || it.endsWith(".dylib") || it.endsWith(".dll")
+                    }
+                for (relativePath in nativeLibraries) {
+                    val libraryEntry =
+                        archive.getEntry(relativePath)
+                            ?: throw GradleException("JVM JAR is missing native library: $relativePath")
+                    val sidecarEntry =
+                        archive.getEntry("$relativePath.sha256")
+                            ?: throw GradleException("JVM JAR is missing native digest: $relativePath.sha256")
+                    val bytes = archive.getInputStream(libraryEntry).use { it.readBytes() }
+                    try {
+                        val sidecarText =
+                            archive
+                                .getInputStream(sidecarEntry)
+                                .bufferedReader(Charsets.US_ASCII)
+                                .use { it.readText() }
+                        if (sidecarText != expectedNativeDigestMetadata(bytes)) {
+                            throw GradleException("JVM JAR native digest does not match $relativePath")
+                        }
+                    } finally {
+                        bytes.fill(0)
+                    }
+                }
+            }
+        }
+    }
 
 tasks.withType<PublishToMavenLocal>().configureEach {
     dependsOn(verifyJarContainsNativeResources)
@@ -391,34 +438,36 @@ tasks.withType<PublishToMavenRepository>().configureEach {
     dependsOn(verifyBundledNativeResources, verifyJarContainsNativeResources)
 }
 
-val verifyRemoteMavenPublishingConfigured = tasks.register("verifyRemoteMavenPublishingConfigured") {
-    group = "verification"
-    description = "Verifies that remote Maven publishing credentials are configured."
-    doLast {
-        val missing = buildList {
-            if (remoteMavenRepositoryUrlValue == null) {
-                add("REALLYME_MAVEN_REPOSITORY_URL or -Preallyme.maven.repositoryUrl")
+val verifyRemoteMavenPublishingConfigured =
+    tasks.register("verifyRemoteMavenPublishingConfigured") {
+        group = "verification"
+        description = "Verifies that remote Maven publishing credentials are configured."
+        doLast {
+            val missing =
+                buildList {
+                    if (remoteMavenRepositoryUrlValue == null) {
+                        add("REALLYME_MAVEN_REPOSITORY_URL or -Preallyme.maven.repositoryUrl")
+                    }
+                    if (remoteMavenUsernameValue == null) {
+                        add("REALLYME_MAVEN_USERNAME or -Preallyme.maven.username")
+                    }
+                    if (remoteMavenPasswordValue == null) {
+                        add("REALLYME_MAVEN_PASSWORD or -Preallyme.maven.password")
+                    }
+                    if (signingKeyValue == null) {
+                        add("MAVEN_SIGNING_KEY or -PsigningInMemoryKey")
+                    }
+                    if (signingPasswordValue == null) {
+                        add("MAVEN_SIGNING_PASSWORD or -PsigningInMemoryKeyPassword")
+                    }
+                }
+            if (missing.isNotEmpty()) {
+                throw GradleException(
+                    "remote Maven publishing is not configured; missing non-empty ${missing.joinToString(", ")}",
+                )
             }
-            if (remoteMavenUsernameValue == null) {
-                add("REALLYME_MAVEN_USERNAME or -Preallyme.maven.username")
-            }
-            if (remoteMavenPasswordValue == null) {
-                add("REALLYME_MAVEN_PASSWORD or -Preallyme.maven.password")
-            }
-            if (signingKeyValue == null) {
-                add("MAVEN_SIGNING_KEY or -PsigningInMemoryKey")
-            }
-            if (signingPasswordValue == null) {
-                add("MAVEN_SIGNING_PASSWORD or -PsigningInMemoryKeyPassword")
-            }
-        }
-        if (missing.isNotEmpty()) {
-            throw GradleException(
-                "remote Maven publishing is not configured; missing non-empty ${missing.joinToString(", ")}"
-            )
         }
     }
-}
 
 tasks.named("publish") {
     dependsOn(verifyRemoteMavenPublishingConfigured)

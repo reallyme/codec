@@ -35,7 +35,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: reallyme/release-readiness
-          ref: 55115f21d5bf9a3fbc1bb8d10484aecba6e7bd8f
+          ref: e323ea52bc1f76e67df03fc95e19d596fb54bd03
           path: .release-readiness
           persist-credentials: false
 
@@ -176,7 +176,7 @@ jobs:
         run: scripts/audit_committed_lockfiles.sh
 
   rust-msrv:
-    name: Test publishable crates on Rust 1.96.0
+    name: Test publishable crates on Rust 1.100.0
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -188,33 +188,33 @@ jobs:
       - name: Install minimum supported Rust
         uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
-          toolchain: 1.96.0
+          toolchain: 1.100.0
 
       - name: Cache Cargo
         uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
 
       - name: Test reallyme-codec at MSRV
-        run: cargo +1.96.0 test --locked --package reallyme-codec --all-features
+        run: cargo +1.100.0 test --locked --package reallyme-codec --all-features
       - name: Test reallyme-codec-base64 at MSRV
-        run: cargo +1.96.0 test --locked --package reallyme-codec-base64 --all-features
+        run: cargo +1.100.0 test --locked --package reallyme-codec-base64 --all-features
       - name: Test reallyme-codec-base64url at MSRV
-        run: cargo +1.96.0 test --locked --package reallyme-codec-base64url --all-features
+        run: cargo +1.100.0 test --locked --package reallyme-codec-base64url --all-features
       - name: Test reallyme-codec-cbor at MSRV
-        run: cargo +1.96.0 test --locked --package reallyme-codec-cbor --all-features
+        run: cargo +1.100.0 test --locked --package reallyme-codec-cbor --all-features
       - name: Test reallyme-codec-hex at MSRV
-        run: cargo +1.96.0 test --locked --package reallyme-codec-hex --all-features
+        run: cargo +1.100.0 test --locked --package reallyme-codec-hex --all-features
       - name: Test reallyme-codec-jcs at MSRV
-        run: cargo +1.96.0 test --locked --package reallyme-codec-jcs --all-features
+        run: cargo +1.100.0 test --locked --package reallyme-codec-jcs --all-features
       - name: Test reallyme-codec-multibase at MSRV
-        run: cargo +1.96.0 test --locked --package reallyme-codec-multibase --all-features
+        run: cargo +1.100.0 test --locked --package reallyme-codec-multibase --all-features
       - name: Test reallyme-codec-multicodec at MSRV
-        run: cargo +1.96.0 test --locked --package reallyme-codec-multicodec --all-features
+        run: cargo +1.100.0 test --locked --package reallyme-codec-multicodec --all-features
       - name: Test reallyme-codec-multikey at MSRV
-        run: cargo +1.96.0 test --locked --package reallyme-codec-multikey --all-features
+        run: cargo +1.100.0 test --locked --package reallyme-codec-multikey --all-features
       - name: Test reallyme-codec-pem at MSRV
-        run: cargo +1.96.0 test --locked --package reallyme-codec-pem --all-features
+        run: cargo +1.100.0 test --locked --package reallyme-codec-pem --all-features
       - name: Test reallyme-codec-proto at MSRV
-        run: cargo +1.96.0 test --locked --package reallyme-codec-proto --all-features
+        run: cargo +1.100.0 test --locked --package reallyme-codec-proto --all-features
 
   native-sanitizers:
     name: native sanitizer lanes
@@ -231,7 +231,7 @@ jobs:
       - name: Install Rust sanitizer toolchain
         uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
-          toolchain: nightly-2026-07-01
+          toolchain: nightly-2026-11-10
 
       - name: Test native sanitizer lanes
         run: scripts/test_native_sanitizers.sh
@@ -267,18 +267,18 @@ jobs:
       - name: Install pinned Miri toolchain
         uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
-          toolchain: nightly-2026-07-01
+          toolchain: nightly-2026-11-10
           components: miri
 
       - name: Run FFI Miri tests
         # Cap-sized allocation tests run under nextest; Miri targets the unsafe
         # pointer and unwind boundaries where its interpreter adds coverage.
         run: |
-          cargo +nightly-2026-07-01 miri test -p reallyme-codec-ffi --lib pointer::tests --locked
-          cargo +nightly-2026-07-01 miri test -p reallyme-codec-ffi --lib guard::tests --locked
-          cargo +nightly-2026-07-01 miri test -p reallyme-codec --no-default-features --features der --test der_canonical_tests --locked
-          cargo +nightly-2026-07-01 miri test -p reallyme-codec-cbor --test general_tests semantic_equivalent_keys_are_rejected_without_sorting --locked
-          cargo +nightly-2026-07-01 miri test -p reallyme-codec-cbor --test general_zeroization_tests --locked
+          cargo +nightly-2026-11-10 miri test -p reallyme-codec-ffi --lib pointer::tests --locked
+          cargo +nightly-2026-11-10 miri test -p reallyme-codec-ffi --lib guard::tests --locked
+          cargo +nightly-2026-11-10 miri test -p reallyme-codec --no-default-features --features der --test der_canonical_tests --locked
+          cargo +nightly-2026-11-10 miri test -p reallyme-codec-cbor --test general_tests semantic_equivalent_keys_are_rejected_without_sorting --locked
+          cargo +nightly-2026-11-10 miri test -p reallyme-codec-cbor --test general_zeroization_tests --locked
 
   kotlin:
     name: kotlin codec package on Linux

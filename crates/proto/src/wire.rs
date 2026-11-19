@@ -81,10 +81,21 @@ fn hex_digit(byte: u8) -> Option<u16> {
 /// Returns a resource-limit error when the message exceeds the protobuf size
 /// limit. Encoding errors are mapped without retaining message contents.
 pub fn encode_protobuf<M: Message>(message: &M) -> CodecWireResult<Zeroizing<Vec<u8>>> {
+    let wire_length = message
+        .try_encoded_len()
+        .map_err(|_| resource_limit_error())?;
+    let length = usize::try_from(wire_length).map_err(|_| resource_limit_error())?;
+    // Install the wiping owner before any payload is written. Wrapping a
+    // completed runtime Vec would leave its partial allocation unguarded if
+    // an encoder invariant failed while filling the buffer.
+    let mut encoded = Zeroizing::new(Vec::new());
+    encoded
+        .try_reserve_exact(length)
+        .map_err(|_| resource_limit_error())?;
     message
-        .try_encode_to_vec()
-        .map(Zeroizing::new)
-        .map_err(|_| resource_limit_error())
+        .try_encode_bounded(wire_length, &mut *encoded)
+        .map_err(|_| resource_limit_error())?;
+    Ok(encoded)
 }
 
 /// Decodes a bounded protobuf message from untrusted bytes.

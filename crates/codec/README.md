@@ -1,91 +1,45 @@
 # reallyme-codec
 
-Rust codecs for base encodings, multiformats, CBOR, CID, JCS and PEM.
-
-Use the public APIs below for encoding and parsing. Cryptographic signing and verification are outside this crate.
-
-## Install
+Rust codecs for base64, base64url, lowercase hex, multiformats, CBOR, CID, JCS,
+PEM, DER and definite TLV framing.
 
 ```toml
 [dependencies]
-reallyme-codec = "0.4.3"
+reallyme-codec = "0.4.4"
 ```
-
-The default feature set enables the base-encoding, CBOR/JCS, multiformat, and PEM
-families. Consumers that need a smaller dependency surface can select only the
-families they use:
-
-```toml
-[dependencies]
-reallyme-codec = { version = "0.4.3", default-features = false, features = ["base64url", "multikey"] }
-```
-
-## Quick Start
 
 ```rust
 use reallyme_codec::base64url::{base64url_to_bytes, bytes_to_base64url};
 
-fn round_trip() -> Result<(), reallyme_codec::base64url::Base64UrlError> {
-    let encoded = bytes_to_base64url(b"hello");
-    let decoded = base64url_to_bytes(&encoded)?;
-    assert_eq!(decoded, b"hello");
-    Ok(())
+fn round_trip() -> Result<Vec<u8>, reallyme_codec::base64url::Base64UrlError> {
+    base64url_to_bytes(&bytes_to_base64url(b"hello"))
 }
 ```
 
-Multikey decoding does not perform algorithm-specific cryptographic key validation.
+Base encodings, CBOR/JCS, multiformats and PEM are enabled by default.
+Select fewer families with `default-features = false`. Optional features are
+`der`, `tlv`, `json`, `serde` and `operation-contract`; `serde` supplies
+base64url field adapters, while `operation-contract` enables serialized calls.
 
-DTOs that carry byte fields as unpadded base64url strings can enable the
-`serde` feature and use `reallyme_codec::base64url::serde_bytes` or
-`reallyme_codec::base64url::serde_option_bytes`.
+`json::decode` returns a bounded JSON document; `json::from_slice` projects it
+into an owned Serde target. Duplicate names, invalid Unicode, trailing data and
+exceeded limits return typed errors. Callers own input storage and copies made
+by target deserializers.
 
-## Features
+`base64::base64_to_bytes_with_limits` accepts schema-defined independent input
+and output budgets and returns `Zeroizing<Vec<u8>>`. The existing decoder's
+encoded-input default remains 2,097,152 bytes. Standard padding and zero pad
+bits are required.
 
-- `base64`
-- `base64url`
-- `cbor`
-- `der` — opt-in strict, bounded DER readers for Rust consumers
-- `tlv` — opt-in borrowed definite BER/ISO 7816 and canonical DER header framing
-- `hex`
-- `jcs`
-- `multibase`
-- `multicodec`
-- `multikey`
-- `pem`
-- `serde` — base64url serde field adapters
-- `operation-contract` — generated binary protobuf and ProtoJSON dispatch
+DER decoding checks values against a caller-supplied schema. TLV framing only
+checks outer headers and extents; it does not validate nested ASN.1 values.
+CID parsing checks syntax, not content integrity. Use `cbor::verify_dag_cbor_cid`
+when verification is required.
 
-`der`, `tlv`, `serde`, and `operation-contract` are opt-in; they are not part of the default
-feature set. The operation contract enables its required codec families.
-
-The `der` module provides borrowed, schema-directed readers and a strict
-SEQUENCE-of-two-unsigned-INTEGER helper. Canonical tags, definite minimal
-lengths, INTEGER encodings, BIT STRING padding, OID subidentifiers, SET OF
-ordering, and complete consumption are enforced. Input size, nesting, element
-count, and integer lengths are bounded. The Rust API documentation specifies
-the supported ASN.1 types and resource ceilings. Curve-specific scalar widths,
-subgroup-order checks, and signature high-S policy remain in the crypto layer.
-The DER reader does not expose a Swift, Kotlin, or TypeScript facade.
+See [API documentation](https://docs.rs/reallyme-codec) for types, profiles and
+limits, and [data handling](https://github.com/reallyme/codec/blob/main/SECURITY_MEMORY_MODEL.md)
+for cleanup obligations.
 
 ## License
 
-Dual-licensed under the MIT License or Apache License, Version 2.0, at your
-option. See the crate's `LICENSE` file for both license texts.
-
-### Borrowed TLV framing
-
-The `tlv` feature provides `tlv::read_identifier`, `tlv::read_length`,
-`tlv::read_header`, `tlv::frame_prefix`, and `tlv::frame_exact`. Options and
-profiles are generated from the protobuf schema; choose a profile explicitly.
-The default source limit is 1 MiB, with explicit limits up to 16 MiB.
-Prefix and header reads can succeed before the value arrives. Frames expose
-exact borrowed received/value bytes and checked
-source spans; prefix framing also returns the unconsumed suffix. No payload is
-copied or allocated from a declared length. Receipt metadata is bounded.
-
-The ISO 7816 profile retains wire identifiers and redundant definite lengths.
-The DER framing profile checks canonical outer headers only; constructed
-contents remain opaque. The existing `der` schema reader remains strict and
-provides recursive value and canonicality checks. See
-[the protobuf contract](../../docs/protobuf.md#definite-tlv-framing) for limits,
-receipts, and typed failures.
+MIT or Apache-2.0, at your option. See `LICENSE`.

@@ -23,10 +23,18 @@ fn oversized_cid_text_is_rejected_before_multibase_allocation() {
     candidate.push('z');
     candidate.extend(core::iter::repeat_n('1', MAX_CID_STRING_LEN + 1));
 
-    let measured = Region::new(ALLOCATOR);
-    let accepted = is_valid_cid_string(&candidate);
-    let allocations = measured.change();
-
-    assert!(!accepted);
-    assert_eq!(allocations.bytes_allocated, 0);
+    // The allocator is process-wide: libtest's reporting thread can allocate
+    // while this test runs. Take the minimum across bounded samples to remove
+    // that additive noise. A missing guard still decodes into a fresh owned
+    // multibase buffer on every call, so no sample could be allocation-free.
+    const ALLOCATION_SAMPLES: usize = 32;
+    let mut minimum_allocated = usize::MAX;
+    for _ in 0..ALLOCATION_SAMPLES {
+        let measured = Region::new(ALLOCATOR);
+        let accepted = is_valid_cid_string(&candidate);
+        let allocations = measured.change();
+        assert!(!accepted);
+        minimum_allocated = minimum_allocated.min(allocations.bytes_allocated);
+    }
+    assert_eq!(minimum_allocated, 0);
 }

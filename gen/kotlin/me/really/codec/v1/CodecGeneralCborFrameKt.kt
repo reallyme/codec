@@ -159,6 +159,11 @@ public object CodecGeneralCborFrameKt {
     }
 
     /**
+     * ```
+     * Standalone frames carry options here. Collection frames inherit their
+     * containing CodecGeneralCborFrames.options when this field is absent.
+     * ```
+     *
      * `.reallyme.codec.v1.CodecGeneralCborOptions options = 6 [json_name = "options"];`
      */
     public var options: me.really.codec.v1.CodecGeneralCborOptions
@@ -169,12 +174,22 @@ public object CodecGeneralCborFrameKt {
         _builder.options = value
       }
     /**
+     * ```
+     * Standalone frames carry options here. Collection frames inherit their
+     * containing CodecGeneralCborFrames.options when this field is absent.
+     * ```
+     *
      * `.reallyme.codec.v1.CodecGeneralCborOptions options = 6 [json_name = "options"];`
      */
     public fun clearOptions() {
       _builder.clearOptions()
     }
     /**
+     * ```
+     * Standalone frames carry options here. Collection frames inherit their
+     * containing CodecGeneralCborFrames.options when this field is absent.
+     * ```
+     *
      * `.reallyme.codec.v1.CodecGeneralCborOptions options = 6 [json_name = "options"];`
      * @return Whether the options field is set.
      */
