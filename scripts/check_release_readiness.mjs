@@ -834,7 +834,7 @@ assertContains(
   "rm_codec_process_operation_json",
 );
 assertContains("scripts/build_swift_xcframework.sh", "rm_codec_process_operation");
-assertContains(".github/workflows/code-checks.yml", "cargo-nextest@0.9.151");
+assertContains(".github/workflows/code-checks.yml", "cargo-nextest@0.9.152");
 assertContains(".github/workflows/code-checks.yml", "cargo-audit@0.23.0");
 assertContains(".github/workflows/code-checks.yml", "scripts/audit_committed_lockfiles.sh");
 assertContains(
