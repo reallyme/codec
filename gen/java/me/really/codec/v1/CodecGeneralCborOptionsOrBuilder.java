@@ -55,22 +55,40 @@ public interface CodecGeneralCborOptionsOrBuilder extends
   me.really.codec.v1.CodecGeneralCborMapOrdering getOrdering();
 
   /**
+   * <pre>
+   * Encoded input, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+   * </pre>
+   *
    * <code>optional uint64 input_bytes = 5 [json_name = "inputBytes"];</code>
    * @return Whether the inputBytes field is set.
    */
   boolean hasInputBytes();
   /**
+   * <pre>
+   * Encoded input, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+   * </pre>
+   *
    * <code>optional uint64 input_bytes = 5 [json_name = "inputBytes"];</code>
    * @return The inputBytes.
    */
   long getInputBytes();
 
   /**
+   * <pre>
+   * Encoded output, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+   * Independent of input_bytes, which applies to received encodings.
+   * </pre>
+   *
    * <code>optional uint64 output_bytes = 6 [json_name = "outputBytes"];</code>
    * @return Whether the outputBytes field is set.
    */
   boolean hasOutputBytes();
   /**
+   * <pre>
+   * Encoded output, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+   * Independent of input_bytes, which applies to received encodings.
+   * </pre>
+   *
    * <code>optional uint64 output_bytes = 6 [json_name = "outputBytes"];</code>
    * @return The outputBytes.
    */
@@ -110,22 +128,40 @@ public interface CodecGeneralCborOptionsOrBuilder extends
   long getEntries();
 
   /**
+   * <pre>
+   * Aggregate byte-string content across the operation: default 1,048,576;
+   * ceiling 2,097,152. CBOR headers count toward input/output, not this budget.
+   * </pre>
+   *
    * <code>optional uint64 byte_string_bytes = 10 [json_name = "byteStringBytes"];</code>
    * @return Whether the byteStringBytes field is set.
    */
   boolean hasByteStringBytes();
   /**
+   * <pre>
+   * Aggregate byte-string content across the operation: default 1,048,576;
+   * ceiling 2,097,152. CBOR headers count toward input/output, not this budget.
+   * </pre>
+   *
    * <code>optional uint64 byte_string_bytes = 10 [json_name = "byteStringBytes"];</code>
    * @return The byteStringBytes.
    */
   long getByteStringBytes();
 
   /**
+   * <pre>
+   * Aggregate UTF-8 text: default and ceiling remain 1,048,576.
+   * </pre>
+   *
    * <code>optional uint64 text_bytes = 11 [json_name = "textBytes"];</code>
    * @return Whether the textBytes field is set.
    */
   boolean hasTextBytes();
   /**
+   * <pre>
+   * Aggregate UTF-8 text: default and ceiling remain 1,048,576.
+   * </pre>
+   *
    * <code>optional uint64 text_bytes = 11 [json_name = "textBytes"];</code>
    * @return The textBytes.
    */

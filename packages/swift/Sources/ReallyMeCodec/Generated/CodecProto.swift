@@ -4323,6 +4323,7 @@ nonisolated struct ReallyMeProtoCodecGeneralCborOptions: Sendable {
 
   var ordering: ReallyMeProtoCodecGeneralCborMapOrdering = .unspecified
 
+  /// Encoded input, including CBOR headers: default 1,048,576; ceiling 2,097,152.
   var inputBytes: UInt64 {
     get {_inputBytes ?? 0}
     set {_inputBytes = newValue}
@@ -4332,6 +4333,8 @@ nonisolated struct ReallyMeProtoCodecGeneralCborOptions: Sendable {
   /// Clears the value of `inputBytes`. Subsequent reads from it will return its default value.
   mutating func clearInputBytes() {self._inputBytes = nil}
 
+  /// Encoded output, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+  /// Independent of input_bytes, which applies to received encodings.
   var outputBytes: UInt64 {
     get {_outputBytes ?? 0}
     set {_outputBytes = newValue}
@@ -4368,6 +4371,8 @@ nonisolated struct ReallyMeProtoCodecGeneralCborOptions: Sendable {
   /// Clears the value of `entries`. Subsequent reads from it will return its default value.
   mutating func clearEntries() {self._entries = nil}
 
+  /// Aggregate byte-string content across the operation: default 1,048,576;
+  /// ceiling 2,097,152. CBOR headers count toward input/output, not this budget.
   var byteStringBytes: UInt64 {
     get {_byteStringBytes ?? 0}
     set {_byteStringBytes = newValue}
@@ -4377,6 +4382,7 @@ nonisolated struct ReallyMeProtoCodecGeneralCborOptions: Sendable {
   /// Clears the value of `byteStringBytes`. Subsequent reads from it will return its default value.
   mutating func clearByteStringBytes() {self._byteStringBytes = nil}
 
+  /// Aggregate UTF-8 text: default and ceiling remain 1,048,576.
   var textBytes: UInt64 {
     get {_textBytes ?? 0}
     set {_textBytes = newValue}

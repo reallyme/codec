@@ -131,10 +131,11 @@ extension ReallyMeCodecTests {
         try ReallyMeCodecRustCAbiProvider.requireCompatiblePackageVersion(
             major: 0,
             minor: 4,
-            patch: 4
+            patch: 5
         )
         let rejectedVersions: [(UInt32, UInt32, UInt32)] = [
-            (0, 3, 0), (0, 4, 0), (0, 4, 1), (0, 4, 2), (0, 4, 3), (1, 4, 4), (0, 3, 6),
+            (0, 3, 0), (0, 4, 0), (0, 4, 1), (0, 4, 2), (0, 4, 3), (0, 4, 4), (1, 4, 4),
+            (0, 3, 6),
         ]
         for version in rejectedVersions {
             Self.assertCodecError(

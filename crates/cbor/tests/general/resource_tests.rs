@@ -7,8 +7,8 @@ use proptest::prelude::{any, proptest};
 use super::{
     bytes, encode, frame_exact, frame_prefix, read_header_prefix, reason, validate_exact,
     ArgumentWidth, ErrorReason, Float, FloatPolicy, LengthPolicy, Limits, MapEntry, MapOrdering,
-    Profile, Serialization, ValueRef, DEFAULT_ENTRIES, MAX_BYTES, MAX_DEPTH, MAX_ENTRIES,
-    MAX_NODES, MAX_WORK,
+    Profile, Serialization, ValueRef, DEFAULT_BYTES, DEFAULT_ENTRIES, MAX_BYTES, MAX_DEPTH,
+    MAX_ENTRIES, MAX_NODES, MAX_TEXT_BYTES, MAX_WORK,
 };
 
 #[test]
@@ -20,7 +20,7 @@ fn all_resource_limits_enforce_their_hard_ceilings_and_tighter_budgets() {
         Limits::default().with_nodes(MAX_NODES + 1),
         Limits::default().with_entries(MAX_ENTRIES + 1),
         Limits::default().with_byte_string_bytes(MAX_BYTES + 1),
-        Limits::default().with_text_bytes(MAX_BYTES + 1),
+        Limits::default().with_text_bytes(MAX_TEXT_BYTES + 1),
         Limits::default().with_work(MAX_WORK + 1),
     ] {
         reason(limits, ErrorReason::InvalidLimit);
@@ -150,9 +150,9 @@ fn maximum_input_depth_nodes_and_huge_declarations_are_bounded() {
         ErrorReason::InputLimit,
     );
     let mut exact = vec![0x5a, 0x00, 0x0f, 0xff, 0xfb];
-    exact.resize(MAX_BYTES, 0);
+    exact.resize(DEFAULT_BYTES, 0);
     let frame = frame_exact(&exact, Limits::default(), LengthPolicy::DefiniteOnly).unwrap();
-    assert_eq!(frame.as_bytes().unwrap().len(), MAX_BYTES - 5);
+    assert_eq!(frame.as_bytes().unwrap().len(), DEFAULT_BYTES - 5);
 }
 
 #[test]

@@ -1769,11 +1769,16 @@ export type CodecGeneralCborOptions = Message<"reallyme.codec.v1.CodecGeneralCbo
   ordering: CodecGeneralCborMapOrdering;
 
   /**
+   * Encoded input, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+   *
    * @generated from field: optional uint64 input_bytes = 5;
    */
   inputBytes?: bigint | undefined;
 
   /**
+   * Encoded output, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+   * Independent of input_bytes, which applies to received encodings.
+   *
    * @generated from field: optional uint64 output_bytes = 6;
    */
   outputBytes?: bigint | undefined;
@@ -1794,11 +1799,16 @@ export type CodecGeneralCborOptions = Message<"reallyme.codec.v1.CodecGeneralCbo
   entries?: bigint | undefined;
 
   /**
+   * Aggregate byte-string content across the operation: default 1,048,576;
+   * ceiling 2,097,152. CBOR headers count toward input/output, not this budget.
+   *
    * @generated from field: optional uint64 byte_string_bytes = 10;
    */
   byteStringBytes?: bigint | undefined;
 
   /**
+   * Aggregate UTF-8 text: default and ceiling remain 1,048,576.
+   *
    * @generated from field: optional uint64 text_bytes = 11;
    */
   textBytes?: bigint | undefined;

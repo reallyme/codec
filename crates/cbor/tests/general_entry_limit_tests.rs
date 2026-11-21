@@ -7,7 +7,7 @@
 
 use codec_cbor::general::{
     encode, encode_value, validate_exact, CborError, ErrorReason, Limits, Profile, ValueRef,
-    DEFAULT_ENTRIES, MAX_BYTES, MAX_DEPTH, MAX_ENTRIES, MAX_NODES, MAX_WORK,
+    DEFAULT_BYTES, DEFAULT_ENTRIES, MAX_DEPTH, MAX_ENTRIES, MAX_NODES, MAX_TEXT_BYTES, MAX_WORK,
 };
 use codec_proto::generated::proto::reallyme::codec::v1 as proto;
 
@@ -59,12 +59,12 @@ fn defaults_and_all_other_limit_fields_remain_unchanged() {
     assert_eq!(DEFAULT_ENTRIES, 4_096);
     assert_eq!(MAX_ENTRIES, 65_536);
     assert_eq!(defaults.entries(), DEFAULT_ENTRIES);
-    assert_eq!(defaults.input_bytes(), MAX_BYTES);
-    assert_eq!(defaults.output_bytes(), MAX_BYTES);
+    assert_eq!(defaults.input_bytes(), DEFAULT_BYTES);
+    assert_eq!(defaults.output_bytes(), DEFAULT_BYTES);
     assert_eq!(defaults.depth(), MAX_DEPTH);
     assert_eq!(defaults.nodes(), MAX_NODES);
-    assert_eq!(defaults.byte_string_bytes(), MAX_BYTES);
-    assert_eq!(defaults.text_bytes(), MAX_BYTES);
+    assert_eq!(defaults.byte_string_bytes(), DEFAULT_BYTES);
+    assert_eq!(defaults.text_bytes(), MAX_TEXT_BYTES);
     assert_eq!(defaults.work(), 16_777_216);
     assert_eq!(MAX_WORK, 67_108_864);
 

@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.4.4 (unreleased)
+## 0.4.5 (unreleased)
+
+- Allow explicit general-CBOR input, output, and aggregate byte-string budgets
+  up to 2 MiB. Defaults remain 1 MiB; other resource limits are unchanged.
+- Apply the selected input budget to received fragments in both encoding adapters.
+
+## 0.4.4
 
 - Require Rust 1.100 and ReallyMe Buffa 0.1.3.
 - Bound memory use when decoding nested or repeated DER SET OF values.

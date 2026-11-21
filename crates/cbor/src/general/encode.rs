@@ -158,6 +158,9 @@ impl Encoder {
             // Account the original structure, not a second semantic tree. Final
             // profile validation rejects incompatible widths rather than silently
             // rebuilding bytes that may already be authenticated.
+            if frame.received_bytes().len() > self.budget.limits.input {
+                return Err(error(ErrorReason::InputLimit));
+            }
             scan(
                 frame.received_bytes(),
                 &mut self.budget,
@@ -217,13 +220,12 @@ impl Encoder {
         let value = node.value.as_ref().ok_or(error(ErrorReason::WrongType))?;
         self.budget.charge(1)?;
         if let Value::ReceivedValue(value) = value {
-            // Native Received holds a Frame, which proves exact framing and
-            // the hard input ceiling. Re-establish that proof for wire bytes
-            // before they can be embedded in a constructed container.
+            // The caller-selected input budget applies to received fragments
+            // in both native and generated inputs, independently of output.
             if value.value.is_empty() {
                 return Err(error(ErrorReason::EmptyInput));
             }
-            if value.value.len() > super::limits::MAX_BYTES {
+            if value.value.len() > self.budget.limits.input {
                 return Err(error(ErrorReason::InputLimit));
             }
             let received = scan(

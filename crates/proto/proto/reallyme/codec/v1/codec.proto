@@ -785,12 +785,18 @@ message CodecGeneralCborOptions {
   CodecGeneralCborLengthPolicy lengths = 2;
   CodecGeneralCborFloatPolicy floats = 3;
   CodecGeneralCborMapOrdering ordering = 4;
+  // Encoded input, including CBOR headers: default 1,048,576; ceiling 2,097,152.
   optional uint64 input_bytes = 5;
+  // Encoded output, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+  // Independent of input_bytes, which applies to received encodings.
   optional uint64 output_bytes = 6;
   optional uint64 depth = 7;
   optional uint64 nodes = 8;
   optional uint64 entries = 9;
+  // Aggregate byte-string content across the operation: default 1,048,576;
+  // ceiling 2,097,152. CBOR headers count toward input/output, not this budget.
   optional uint64 byte_string_bytes = 10;
+  // Aggregate UTF-8 text: default and ceiling remain 1,048,576.
   optional uint64 text_bytes = 11;
   optional uint64 work = 12;
   // Omit for RFC 8949 basic-model key equality. Explicit UNSPECIFIED is unsupported.

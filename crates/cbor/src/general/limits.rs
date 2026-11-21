@@ -5,8 +5,12 @@
 use super::error::{error, CborError, ErrorReason};
 use super::profile::Profile;
 
-/// Hard cap for one received input or protected output: one MiB.
-pub const MAX_BYTES: usize = 1_048_576;
+/// Default received input, protected output, and aggregate byte-string budget: one MiB.
+pub const DEFAULT_BYTES: usize = 1_048_576;
+/// Explicit ceiling for received input, protected output, and aggregate byte strings: two MiB.
+pub const MAX_BYTES: usize = 2_097_152;
+/// Default and ceiling for aggregate UTF-8 text; raising binary budgets does not raise this.
+pub const MAX_TEXT_BYTES: usize = 1_048_576;
 /// Hard cap for simultaneously open containers and tags.
 pub const MAX_DEPTH: usize = 64;
 /// Hard cap for structural nodes, including tags and string chunks.
@@ -25,6 +29,9 @@ const ENCODED_KEY_MAX_COMPARISON_BYTES: usize = 1_048_576;
 /// Caller-configurable limits; private fields prevent bypassing hard ceilings.
 ///
 /// Container entries default to 4,096 and may be explicitly raised to 65,536.
+/// Input, output, and aggregate byte strings default independently to one MiB
+/// and may each be explicitly raised to two MiB. Encoded byte budgets include
+/// headers; aggregate content budgets do not. Text remains capped at one MiB.
 /// The independent node, byte, depth, and work budgets still apply to the whole
 /// operation, so a container and its children must fit within the node budget.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -105,7 +112,7 @@ impl Limits {
         with_text_bytes,
         text_bytes,
         text,
-        MAX_BYTES,
+        MAX_TEXT_BYTES,
         "Set or inspect aggregate UTF-8 text bytes."
     );
     limit!(
@@ -120,13 +127,13 @@ impl Limits {
 impl Default for Limits {
     fn default() -> Self {
         Self {
-            input: MAX_BYTES,
-            output: MAX_BYTES,
+            input: DEFAULT_BYTES,
+            output: DEFAULT_BYTES,
             depth: MAX_DEPTH,
             nodes: MAX_NODES,
             entries: DEFAULT_ENTRIES,
-            bytes: MAX_BYTES,
-            text: MAX_BYTES,
+            bytes: DEFAULT_BYTES,
+            text: MAX_TEXT_BYTES,
             work: DEFAULT_WORK,
         }
     }
