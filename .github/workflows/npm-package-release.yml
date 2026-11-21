@@ -11,7 +11,7 @@ on:
         description: Release version without leading v
         required: true
         type: string
-        default: 0.4.4
+        default: 0.4.5
       source_sha:
         description: Copy the full source SHA from the successful npm Package Preflight summary
         required: true

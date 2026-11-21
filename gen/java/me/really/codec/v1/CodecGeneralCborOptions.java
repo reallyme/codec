@@ -198,6 +198,10 @@ public  final class CodecGeneralCborOptions extends
   public static final int INPUT_BYTES_FIELD_NUMBER = 5;
   private long inputBytes_;
   /**
+   * <pre>
+   * Encoded input, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+   * </pre>
+   *
    * <code>optional uint64 input_bytes = 5 [json_name = "inputBytes"];</code>
    * @return Whether the inputBytes field is set.
    */
@@ -206,6 +210,10 @@ public  final class CodecGeneralCborOptions extends
     return ((bitField0_ & 0x00000001) != 0);
   }
   /**
+   * <pre>
+   * Encoded input, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+   * </pre>
+   *
    * <code>optional uint64 input_bytes = 5 [json_name = "inputBytes"];</code>
    * @return The inputBytes.
    */
@@ -214,6 +222,10 @@ public  final class CodecGeneralCborOptions extends
     return inputBytes_;
   }
   /**
+   * <pre>
+   * Encoded input, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+   * </pre>
+   *
    * <code>optional uint64 input_bytes = 5 [json_name = "inputBytes"];</code>
    * @param value The inputBytes to set.
    */
@@ -222,6 +234,10 @@ public  final class CodecGeneralCborOptions extends
     inputBytes_ = value;
   }
   /**
+   * <pre>
+   * Encoded input, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+   * </pre>
+   *
    * <code>optional uint64 input_bytes = 5 [json_name = "inputBytes"];</code>
    */
   private void clearInputBytes() {
@@ -232,6 +248,11 @@ public  final class CodecGeneralCborOptions extends
   public static final int OUTPUT_BYTES_FIELD_NUMBER = 6;
   private long outputBytes_;
   /**
+   * <pre>
+   * Encoded output, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+   * Independent of input_bytes, which applies to received encodings.
+   * </pre>
+   *
    * <code>optional uint64 output_bytes = 6 [json_name = "outputBytes"];</code>
    * @return Whether the outputBytes field is set.
    */
@@ -240,6 +261,11 @@ public  final class CodecGeneralCborOptions extends
     return ((bitField0_ & 0x00000002) != 0);
   }
   /**
+   * <pre>
+   * Encoded output, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+   * Independent of input_bytes, which applies to received encodings.
+   * </pre>
+   *
    * <code>optional uint64 output_bytes = 6 [json_name = "outputBytes"];</code>
    * @return The outputBytes.
    */
@@ -248,6 +274,11 @@ public  final class CodecGeneralCborOptions extends
     return outputBytes_;
   }
   /**
+   * <pre>
+   * Encoded output, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+   * Independent of input_bytes, which applies to received encodings.
+   * </pre>
+   *
    * <code>optional uint64 output_bytes = 6 [json_name = "outputBytes"];</code>
    * @param value The outputBytes to set.
    */
@@ -256,6 +287,11 @@ public  final class CodecGeneralCborOptions extends
     outputBytes_ = value;
   }
   /**
+   * <pre>
+   * Encoded output, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+   * Independent of input_bytes, which applies to received encodings.
+   * </pre>
+   *
    * <code>optional uint64 output_bytes = 6 [json_name = "outputBytes"];</code>
    */
   private void clearOutputBytes() {
@@ -368,6 +404,11 @@ public  final class CodecGeneralCborOptions extends
   public static final int BYTE_STRING_BYTES_FIELD_NUMBER = 10;
   private long byteStringBytes_;
   /**
+   * <pre>
+   * Aggregate byte-string content across the operation: default 1,048,576;
+   * ceiling 2,097,152. CBOR headers count toward input/output, not this budget.
+   * </pre>
+   *
    * <code>optional uint64 byte_string_bytes = 10 [json_name = "byteStringBytes"];</code>
    * @return Whether the byteStringBytes field is set.
    */
@@ -376,6 +417,11 @@ public  final class CodecGeneralCborOptions extends
     return ((bitField0_ & 0x00000020) != 0);
   }
   /**
+   * <pre>
+   * Aggregate byte-string content across the operation: default 1,048,576;
+   * ceiling 2,097,152. CBOR headers count toward input/output, not this budget.
+   * </pre>
+   *
    * <code>optional uint64 byte_string_bytes = 10 [json_name = "byteStringBytes"];</code>
    * @return The byteStringBytes.
    */
@@ -384,6 +430,11 @@ public  final class CodecGeneralCborOptions extends
     return byteStringBytes_;
   }
   /**
+   * <pre>
+   * Aggregate byte-string content across the operation: default 1,048,576;
+   * ceiling 2,097,152. CBOR headers count toward input/output, not this budget.
+   * </pre>
+   *
    * <code>optional uint64 byte_string_bytes = 10 [json_name = "byteStringBytes"];</code>
    * @param value The byteStringBytes to set.
    */
@@ -392,6 +443,11 @@ public  final class CodecGeneralCborOptions extends
     byteStringBytes_ = value;
   }
   /**
+   * <pre>
+   * Aggregate byte-string content across the operation: default 1,048,576;
+   * ceiling 2,097,152. CBOR headers count toward input/output, not this budget.
+   * </pre>
+   *
    * <code>optional uint64 byte_string_bytes = 10 [json_name = "byteStringBytes"];</code>
    */
   private void clearByteStringBytes() {
@@ -402,6 +458,10 @@ public  final class CodecGeneralCborOptions extends
   public static final int TEXT_BYTES_FIELD_NUMBER = 11;
   private long textBytes_;
   /**
+   * <pre>
+   * Aggregate UTF-8 text: default and ceiling remain 1,048,576.
+   * </pre>
+   *
    * <code>optional uint64 text_bytes = 11 [json_name = "textBytes"];</code>
    * @return Whether the textBytes field is set.
    */
@@ -410,6 +470,10 @@ public  final class CodecGeneralCborOptions extends
     return ((bitField0_ & 0x00000040) != 0);
   }
   /**
+   * <pre>
+   * Aggregate UTF-8 text: default and ceiling remain 1,048,576.
+   * </pre>
+   *
    * <code>optional uint64 text_bytes = 11 [json_name = "textBytes"];</code>
    * @return The textBytes.
    */
@@ -418,6 +482,10 @@ public  final class CodecGeneralCborOptions extends
     return textBytes_;
   }
   /**
+   * <pre>
+   * Aggregate UTF-8 text: default and ceiling remain 1,048,576.
+   * </pre>
+   *
    * <code>optional uint64 text_bytes = 11 [json_name = "textBytes"];</code>
    * @param value The textBytes to set.
    */
@@ -426,6 +494,10 @@ public  final class CodecGeneralCborOptions extends
     textBytes_ = value;
   }
   /**
+   * <pre>
+   * Aggregate UTF-8 text: default and ceiling remain 1,048,576.
+   * </pre>
+   *
    * <code>optional uint64 text_bytes = 11 [json_name = "textBytes"];</code>
    */
   private void clearTextBytes() {
@@ -909,6 +981,10 @@ public  final class CodecGeneralCborOptions extends
     }
 
     /**
+     * <pre>
+     * Encoded input, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+     * </pre>
+     *
      * <code>optional uint64 input_bytes = 5 [json_name = "inputBytes"];</code>
      * @return Whether the inputBytes field is set.
      */
@@ -917,6 +993,10 @@ public  final class CodecGeneralCborOptions extends
       return instance.hasInputBytes();
     }
     /**
+     * <pre>
+     * Encoded input, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+     * </pre>
+     *
      * <code>optional uint64 input_bytes = 5 [json_name = "inputBytes"];</code>
      * @return The inputBytes.
      */
@@ -925,6 +1005,10 @@ public  final class CodecGeneralCborOptions extends
       return instance.getInputBytes();
     }
     /**
+     * <pre>
+     * Encoded input, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+     * </pre>
+     *
      * <code>optional uint64 input_bytes = 5 [json_name = "inputBytes"];</code>
      * @param value The inputBytes to set.
      * @return This builder for chaining.
@@ -935,6 +1019,10 @@ public  final class CodecGeneralCborOptions extends
       return this;
     }
     /**
+     * <pre>
+     * Encoded input, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+     * </pre>
+     *
      * <code>optional uint64 input_bytes = 5 [json_name = "inputBytes"];</code>
      * @return This builder for chaining.
      */
@@ -945,6 +1033,11 @@ public  final class CodecGeneralCborOptions extends
     }
 
     /**
+     * <pre>
+     * Encoded output, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+     * Independent of input_bytes, which applies to received encodings.
+     * </pre>
+     *
      * <code>optional uint64 output_bytes = 6 [json_name = "outputBytes"];</code>
      * @return Whether the outputBytes field is set.
      */
@@ -953,6 +1046,11 @@ public  final class CodecGeneralCborOptions extends
       return instance.hasOutputBytes();
     }
     /**
+     * <pre>
+     * Encoded output, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+     * Independent of input_bytes, which applies to received encodings.
+     * </pre>
+     *
      * <code>optional uint64 output_bytes = 6 [json_name = "outputBytes"];</code>
      * @return The outputBytes.
      */
@@ -961,6 +1059,11 @@ public  final class CodecGeneralCborOptions extends
       return instance.getOutputBytes();
     }
     /**
+     * <pre>
+     * Encoded output, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+     * Independent of input_bytes, which applies to received encodings.
+     * </pre>
+     *
      * <code>optional uint64 output_bytes = 6 [json_name = "outputBytes"];</code>
      * @param value The outputBytes to set.
      * @return This builder for chaining.
@@ -971,6 +1074,11 @@ public  final class CodecGeneralCborOptions extends
       return this;
     }
     /**
+     * <pre>
+     * Encoded output, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+     * Independent of input_bytes, which applies to received encodings.
+     * </pre>
+     *
      * <code>optional uint64 output_bytes = 6 [json_name = "outputBytes"];</code>
      * @return This builder for chaining.
      */
@@ -1089,6 +1197,11 @@ public  final class CodecGeneralCborOptions extends
     }
 
     /**
+     * <pre>
+     * Aggregate byte-string content across the operation: default 1,048,576;
+     * ceiling 2,097,152. CBOR headers count toward input/output, not this budget.
+     * </pre>
+     *
      * <code>optional uint64 byte_string_bytes = 10 [json_name = "byteStringBytes"];</code>
      * @return Whether the byteStringBytes field is set.
      */
@@ -1097,6 +1210,11 @@ public  final class CodecGeneralCborOptions extends
       return instance.hasByteStringBytes();
     }
     /**
+     * <pre>
+     * Aggregate byte-string content across the operation: default 1,048,576;
+     * ceiling 2,097,152. CBOR headers count toward input/output, not this budget.
+     * </pre>
+     *
      * <code>optional uint64 byte_string_bytes = 10 [json_name = "byteStringBytes"];</code>
      * @return The byteStringBytes.
      */
@@ -1105,6 +1223,11 @@ public  final class CodecGeneralCborOptions extends
       return instance.getByteStringBytes();
     }
     /**
+     * <pre>
+     * Aggregate byte-string content across the operation: default 1,048,576;
+     * ceiling 2,097,152. CBOR headers count toward input/output, not this budget.
+     * </pre>
+     *
      * <code>optional uint64 byte_string_bytes = 10 [json_name = "byteStringBytes"];</code>
      * @param value The byteStringBytes to set.
      * @return This builder for chaining.
@@ -1115,6 +1238,11 @@ public  final class CodecGeneralCborOptions extends
       return this;
     }
     /**
+     * <pre>
+     * Aggregate byte-string content across the operation: default 1,048,576;
+     * ceiling 2,097,152. CBOR headers count toward input/output, not this budget.
+     * </pre>
+     *
      * <code>optional uint64 byte_string_bytes = 10 [json_name = "byteStringBytes"];</code>
      * @return This builder for chaining.
      */
@@ -1125,6 +1253,10 @@ public  final class CodecGeneralCborOptions extends
     }
 
     /**
+     * <pre>
+     * Aggregate UTF-8 text: default and ceiling remain 1,048,576.
+     * </pre>
+     *
      * <code>optional uint64 text_bytes = 11 [json_name = "textBytes"];</code>
      * @return Whether the textBytes field is set.
      */
@@ -1133,6 +1265,10 @@ public  final class CodecGeneralCborOptions extends
       return instance.hasTextBytes();
     }
     /**
+     * <pre>
+     * Aggregate UTF-8 text: default and ceiling remain 1,048,576.
+     * </pre>
+     *
      * <code>optional uint64 text_bytes = 11 [json_name = "textBytes"];</code>
      * @return The textBytes.
      */
@@ -1141,6 +1277,10 @@ public  final class CodecGeneralCborOptions extends
       return instance.getTextBytes();
     }
     /**
+     * <pre>
+     * Aggregate UTF-8 text: default and ceiling remain 1,048,576.
+     * </pre>
+     *
      * <code>optional uint64 text_bytes = 11 [json_name = "textBytes"];</code>
      * @param value The textBytes to set.
      * @return This builder for chaining.
@@ -1151,6 +1291,10 @@ public  final class CodecGeneralCborOptions extends
       return this;
     }
     /**
+     * <pre>
+     * Aggregate UTF-8 text: default and ceiling remain 1,048,576.
+     * </pre>
+     *
      * <code>optional uint64 text_bytes = 11 [json_name = "textBytes"];</code>
      * @return This builder for chaining.
      */

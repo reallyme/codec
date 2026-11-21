@@ -132,6 +132,10 @@ public object CodecGeneralCborOptionsKt {
     }
 
     /**
+     * ```
+     * Encoded input, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+     * ```
+     *
      * `optional uint64 input_bytes = 5 [json_name = "inputBytes"];`
      */
     public var inputBytes: kotlin.Long
@@ -142,12 +146,20 @@ public object CodecGeneralCborOptionsKt {
         _builder.inputBytes = value
       }
     /**
+     * ```
+     * Encoded input, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+     * ```
+     *
      * `optional uint64 input_bytes = 5 [json_name = "inputBytes"];`
      */
     public fun clearInputBytes() {
       _builder.clearInputBytes()
     }
     /**
+     * ```
+     * Encoded input, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+     * ```
+     *
      * `optional uint64 input_bytes = 5 [json_name = "inputBytes"];`
      * @return Whether the inputBytes field is set.
      */
@@ -156,6 +168,11 @@ public object CodecGeneralCborOptionsKt {
     }
 
     /**
+     * ```
+     * Encoded output, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+     * Independent of input_bytes, which applies to received encodings.
+     * ```
+     *
      * `optional uint64 output_bytes = 6 [json_name = "outputBytes"];`
      */
     public var outputBytes: kotlin.Long
@@ -166,12 +183,22 @@ public object CodecGeneralCborOptionsKt {
         _builder.outputBytes = value
       }
     /**
+     * ```
+     * Encoded output, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+     * Independent of input_bytes, which applies to received encodings.
+     * ```
+     *
      * `optional uint64 output_bytes = 6 [json_name = "outputBytes"];`
      */
     public fun clearOutputBytes() {
       _builder.clearOutputBytes()
     }
     /**
+     * ```
+     * Encoded output, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+     * Independent of input_bytes, which applies to received encodings.
+     * ```
+     *
      * `optional uint64 output_bytes = 6 [json_name = "outputBytes"];`
      * @return Whether the outputBytes field is set.
      */
@@ -252,6 +279,11 @@ public object CodecGeneralCborOptionsKt {
     }
 
     /**
+     * ```
+     * Aggregate byte-string content across the operation: default 1,048,576;
+     * ceiling 2,097,152. CBOR headers count toward input/output, not this budget.
+     * ```
+     *
      * `optional uint64 byte_string_bytes = 10 [json_name = "byteStringBytes"];`
      */
     public var byteStringBytes: kotlin.Long
@@ -262,12 +294,22 @@ public object CodecGeneralCborOptionsKt {
         _builder.byteStringBytes = value
       }
     /**
+     * ```
+     * Aggregate byte-string content across the operation: default 1,048,576;
+     * ceiling 2,097,152. CBOR headers count toward input/output, not this budget.
+     * ```
+     *
      * `optional uint64 byte_string_bytes = 10 [json_name = "byteStringBytes"];`
      */
     public fun clearByteStringBytes() {
       _builder.clearByteStringBytes()
     }
     /**
+     * ```
+     * Aggregate byte-string content across the operation: default 1,048,576;
+     * ceiling 2,097,152. CBOR headers count toward input/output, not this budget.
+     * ```
+     *
      * `optional uint64 byte_string_bytes = 10 [json_name = "byteStringBytes"];`
      * @return Whether the byteStringBytes field is set.
      */
@@ -276,6 +318,10 @@ public object CodecGeneralCborOptionsKt {
     }
 
     /**
+     * ```
+     * Aggregate UTF-8 text: default and ceiling remain 1,048,576.
+     * ```
+     *
      * `optional uint64 text_bytes = 11 [json_name = "textBytes"];`
      */
     public var textBytes: kotlin.Long
@@ -286,12 +332,20 @@ public object CodecGeneralCborOptionsKt {
         _builder.textBytes = value
       }
     /**
+     * ```
+     * Aggregate UTF-8 text: default and ceiling remain 1,048,576.
+     * ```
+     *
      * `optional uint64 text_bytes = 11 [json_name = "textBytes"];`
      */
     public fun clearTextBytes() {
       _builder.clearTextBytes()
     }
     /**
+     * ```
+     * Aggregate UTF-8 text: default and ceiling remain 1,048,576.
+     * ```
+     *
      * `optional uint64 text_bytes = 11 [json_name = "textBytes"];`
      * @return Whether the textBytes field is set.
      */

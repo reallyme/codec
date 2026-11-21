@@ -20,6 +20,13 @@ function fixture(t) {
   mkdirSync(join(repo, "scripts"), { recursive: true });
   mkdirSync(tools);
   mkdirSync(output);
+  if (process.platform === "darwin") {
+    // Exercise the system Bash used on macOS runners, even with Homebrew Bash installed.
+    symlinkSync("/bin/bash", join(tools, "bash"));
+  }
+  const manifest = join(repo, "packages/kotlin/build.gradle.kts");
+  mkdirSync(join(repo, "packages/kotlin"), { recursive: true });
+  writeFileSync(manifest, 'version = "1.2.3"\n');
   const helper = join(repo, "scripts/maven-central-bundle.local.sh");
   const calls = join(root, "gpg-calls");
   const pom = "<project>sample release</project>\n";
@@ -63,24 +70,32 @@ function fixture(t) {
   assert.equal(zip.status, 0, zip.stderr);
   const sha = "1234567890abcdef".repeat(2) + "12345678";
   executable(join(tools, "git"), `
+    if [[ "$1" == -C ]]; then
+      test "$2" = "$FIXTURE_REPOSITORY" || exit 79
+      shift 2
+    fi
     case "\${1}" in
-      rev-parse) printf '%s\\n' '${sha}' ;;
-      diff|ls-files) exit 0 ;;
+      rev-parse)
+        if [[ "$BUNDLE_SCENARIO" == missing-head ]]; then exit 1; fi
+        printf '%s\\n' '${sha}' ;;
+      diff) [[ "$BUNDLE_SCENARIO" != dirty ]] ;;
+      ls-files) exit 0 ;;
       *) exit 79 ;;
     esac
   `);
   writeFileSync(calls, "");
-  const run = (version, overrides = {}, source = sha) => spawnSync(helper, [version, source], {
+  const run = (version, overrides = {}, source = sha) => spawnSync(helper, version === undefined ? [] : [version, source], {
     cwd: root,
     encoding: "utf8",
     env: {
       ...process.env, PATH: `${tools}${delimiter}${process.env.PATH}`,
       GPG_CALLS: calls, REAL_ZIP: zip.stdout.trim(), BUNDLE_SCENARIO: "",
+      FIXTURE_REPOSITORY: repo, MAVEN_RELEASE_VERSION: "", MAVEN_CENTRAL_WORK_DIR: "",
       MAVEN_SIGNING_KEY_ID: "1234567890ABCDEF", MAVEN_SIGNING_PASSWORD: "fixture-only",
       MAVEN_CENTRAL_OUTPUT_DIR: output, ...overrides,
     },
   });
-  return { run, output, calls, pom };
+  return { run, root, output, calls, pom, manifest };
 }
 
 test("Maven bundle template verifies each signature and retains every completed ZIP", { skip: process.platform === "win32" }, (t) => {
@@ -130,6 +145,56 @@ test("Maven bundle template preserves prior archives when staging, signing, or Z
     assert.deepEqual(readdirSync(output), ["reallyme-maven-central-1.2.3.zip"]);
     assert.equal(readFileSync(original, "utf8"), "previous archive");
   }
+});
+
+test("Maven bundle without arguments selects the package version and current checkout from another directory", { skip: process.platform === "win32" }, (t) => {
+  const { run, output } = fixture(t);
+  const result = run();
+  const archive = join(output, "reallyme-maven-central-1.2.3.zip");
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout.trim(), archive);
+  assert.deepEqual(readdirSync(output), ["reallyme-maven-central-1.2.3.zip"]);
+});
+
+test("Maven bundle accepts a default version override and preserves explicit argument precedence", { skip: process.platform === "win32" }, (t) => {
+  const { run, output } = fixture(t);
+  const selected = run(undefined, { MAVEN_RELEASE_VERSION: "1.2.4" });
+  assert.equal(selected.status, 0, selected.stderr);
+  assert.equal(selected.stdout.trim(), join(output, "reallyme-maven-central-1.2.4.zip"));
+  const explicit = run("1.2.5", { MAVEN_RELEASE_VERSION: "9.9.9" });
+  assert.equal(explicit.status, 0, explicit.stderr);
+  assert.equal(explicit.stdout.trim(), join(output, "reallyme-maven-central-1.2.5.zip"));
+});
+
+test("Maven bundle defaults reject invalid versions, unavailable commits, and dirty tracked files before signing", { skip: process.platform === "win32" }, (t) => {
+  const { run, output, calls, manifest } = fixture(t);
+  for (const [contents, overrides, diagnostic] of [
+    ["", {}, /stable release version/u],
+    ['version = "1.2.3"\nversion = "1.2.4"\n', {}, /stable release version/u],
+    ['version = "1.2.3"\n', { MAVEN_RELEASE_VERSION: "1.2.4-rc.1" }, /stable release version/u],
+    ['version = "1.2.3"\n', { BUNDLE_SCENARIO: "missing-head" }, /full source SHA/u],
+    ['version = "1.2.3"\n', { BUNDLE_SCENARIO: "dirty" }, /unchanged tracked files/u],
+  ]) {
+    writeFileSync(manifest, contents);
+    const result = run(undefined, overrides);
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr, diagnostic);
+    assert.equal(result.stdout, "");
+    assert.deepEqual(readdirSync(output), []);
+    assert.equal(readFileSync(calls, "utf8"), "");
+  }
+});
+
+test("Maven bundle uses the work directory fallback while retaining explicit output precedence", { skip: process.platform === "win32" }, (t) => {
+  const { run, root, output } = fixture(t);
+  const work = join(root, "bundle work");
+  const selected = run(undefined, { MAVEN_CENTRAL_OUTPUT_DIR: "", MAVEN_CENTRAL_WORK_DIR: work });
+  assert.equal(selected.status, 0, selected.stderr);
+  assert.equal(selected.stdout.trim(), join(work, "out/reallyme-maven-central-1.2.3.zip"));
+  const explicit = run(undefined, { MAVEN_CENTRAL_WORK_DIR: work });
+  assert.equal(explicit.status, 0, explicit.stderr);
+  assert.equal(explicit.stdout.trim(), join(output, "reallyme-maven-central-1.2.3.zip"));
+  assert.deepEqual(readdirSync(join(work, "out")), ["reallyme-maven-central-1.2.3.zip"]);
 });
 
 function publicationFixture(t) {

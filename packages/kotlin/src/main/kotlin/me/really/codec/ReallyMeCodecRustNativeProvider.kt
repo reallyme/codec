@@ -26,7 +26,7 @@ public object ReallyMeCodecRustNativeProvider {
     private const val EXPECTED_CODEC_ABI_VERSION: Int = 6
     private const val EXPECTED_CODEC_PACKAGE_MAJOR: Int = 0
     private const val EXPECTED_CODEC_PACKAGE_MINOR: Int = 4
-    private const val EXPECTED_CODEC_PACKAGE_PATCH: Int = 4
+    private const val EXPECTED_CODEC_PACKAGE_PATCH: Int = 5
     private const val MAX_MANAGED_FFI_LIMIT_BYTES: Long = Int.MAX_VALUE.toLong()
     private const val ALLOW_UNVERIFIED_NATIVE_PROPERTY: String = "reallyme.codec.allowUnverifiedNative"
 

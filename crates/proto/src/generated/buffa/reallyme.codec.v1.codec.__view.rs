@@ -14458,8 +14458,13 @@ pub struct CodecGeneralCborOptionsView<'a> {
     pub floats: ::buffa::EnumValue<super::super::CodecGeneralCborFloatPolicy>,
     /// Field 4: `ordering`
     pub ordering: ::buffa::EnumValue<super::super::CodecGeneralCborMapOrdering>,
+    /// Encoded input, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+    ///
     /// Field 5: `input_bytes`
     pub input_bytes: ::core::option::Option<u64>,
+    /// Encoded output, including CBOR headers: default 1,048,576; ceiling 2,097,152.
+    /// Independent of input_bytes, which applies to received encodings.
+    ///
     /// Field 6: `output_bytes`
     pub output_bytes: ::core::option::Option<u64>,
     /// Field 7: `depth`
@@ -14468,8 +14473,13 @@ pub struct CodecGeneralCborOptionsView<'a> {
     pub nodes: ::core::option::Option<u64>,
     /// Field 9: `entries`
     pub entries: ::core::option::Option<u64>,
+    /// Aggregate byte-string content across the operation: default 1,048,576;
+    /// ceiling 2,097,152. CBOR headers count toward input/output, not this budget.
+    ///
     /// Field 10: `byte_string_bytes`
     pub byte_string_bytes: ::core::option::Option<u64>,
+    /// Aggregate UTF-8 text: default and ceiling remain 1,048,576.
+    ///
     /// Field 11: `text_bytes`
     pub text_bytes: ::core::option::Option<u64>,
     /// Field 12: `work`

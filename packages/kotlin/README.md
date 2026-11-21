@@ -5,7 +5,7 @@ JNI libraries as platform resources. The matching library loads on first use.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec:0.4.4")
+    implementation("me.really:codec:0.4.5")
 }
 ```
 

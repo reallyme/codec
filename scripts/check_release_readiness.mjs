@@ -376,8 +376,8 @@ for (const workflow of [".github/workflows/fuzz.yml", ".github/workflows/fuzz-sc
   });
 }
 
-const codecPackageVersion = "0.4.4";
-const codecProtoPackageVersion = "0.4.4";
+const codecPackageVersion = "0.4.5";
+const codecProtoPackageVersion = "0.4.5";
 assertContains("Package.swift", `let ffiArtifactVersion = "${codecPackageVersion}"`);
 // The probes are separate Cargo workspaces. Root workspace metadata cannot
 // detect a release bump that leaves their own lockfile package entries stale.
@@ -2192,7 +2192,7 @@ assertContains(".github/workflows/kotlin-android-package-release.yml", "Sign and
 assertNotContains(".github/workflows/kotlin-android-package-release.yml", "bundleReleaseAar");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "requireFullNativeResources=true");
 assertContains("packages/kotlin/settings.gradle.kts", 'rootProject.name = "reallyme-codec"');
-assertContains("packages/kotlin/README.md", "me.really:codec:0.4.4");
+assertContains("packages/kotlin/README.md", "me.really:codec:0.4.5");
 assertContains("packages/kotlin/README.md", "JNI libraries as platform resources");
 assertContains(
   "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodecRustNativeProvider.kt",
@@ -2947,7 +2947,7 @@ assertContains("scripts/test_android_consumer_r8_runtime.sh", "$SDKMANAGER\" \"e
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android AVD was not available after creation");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "$AVDMANAGER\" create avd --force");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android consumer R8 runtime gate passed");
-assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.4.4");
+assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.4.5");
 assertContains(
   "packages/kotlin-android/gradle.properties",
   "org.gradle.jvmargs=-Xmx1g -XX:MaxMetaspaceSize=768m -Dfile.encoding=UTF-8",
@@ -3031,7 +3031,7 @@ assertContains(".github/workflows/release-readiness.yml", "Test TypeScript codec
 assertContains(".github/workflows/npm-package-preflight.yml", "Test TypeScript codec package in browser");
 
 assertContains("README.md", "https://www.npmjs.com/package/@reallyme/codec");
-assertContains("README.md", "me.really:codec:0.4.4");
+assertContains("README.md", "me.really:codec:0.4.5");
 assertContains("README.md", "reallyme-codec-proto");
 assertContains("README.md", "`me.really:codec-android` AAR");
 assertContains("CONTRACT.md", "crates/proto/proto/reallyme/codec/v1/codec.proto");

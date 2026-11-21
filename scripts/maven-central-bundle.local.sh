@@ -12,6 +12,11 @@ fail() {
   exit 1
 }
 
+if [[ "$#" -eq 0 ]]; then
+  script_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+  current_version="$(sed -n 's/^version = "\([^"]*\)"$/\1/p' "$script_root/packages/kotlin/build.gradle.kts")"
+  set -- "${MAVEN_RELEASE_VERSION:-$current_version}" "$(git -C "$script_root" rev-parse --verify HEAD)"
+fi
 [[ "$#" -eq 2 ]] || fail "usage: ./scripts/maven-central-bundle.local.sh VERSION SOURCE_SHA"
 readonly version="$1" source_sha="$2"
 [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] ||
@@ -41,7 +46,7 @@ if ! git ls-files --error-unmatch -- "$adapter" >/dev/null 2>&1 ||
   fail "provide the tracked, executable $adapter"
 fi
 
-output_dir="${MAVEN_CENTRAL_OUTPUT_DIR:-"$repo_root/build/maven-central-upload/out"}"
+output_dir="${MAVEN_CENTRAL_OUTPUT_DIR:-"${MAVEN_CENTRAL_WORK_DIR:-"$repo_root/build/maven-central-upload"}/out"}"
 [[ "$output_dir" == /* ]] || fail "MAVEN_CENTRAL_OUTPUT_DIR must be absolute"
 mkdir -p -- "$output_dir"
 output_dir="$(cd -- "$output_dir" && pwd -P)"

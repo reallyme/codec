@@ -5,7 +5,7 @@ libraries. Applications do not need to build or load a library manually.
 
 ```kotlin
 dependencies {
-    implementation("me.really:codec-android:0.4.4")
+    implementation("me.really:codec-android:0.4.5")
 }
 ```
 

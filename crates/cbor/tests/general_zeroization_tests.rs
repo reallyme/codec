@@ -6,6 +6,8 @@
 //! One test prevents concurrent allocator-observation cases within this binary.
 #![allow(missing_docs, unsafe_code, clippy::unwrap_used)]
 
+#[cfg(not(miri))]
+use codec_cbor::general::MAX_BYTES;
 use codec_cbor::general::{
     encode, frame_exact, ErrorReason, Float, LengthPolicy, Limits, MapEntry, Profile, ValueRef,
 };
@@ -129,6 +131,39 @@ fn initialized_output_is_wiped_on_success_and_semantic_rejection() {
     assert_eq!(error.reason(), ErrorReason::DuplicateMapKey);
     assert!(WATCH_POINTER.load(Ordering::SeqCst).is_null());
     assert!(WIPED.load(Ordering::SeqCst));
+
+    // Cap-sized buffers run in the compiled test and sanitizer lanes. Miri
+    // keeps the success, partial-output, and semantic-rejection cases above;
+    // interpreting millions of volatile wipes adds cost without another path.
+    #[cfg(not(miri))]
+    {
+        let payload = zeroize::Zeroizing::new(vec![0xab; MAX_BYTES.checked_sub(5).unwrap()]);
+        let limits = Limits::default()
+            .with_output_bytes(MAX_BYTES)
+            .unwrap()
+            .with_byte_string_bytes(MAX_BYTES)
+            .unwrap();
+        WATCH_SIZE.store(MAX_BYTES, Ordering::SeqCst);
+        WIPED.store(false, Ordering::SeqCst);
+        let output = encode(&ValueRef::Bytes(&payload), Profile::preferred(), limits).unwrap();
+        assert!(!WATCH_POINTER.load(Ordering::SeqCst).is_null());
+        drop(output);
+        assert!(WIPED.load(Ordering::SeqCst));
+
+        // This budget admits measurement and the second-pass header, then fails
+        // while appending contents. The full two-MiB output allocation must clear.
+        WIPED.store(false, Ordering::SeqCst);
+        let error = encode(
+            &ValueRef::Bytes(&payload),
+            Profile::preferred(),
+            limits.with_work(MAX_BYTES.checked_add(8).unwrap()).unwrap(),
+        )
+        .err()
+        .unwrap();
+        assert_eq!(error.reason(), ErrorReason::WorkLimit);
+        assert!(WATCH_POINTER.load(Ordering::SeqCst).is_null());
+        assert!(WIPED.load(Ordering::SeqCst));
+    }
     WATCH_SIZE.store(0, Ordering::SeqCst);
     OBSERVE.with(|observe| observe.set(false));
 }
