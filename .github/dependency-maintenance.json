@@ -52,7 +52,7 @@
       "name": "syn",
       "current": "2.0.119",
       "latest": "3.0.10",
-      "reason": "match-lookup 0.1.3, multihash-derive-impl 0.1.3 and zerocopy-derive 0.8.63 require syn 2.x. Syn 3 is already selected for compatible parents; revisit after remaining parents migrate.",
+      "reason": "match-lookup 0.1.3, multihash-derive-impl 0.1.3 and zerocopy-derive 0.8.64 require syn 2.x. Syn 3 is already selected for compatible parents; revisit after remaining parents migrate.",
       "expires": "2026-12-20"
     },
     {
@@ -124,7 +124,7 @@
       "name": "syn",
       "current": "2.0.119",
       "latest": "3.0.10",
-      "reason": "match-lookup 0.1.3, multihash-derive-impl 0.1.3 and zerocopy-derive 0.8.63 require syn 2.x. Syn 3 is already selected for compatible parents; revisit after remaining parents migrate.",
+      "reason": "match-lookup 0.1.3, multihash-derive-impl 0.1.3 and zerocopy-derive 0.8.64 require syn 2.x. Syn 3 is already selected for compatible parents; revisit after remaining parents migrate.",
       "expires": "2026-12-20"
     },
     {
