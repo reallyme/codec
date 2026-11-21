@@ -31,8 +31,11 @@ for (const [name, packageBoundaries] of workflows) {
       const maintenanceTools = source.indexOf("      - name: Install dependency maintenance tools\n");
       assert.ok(maintenanceTools > runner && maintenanceTools < admission);
       const verificationJob = source.slice(maintenanceTools, admission);
-      assert.match(verificationJob, /tool: cargo-audit@0\.23\.0,cargo-outdated@0\.19\.0/u);
+      assert.match(verificationJob, /tool: cargo-audit@0\.23\.0\r?\n/u);
       assert.match(verificationJob, /fallback: none/u);
+      assert.doesNotMatch(verificationJob, /tool:.*cargo-outdated/u);
+      assert.match(verificationJob,
+        /run: cargo \+1\.100\.0 install cargo-outdated --version '=0\.19\.0' --locked/u);
     }
     const checks = source.match(/- name: Verify publication privacy/gu) ?? [];
     assert.equal(checks.length, packageBoundaries + (name.includes("preflight") ? 1 : 0));
