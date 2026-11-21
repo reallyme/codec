@@ -59,7 +59,7 @@ jobs:
 
       - name: Install ShellCheck
         if: matrix.os == 'ubuntu-24.04'
-        uses: taiki-e/install-action@25f51f6b1bf4e18876107cece836f4f77ac17c8c # v2.90.7
+        uses: taiki-e/install-action@fe3acb53a98b62c772db35de75ce0e4595e7ca8c # v2.90.8
         with:
           tool: shellcheck@0.11.0
 
@@ -103,7 +103,7 @@ jobs:
           cache-bin: false
 
       - name: Install nextest
-        uses: taiki-e/install-action@25f51f6b1bf4e18876107cece836f4f77ac17c8c # v2.90.7, nextest
+        uses: taiki-e/install-action@fe3acb53a98b62c772db35de75ce0e4595e7ca8c # v2.90.8, nextest
         with:
           tool: cargo-nextest@0.9.152
 
@@ -111,7 +111,7 @@ jobs:
         run: cargo +1.100.0 install cargo-deny --version '=0.22.0' --locked
 
       - name: Install cargo-audit
-        uses: taiki-e/install-action@25f51f6b1bf4e18876107cece836f4f77ac17c8c # v2.90.7, cargo-audit
+        uses: taiki-e/install-action@fe3acb53a98b62c772db35de75ce0e4595e7ca8c # v2.90.8, cargo-audit
         with:
           tool: cargo-audit@0.23.0
 
