@@ -3,10 +3,13 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+import { spawnSync } from "node:child_process";
 import { readFileSync, statSync } from "node:fs";
-import { basename } from "node:path";
+import { basename, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const PORTAL = "https://central.sonatype.com/api/v1/publisher";
+const repositoryDirectory = fileURLToPath(new URL("../", import.meta.url));
 const MAX_BUNDLE_BYTES = 536_870_912;
 const POLL_INTERVAL_MS = 20_000;
 const MAX_POLLS = 180;
@@ -29,6 +32,10 @@ const main = async () => {
   const [, , bundlePath, version] = process.argv;
   const username = process.env.CENTRAL_PORTAL_USERNAME;
   const password = process.env.CENTRAL_PORTAL_PASSWORD;
+  // Privacy inspectors must not inherit publication or signing credentials.
+  for (const name of ["CENTRAL_PORTAL_USERNAME", "CENTRAL_PORTAL_PASSWORD", "MAVEN_SIGNING_KEY", "MAVEN_SIGNING_PASSWORD"]) {
+    delete process.env[name];
+  }
   if (typeof bundlePath !== "string" || !bundlePath.endsWith(".zip") ||
       typeof version !== "string" || !VERSION_PATTERN.test(version)) {
     fail("invalid-bundle-arguments");
@@ -48,6 +55,20 @@ const main = async () => {
     fail("bundle-size-invalid");
   }
 
+  // Authenticate the shared policy, then inspect both source tracking and the
+  // actual archive before constructing authentication material or sending requests.
+  for (const arguments_ of [
+    ["scripts/run_pinned_release_readiness.mjs", "--check-pins"],
+    [".release-readiness/scripts/repository-privacy.mjs", "--artifact", resolve(bundlePath)],
+  ]) {
+    const privacy = spawnSync(process.execPath, arguments_, {
+      cwd: repositoryDirectory, stdio: "inherit", timeout: 90_000,
+    });
+    if (privacy.error !== undefined || privacy.status !== 0) {
+      fail("publication-privacy-rejected");
+    }
+  }
+
   const authentication = Buffer.from(`${username}:${password}`, "utf8");
   const headers = { Authorization: `Bearer ${authentication.toString("base64")}` };
   authentication.fill(0);
@@ -60,6 +81,7 @@ const main = async () => {
 
   const upload = await fetch(uploadUrl, {
     method: "POST",
+    redirect: "error",
     headers,
     body: form,
     signal: AbortSignal.timeout(120_000),
@@ -81,6 +103,7 @@ const main = async () => {
     statusUrl.searchParams.set("id", deploymentId);
     const response = await fetch(statusUrl, {
       method: "POST",
+      redirect: "error",
       headers,
       signal: AbortSignal.timeout(30_000),
     });
