@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 const repository = fileURLToPath(new URL("../", import.meta.url));
-function fixture(t, { remote = false, protoc = "libprotoc 36.2", swift = "protoc-gen-swift 1.39.0", es = "protoc-gen-es v2.17.0" } = {}) {
+function fixture(t, { remote = false, protoc = "libprotoc 36.2", swift = "protoc-gen-swift 1.41.0", es = "protoc-gen-es v2.17.0" } = {}) {
   const root = mkdtempSync(join(tmpdir(), "local protocol # "));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   mkdirSync(join(root, "scripts"));
@@ -37,7 +37,7 @@ test("local generation accepts exactly pinned tools in paths with spaces", (t) =
 for (const [name, options] of [
   ["remote plugin", { remote: true }],
   ["wrong protoc", { protoc: "libprotoc 37.0" }],
-  ["wrong Swift plugin", { swift: "protoc-gen-swift 1.41.0" }],
+  ["wrong Swift plugin", { swift: "protoc-gen-swift 1.39.0" }],
   ["wrong TypeScript plugin", { es: "protoc-gen-es v2.18.0" }],
 ]) {
   test(`local generation rejects ${name}`, (t) => {

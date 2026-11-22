@@ -6,7 +6,7 @@ Building from source requires Swift 6.3.
 ## Install
 
 ```swift
-.package(url: "https://github.com/reallyme/codec", from: "0.4.5")
+.package(url: "https://github.com/reallyme/codec", from: "0.4.6")
 ```
 
 Add `.product(name: "ReallyMeCodec", package: "codec")` to your target.

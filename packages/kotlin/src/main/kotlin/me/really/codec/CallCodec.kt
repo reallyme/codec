@@ -85,11 +85,16 @@ internal fun <T> processOperation(
                 }
                 consume(result)
             }
-            CodecOperationResponse.OutcomeCase.ERROR ->
+
+            CodecOperationResponse.OutcomeCase.ERROR -> {
                 throw exceptionForCodecError(response.error)
+            }
+
             CodecOperationResponse.OutcomeCase.OUTCOME_NOT_SET,
             null,
-            -> throw ReallyMeCodecException.ProviderFailure()
+            -> {
+                throw ReallyMeCodecException.ProviderFailure()
+            }
         }
     } catch (_: InvalidProtocolBufferException) {
         throw ReallyMeCodecException.ProviderFailure()
@@ -121,15 +126,18 @@ internal fun exceptionForCodecError(codecError: CodecError): ReallyMeCodecExcept
                     CodecErrorReason.CODEC_ERROR_REASON_BASE_ALLOCATION_FAILURE,
                     CodecErrorReason.CODEC_ERROR_REASON_BASE_LENGTH_OVERFLOW,
                     -> CodecErrorOrigin.CODEC_ERROR_ORIGIN_PROVIDER
+
                     else -> CodecErrorOrigin.CODEC_ERROR_ORIGIN_CALLER
                 }
             }
+
             CodecError.ErrorCase.PEM -> {
                 if (!knownProviderReason(codecError.pem.reallyMeHasUnknownFieldsForValidation(), codecError.pem.reason, 200..299)) {
                     return ReallyMeCodecException.ProviderFailure()
                 }
                 CodecErrorOrigin.CODEC_ERROR_ORIGIN_CALLER
             }
+
             CodecError.ErrorCase.MULTIFORMAT -> {
                 if (!knownProviderReason(
                         codecError.multiformat.reallyMeHasUnknownFieldsForValidation(),
@@ -141,6 +149,7 @@ internal fun exceptionForCodecError(codecError: CodecError): ReallyMeCodecExcept
                 }
                 CodecErrorOrigin.CODEC_ERROR_ORIGIN_CALLER
             }
+
             CodecError.ErrorCase.CANONICALIZATION -> {
                 if (!knownProviderReason(
                         codecError.canonicalization.reallyMeHasUnknownFieldsForValidation(),
@@ -155,15 +164,18 @@ internal fun exceptionForCodecError(codecError: CodecError): ReallyMeCodecExcept
                     CodecErrorReason.CODEC_ERROR_REASON_CANONICAL_JSON_ALLOCATION_FAILURE,
                     CodecErrorReason.CODEC_ERROR_REASON_CANONICAL_JSON_ARITHMETIC_OVERFLOW,
                     -> CodecErrorOrigin.CODEC_ERROR_ORIGIN_PROVIDER
+
                     else -> CodecErrorOrigin.CODEC_ERROR_ORIGIN_CALLER
                 }
             }
+
             CodecError.ErrorCase.BACKEND -> {
                 if (!knownProviderReason(codecError.backend.reallyMeHasUnknownFieldsForValidation(), codecError.backend.reason, 500..599)) {
                     return ReallyMeCodecException.ProviderFailure()
                 }
                 CodecErrorOrigin.CODEC_ERROR_ORIGIN_PROVIDER
             }
+
             CodecError.ErrorCase.BOUNDARY -> {
                 if (!knownProviderReason(
                         codecError.boundary.reallyMeHasUnknownFieldsForValidation(),
@@ -175,9 +187,12 @@ internal fun exceptionForCodecError(codecError: CodecError): ReallyMeCodecExcept
                 }
                 CodecErrorOrigin.CODEC_ERROR_ORIGIN_CALLER
             }
+
             CodecError.ErrorCase.ERROR_NOT_SET,
             null,
-            -> return ReallyMeCodecException.ProviderFailure()
+            -> {
+                return ReallyMeCodecException.ProviderFailure()
+            }
         }
     if (codecError.origin != expectedOrigin) {
         return ReallyMeCodecException.ProviderFailure()

@@ -20,7 +20,8 @@ plugins {
 }
 
 group = "me.really"
-version = "0.4.5"
+version = "0.4.6"
+
 
 // The JVM jar and Android AAR expose the same me.really.codec classes.
 // The shared capability makes Gradle reject a graph containing both.
@@ -31,21 +32,6 @@ configurations.matching { it.name in setOf("apiElements", "runtimeElements") }.c
 
 dependencyLocking {
     lockAllConfigurations()
-}
-
-val kotlinBouncyCastleConfiguration = "kotlinBouncyCastleConfiguration"
-val bouncyCastleSecurityVersion = "1.87"
-// Kotlin's publishing validation resolves Bouncy Castle 1.84 internally.
-// Constrain that tooling classpath because 1.84 is affected by CVE-2026-8763.
-configurations.configureEach {
-    if (name == kotlinBouncyCastleConfiguration) {
-        resolutionStrategy.eachDependency {
-            if (requested.group == "org.bouncycastle") {
-                useVersion(bouncyCastleSecurityVersion)
-                because("Bouncy Castle 1.87 includes the name-constraints fix")
-            }
-        }
-    }
 }
 
 val remoteMavenRepositoryUrl =
@@ -201,7 +187,7 @@ kotlin {
 }
 
 ktlint {
-    version.set("1.5.0")
+    version.set("1.8.0")
     filter {
         // Generated bindings are verified by Buf freshness, not style rules.
         exclude { entry ->
@@ -283,6 +269,9 @@ val writeHostNativeDigest =
 dependencies {
     api("com.google.protobuf:protobuf-javalite:4.36.2")
     api("com.google.protobuf:protobuf-kotlin-lite:4.36.2")
+    constraints {
+        api("org.jetbrains:annotations:26.1.0")
+    }
     testImplementation("com.google.code.gson:gson:2.15.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.3")
     testImplementation(kotlin("test"))

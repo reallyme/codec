@@ -75,21 +75,48 @@ private fun String.jsonUnescaped(): String {
         index += 1
         require(index < length)
         when (val escaped = this[index]) {
-            '"' -> output.append('"')
-            '\\' -> output.append('\\')
-            '/' -> output.append('/')
-            'b' -> output.append('\b')
-            'f' -> output.append('\u000C')
-            'n' -> output.append('\n')
-            'r' -> output.append('\r')
-            't' -> output.append('\t')
+            '"' -> {
+                output.append('"')
+            }
+
+            '\\' -> {
+                output.append('\\')
+            }
+
+            '/' -> {
+                output.append('/')
+            }
+
+            'b' -> {
+                output.append('\b')
+            }
+
+            'f' -> {
+                output.append('\u000C')
+            }
+
+            'n' -> {
+                output.append('\n')
+            }
+
+            'r' -> {
+                output.append('\r')
+            }
+
+            't' -> {
+                output.append('\t')
+            }
+
             'u' -> {
                 require(index + 4 < length)
                 val codePoint = substring(index + 1, index + 5).toInt(16)
                 output.append(codePoint.toChar())
                 index += 4
             }
-            else -> error("unsupported JSON escape: $escaped")
+
+            else -> {
+                error("unsupported JSON escape: $escaped")
+            }
         }
         index += 1
     }

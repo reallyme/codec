@@ -9,7 +9,7 @@ discriminated binary protobuf response.
 
 ```toml
 [dependencies]
-reallyme-codec-proto = { version = "0.4.5", features = ["generated"] }
+reallyme-codec-proto = { version = "0.4.6", features = ["generated"] }
 ```
 
 The [schema](proto/reallyme/codec/v1/codec.proto) ships with the crate. For

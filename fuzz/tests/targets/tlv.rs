@@ -21,7 +21,6 @@ fuzz_target!(|input: &[u8]| {
                 ..Default::default()
             })
             .into(),
-            ..Default::default()
         };
         if let Ok(header) = tlv::read_header(input, &options) {
             assert!(header.consumed_bytes() <= input.len());

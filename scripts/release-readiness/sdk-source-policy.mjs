@@ -59,7 +59,7 @@ export function assertSdkSourcePolicies(context) {
     generatedPrefixes: ["gen/kotlin", "packages/kotlin/src/main/kotlin/me/really/codec/generated"],
     configuration: { files: [{
       path: "packages/kotlin/build.gradle.kts",
-      required: ["explicitApi()", "allWarningsAsErrors.set(true)", 'version.set("1.5.0")'],
+      required: ["explicitApi()", "allWarningsAsErrors.set(true)", 'version.set("1.8.0")'],
     }] },
     verification: [
       { roles: ["format", "static-analysis", "compile", "test"], command: "./gradlew",

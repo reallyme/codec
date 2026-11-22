@@ -33,16 +33,22 @@ private fun validateProviderDeterministicCborValue(
         )
     when (value.valueCase) {
         CodecDeterministicCborValue.ValueCase.NULL_VALUE,
-        ->
+        -> {
             requireNoProviderUnknownFields(
                 value.nullValue.reallyMeHasUnknownFieldsForValidation(),
             )
-        CodecDeterministicCborValue.ValueCase.BOOL_VALUE ->
+        }
+
+        CodecDeterministicCborValue.ValueCase.BOOL_VALUE -> {
             requireNoProviderUnknownFields(
                 value.boolValue.reallyMeHasUnknownFieldsForValidation(),
             )
-        CodecDeterministicCborValue.ValueCase.INTEGER_VALUE ->
+        }
+
+        CodecDeterministicCborValue.ValueCase.INTEGER_VALUE -> {
             validateProviderDeterministicCborInteger(value.integerValue)
+        }
+
         CodecDeterministicCborValue.ValueCase.TEXT_VALUE -> {
             requireNoProviderUnknownFields(
                 value.textValue.reallyMeHasUnknownFieldsForValidation(),
@@ -54,6 +60,7 @@ private fun validateProviderDeterministicCborValue(
                     MAX_DETERMINISTIC_CBOR_AGGREGATE_TEXT_BYTES,
                 )
         }
+
         CodecDeterministicCborValue.ValueCase.BYTES_VALUE -> {
             requireNoProviderUnknownFields(
                 value.bytesValue.reallyMeHasUnknownFieldsForValidation(),
@@ -65,6 +72,7 @@ private fun validateProviderDeterministicCborValue(
                     MAX_DETERMINISTIC_CBOR_AGGREGATE_BYTE_STRING_BYTES,
                 )
         }
+
         CodecDeterministicCborValue.ValueCase.ARRAY_VALUE -> {
             requireNoProviderUnknownFields(
                 value.arrayValue.reallyMeHasUnknownFieldsForValidation(),
@@ -75,6 +83,7 @@ private fun validateProviderDeterministicCborValue(
                 validateProviderDeterministicCborValue(child, childDepth, state)
             }
         }
+
         CodecDeterministicCborValue.ValueCase.MAP_VALUE -> {
             requireNoProviderUnknownFields(
                 value.mapValue.reallyMeHasUnknownFieldsForValidation(),
@@ -103,9 +112,12 @@ private fun validateProviderDeterministicCborValue(
                 validateProviderDeterministicCborValue(entry.value, childDepth, state)
             }
         }
+
         CodecDeterministicCborValue.ValueCase.VALUE_NOT_SET,
         null,
-        -> throw ReallyMeCodecException.ProviderFailure()
+        -> {
+            throw ReallyMeCodecException.ProviderFailure()
+        }
     }
 }
 
@@ -132,20 +144,28 @@ private fun compareProviderDeterministicCborMapKeys(
         return leftRank.compareTo(rightRank)
     }
     return when (left.keyCase) {
-        CodecDeterministicCborMapKey.KeyCase.INTEGER_KEY ->
+        CodecDeterministicCborMapKey.KeyCase.INTEGER_KEY -> {
             compareProviderDeterministicCborIntegers(left.integerKey, right.integerKey)
-        CodecDeterministicCborMapKey.KeyCase.TEXT_KEY ->
+        }
+
+        CodecDeterministicCborMapKey.KeyCase.TEXT_KEY -> {
             left.textKey.value.compareTo(right.textKey.value)
+        }
+
         CodecDeterministicCborMapKey.KeyCase.KEY_NOT_SET,
         null,
-        -> 0
+        -> {
+            0
+        }
     }
 }
 
 private fun providerDeterministicCborMapKeyRank(keyCase: CodecDeterministicCborMapKey.KeyCase?): Int =
     when (keyCase) {
         CodecDeterministicCborMapKey.KeyCase.INTEGER_KEY -> 0
+
         CodecDeterministicCborMapKey.KeyCase.TEXT_KEY -> 1
+
         CodecDeterministicCborMapKey.KeyCase.KEY_NOT_SET,
         null,
         -> 2
@@ -161,22 +181,30 @@ private fun compareProviderDeterministicCborIntegers(
         return leftRank.compareTo(rightRank)
     }
     return when (left.valueCase) {
-        CodecDeterministicCborInteger.ValueCase.UNSIGNED_VALUE ->
+        CodecDeterministicCborInteger.ValueCase.UNSIGNED_VALUE -> {
             left.unsignedValue.value
                 .toULong()
                 .compareTo(right.unsignedValue.value.toULong())
-        CodecDeterministicCborInteger.ValueCase.NEGATIVE_VALUE ->
+        }
+
+        CodecDeterministicCborInteger.ValueCase.NEGATIVE_VALUE -> {
             left.negativeValue.value.compareTo(right.negativeValue.value)
+        }
+
         CodecDeterministicCborInteger.ValueCase.VALUE_NOT_SET,
         null,
-        -> 0
+        -> {
+            0
+        }
     }
 }
 
 private fun providerDeterministicCborIntegerRank(valueCase: CodecDeterministicCborInteger.ValueCase?): Int =
     when (valueCase) {
         CodecDeterministicCborInteger.ValueCase.UNSIGNED_VALUE -> 0
+
         CodecDeterministicCborInteger.ValueCase.NEGATIVE_VALUE -> 1
+
         CodecDeterministicCborInteger.ValueCase.VALUE_NOT_SET,
         null,
         -> 2
@@ -185,10 +213,12 @@ private fun providerDeterministicCborIntegerRank(valueCase: CodecDeterministicCb
 private fun validateProviderDeterministicCborInteger(integer: CodecDeterministicCborInteger) {
     requireNoProviderUnknownFields(integer.reallyMeHasUnknownFieldsForValidation())
     when (integer.valueCase) {
-        CodecDeterministicCborInteger.ValueCase.UNSIGNED_VALUE ->
+        CodecDeterministicCborInteger.ValueCase.UNSIGNED_VALUE -> {
             requireNoProviderUnknownFields(
                 integer.unsignedValue.reallyMeHasUnknownFieldsForValidation(),
             )
+        }
+
         CodecDeterministicCborInteger.ValueCase.NEGATIVE_VALUE -> {
             requireNoProviderUnknownFields(
                 integer.negativeValue.reallyMeHasUnknownFieldsForValidation(),
@@ -197,9 +227,12 @@ private fun validateProviderDeterministicCborInteger(integer: CodecDeterministic
                 throw ReallyMeCodecException.ProviderFailure()
             }
         }
+
         CodecDeterministicCborInteger.ValueCase.VALUE_NOT_SET,
         null,
-        -> throw ReallyMeCodecException.ProviderFailure()
+        -> {
+            throw ReallyMeCodecException.ProviderFailure()
+        }
     }
 }
 
@@ -209,8 +242,10 @@ private fun validateProviderDeterministicCborKey(
 ) {
     requireNoProviderUnknownFields(key.reallyMeHasUnknownFieldsForValidation())
     when (key.keyCase) {
-        CodecDeterministicCborMapKey.KeyCase.INTEGER_KEY ->
+        CodecDeterministicCborMapKey.KeyCase.INTEGER_KEY -> {
             validateProviderDeterministicCborInteger(key.integerKey)
+        }
+
         CodecDeterministicCborMapKey.KeyCase.TEXT_KEY -> {
             requireNoProviderUnknownFields(
                 key.textKey.reallyMeHasUnknownFieldsForValidation(),
@@ -222,9 +257,12 @@ private fun validateProviderDeterministicCborKey(
                     MAX_DETERMINISTIC_CBOR_AGGREGATE_TEXT_BYTES,
                 )
         }
+
         CodecDeterministicCborMapKey.KeyCase.KEY_NOT_SET,
         null,
-        -> throw ReallyMeCodecException.ProviderFailure()
+        -> {
+            throw ReallyMeCodecException.ProviderFailure()
+        }
     }
 }
 

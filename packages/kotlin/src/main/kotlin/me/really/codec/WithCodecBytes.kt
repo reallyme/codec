@@ -10,6 +10,14 @@ import java.nio.ByteBuffer
 import java.nio.charset.CharacterCodingException
 import java.nio.charset.CodingErrorAction
 
+/**
+ * Borrows the caller's array only for synchronous protobuf serialization.
+ * `ByteString.copyFrom` would create an additional immutable payload owner
+ * that the JVM cannot wipe. This wrapper creates no byte copy; the final
+ * serialized request is the sole SDK-owned copy and is wiped in
+ * [processOperation]. The wrapper must never escape or be retained.
+ */
+
 internal fun borrowedByteString(bytes: ByteArray): ByteString = UnsafeByteOperations.unsafeWrap(bytes)
 
 internal fun bytes(text: String): ByteArray {
@@ -73,17 +81,28 @@ internal fun utf8Length(text: String): Int {
         val character = text[index]
         val increment =
             when {
-                character.code <= 0x7f -> 1
-                character.code <= 0x7ff -> 2
+                character.code <= 0x7f -> {
+                    1
+                }
+
+                character.code <= 0x7ff -> {
+                    2
+                }
+
                 Character.isHighSurrogate(character) &&
                     index + 1 < text.length &&
                     Character.isLowSurrogate(text[index + 1]) -> {
                     index += 1
                     4
                 }
-                Character.isSurrogate(character) ->
+
+                Character.isSurrogate(character) -> {
                     throw ReallyMeCodecException.InvalidInput()
-                else -> 3
+                }
+
+                else -> {
+                    3
+                }
             }
         if (length > maximum - increment) {
             throw ReallyMeCodecException.InvalidInput()

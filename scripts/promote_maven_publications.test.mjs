@@ -27,8 +27,8 @@ set -euo pipefail
 [[ -z "\${CENTRAL_PORTAL_USERNAME+x}" && -z "\${CENTRAL_PORTAL_PASSWORD+x}" && -z "\${MAVEN_SIGNING_KEY+x}" && -z "\${MAVEN_SIGNING_PASSWORD+x}" ]] || exit 91
 case "$1" in
   */stage_maven_publications.mjs)
-    mkdir -p "$5/me/really/codec/0.4.5"
-    printf 'fixture' > "$5/me/really/codec/0.4.5/codec-0.4.5.pom"
+    mkdir -p "$5/me/really/codec/0.4.6"
+    printf 'fixture' > "$5/me/really/codec/0.4.6/codec-0.4.6.pom"
     printf 'stage\\n' >> "$TEST_EVENTS" ;;
   */run_pinned_release_readiness.mjs) printf 'authenticate\\n' >> "$TEST_EVENTS" ;;
   */repository-privacy.mjs)
@@ -60,7 +60,7 @@ case " $* " in
 esac
 `, { mode: 0o700 });
     writeFileSync(join(bin, "gpgconf"), "#!/bin/bash\nexit 0\n", { mode: 0o700 });
-    const result = spawnSync("bash", ["-x", join(scripts, "promote.sh"), directory, "0.4.5", "a".repeat(40)], {
+    const result = spawnSync("bash", ["-x", join(scripts, "promote.sh"), directory, "0.4.6", "a".repeat(40)], {
       encoding: "utf8", timeout: 10_000,
       env: {
         ...process.env, PATH: `${bin}:${process.env.PATH}`,

@@ -112,15 +112,21 @@ class DeterministicCborVectorTest {
             val vector = vectorElement.requiredObject()
             val context = vector.requiredString("name") + ":" + vector.requiredString("reason")
             when (vector.requiredString("errorClass")) {
-                "non-canonical" ->
+                "non-canonical" -> {
                     assertFailsWith<ReallyMeCodecException.NonCanonical>(message = context) {
                         codec.deterministicCborDecode(vector.requiredString("hex").hexToByteArray())
                     }
-                "invalid-input" ->
+                }
+
+                "invalid-input" -> {
                     assertFailsWith<ReallyMeCodecException.InvalidInput>(message = context) {
                         codec.deterministicCborDecode(vector.requiredString("hex").hexToByteArray())
                     }
-                else -> error("unsupported vector error class")
+                }
+
+                else -> {
+                    error("unsupported vector error class")
+                }
             }
         }
 
@@ -197,7 +203,8 @@ class DeterministicCborVectorTest {
                         )
                     }
                 }
-                "byte-string-length" ->
+
+                "byte-string-length" -> {
                     assertFailsWith<ReallyMeCodecException.InvalidInput>(
                         message = vector.requiredString("name"),
                     ) {
@@ -207,7 +214,9 @@ class DeterministicCborVectorTest {
                             ),
                         )
                     }
-                "balanced-array-tree" ->
+                }
+
+                "balanced-array-tree" -> {
                     assertFailsWith<ReallyMeCodecException.InvalidInput>(
                         message = vector.requiredString("name"),
                     ) {
@@ -218,7 +227,9 @@ class DeterministicCborVectorTest {
                             ),
                         )
                     }
-                "array-of-null" ->
+                }
+
+                "array-of-null" -> {
                     assertFailsWith<ReallyMeCodecException.InvalidInput>(
                         message = vector.requiredString("name"),
                     ) {
@@ -230,6 +241,8 @@ class DeterministicCborVectorTest {
                             ),
                         )
                     }
+                }
+
                 "nested-singleton-arrays" -> {
                     var value: ReallyMeDeterministicCborValue =
                         ReallyMeDeterministicCborValue.Null
@@ -242,7 +255,10 @@ class DeterministicCborVectorTest {
                         codec.deterministicCborEncode(value)
                     }
                 }
-                else -> error("unknown deterministic-CBOR resource construction")
+
+                else -> {
+                    error("unknown deterministic-CBOR resource construction")
+                }
             }
         }
 
@@ -335,25 +351,38 @@ class DeterministicCborVectorTest {
 
     private fun sdkInteger(value: JsonObject): ReallyMeDeterministicCborInteger =
         when {
-            value.has("unsigned") ->
+            value.has("unsigned") -> {
                 ReallyMeDeterministicCborInteger.Unsigned(
                     value.requiredString("unsigned").toULong(),
                 )
-            value.has("negative") ->
+            }
+
+            value.has("negative") -> {
                 ReallyMeDeterministicCborInteger.Negative.of(
                     value.requiredString("negative").toLong(),
                 )
-            else -> error("unknown deterministic-CBOR integer fixture branch")
+            }
+
+            else -> {
+                error("unknown deterministic-CBOR integer fixture branch")
+            }
         }
 
     private fun sdkMapKey(value: JsonObject): ReallyMeDeterministicCborMapKey =
         when {
-            value.has("integer") ->
+            value.has("integer") -> {
                 ReallyMeDeterministicCborMapKey.Integer(
                     sdkInteger(value.requiredObject("integer")),
                 )
-            value.has("text") -> ReallyMeDeterministicCborMapKey.Text(value.requiredString("text"))
-            else -> error("unknown deterministic-CBOR map-key fixture branch")
+            }
+
+            value.has("text") -> {
+                ReallyMeDeterministicCborMapKey.Text(value.requiredString("text"))
+            }
+
+            else -> {
+                error("unknown deterministic-CBOR map-key fixture branch")
+            }
         }
 
     private fun sdkMapEntry(value: JsonObject): ReallyMeDeterministicCborMapEntry =
@@ -365,31 +394,50 @@ class DeterministicCborVectorTest {
     private fun sdkValue(element: JsonElement): ReallyMeDeterministicCborValue {
         val value = element.requiredObject()
         return when {
-            value.has("unsigned") ->
+            value.has("unsigned") -> {
                 ReallyMeDeterministicCborValue.Integer(sdkInteger(value))
-            value.has("negative") ->
+            }
+
+            value.has("negative") -> {
                 ReallyMeDeterministicCborValue.Integer(sdkInteger(value))
-            value.has("bytes") ->
+            }
+
+            value.has("bytes") -> {
                 ReallyMeDeterministicCborValue.Bytes(
                     Base64.getDecoder().decode(value.requiredString("bytes")),
                 )
-            value.has("text") -> ReallyMeDeterministicCborValue.Text(value.requiredString("text"))
-            value.has("bool") -> ReallyMeDeterministicCborValue.Bool(value.required("bool").asBoolean)
+            }
+
+            value.has("text") -> {
+                ReallyMeDeterministicCborValue.Text(value.requiredString("text"))
+            }
+
+            value.has("bool") -> {
+                ReallyMeDeterministicCborValue.Bool(value.required("bool").asBoolean)
+            }
+
             value.has("null") -> {
                 require(value.required("null").asBoolean) {
                     "deterministic-CBOR null marker must be true"
                 }
                 ReallyMeDeterministicCborValue.Null
             }
-            value.has("array") ->
+
+            value.has("array") -> {
                 ReallyMeDeterministicCborValue.Array(
                     value.requiredArray("array").map(::sdkValue),
                 )
-            value.has("map") ->
+            }
+
+            value.has("map") -> {
                 ReallyMeDeterministicCborValue.Map(
                     value.requiredArray("map").map { sdkMapEntry(it.requiredObject()) },
                 )
-            else -> error("unknown deterministic-CBOR value fixture branch")
+            }
+
+            else -> {
+                error("unknown deterministic-CBOR value fixture branch")
+            }
         }
     }
 

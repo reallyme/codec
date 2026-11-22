@@ -68,11 +68,15 @@ class PemBundleVectorTest {
                             assertEquals(expected.error.pem.reason, actual.error.pem.reason, name)
                             assertNotEquals(CodecErrorReason.CODEC_ERROR_REASON_UNSPECIFIED, actual.error.pem.reason, name)
                         }
+
                         CodecApiError.ErrorCase.BASE_ENCODING -> {
                             assertEquals(expected.error.baseEncoding.reason, actual.error.baseEncoding.reason, name)
                             assertEquals(CodecErrorReason.CODEC_ERROR_REASON_BASE_INPUT_TOO_LARGE, actual.error.baseEncoding.reason, name)
                         }
-                        else -> fail("unexpected error family: $name")
+
+                        else -> {
+                            fail("unexpected error family: $name")
+                        }
                     }
                 }
             } finally {

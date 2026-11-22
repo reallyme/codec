@@ -47,11 +47,11 @@ if (pinCheck.error !== undefined || pinCheck.status !== 0) {
 const POLICY_MODULE_SHA256 = new Map([
   ["packages/ts/scripts/lint-typescript.mjs", "ac3fbad064d2655773cc5c8476eda63e5e1cff0e53cceb6d9cf0faca923df89d"],
   ["scripts/check_swift_source_style.mjs", "24a53cb703ea5763ace64a7c6e43a96ec721235cfe6efec6b0bec134b43d0455"],
-  ["scripts/release-readiness/sdk-source-policy.mjs", "899c4afff1ce5729ea7fc016d876ac630a62db53edc536ed79a4022c251711f9"],
+  ["scripts/release-readiness/sdk-source-policy.mjs", "bb1bfa3f8d05528f0e3589548600ae164e67066eb15d0dca92319e59f52b6def"],
   ["scripts/generate_codec_sdk_contract.mjs", "1512ecb968019c0516d326540947981edafd10a328782fbff483586e0300ee12"],
   ["scripts/codec_proto_schema.mjs", "4ee81a8a3c896d70a871bfb4a0724c007d709891a88580c3eed777bb80ddcbc9"],
   ["scripts/release-readiness/native-proto-policy.mjs", "cd434704f16db0de4e2a80db1a7fbfa1a6e86e7b04df9669da9b53cd18c4cdd9"],
-  ["scripts/check_local_proto_tools.mjs", "9e2168572f62d179cb1004a201a02d68c5ed8ac796c42486c539cd4c28e91084"],
+  ["scripts/check_local_proto_tools.mjs", "048b2bbb41eb3417a416b59534a7d1d6ae22fbb322fbe8358a0afc3ff105a3e5"],
   ["scripts/generate_codec_proto.mjs", "07979a127107e964eb5c1cf1727e1d7f117fe17dd15e97afd101d683d03cf11b"],
   ["scripts/generate_codec_proto_support.mjs", "6ec4f0c7727003fd2d36e537a51f27a0f20bf5cbdf194de912857d94c0ba462a"],
   ["scripts/harden_codec_sdk_proto.mjs", "4bf1c51dcb1f1a29f0d31d9d7dc4c8c01fd61208ead65cc26a997858c60d3255"],
@@ -376,8 +376,8 @@ for (const workflow of [".github/workflows/fuzz.yml", ".github/workflows/fuzz-sc
   });
 }
 
-const codecPackageVersion = "0.4.5";
-const codecProtoPackageVersion = "0.4.5";
+const codecPackageVersion = "0.4.6";
+const codecProtoPackageVersion = "0.4.6";
 assertContains("Package.swift", `let ffiArtifactVersion = "${codecPackageVersion}"`);
 // The probes are separate Cargo workspaces. Root workspace metadata cannot
 // detect a release bump that leaves their own lockfile package entries stale.
@@ -1751,7 +1751,7 @@ assertContains("buf.gen.yaml", "protoc_builtin: java");
 assertContains("buf.gen.yaml", "protoc_builtin: kotlin");
 assertNotContains("buf.gen.yaml", "remote:");
 assertContains("scripts/check_local_proto_tools.mjs", "libprotoc 36.2");
-assertContains("scripts/check_local_proto_tools.mjs", "protoc-gen-swift 1.39.0");
+assertContains("scripts/check_local_proto_tools.mjs", "protoc-gen-swift 1.41.0");
 assertContains("crates/proto/src/generated/buffa/mod.rs", "pub mod codec");
 assertContains("crates/proto/src/error.rs", "pub struct CodecWireError");
 assertContains("crates/proto/src/error.rs", "pub fn try_new");
@@ -1849,7 +1849,7 @@ if (tsCodecPackage.private === true) {
 }
 assertContains("packages/ts/README.md", "@reallyme/codec/wasm/reallyme_codec_wasm.js");
 assertContains("packages/ts/package.json", '"@bufbuild/protobuf": "2.17.0"');
-assertContains("packages/ts/package.json", '"fast-check": "4.10.2"');
+assertContains("packages/ts/package.json", '"fast-check": "4.11.0"');
 assertContains("packages/ts/package.json", '"typescript": "7.0.2"');
 assertContains("packages/ts/package.json", '"NOTICE"');
 readText("packages/ts/NOTICE");
@@ -1867,8 +1867,14 @@ assertContains("packages/kotlin/build.gradle.kts", 'artifactId = "codec"');
 assertContains("packages/kotlin/build.gradle.kts", "Java, Kotlin, JVM, and Android");
 assertContains("packages/kotlin/build.gradle.kts", "com.google.protobuf:protobuf-javalite:4.36.2");
 assertContains("packages/kotlin/build.gradle.kts", "com.google.protobuf:protobuf-kotlin-lite:4.36.2");
-assertContains("packages/kotlin/build.gradle.kts", 'val bouncyCastleSecurityVersion = "1.87"');
-assertContains("packages/kotlin/build.gradle.kts", 'if (name == kotlinBouncyCastleConfiguration)');
+for (const settings of ["packages/kotlin/settings.gradle.kts", "packages/kotlin-android/settings.gradle.kts"]) {
+  assertContains(settings, 'apply(from = file("../dependency-security.gradle.kts"))');
+}
+assertContains("packages/dependency-security.gradle.kts", "gradle.beforeProject");
+assertContains("packages/dependency-security.gradle.kts", "buildscript.configurations.configureEach");
+assertContains("packages/dependency-security.gradle.kts", "resolutionStrategy.activateDependencyLocking()");
+assertContains("packages/dependency-security.gradle.kts", 'requested.group == "org.bouncycastle"');
+assertContains("packages/dependency-security.gradle.kts", '"1.87"');
 for (const artifact of ["bcpg", "bcpkix", "bcprov", "bcutil"]) {
   assertContains(
     "packages/kotlin/gradle.lockfile",
@@ -1898,11 +1904,11 @@ assertContains("packages/kotlin/build.gradle.kts", "dependencyLocking {");
 assertContains("packages/kotlin/build.gradle.kts", "lockAllConfigurations()");
 assertContains(
   "packages/kotlin/gradle/wrapper/gradle-wrapper.properties",
-  "distributionSha256Sum=d8a18a7a841dd5df825d35a685fad6f2d7f12ac0c280e57b67c27b4a520ba228",
+  "distributionSha256Sum=971fcd7150ca4ba04852c0b2ca0d2d0ab9468e14b03473eab19528809914c76b",
 );
 assertContains(
   "packages/kotlin/gradle/wrapper/gradle-wrapper.properties",
-  "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.9.1-bin.zip",
+  "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.9.2-bin.zip",
 );
 assertContains(
   "packages/kotlin/gradle.properties",
@@ -2110,9 +2116,17 @@ assertContains(".github/workflows/dependency-security.yml", "python3 scripts/gra
 assertContains(".github/workflows/dependency-security.yml", "packages/kotlin/runtime/gradle.lockfile");
 assertContains(".github/workflows/dependency-security.yml", "packages/kotlin-android/runtime/gradle.lockfile");
 assertContains(".github/workflows/dependency-security.yml", "name: Gate published runtime dependencies");
-assertContains(".github/workflows/dependency-security.yml", "name: Report Gradle build tooling advisories");
+assertContains(".github/workflows/dependency-security.yml", "name: Gate Gradle build tooling advisories");
 assertContains(".github/workflows/dependency-security.yml", "fail-on-vuln: true");
-assertContains(".github/workflows/dependency-security.yml", "fail-on-vuln: false");
+assertNotContains(".github/workflows/dependency-security.yml", "fail-on-vuln: false");
+for (const lockfile of [
+  "packages/kotlin/buildscript-gradle.lockfile",
+  "packages/kotlin-android/buildscript-gradle.lockfile",
+  "packages/kotlin-android/consumer-r8-runtime/buildscript-gradle.lockfile",
+]) {
+  readText(lockfile);
+  assertContains(".github/workflows/dependency-security.yml", `--lockfile=./${lockfile}`);
+}
 assertNotContains(".github/workflows/dependency-security.yml", "python3 -m unittest");
 assertContains(".github/workflows/codeql.yml", "queries: security-and-quality");
 assertContains(".github/workflows/codeql.yml", "- language: java-kotlin");
@@ -2192,7 +2206,7 @@ assertContains(".github/workflows/kotlin-android-package-release.yml", "Sign and
 assertNotContains(".github/workflows/kotlin-android-package-release.yml", "bundleReleaseAar");
 assertContains(".github/workflows/kotlin-android-package-preflight.yml", "requireFullNativeResources=true");
 assertContains("packages/kotlin/settings.gradle.kts", 'rootProject.name = "reallyme-codec"');
-assertContains("packages/kotlin/README.md", "me.really:codec:0.4.5");
+assertContains("packages/kotlin/README.md", "me.really:codec:0.4.6");
 assertContains("packages/kotlin/README.md", "JNI libraries as platform resources");
 assertContains(
   "packages/kotlin/src/main/kotlin/me/really/codec/ReallyMeCodecRustNativeProvider.kt",
@@ -2844,8 +2858,8 @@ if (!androidCodecBuild.includes(`version = "${codecPackageVersion}"`)) {
 assertContains("packages/kotlin-android/settings.gradle.kts", 'rootProject.name = "reallyme-codec-android"');
 assertContains("packages/kotlin-android/settings.gradle.kts", 'include(":consumer-r8-runtime")');
 assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.library")');
-assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.library") version "9.5.1"');
-assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.application") version "9.5.1" apply false');
+assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.library") version "9.5.2"');
+assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.application") version "9.5.2" apply false');
 assertContains("packages/kotlin-android/build.gradle.kts", "compileSdk = 37");
 assertContains("packages/kotlin-android/consumer-r8-runtime/build.gradle.kts", "compileSdk = 37");
 assertContains("packages/kotlin-android/consumer-r8-runtime/build.gradle.kts", "targetSdk = 37");
@@ -2882,11 +2896,11 @@ assertContains(
 );
 assertContains(
   "packages/kotlin-android/gradle/verification-metadata.xml",
-  '<component group="com.android.tools.build" name="gradle" version="9.5.1">',
+  '<component group="com.android.tools.build" name="gradle" version="9.5.2">',
 );
 assertContains(
   "packages/kotlin-android/gradle/verification-metadata.xml",
-  'artifact name="aapt2-9.5.1-16666295-linux.jar"',
+  'artifact name="aapt2-9.5.2-16666295-linux.jar"',
 );
 assertContains(
   "packages/kotlin-android/gradle/verification-metadata.xml",
@@ -2894,11 +2908,11 @@ assertContains(
 );
 assertContains(
   "packages/kotlin-android/gradle/verification-metadata.xml",
-  'artifact name="bc-jdk18on-bom-1.80.2.module"',
+  'artifact name="bcpkix-jdk18on-1.87.jar"',
 );
 assertContains(
   "packages/kotlin-android/gradle/verification-metadata.xml",
-  "dd652f7a3141dd8ad81406ae5efc9ebeb47c99c0ab136931d1cd087bccd80474",
+  "a44be2660d72ed88673372b8cc2d53a25a5aaf27122fb803ed93f07147536aa1",
 );
 assertContains("packages/kotlin-android/build.gradle.kts", "fun nonBlank(value: String?): String?");
 assertContains("packages/kotlin-android/build.gradle.kts", "verifyRemoteMavenPublishingConfigured");
@@ -2947,7 +2961,7 @@ assertContains("scripts/test_android_consumer_r8_runtime.sh", "$SDKMANAGER\" \"e
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android AVD was not available after creation");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "$AVDMANAGER\" create avd --force");
 assertContains("scripts/test_android_consumer_r8_runtime.sh", "Android consumer R8 runtime gate passed");
-assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.4.5");
+assertContains("packages/kotlin-android/README.md", "me.really:codec-android:0.4.6");
 assertContains(
   "packages/kotlin-android/gradle.properties",
   "org.gradle.jvmargs=-Xmx1g -XX:MaxMetaspaceSize=768m -Dfile.encoding=UTF-8",
@@ -3031,7 +3045,7 @@ assertContains(".github/workflows/release-readiness.yml", "Test TypeScript codec
 assertContains(".github/workflows/npm-package-preflight.yml", "Test TypeScript codec package in browser");
 
 assertContains("README.md", "https://www.npmjs.com/package/@reallyme/codec");
-assertContains("README.md", "me.really:codec:0.4.5");
+assertContains("README.md", "me.really:codec:0.4.6");
 assertContains("README.md", "reallyme-codec-proto");
 assertContains("README.md", "`me.really:codec-android` AAR");
 assertContains("CONTRACT.md", "crates/proto/proto/reallyme/codec/v1/codec.proto");

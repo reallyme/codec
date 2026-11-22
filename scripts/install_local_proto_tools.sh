@@ -8,7 +8,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 if [[ "$(uname -s)" != Darwin ]]; then
-  printf '%s\n' 'Install protoc 36.2 and protoc-gen-swift 1.39.0 locally on this platform.' >&2
+  printf '%s\n' 'Install protoc 36.2 and protoc-gen-swift 1.41.0 locally on this platform.' >&2
   exit 1
 fi
 
@@ -22,9 +22,9 @@ if [[ ! -x "$tools_root/bin/protoc" ]] || [[ "$("$tools_root/bin/protoc" --versi
   printf '%s  %s\n' '83d0dc80672f53486f54299bca6177159f9cad1fd54d4d3143eeea53c4423e1b' "$archive" | shasum -a 256 --check
   unzip -q -o "$archive" -d "$tools_root"
 fi
-if [[ ! -x "$tools_root/bin/protoc-gen-swift" ]] || [[ "$("$tools_root/bin/protoc-gen-swift" --version)" != 'protoc-gen-swift 1.39.0' ]]; then
+if [[ ! -x "$tools_root/bin/protoc-gen-swift" ]] || [[ "$("$tools_root/bin/protoc-gen-swift" --version)" != 'protoc-gen-swift 1.41.0' ]]; then
   swift_source="$tools_root/swift-protobuf"
-  swift_revision=3d537cb81aef272a03cb3be815439e9bf0eb3bd3
+  swift_revision=fed2f76413026cb0ae90999a8c9116949dfe6aa6
   git init --quiet "$swift_source"
   git -C "$swift_source" fetch --depth 1 https://github.com/apple/swift-protobuf.git "$swift_revision"
   test "$(git -C "$swift_source" rev-parse FETCH_HEAD)" = "$swift_revision"
