@@ -24,7 +24,8 @@ test "$source_sha" = "${GITHUB_SHA:?candidate SHA is required}"
 node "$REPO_ROOT/.release-readiness/scripts/android-runtime.mjs" verify-publication "$MAVEN_REPOSITORY" "$source_sha"
 consumer_build="$(mktemp -d)"
 trap 'rm -rf -- "$consumer_build"' EXIT
-git -C "$REPO_ROOT" archive --format=tar "$source_sha" -- packages/kotlin-android |
+git -C "$REPO_ROOT" archive --format=tar "$source_sha" -- \
+    packages/kotlin-android packages/dependency-security.gradle.kts |
     tar -xf - -C "$consumer_build"
 consumer_project="$consumer_build/packages/kotlin-android"
 node "$REPO_ROOT/scripts/pin_android_consumer_publication.mjs" \
