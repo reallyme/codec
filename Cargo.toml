@@ -47,7 +47,7 @@ itoa = "1.0.19"
 multihash = "0.19.5"
 multihash-codetable = "0.2.2"
 proptest = { version = "=1.12.0", default-features = false, features = ["std"] }
-ryu-js = "1.0.3"
+ryu-js = "1.0.4"
 serde = "1.0.229"
 # The guarded JSON operation relies on this audited borrowed RawValue reader.
 # Requalify allocator/Unicode/feature-unification tests before changing it.
