@@ -4,7 +4,7 @@
 
 [package]
 name = "reallyme-codec-base64"
-version = "0.4.5"
+version = "0.4.6"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -17,7 +17,7 @@ include = ["/src/**/*.rs", "/tests/**/*.rs", "/Cargo.toml", "/LICENSE", "/NOTICE
 name = "codec_base64"
 
 [dependencies]
-codec-proto = { package = "reallyme-codec-proto", version = "=0.4.5", path = "../proto", default-features = false, features = ["generated"] }
+codec-proto = { package = "reallyme-codec-proto", version = "=0.4.6", path = "../proto", default-features = false, features = ["generated"] }
 base64 = { workspace = true }
 thiserror = { workspace = true }
 zeroize = { workspace = true }

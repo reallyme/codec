@@ -11,7 +11,7 @@ on:
         description: Release version without leading v
         required: true
         type: string
-        default: 0.4.5
+        default: 0.4.6
       source_sha:
         description: Copy the full source SHA from the successful Crates Package Preflight summary
         required: true

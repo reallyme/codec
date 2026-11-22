@@ -16,7 +16,7 @@ const config = readFileSync(new URL("../buf.gen.yaml", import.meta.url), "utf8")
 if (/^\s*-?\s*remote\s*:/mu.test(config)) fail();
 for (const [command, arguments_, expected] of [
   ["protoc", ["--version"], "libprotoc 36.2"],
-  ["protoc-gen-swift", ["--version"], "protoc-gen-swift 1.39.0"],
+  ["protoc-gen-swift", ["--version"], "protoc-gen-swift 1.41.0"],
   [process.execPath, ["packages/ts/node_modules/@bufbuild/protoc-gen-es/bin/protoc-gen-es", "--version"], "protoc-gen-es v2.17.0"],
 ]) {
   const result = spawnSync(command, arguments_, { cwd: root, encoding: "utf8", timeout: 30_000 });

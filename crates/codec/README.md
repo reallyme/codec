@@ -5,7 +5,7 @@ PEM, DER and definite TLV framing.
 
 ```toml
 [dependencies]
-reallyme-codec = "0.4.5"
+reallyme-codec = "0.4.6"
 ```
 
 ```rust

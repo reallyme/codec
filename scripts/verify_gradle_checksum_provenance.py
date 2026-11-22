@@ -46,6 +46,10 @@ SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 PUBLISHED_ARTIFACT_NAMES = {
     ("com.github.ajalt.clikt", "clikt-jvm", "5.0.2", "clikt-mordant-jvm-sources.jar"):
         "clikt-jvm-5.0.2-sources.jar",
+    ("com.github.ajalt.clikt", "clikt-jvm", "5.0.3", "clikt-mordant-jvm-sources.jar"):
+        "clikt-jvm-5.0.3-sources.jar",
+    ("com.github.ajalt.clikt", "clikt-jvm", "5.2.1", "clikt-mordant-jvm-5.2.1-sources.jar"):
+        "clikt-jvm-5.2.1-sources.jar",
 }
 
 

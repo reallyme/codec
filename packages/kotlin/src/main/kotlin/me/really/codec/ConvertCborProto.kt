@@ -64,7 +64,7 @@ internal fun dagCborDecodeRequest(bytes: ByteArray): CodecOperationRequest {
 
 private fun protoInteger(integer: ReallyMeDeterministicCborInteger): CodecDeterministicCborInteger =
     when (integer) {
-        is ReallyMeDeterministicCborInteger.Unsigned ->
+        is ReallyMeDeterministicCborInteger.Unsigned -> {
             CodecDeterministicCborInteger
                 .newBuilder()
                 .setUnsignedValue(
@@ -72,7 +72,9 @@ private fun protoInteger(integer: ReallyMeDeterministicCborInteger): CodecDeterm
                         .newBuilder()
                         .setValue(integer.value.toLong()),
                 ).build()
-        is ReallyMeDeterministicCborInteger.Negative ->
+        }
+
+        is ReallyMeDeterministicCborInteger.Negative -> {
             CodecDeterministicCborInteger
                 .newBuilder()
                 .setNegativeValue(
@@ -80,16 +82,19 @@ private fun protoInteger(integer: ReallyMeDeterministicCborInteger): CodecDeterm
                         .newBuilder()
                         .setValue(integer.value),
                 ).build()
+        }
     }
 
 private fun protoKey(key: ReallyMeDeterministicCborMapKey): CodecDeterministicCborMapKey =
     when (key) {
-        is ReallyMeDeterministicCborMapKey.Integer ->
+        is ReallyMeDeterministicCborMapKey.Integer -> {
             CodecDeterministicCborMapKey
                 .newBuilder()
                 .setIntegerKey(protoInteger(key.value))
                 .build()
-        is ReallyMeDeterministicCborMapKey.Text ->
+        }
+
+        is ReallyMeDeterministicCborMapKey.Text -> {
             CodecDeterministicCborMapKey
                 .newBuilder()
                 .setTextKey(
@@ -97,16 +102,19 @@ private fun protoKey(key: ReallyMeDeterministicCborMapKey): CodecDeterministicCb
                         .newBuilder()
                         .setValue(key.value),
                 ).build()
+        }
     }
 
 private fun protoValue(value: ReallyMeDeterministicCborValue): CodecDeterministicCborValue =
     when (value) {
-        ReallyMeDeterministicCborValue.Null ->
+        ReallyMeDeterministicCborValue.Null -> {
             CodecDeterministicCborValue
                 .newBuilder()
                 .setNullValue(CodecDeterministicCborNull.getDefaultInstance())
                 .build()
-        is ReallyMeDeterministicCborValue.Bool ->
+        }
+
+        is ReallyMeDeterministicCborValue.Bool -> {
             CodecDeterministicCborValue
                 .newBuilder()
                 .setBoolValue(
@@ -114,12 +122,16 @@ private fun protoValue(value: ReallyMeDeterministicCborValue): CodecDeterministi
                         .newBuilder()
                         .setValue(value.value),
                 ).build()
-        is ReallyMeDeterministicCborValue.Integer ->
+        }
+
+        is ReallyMeDeterministicCborValue.Integer -> {
             CodecDeterministicCborValue
                 .newBuilder()
                 .setIntegerValue(protoInteger(value.value))
                 .build()
-        is ReallyMeDeterministicCborValue.Text ->
+        }
+
+        is ReallyMeDeterministicCborValue.Text -> {
             CodecDeterministicCborValue
                 .newBuilder()
                 .setTextValue(
@@ -127,7 +139,9 @@ private fun protoValue(value: ReallyMeDeterministicCborValue): CodecDeterministi
                         .newBuilder()
                         .setValue(value.value),
                 ).build()
-        is ReallyMeDeterministicCborValue.Bytes ->
+        }
+
+        is ReallyMeDeterministicCborValue.Bytes -> {
             CodecDeterministicCborValue
                 .newBuilder()
                 .setBytesValue(
@@ -135,7 +149,9 @@ private fun protoValue(value: ReallyMeDeterministicCborValue): CodecDeterministi
                         .newBuilder()
                         .setValue(borrowedByteString(value.borrowedBytes())),
                 ).build()
-        is ReallyMeDeterministicCborValue.Array ->
+        }
+
+        is ReallyMeDeterministicCborValue.Array -> {
             CodecDeterministicCborValue
                 .newBuilder()
                 .setArrayValue(
@@ -143,7 +159,9 @@ private fun protoValue(value: ReallyMeDeterministicCborValue): CodecDeterministi
                         .newBuilder()
                         .addAllValues(value.values.map(::protoValue)),
                 ).build()
-        is ReallyMeDeterministicCborValue.Map ->
+        }
+
+        is ReallyMeDeterministicCborValue.Map -> {
             CodecDeterministicCborValue
                 .newBuilder()
                 .setMapValue(
@@ -159,47 +177,72 @@ private fun protoValue(value: ReallyMeDeterministicCborValue): CodecDeterministi
                             },
                         ),
                 ).build()
+        }
     }
 
 private fun sdkInteger(integer: CodecDeterministicCborInteger): ReallyMeDeterministicCborInteger =
     when (integer.valueCase) {
-        CodecDeterministicCborInteger.ValueCase.UNSIGNED_VALUE ->
+        CodecDeterministicCborInteger.ValueCase.UNSIGNED_VALUE -> {
             ReallyMeDeterministicCborInteger.Unsigned(integer.unsignedValue.value.toULong())
-        CodecDeterministicCborInteger.ValueCase.NEGATIVE_VALUE ->
+        }
+
+        CodecDeterministicCborInteger.ValueCase.NEGATIVE_VALUE -> {
             ReallyMeDeterministicCborInteger.Negative.fromProvider(integer.negativeValue.value)
+        }
+
         CodecDeterministicCborInteger.ValueCase.VALUE_NOT_SET,
         null,
-        -> throw ReallyMeCodecException.ProviderFailure()
+        -> {
+            throw ReallyMeCodecException.ProviderFailure()
+        }
     }
 
 private fun sdkKey(key: CodecDeterministicCborMapKey): ReallyMeDeterministicCborMapKey =
     when (key.keyCase) {
-        CodecDeterministicCborMapKey.KeyCase.INTEGER_KEY ->
+        CodecDeterministicCborMapKey.KeyCase.INTEGER_KEY -> {
             ReallyMeDeterministicCborMapKey.Integer(sdkInteger(key.integerKey))
-        CodecDeterministicCborMapKey.KeyCase.TEXT_KEY ->
+        }
+
+        CodecDeterministicCborMapKey.KeyCase.TEXT_KEY -> {
             ReallyMeDeterministicCborMapKey.Text(key.textKey.value)
+        }
+
         CodecDeterministicCborMapKey.KeyCase.KEY_NOT_SET,
         null,
-        -> throw ReallyMeCodecException.ProviderFailure()
+        -> {
+            throw ReallyMeCodecException.ProviderFailure()
+        }
     }
 
 internal fun sdkValue(value: CodecDeterministicCborValue): ReallyMeDeterministicCborValue =
     when (value.valueCase) {
-        CodecDeterministicCborValue.ValueCase.NULL_VALUE ->
+        CodecDeterministicCborValue.ValueCase.NULL_VALUE -> {
             ReallyMeDeterministicCborValue.Null
-        CodecDeterministicCborValue.ValueCase.BOOL_VALUE ->
+        }
+
+        CodecDeterministicCborValue.ValueCase.BOOL_VALUE -> {
             ReallyMeDeterministicCborValue.Bool(value.boolValue.value)
-        CodecDeterministicCborValue.ValueCase.INTEGER_VALUE ->
+        }
+
+        CodecDeterministicCborValue.ValueCase.INTEGER_VALUE -> {
             ReallyMeDeterministicCborValue.Integer(sdkInteger(value.integerValue))
-        CodecDeterministicCborValue.ValueCase.TEXT_VALUE ->
+        }
+
+        CodecDeterministicCborValue.ValueCase.TEXT_VALUE -> {
             ReallyMeDeterministicCborValue.Text(value.textValue.value)
-        CodecDeterministicCborValue.ValueCase.BYTES_VALUE ->
+        }
+
+        CodecDeterministicCborValue.ValueCase.BYTES_VALUE -> {
             ReallyMeDeterministicCborValue.Bytes.fromOwnedProviderBytes(
                 value.bytesValue.value.toByteArray(),
             )
-        CodecDeterministicCborValue.ValueCase.ARRAY_VALUE ->
+        }
+
+        CodecDeterministicCborValue.ValueCase.ARRAY_VALUE -> {
             ReallyMeDeterministicCborValue.Array(value.arrayValue.valuesList.map(::sdkValue))
-        CodecDeterministicCborValue.ValueCase.MAP_VALUE ->
+        }
+
+        CodecDeterministicCborValue.ValueCase.MAP_VALUE -> {
             ReallyMeDeterministicCborValue.Map(
                 value.mapValue.entriesList.map { entry ->
                     if (!entry.hasKey() || !entry.hasValue()) {
@@ -211,15 +254,11 @@ internal fun sdkValue(value: CodecDeterministicCborValue): ReallyMeDeterministic
                     )
                 },
             )
+        }
+
         CodecDeterministicCborValue.ValueCase.VALUE_NOT_SET,
         null,
-        -> throw ReallyMeCodecException.ProviderFailure()
+        -> {
+            throw ReallyMeCodecException.ProviderFailure()
+        }
     }
-
-/**
- * Borrows the caller's array only for synchronous protobuf serialization.
- * `ByteString.copyFrom` would create an additional immutable payload owner
- * that the JVM cannot wipe. This wrapper creates no byte copy; the final
- * serialized request is the sole SDK-owned copy and is wiped in
- * [processOperation]. The wrapper must never escape or be retained.
- */

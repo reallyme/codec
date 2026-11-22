@@ -30,7 +30,8 @@ internal fun validateDeterministicCborValue(
         ReallyMeDeterministicCborValue.Null,
         is ReallyMeDeterministicCborValue.Bool,
         is ReallyMeDeterministicCborValue.Integer,
-        -> Unit
+        -> {}
+
         is ReallyMeDeterministicCborValue.Text -> {
             state.textBytes =
                 addDeterministicCborCount(
@@ -39,6 +40,7 @@ internal fun validateDeterministicCborValue(
                     MAX_DETERMINISTIC_CBOR_AGGREGATE_TEXT_BYTES,
                 )
         }
+
         is ReallyMeDeterministicCborValue.Bytes -> {
             state.byteStringBytes =
                 addDeterministicCborCount(
@@ -47,6 +49,7 @@ internal fun validateDeterministicCborValue(
                     MAX_DETERMINISTIC_CBOR_AGGREGATE_BYTE_STRING_BYTES,
                 )
         }
+
         is ReallyMeDeterministicCborValue.Array -> {
             validateDeterministicCborContainer(value.values.size)
             val childDepth = deterministicCborChildDepth(depth)
@@ -54,6 +57,7 @@ internal fun validateDeterministicCborValue(
                 validateDeterministicCborValue(child, childDepth, state)
             }
         }
+
         is ReallyMeDeterministicCborValue.Map -> {
             validateDeterministicCborContainer(value.entries.size)
             val childDepth = deterministicCborChildDepth(depth)
@@ -110,17 +114,28 @@ internal fun deterministicCborUtf8Length(text: String): Int {
         val character = text[index]
         val increment =
             when {
-                character.code <= 0x7f -> 1
-                character.code <= 0x7ff -> 2
+                character.code <= 0x7f -> {
+                    1
+                }
+
+                character.code <= 0x7ff -> {
+                    2
+                }
+
                 Character.isHighSurrogate(character) &&
                     index + 1 < text.length &&
                     Character.isLowSurrogate(text[index + 1]) -> {
                     index += 1
                     4
                 }
-                Character.isSurrogate(character) ->
+
+                Character.isSurrogate(character) -> {
                     throw ReallyMeCodecException.InvalidInput()
-                else -> 3
+                }
+
+                else -> {
+                    3
+                }
             }
         length =
             addDeterministicCborCount(

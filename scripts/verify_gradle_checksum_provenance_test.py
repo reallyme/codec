@@ -49,6 +49,23 @@ class ProvenanceTests(unittest.TestCase):
             status, _, _ = provenance.verify(item)
         self.assertEqual(status, "match-sha256")
 
+    def test_variant_source_names_follow_publisher_urls(self):
+        digest = "a" * 64
+        for version, variant in (
+            ("5.0.3", "clikt-mordant-jvm-sources.jar"),
+            ("5.2.1", "clikt-mordant-jvm-5.2.1-sources.jar"),
+        ):
+            with self.subTest(version=version):
+                item = (("com.github.ajalt.clikt", "clikt-jvm", version, variant), digest)
+                response = subprocess.CompletedProcess((), 0, digest, "")
+                with patch.object(provenance.subprocess, "run", return_value=response) as fetch:
+                    status, source, _ = provenance.verify(item)
+                self.assertEqual(status, "match-sha256")
+                self.assertEqual(source, provenance.REPOSITORIES[0])
+                self.assertTrue(fetch.call_args.args[0][-1].endswith(
+                    f"/clikt-jvm/{version}/clikt-jvm-{version}-sources.jar.sha256"
+                ))
+
     def test_preferred_repository_mismatch_cannot_be_masked_by_mirror(self):
         item = (("example.org", "artifact", "1.0", "artifact-1.0.jar"), "0" * 64)
         responses = [

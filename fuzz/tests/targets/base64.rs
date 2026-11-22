@@ -12,7 +12,9 @@ fuzz_target!(|data: &[u8]| {
             assert_eq!(codec_base64::bytes_to_base64(&decoded), text);
         }
     }
-    if let (Some(input), Some(output), Some(encoded)) = (data.get(..8), data.get(8..16), data.get(16..)) {
+    if let (Some(input), Some(output), Some(encoded)) =
+        (data.get(..8), data.get(8..16), data.get(16..))
+    {
         if let (Ok(input), Ok(output), Ok(text)) = (
             <[u8; 8]>::try_from(input),
             <[u8; 8]>::try_from(output),
@@ -27,5 +29,4 @@ fuzz_target!(|data: &[u8]| {
             }
         }
     }
-
 });

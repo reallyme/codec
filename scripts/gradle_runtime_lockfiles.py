@@ -6,8 +6,8 @@
 """Derive published runtime dependency records from Gradle's full locks.
 
 Gradle also locks Android lint, compiler, and test tooling. Those artifacts are
-not shipped in either SDK, so the release vulnerability gate scans the runtime
-classpaths derived here while the full locks remain pinned for builds.
+not shipped in either SDK. Separate advisory gates scan the runtime classpaths
+derived here and the full build-tool locks.
 """
 
 import argparse

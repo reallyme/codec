@@ -9,14 +9,15 @@ import java.security.MessageDigest
 import java.util.zip.ZipFile
 
 plugins {
-    id("com.android.library") version "9.5.1"
-    id("com.android.application") version "9.5.1" apply false
+    id("com.android.library") version "9.5.2"
+    id("com.android.application") version "9.5.2" apply false
     `maven-publish`
     signing
 }
 
 group = "me.really"
-version = "0.4.5"
+version = "0.4.6"
+
 
 // AGP's publication component reads these generated configurations, rather
 // than releaseApiElements/releaseRuntimeElements. Keep the implicit identity
@@ -179,6 +180,10 @@ android {
 dependencies {
     api("com.google.protobuf:protobuf-javalite:4.36.2")
     api("com.google.protobuf:protobuf-kotlin-lite:4.36.2")
+    api("org.jetbrains.kotlin:kotlin-stdlib:2.4.21")
+    constraints {
+        api("org.jetbrains:annotations:26.1.0")
+    }
 }
 
 val generateAndroidNativeManifest = tasks.register("generateAndroidNativeManifest") {

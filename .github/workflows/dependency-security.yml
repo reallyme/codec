@@ -50,14 +50,15 @@ jobs:
         --lockfile=./packages/kotlin-android/runtime/gradle.lockfile
 
   scan-build-tooling:
-    name: Report Gradle build tooling advisories
+    name: Gate Gradle build tooling advisories
     uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@32d3cd482bdadfb38b186c0ad1b031902d55d932 # v2.7.1
     with:
       upload-sarif: false
-      # AGP's lint and test tools resolve versions that are not shipped in the
-      # Maven artifacts. Keep their advisories visible without blocking a
-      # release whose published runtime dependencies scan cleanly.
-      fail-on-vuln: false
+      # Tooling executes during builds, so its advisories must fail CI too.
+      fail-on-vuln: true
       scan-args: |-
         --lockfile=./packages/kotlin/gradle.lockfile
         --lockfile=./packages/kotlin-android/gradle.lockfile
+        --lockfile=./packages/kotlin/buildscript-gradle.lockfile
+        --lockfile=./packages/kotlin-android/buildscript-gradle.lockfile
+        --lockfile=./packages/kotlin-android/consumer-r8-runtime/buildscript-gradle.lockfile

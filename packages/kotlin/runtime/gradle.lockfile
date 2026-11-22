@@ -3,4 +3,4 @@
 com.google.protobuf:protobuf-javalite:4.36.2=runtimeClasspath
 com.google.protobuf:protobuf-kotlin-lite:4.36.2=runtimeClasspath
 org.jetbrains.kotlin:kotlin-stdlib:2.4.21=runtimeClasspath
-org.jetbrains:annotations:13.0=runtimeClasspath
+org.jetbrains:annotations:26.1.0=runtimeClasspath

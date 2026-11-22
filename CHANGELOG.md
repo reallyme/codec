@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.4.5 (unreleased)
+## 0.4.6 (unreleased)
+
+- Update Rust, TypeScript and Kotlin dependencies and the Swift protobuf generator.
+- Apply patched transitive dependencies to JVM and Android build tooling.
+
+## 0.4.5
 
 - Allow explicit general-CBOR input, output, and aggregate byte-string budgets
   up to 2 MiB. Defaults remain 1 MiB; other resource limits are unchanged.

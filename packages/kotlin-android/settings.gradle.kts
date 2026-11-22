@@ -10,6 +10,8 @@ pluginManagement {
     }
 }
 
+apply(from = file("../dependency-security.gradle.kts"))
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
