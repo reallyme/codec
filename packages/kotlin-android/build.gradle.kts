@@ -10,7 +10,7 @@ import java.util.zip.ZipFile
 
 plugins {
     id("com.android.library") version "9.5.2"
-    id("com.android.application") version "9.5.2" apply false
+    id("com.android.application") version "9.5.3" apply false
     `maven-publish`
     signing
 }
