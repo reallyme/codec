@@ -4,13 +4,13 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 import { spawnSync } from "node:child_process";
-import { readFileSync, statSync } from "node:fs";
-import { basename, resolve } from "node:path";
+import { basename } from "node:path";
 import { fileURLToPath } from "node:url";
+import { withReviewedPublicationBundle } from "./review_publication_bundle.mjs";
+import { FileSnapshotError } from "./open_regular_file_snapshot.mjs";
 
 const PORTAL = "https://central.sonatype.com/api/v1/publisher";
 const repositoryDirectory = fileURLToPath(new URL("../", import.meta.url));
-const MAX_BUNDLE_BYTES = 536_870_912;
 const POLL_INTERVAL_MS = 20_000;
 const MAX_POLLS = 180;
 const VERSION_PATTERN = /^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)$/u;
@@ -45,46 +45,31 @@ const main = async () => {
     fail("missing-portal-credentials");
   }
 
-  let status;
-  try {
-    status = statSync(bundlePath);
-  } catch {
-    fail("bundle-unavailable");
-  }
-  if (!status.isFile() || status.size === 0 || status.size > MAX_BUNDLE_BYTES) {
-    fail("bundle-size-invalid");
-  }
-
-  // Authenticate the shared policy, then inspect both source tracking and the
-  // actual archive before constructing authentication material or sending requests.
-  for (const arguments_ of [
-    ["scripts/run_pinned_release_readiness.mjs", "--check-pins"],
-    [".release-readiness/scripts/repository-privacy.mjs", "--artifact", resolve(bundlePath)],
-  ]) {
-    const privacy = spawnSync(process.execPath, arguments_, {
-      cwd: repositoryDirectory, stdio: "inherit", timeout: 90_000,
-    });
-    if (privacy.error !== undefined || privacy.status !== 0) {
-      fail("publication-privacy-rejected");
-    }
-  }
-
-  const authentication = Buffer.from(`${username}:${password}`, "utf8");
-  const headers = { Authorization: `Bearer ${authentication.toString("base64")}` };
-  authentication.fill(0);
-
+  let headers;
   const uploadUrl = new URL(`${PORTAL}/upload`);
   uploadUrl.searchParams.set("publishingType", "AUTOMATIC");
   uploadUrl.searchParams.set("name", `reallyme-codec-${version}`);
-  const form = new FormData();
-  form.set("bundle", new Blob([readFileSync(bundlePath)], { type: "application/octet-stream" }), basename(bundlePath));
-
-  const upload = await fetch(uploadUrl, {
-    method: "POST",
-    redirect: "error",
-    headers,
-    body: form,
-    signal: AbortSignal.timeout(120_000),
+  const upload = await withReviewedPublicationBundle(bundlePath, (privatePath) => {
+    // Inspectors never inherit publication or signing credentials.
+    for (const arguments_ of [
+      ["scripts/run_pinned_release_readiness.mjs", "--check-pins"],
+      [".release-readiness/scripts/repository-privacy.mjs", "--artifact", privatePath],
+    ]) {
+      const privacy = spawnSync(process.execPath, arguments_, {
+        cwd: repositoryDirectory, stdio: "inherit", timeout: 90_000,
+      });
+      if (privacy.error !== undefined || privacy.status !== 0) fail("publication-privacy-rejected");
+    }
+  }, async (bytes) => {
+    const authentication = Buffer.from(`${username}:${password}`, "utf8");
+    try { headers = { Authorization: `Bearer ${authentication.toString("base64")}` }; }
+    finally { authentication.fill(0); }
+    const form = new FormData();
+    form.set("bundle", new Blob([bytes], { type: "application/octet-stream" }), basename(bundlePath));
+    return await fetch(uploadUrl, {
+      method: "POST", redirect: "error", headers, body: form,
+      signal: AbortSignal.timeout(120_000),
+    });
   });
   if (upload.status !== 201) {
     fail(`portal-upload-failed-${upload.status}`);
@@ -141,7 +126,8 @@ const main = async () => {
 try {
   await main();
 } catch (error) {
-  const code = error instanceof PortalError ? error.code : "portal-unexpected-failure";
+  const code = error instanceof PortalError || error instanceof FileSnapshotError
+    ? error.code : "portal-unexpected-failure";
   console.error(`Maven Central upload failed: ${code}`);
   process.exitCode = 1;
 }

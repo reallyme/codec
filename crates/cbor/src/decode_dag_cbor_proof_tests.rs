@@ -5,8 +5,7 @@
 use super::{
     admit_map_key, collect_map_entries, decode_map_entries, decode_map_entry, decode_simple,
     decode_value_with, descend, extract_string, read_argument, read_value_head, require_text_key,
-    reserve_map, CborError, CborValue, DecodeBudget, MapKeyOrder, MAX_NESTING_DEPTH, MT_MAP,
-    MT_STRING,
+    reserve_map, CborError, CborValue, DecodeBudget, MapKeyOrder, MAX_NESTING_DEPTH, MT_STRING,
 };
 use crate::nested_map_proof_tests::{
     MIXED_KEY_BYTEWISE, MIXED_KEY_CANONICAL, MIXED_LENGTH_CANONICAL, MIXED_LENGTH_REVERSED,
@@ -386,7 +385,7 @@ fn open_map(
     depth: usize,
     budget: &mut DecodeBudget,
 ) -> (usize, usize, usize) {
-    let Ok((MT_MAP, argument, offset)) = read_value_head(wire, start, budget) else {
+    let Ok((super::MT_MAP, argument, offset)) = read_value_head(wire, start, budget) else {
         kani::assert(false, "the proof input has a map head");
         return (0, 0, 0);
     };

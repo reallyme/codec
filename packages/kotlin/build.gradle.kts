@@ -22,7 +22,6 @@ plugins {
 group = "me.really"
 version = "0.4.6"
 
-
 // The JVM jar and Android AAR expose the same me.really.codec classes.
 // The shared capability makes Gradle reject a graph containing both.
 configurations.matching { it.name in setOf("apiElements", "runtimeElements") }.configureEach {

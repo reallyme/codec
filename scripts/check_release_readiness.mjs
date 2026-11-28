@@ -53,7 +53,7 @@ const POLICY_MODULE_SHA256 = new Map([
   ["scripts/release-readiness/native-proto-policy.mjs", "cd434704f16db0de4e2a80db1a7fbfa1a6e86e7b04df9669da9b53cd18c4cdd9"],
   ["scripts/check_local_proto_tools.mjs", "048b2bbb41eb3417a416b59534a7d1d6ae22fbb322fbe8358a0afc3ff105a3e5"],
   ["scripts/generate_codec_proto.mjs", "07979a127107e964eb5c1cf1727e1d7f117fe17dd15e97afd101d683d03cf11b"],
-  ["scripts/generate_codec_proto_support.mjs", "6ec4f0c7727003fd2d36e537a51f27a0f20bf5cbdf194de912857d94c0ba462a"],
+  ["scripts/generate_codec_proto_support.mjs", "e42a90a8e01125a318850c53320e7ef03289e2b6a263ba20687a13360a26ef69"],
   ["scripts/harden_codec_sdk_proto.mjs", "4bf1c51dcb1f1a29f0d31d9d7dc4c8c01fd61208ead65cc26a997858c60d3255"],
   ["scripts/release-readiness/source-policy.mjs", "1bc1368be565bfb972ef68a7b3a532c5b1969f40ef9893cd660fb1c244a4202e"],
   ["scripts/verify_release_version.mjs", "bc858e3f4bd98b808b5557b7c50755b4a0d3595393842d7cd01728f853d86215"],
@@ -2858,8 +2858,8 @@ if (!androidCodecBuild.includes(`version = "${codecPackageVersion}"`)) {
 assertContains("packages/kotlin-android/settings.gradle.kts", 'rootProject.name = "reallyme-codec-android"');
 assertContains("packages/kotlin-android/settings.gradle.kts", 'include(":consumer-r8-runtime")');
 assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.library")');
-assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.library") version "9.5.2"');
-assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.application") version "9.5.2" apply false');
+assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.library") version "9.5.3"');
+assertContains("packages/kotlin-android/build.gradle.kts", 'id("com.android.application") version "9.5.3" apply false');
 assertContains("packages/kotlin-android/build.gradle.kts", "compileSdk = 37");
 assertContains("packages/kotlin-android/consumer-r8-runtime/build.gradle.kts", "compileSdk = 37");
 assertContains("packages/kotlin-android/consumer-r8-runtime/build.gradle.kts", "targetSdk = 37");
@@ -2896,11 +2896,11 @@ assertContains(
 );
 assertContains(
   "packages/kotlin-android/gradle/verification-metadata.xml",
-  '<component group="com.android.tools.build" name="gradle" version="9.5.2">',
+  '<component group="com.android.tools.build" name="gradle" version="9.5.3">',
 );
 assertContains(
   "packages/kotlin-android/gradle/verification-metadata.xml",
-  'artifact name="aapt2-9.5.2-16666295-linux.jar"',
+  'artifact name="aapt2-9.5.3-16666295-linux.jar"',
 );
 assertContains(
   "packages/kotlin-android/gradle/verification-metadata.xml",

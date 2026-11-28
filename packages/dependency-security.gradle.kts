@@ -6,6 +6,9 @@
 // are created. Otherwise vulnerable plugin dependencies escape project locks.
 val dependencyVersions = mapOf(
     "org.jetbrains.kotlin:kotlin-gradle-plugin" to "2.4.21",
+    // Lint reflects over the selected standard library while constructing its
+    // detectors; an older reflection runtime cannot resolve the newer metadata.
+    "org.jetbrains.kotlin:kotlin-reflect" to "2.4.21",
     "org.bitbucket.b_c:jose4j" to "0.9.7",
     "org.jdom:jdom2" to "2.0.6.1",
     "com.google.auto.value:auto-value-annotations" to "1.11.1",

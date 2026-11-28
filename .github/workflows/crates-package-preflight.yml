@@ -51,12 +51,12 @@ jobs:
             echo "::error::Dispatch preflight on the selected source SHA."
             exit 1
           fi
-          printf 'sha=%s\n' "$SOURCE_SHA" >>"$GITHUB_OUTPUT"
+          printf 'sha=%s\n' "$GITHUB_SHA" >>"$GITHUB_OUTPUT"
 
       - name: Checkout candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ steps.source.outputs.sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
           fetch-depth: 0
 
@@ -131,7 +131,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          ref: ${{ needs.verify-source-sha.outputs.release_sha }}
+          ref: ${{ github.sha }}
 
       - name: Checkout release-readiness runner
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

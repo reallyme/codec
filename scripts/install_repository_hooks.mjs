@@ -4,8 +4,9 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 import { spawnSync } from "node:child_process";
-import { chmodSync, lstatSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { fchmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { FileSnapshotError, openRegularFileSnapshot } from "./open_regular_file_snapshot.mjs";
 
 class HookInstallationError extends Error {
   constructor(reason) {
@@ -34,24 +35,32 @@ try {
   }));
   // Inspect both hooks before writing either. Existing, unrelated hooks need
   // deliberate integration; silently replacing them would discard protection.
-  for (const hook of hooks) {
-    try {
-      if (!lstatSync(hook.path).isFile() || !readFileSync(hook.path).equals(hook.contents)) {
-        throw new HookInstallationError("EXISTING_HOOK_REQUIRES_INTEGRATION");
-      }
-      hook.existing = true;
-    } catch (error) {
-      if (error !== null && typeof error === "object" && "code" in error && error.code === "ENOENT") {
-        hook.existing = false;
-      } else {
-        throw error;
+  try {
+    for (const hook of hooks) {
+      try {
+        hook.snapshot = openRegularFileSnapshot(hook.path, hook.contents.length);
+        if (!hook.snapshot.bytes.equals(hook.contents)) {
+          throw new HookInstallationError("EXISTING_HOOK_REQUIRES_INTEGRATION");
+        }
+      } catch (error) {
+        if (!(error instanceof FileSnapshotError) || error.code !== "file-missing") throw error;
       }
     }
-  }
-  mkdirSync(directory, { recursive: true });
-  for (const hook of hooks) {
-    if (hook.existing) chmodSync(hook.path, 0o755);
-    else writeFileSync(hook.path, hook.contents, { flag: "wx", mode: 0o755 });
+    mkdirSync(directory, { recursive: true });
+    for (const hook of hooks) {
+      if (hook.snapshot !== undefined) {
+        hook.snapshot.assertUnchanged();
+        fchmodSync(hook.snapshot.descriptor, 0o755);
+      } else {
+        writeFileSync(hook.path, hook.contents, { flag: "wx", mode: 0o755 });
+      }
+    }
+  } finally {
+    let closeFailed = false;
+    for (const hook of hooks) {
+      try { hook.snapshot?.close(); } catch { closeFailed = true; }
+    }
+    if (closeFailed) throw new HookInstallationError("HOOK_CLOSE_FAILED");
   }
   console.log("repository privacy hooks installed");
 } catch {
