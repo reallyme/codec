@@ -4,11 +4,12 @@
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, fstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { openRegularFileSnapshot } from "./open_regular_file_snapshot.mjs";
 
 const script = fileURLToPath(new URL("./install_repository_hooks.mjs", import.meta.url));
 
@@ -32,8 +33,12 @@ test("hook installation is repeatable and retains executable guards", (t) => {
   assert.equal(run().status, 0);
   for (const name of ["pre-commit", "pre-push"]) {
     const path = join(root, ".git/hooks", name);
-    assert.ok(statSync(path).mode & 0o100);
-    assert.equal(readFileSync(path, "utf8"), readFileSync(new URL(`../.github/hooks/${name}`, import.meta.url), "utf8"));
+    const expected = readFileSync(new URL(`../.github/hooks/${name}`, import.meta.url));
+    const snapshot = openRegularFileSnapshot(path, expected.length);
+    try {
+      assert.ok(fstatSync(snapshot.descriptor).mode & 0o100);
+      assert.ok(snapshot.bytes.equals(expected));
+    } finally { snapshot.close(); }
   }
 });
 
@@ -53,4 +58,20 @@ test("custom hook directories are preserved", (t) => {
   git("config", "core.hooksPath", directory);
   assert.equal(run().status, 1);
   assert.equal(existsSync(join(directory, "pre-push")), false);
+});
+
+test("a symlinked existing guard is rejected without changing its target", (t) => {
+  const { root, run } = fixture(t);
+  const target = join(root, "other-guard");
+  const original = readFileSync(new URL("../.github/hooks/pre-push", import.meta.url));
+  writeFileSync(target, original, { mode: 0o640 });
+  chmodSync(target, 0o640);
+  symlinkSync(target, join(root, ".git/hooks/pre-push"));
+  assert.equal(run().status, 1);
+  const snapshot = openRegularFileSnapshot(target, original.length);
+  try {
+    assert.equal(fstatSync(snapshot.descriptor).mode & 0o777, 0o640);
+    assert.ok(snapshot.bytes.equals(original));
+  } finally { snapshot.close(); }
+  assert.equal(existsSync(join(root, ".git/hooks/pre-commit")), false);
 });

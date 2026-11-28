@@ -14,19 +14,19 @@ use crate::nested_map_proof_tests::three_entry::{
 #[kani::proof]
 #[kani::unwind(6)]
 fn sort_produces_the_same_pairs_from_every_permutation() {
-    use Key::{Aa, A, Z};
     let keys = [Key::symbolic(), Key::symbolic(), Key::symbolic()];
     kani::assume(keys[0] != keys[1] && keys[0] != keys[2] && keys[1] != keys[2]);
     // Construct the fixed owners before selecting their order. Each source
     // entry has its own live allocation for the duration of the sort.
     let [a, z, aa] = entries(CANONICAL_KEYS);
+    // Qualified variants keep every row a permutation rather than introducing bindings.
     let entries = ManuallyDrop::new(match keys {
-        [A, Z, Aa] => [a, z, aa],
-        [A, Aa, Z] => [a, aa, z],
-        [Z, A, Aa] => [z, a, aa],
-        [Z, Aa, A] => [z, aa, a],
-        [Aa, A, Z] => [aa, a, z],
-        [Aa, Z, A] => [aa, z, a],
+        [Key::A, Key::Z, Key::Aa] => [a, z, aa],
+        [Key::A, Key::Aa, Key::Z] => [a, aa, z],
+        [Key::Z, Key::A, Key::Aa] => [z, a, aa],
+        [Key::Z, Key::Aa, Key::A] => [z, aa, a],
+        [Key::Aa, Key::A, Key::Z] => [aa, a, z],
+        [Key::Aa, Key::Z, Key::A] => [aa, z, a],
         _ => {
             kani::assert(
                 false,

@@ -33,7 +33,10 @@ fn number_serialization_matches_ecmascript() {
     for (input, expected) in cases {
         let actual =
             canonicalize_trusted_json_value(&json!(input)).expect("finite number canonicalizes");
-        assert_eq!(actual, *expected, "number {input} serialized as {actual}");
+        assert!(
+            actual == *expected,
+            "number serialization differs from the expected vector"
+        );
     }
 }
 
@@ -124,7 +127,7 @@ fn object_keys_sorted_by_utf16_code_unit() {
     let bmp_at = canonical.find('\u{FB00}').expect("bmp key present");
     assert!(
         emoji_at < bmp_at,
-        "UTF-16 order must place the supplementary-plane key first: {canonical}"
+        "UTF-16 order must place the supplementary-plane key first"
     );
 }
 
